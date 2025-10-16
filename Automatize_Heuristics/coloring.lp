@@ -1,7 +1,7 @@
 % --- Definizione del problema: Graph Coloring ---
 
-% Colori disponibili (5 colori per grafi complessi)
-color(red; green; blue; yellow; orange).
+% Colori disponibili (6 colori per grafi complessi)
+color(red; green; blue; yellow; orange; purple).
 
 % --- Regole del Graph Coloring (Hard Constraints) ---
 

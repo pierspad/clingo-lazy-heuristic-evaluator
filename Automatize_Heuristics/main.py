@@ -160,9 +160,6 @@ def solve_with_clingo(graph_file, coloring_file, heuristics):
 
 
 def main():
-    """
-    Funzione principale che orchestra il processo.
-    """
     try:
         # File paths
         graph_file = "graph_instance.lp"

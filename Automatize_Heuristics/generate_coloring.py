@@ -9,6 +9,57 @@ import argparse
 from typing import Set, Tuple, List
 
 
+# ============================================================
+# CONFIGURAZIONE PARAMETRI (modificabili)
+# ============================================================
+
+# Numero di nodi nel grafo - controlla la dimensione del problema
+# Più nodi = problema più complesso e tempo di risoluzione maggiore
+NUM_NODES = 100
+
+# Numero di colori disponibili per la colorazione
+# Deve essere sufficientemente alto per permettere una soluzione
+# Regola empirica: per grafi densi serve circa log(NUM_NODES) colori
+NUM_COLORS = 6
+
+# Seed per la generazione random (None = seed casuale)
+# Impostare un valore fisso (es. 42) per avere grafi riproducibili
+RANDOM_SEED = 42
+
+# File di output dove salvare il grafo generato
+OUTPUT_FILE = "graph_instance.lp"
+
+# Tipo di grafo da generare:
+# - 'clusters': Grafo a cluster interconnessi (buono per testare euristiche)
+# - 'hubs': Grafo con hub centrali e anello esterno (struttura stellare)
+# - 'random': Grafo random secondo modello Erdős–Rényi
+# - 'grid': Grafo a griglia (planare, buono per problemi spaziali)
+GRAPH_TYPE = "hubs"
+
+# --- Parametri specifici per tipo 'clusters' ---
+# Numero di cluster da creare nel grafo
+NUM_CLUSTERS = 8
+# Probabilità di connessione tra nodi dello stesso cluster (0.0 - 1.0)
+# Valori più alti = cluster più densi = problema più difficile
+CLUSTER_CONNECTIVITY = 0.7
+
+# --- Parametri specifici per tipo 'hubs' ---
+# Numero di nodi hub centrali (devono essere < NUM_NODES)
+# Gli hub sono completamente connessi tra loro e connessi all'anello esterno
+NUM_HUBS = 15
+
+# --- Parametri specifici per tipo 'random' ---
+# Probabilità che esista un arco tra due nodi qualsiasi (0.0 - 1.0)
+# 0.2-0.3 = grafo sparso, 0.5+ = grafo denso
+EDGE_PROBABILITY = 0.3
+
+# --- Parametri specifici per tipo 'grid' ---
+# Se True, aggiunge connessioni diagonali alla griglia (aumenta difficoltà)
+ADD_DIAGONALS = False
+
+# ============================================================
+
+
 class GraphGenerator:
     """Generatore di grafi per problemi di Graph Coloring."""
     
@@ -247,6 +298,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Esempi di utilizzo:
+  %(prog)s  (usa i parametri hardcodati nel file)
   %(prog)s -n 50 -c 4 -t clusters -o graph_instance.lp
   %(prog)s -n 100 -c 5 -t hubs --num-hubs 10 -s 42
   %(prog)s -n 80 -c 4 -t random --edge-prob 0.25
@@ -254,32 +306,32 @@ Esempi di utilizzo:
         """
     )
     
-    # Parametri principali
-    parser.add_argument('-n', '--nodes', type=int, default=30,
-                        help='Numero di nodi nel grafo (default: 30)')
-    parser.add_argument('-c', '--colors', type=int, default=5,
-                        help='Numero di colori disponibili (default: 5)')
-    parser.add_argument('-s', '--seed', type=int, default=None,
-                        help='Seed per generazione random (per riproducibilità)')
-    parser.add_argument('-o', '--output', type=str, default='graph_instance.lp',
-                        help='File di output (default: graph_instance.lp)')
+    # Parametri principali (con default dalle costanti)
+    parser.add_argument('-n', '--nodes', type=int, default=NUM_NODES,
+                        help=f'Numero di nodi nel grafo (default: {NUM_NODES})')
+    parser.add_argument('-c', '--colors', type=int, default=NUM_COLORS,
+                        help=f'Numero di colori disponibili (default: {NUM_COLORS})')
+    parser.add_argument('-s', '--seed', type=int, default=RANDOM_SEED,
+                        help=f'Seed per generazione random (default: {RANDOM_SEED})')
+    parser.add_argument('-o', '--output', type=str, default=OUTPUT_FILE,
+                        help=f'File di output (default: {OUTPUT_FILE})')
     
     # Tipo di grafo
-    parser.add_argument('-t', '--type', type=str, default='clusters',
+    parser.add_argument('-t', '--type', type=str, default=GRAPH_TYPE,
                         choices=['clusters', 'hubs', 'random', 'grid'],
-                        help='Tipo di grafo da generare (default: clusters)')
+                        help=f'Tipo di grafo da generare (default: {GRAPH_TYPE})')
     
     # Parametri specifici per tipo
-    parser.add_argument('--num-clusters', type=int, default=5,
-                        help='Numero di cluster (per tipo "clusters", default: 5)')
-    parser.add_argument('--connectivity', type=float, default=0.7,
-                        help='Connettività intra-cluster 0-1 (per tipo "clusters", default: 0.7)')
-    parser.add_argument('--num-hubs', type=int, default=6,
-                        help='Numero di nodi hub (per tipo "hubs", default: 6)')
-    parser.add_argument('--edge-prob', type=float, default=0.3,
-                        help='Probabilità di arco 0-1 (per tipo "random", default: 0.3)')
-    parser.add_argument('--diagonals', action='store_true',
-                        help='Aggiungi diagonali (per tipo "grid")')
+    parser.add_argument('--num-clusters', type=int, default=NUM_CLUSTERS,
+                        help=f'Numero di cluster (per tipo "clusters", default: {NUM_CLUSTERS})')
+    parser.add_argument('--connectivity', type=float, default=CLUSTER_CONNECTIVITY,
+                        help=f'Connettività intra-cluster 0-1 (per tipo "clusters", default: {CLUSTER_CONNECTIVITY})')
+    parser.add_argument('--num-hubs', type=int, default=NUM_HUBS,
+                        help=f'Numero di nodi hub (per tipo "hubs", default: {NUM_HUBS})')
+    parser.add_argument('--edge-prob', type=float, default=EDGE_PROBABILITY,
+                        help=f'Probabilità di arco 0-1 (per tipo "random", default: {EDGE_PROBABILITY})')
+    parser.add_argument('--diagonals', action='store_true', default=ADD_DIAGONALS,
+                        help=f'Aggiungi diagonali (per tipo "grid", default: {ADD_DIAGONALS})')
     
     args = parser.parse_args()
     
@@ -302,6 +354,18 @@ Esempi di utilizzo:
     print(f"  Tipo: {args.type}")
     if args.seed is not None:
         print(f"  Seed: {args.seed}")
+    
+    # Mostra parametri specifici per tipo
+    if args.type == 'clusters':
+        print(f"  Cluster: {args.num_clusters}")
+        print(f"  Connettività: {args.connectivity}")
+    elif args.type == 'hubs':
+        print(f"  Hub: {args.num_hubs}")
+    elif args.type == 'random':
+        print(f"  Prob. arco: {args.edge_prob}")
+    elif args.type == 'grid':
+        print(f"  Diagonali: {args.diagonals}")
+    
     print()
     
     # Crea il generatore
