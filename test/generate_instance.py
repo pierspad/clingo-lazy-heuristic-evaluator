@@ -56,7 +56,7 @@ if __name__ == "__main__":
     parser.add_argument("-b", "--bins", type=int, required=True, help="Numero di bin a disposizione")
     parser.add_argument("-i", "--items", type=int, required=True, help="Numero di item da inserire")
     parser.add_argument("-c", "--capacity", type=int, required=True, help="Capacità massima di ogni bin")
-    parser.add_argument("-f", "--file", type=str, default="facts.lp", help="Nome del file di output (default: facts.lp)")
+    parser.add_argument("-f", "--file", type=str, default="instance.lp", help="Nome del file di output (default: instance.lp)")
     
     args = parser.parse_args()
     generate_instance(args.bins, args.items, args.capacity, args.file)

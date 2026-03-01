@@ -1,0 +1,236 @@
+Clingo library version: 5.8.0
+
+--- New AS found ---
+assign(2,1)
+assign(14,1)
+assign(9,2)
+assign(4,3)
+assign(5,4)
+assign(6,5)
+assign(10,5)
+assign(8,6)
+assign(7,7)
+assign(17,7)
+assign(3,8)
+assign(16,8)
+assign(1,10)
+assign(11,10)
+assign(12,10)
+assign(13,10)
+assign(15,10)
+Costo di questa soluzione: [9]
+
+Answer Set: SAT
+{
+    "problem": {
+        "lp": {
+            "atoms": 302.0,
+            "atoms_aux": 0.0,
+            "disjunctions": 0.0,
+            "disjunctions_non_hcf": 0.0,
+            "bodies": 232.0,
+            "bodies_tr": 232.0,
+            "sum_bodies": 10.0,
+            "sum_bodies_tr": 10.0,
+            "count_bodies": 34.0,
+            "count_bodies_tr": 34.0,
+            "sccs": 0.0,
+            "sccs_non_hcf": 0.0,
+            "gammas": 0.0,
+            "ufs_nodes": 0.0,
+            "rules": 337.0,
+            "rules_normal": 319.0,
+            "rules_choice": 17.0,
+            "rules_minimize": 1.0,
+            "rules_acyc": 0.0,
+            "rules_heuristic": 0.0,
+            "rules_tr": 337.0,
+            "rules_tr_normal": 319.0,
+            "rules_tr_choice": 17.0,
+            "rules_tr_minimize": 1.0,
+            "rules_tr_acyc": 0.0,
+            "rules_tr_heuristic": 0.0,
+            "eqs": 238.0,
+            "eqs_atom": 17.0,
+            "eqs_body": 0.0,
+            "eqs_other": 221.0
+        },
+        "lpStep": {
+            "atoms": 302.0,
+            "atoms_aux": 0.0,
+            "disjunctions": 0.0,
+            "disjunctions_non_hcf": 0.0,
+            "bodies": 232.0,
+            "bodies_tr": 232.0,
+            "sum_bodies": 10.0,
+            "sum_bodies_tr": 10.0,
+            "count_bodies": 34.0,
+            "count_bodies_tr": 34.0,
+            "sccs": 0.0,
+            "sccs_non_hcf": 0.0,
+            "gammas": 0.0,
+            "ufs_nodes": 0.0,
+            "rules": 337.0,
+            "rules_normal": 319.0,
+            "rules_choice": 17.0,
+            "rules_minimize": 1.0,
+            "rules_acyc": 0.0,
+            "rules_heuristic": 0.0,
+            "rules_tr": 337.0,
+            "rules_tr_normal": 319.0,
+            "rules_tr_choice": 17.0,
+            "rules_tr_minimize": 1.0,
+            "rules_tr_acyc": 0.0,
+            "rules_tr_heuristic": 0.0,
+            "eqs": 238.0,
+            "eqs_atom": 17.0,
+            "eqs_body": 0.0,
+            "eqs_other": 221.0
+        },
+        "generator": {
+            "vars": 197.0,
+            "vars_eliminated": 0.0,
+            "vars_frozen": 197.0,
+            "constraints": 54.0,
+            "constraints_binary": 170.0,
+            "constraints_ternary": 0.0,
+            "acyc_edges": 0.0,
+            "complexity": 288.0
+        }
+    },
+    "solving": {
+        "solvers": {
+            "choices": 1574754.0,
+            "conflicts": 1493578.0,
+            "conflicts_analyzed": 1493577.0,
+            "restarts": 21.0,
+            "restarts_last": 496199.0,
+            "restarts_blocked": 0.0,
+            "extra": {
+                "domain_choices": 0.0,
+                "models": 1.0,
+                "models_level": 57.0,
+                "hcc_tests": 0.0,
+                "hcc_partial": 0.0,
+                "lemmas_deleted": 1493266.0,
+                "distributed": 0.0,
+                "distributed_sum_lbd": 0.0,
+                "integrated": 0.0,
+                "lemmas": 1493577.0,
+                "lits_learnt": 40014998.0,
+                "lemmas_binary": 37.0,
+                "lemmas_ternary": 3.0,
+                "cpu_time": 4.934418,
+                "integrated_imps": 0.0,
+                "integrated_jumps": 0.0,
+                "guiding_paths_lits": 1.0,
+                "guiding_paths": 1.0,
+                "splits": 0.0,
+                "lemmas_conflict": 1493577.0,
+                "lemmas_loop": 0.0,
+                "lemmas_other": 0.0,
+                "lits_conflict": 40014998.0,
+                "lits_loop": 0.0,
+                "lits_other": 0.0,
+                "jumps": {
+                    "jumps": 1493577.0,
+                    "jumps_bounded": 0.0,
+                    "levels": 1574587.0,
+                    "levels_bounded": 0.0,
+                    "max": 7.0,
+                    "max_executed": 7.0,
+                    "max_bounded": 0.0
+                }
+            }
+        }
+    },
+    "summary": {
+        "call": 0.0,
+        "result": 1.0,
+        "signal": 0.0,
+        "exhausted": 1.0,
+        "costs": [
+            9.0
+        ],
+        "lower": [
+            9.0
+        ],
+        "concurrency": 1.0,
+        "winner": 0.0,
+        "times": {
+            "total": 4.948570966720581,
+            "cpu": 4.934978,
+            "solve": 4.947545051574707,
+            "unsat": 4.9472668170928955,
+            "sat": 0.00027823448181152344
+        },
+        "models": {
+            "enumerated": 1.0,
+            "optimal": 1.0
+        }
+    },
+    "accu": {
+        "times": {
+            "total": 4.948570966720581,
+            "cpu": 4.934978,
+            "solve": 4.947545051574707,
+            "unsat": 4.9472668170928955,
+            "sat": 0.00027823448181152344
+        },
+        "models": {
+            "enumerated": 1.0,
+            "optimal": 1.0
+        },
+        "solving": {
+            "solvers": {
+                "choices": 1574754.0,
+                "conflicts": 1493578.0,
+                "conflicts_analyzed": 1493577.0,
+                "restarts": 21.0,
+                "restarts_last": 496199.0,
+                "restarts_blocked": 0.0,
+                "extra": {
+                    "domain_choices": 0.0,
+                    "models": 1.0,
+                    "models_level": 57.0,
+                    "hcc_tests": 0.0,
+                    "hcc_partial": 0.0,
+                    "lemmas_deleted": 1493266.0,
+                    "distributed": 0.0,
+                    "distributed_sum_lbd": 0.0,
+                    "integrated": 0.0,
+                    "lemmas": 1493577.0,
+                    "lits_learnt": 40014998.0,
+                    "lemmas_binary": 37.0,
+                    "lemmas_ternary": 3.0,
+                    "cpu_time": 4.934418,
+                    "integrated_imps": 0.0,
+                    "integrated_jumps": 0.0,
+                    "guiding_paths_lits": 1.0,
+                    "guiding_paths": 1.0,
+                    "splits": 0.0,
+                    "lemmas_conflict": 1493577.0,
+                    "lemmas_loop": 0.0,
+                    "lemmas_other": 0.0,
+                    "lits_conflict": 40014998.0,
+                    "lits_loop": 0.0,
+                    "lits_other": 0.0,
+                    "jumps": {
+                        "jumps": 1493577.0,
+                        "jumps_bounded": 0.0,
+                        "levels": 1574587.0,
+                        "levels_bounded": 0.0,
+                        "max": 7.0,
+                        "max_executed": 7.0,
+                        "max_bounded": 0.0
+                    }
+                }
+            }
+        }
+    },
+    "user_step": {},
+    "user_accu": {}
+}
+
+Total CPU Time(Clingo): 4.934978
+Total Solving time(Clingo): 4.947545051574707

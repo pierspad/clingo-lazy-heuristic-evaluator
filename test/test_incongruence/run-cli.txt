@@ -1,0 +1,42 @@
+clingo version 5.8.0
+Reading from ../encoding.lp ...
+Solving...
+Answer: 1 (Time: 0.002s)
+used(1) used(2) used(3) used(4) used(5) used(6) used(7) used(8) used(10) assign(1,10) assign(2,1) assign(3,8) assign(4,3) assign(5,4) assign(6,5) assign(7,7) assign(8,6) assign(9,2) assign(10,5) assign(11,10) assign(12,10) assign(13,10) assign(14,1) assign(15,10) assign(16,8) assign(17,7)
+Optimization: 9
+OPTIMUM FOUND
+
+Models       : 1
+  Optimum    : yes
+Optimization : 9
+Calls        : 1
+Time         : 4.774s (Solving: 4.77s 1st Model: 0.00s Unsat: 4.77s)
+CPU Time     : 4.760s
+
+Choices      : 1553596 
+Conflicts    : 1484313  (Analyzed: 1484312)
+Restarts     : 21       (Average: 70681.52 Last: 486934 Blocked: 0)
+Model-Level  : 56.0    
+Problems     : 1        (Average Length: 0.00 Splits: 0)
+Lemmas       : 1484312  (Deleted: 1483479)
+  Binary     : 32       (Ratio:   0.00%)
+  Ternary    : 12       (Ratio:   0.00%)
+  Conflict   : 1484312  (Average Length:   26.5 Ratio: 100.00%) 
+  Loop       : 0        (Average Length:    0.0 Ratio:   0.00%) 
+  Other      : 0        (Average Length:    0.0 Ratio:   0.00%) 
+Backjumps    : 1484312  (Average:  1.05 Max:   7 Sum: 1553437)
+  Executed   : 1484312  (Average:  1.05 Max:   7 Sum: 1553437 Ratio: 100.00%)
+  Bounded    : 0        (Average:  0.00 Max:   0 Sum:      0 Ratio:   0.00%)
+
+Rules        : 337     
+  Choice     : 17      
+  Minimize   : 1       
+Atoms        : 302     
+Bodies       : 232     
+  Sum        : 10      
+  Count      : 34      
+Equivalences : 238      (Atom=Atom: 17 Body=Body: 0 Other: 221)
+Tight        : Yes
+Variables    : 197      (Eliminated:    0 Frozen:  180)
+Constraints  : 224      (Binary:  75.9% Ternary:   0.0% Other:  24.1%)
+
