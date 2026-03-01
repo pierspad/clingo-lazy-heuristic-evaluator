@@ -1,4 +1,3 @@
-#const capacity = 50.
 
 bin(1..10).
 

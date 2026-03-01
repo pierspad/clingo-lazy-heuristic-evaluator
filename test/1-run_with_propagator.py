@@ -4,7 +4,6 @@ import clingo
 ENCODING_FILE = "../encoding-no-sum.lp"
 INSTANCE = "../instance.lp"
 
-
 class CapacityPropagator:
     def init(self, init):
         pass
@@ -29,6 +28,10 @@ def on_model(model):
 def main():
     print(f"Clingo library version: {clingo.__version__}")
     ctrl = clingo.Control(["--configuration=frumpy", "--stats"])
+
+
+    propagator = CapacityPropagator()
+    ctrl.register_propagator(propagator)
 
 
     ctrl.load(ENCODING_FILE)
