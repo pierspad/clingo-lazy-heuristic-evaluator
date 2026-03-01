@@ -1,8 +1,8 @@
 import json
 import clingo
 
-ENCODING_FILE = "../encoding.lp"
-INSTANCE = "../instance.lp"
+ENCODING_FILE = "./encoding.lp"
+INSTANCE = "./instance.lp"
 
 
 
