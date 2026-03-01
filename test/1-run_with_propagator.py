@@ -1,12 +1,26 @@
 import json
 import clingo
 
-ENCODING_FILE = "../encoding-no-sum.lp"
-INSTANCE = "../instance.lp"
+ENCODING_FILE = "./encoding-no-sum.lp"
+INSTANCE = "./instance.lp"
 
 class CapacityPropagator:
+    def __init__(self):
+        self.bin_capacities = {}
+        self.item_weights = {}
+
     def init(self, init):
-        pass
+        # 1. Estrai dinamicamente le capacità dei bin dall'istanza ASP
+        for atom in init.symbolic_atoms.by_signature("capacity", 2):
+            bin_id = atom.symbol.arguments[0].number
+            cap = atom.symbol.arguments[1].number
+            self.bin_capacities[bin_id] = cap
+
+        # 2. Estrai dinamicamente i pesi degli item dall'istanza ASP
+        for atom in init.symbolic_atoms.by_signature("weight", 2):
+            item_id = atom.symbol.arguments[0].number
+            weight = atom.symbol.arguments[1].number
+            self.item_weights[item_id] = weight
 
 
     def propagate(self, control, changes):
