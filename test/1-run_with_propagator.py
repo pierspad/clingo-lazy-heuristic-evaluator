@@ -1,30 +1,69 @@
 import json
 import clingo
+from collections import defaultdict
+
 
 ENCODING_FILE = "./encoding-no-sum.lp"
 INSTANCE = "./instance.lp"
 
 class CapacityPropagator:
     def __init__(self):
+        # Mappa il letterale interno del solver alle informazioni utili durante il solving
+        # Formato: solver_literal -> (item_id, bin_id, peso_item)
+        self.lit_mapping = {}
+        
+        # Mappa l'id del bin alla sua capacità specifica
+        # Formato: bin_id -> capacity
         self.bin_capacities = {}
-        self.item_weights = {}
 
-    def init(self, init):
-        # 1. Estrai dinamicamente le capacità dei bin dall'istanza ASP
-        for atom in init.symbolic_atoms.by_signature("capacity", 2):
+    def init(self, init_context):
+        # 1. Estrazione delle capacità variabili dal predicato capacity/2
+        for atom in init_context.symbolic_atoms.by_signature("capacity", 2):
             bin_id = atom.symbol.arguments[0].number
             cap = atom.symbol.arguments[1].number
             self.bin_capacities[bin_id] = cap
 
-        # 2. Estrai dinamicamente i pesi degli item dall'istanza ASP
-        for atom in init.symbolic_atoms.by_signature("weight", 2):
+        # 2. Estrazione dei pesi dal predicato weight/2
+        weights = {}
+        for atom in init_context.symbolic_atoms.by_signature("weight", 2):
             item_id = atom.symbol.arguments[0].number
-            weight = atom.symbol.arguments[1].number
-            self.item_weights[item_id] = weight
+            w = atom.symbol.arguments[1].number
+            weights[item_id] = w
 
+        # 3. Impostazione dei watch sui letterali assign/2
+        for atom in init_context.symbolic_atoms.by_signature("assign", 2):
+            item_id = atom.symbol.arguments[0].number
+            bin_id = atom.symbol.arguments[1].number
+            
+            # Convertiamo la rappresentazione simbolica nel letterale intero usato dal CDNL solver
+            lit = init_context.solver_literal(atom.literal)
+            
+            # Registriamo un watch: il solver chiamerà il metodo propagate() 
+            # quando questo letterale diventerà vero durante l'esplorazione dell'albero di ricerca
+            init_context.add_watch(lit)
+            
+            # Salviamo il mapping per avere accesso immediato (O(1)) ai dati in fase di propagazione
+            if item_id in weights:
+                self.lit_mapping[lit] = (item_id, bin_id, weights[item_id])
 
     def propagate(self, control, changes):
-        pass
+        # butto giù una struttura del codice non avendo contezza di come changes è strutturato
+        # changes è una lista di "solver literals", numeri interi che indicano come il solver gestisce quel letterale
+
+        my_mapping = defaultdict(lambda: (0, []))
+
+        # per ogni change ci contiamo i pesi che aggiunge a quel bidone
+        for ch in changes:
+            item_id, bin_id, weight_to_add = self.lit_mapping[ch]
+
+            weight_loaded, items_list = my_mapping[bin_id]
+            weight_loaded += weight_to_add 
+            items_list.append(item_id)
+
+            if(my_mapping[bin_id] > self.bin_capacities[bin_id]):
+                control.add_nogood(items_list)
+
+
 
 
 
