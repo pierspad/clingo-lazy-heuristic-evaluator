@@ -1,11 +1,10 @@
 import json
 import clingo
 from collections import defaultdict
-
+from collections import namedtuple
 
 ENCODING_FILE = "./encoding-no-sum.lp"
 INSTANCE = "./instance.lp"
-
 
 # 1) - il nogood deve essere l'insieme minimo dei nodi che soddisfa quei vincoli
 
@@ -53,23 +52,43 @@ class CapacityPropagator:
             if item_id in weights:
                 self.lit_mapping[lit] = (item_id, bin_id, weights[item_id])
 
-    def propagate(self, control, changes):
-        # butto giù una struttura del codice non avendo contezza di come changes è strutturato
-        # changes è una lista di "solver literals", numeri interi che indicano come il solver gestisce quel letterale
 
+    def find_minimum_set(slit_list, bin_capacity):
+        helper_list = {}
+        for slit in slit_list:
+            helper_list[slit] = self.lit_mapping[slit][1]
+        
+        sorted_list = sorted(helper_list, key=itemgetter(1), reverse=True)
+
+        weight = 0
+        list_to_return = {}
+        for elem in sorted_list:
+            weight += elem[1]
+            if(weight < bin_capacity):
+                list_to_return.append(elem)
+        
+        return list_to_return
+
+
+    def propagate(self, control, changes):
         # per ogni change ci contiamo i pesi che aggiunge a quel bidone
-        for ch in changes:
-            item_id, bin_id, weight_to_add = self.lit_mapping[ch]
+        for slit in changes:
+            item_id, bin_id, weight_to_add = self.lit_mapping[slit]
 
             weight_loaded, items_list = self.my_mapping[bin_id]
             weight_loaded = weight_loaded + weight_to_add 
-            items_list.append(ch)
+            items_list.append(slit)
             self.my_mapping[bin_id] = (weight_loaded, items_list)
 
-            if(self.my_mapping[bin_id][0] > self.bin_capacities[bin_id]):
+            capacity_current_bin = self.bin_capacities[bin_id]
+            weight_current_bin = self.my_mapping[bin_id][0]
+
+            if(weight_current_bin > capacity_current_bin):
                 # control.add_nogood restituisce False se il nogood appena aggiunto
                 # rende l'assegnamento corrente inconsistente (conflicting)
-                if not control.add_nogood(items_list):
+                minimum_set = self.find_minimum_set(items_list, capacity_current_bin)
+
+                if not control.add_nogood(minimum_set):
                     # Il solver è ora in stato di conflitto. 
                     # Dobbiamo interrompere immediatamente il loop di propagazione.
                     return
