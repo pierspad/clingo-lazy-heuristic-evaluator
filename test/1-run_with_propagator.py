@@ -6,6 +6,11 @@ from collections import defaultdict
 ENCODING_FILE = "./encoding-no-sum.lp"
 INSTANCE = "./instance.lp"
 
+
+# 1) - il nogood deve essere l'insieme minimo dei nodi che soddisfa quei vincoli
+
+# 2) - nogood proattivo
+
 class CapacityPropagator:
     def __init__(self):
         # Mappa il letterale interno del solver alle informazioni utili durante il solving
