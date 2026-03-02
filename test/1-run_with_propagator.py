@@ -52,7 +52,6 @@ class CapacityPropagator:
         # butto giù una struttura del codice non avendo contezza di come changes è strutturato
         # changes è una lista di "solver literals", numeri interi che indicano come il solver gestisce quel letterale
 
-
         # per ogni change ci contiamo i pesi che aggiunge a quel bidone
         for ch in changes:
             item_id, bin_id, weight_to_add = self.lit_mapping[ch]
@@ -63,20 +62,25 @@ class CapacityPropagator:
             self.my_mapping[bin_id] = (weight_loaded, items_list)
 
             if(self.my_mapping[bin_id][0] > self.bin_capacities[bin_id]):
-                control.add_nogood(items_list)
+                # control.add_nogood restituisce False se il nogood appena aggiunto
+                # rende l'assegnamento corrente inconsistente (conflicting)
+                if not control.add_nogood(items_list):
+                    # Il solver è ora in stato di conflitto. 
+                    # Dobbiamo interrompere immediatamente il loop di propagazione.
+                    return
 
-    def undo(self, control, changes):
 
-        # per ogni change ci contiamo i pesi che aggiunge a quel bidone
+    def undo(self, thread_id, assignment, changes):
+        # per ogni change ci contiamo i pesi che rimuoviamo da quel bidone
         for ch in changes:
             item_id, bin_id, weight_to_subtract = self.lit_mapping[ch]
 
             weight_loaded, items_list = self.my_mapping[bin_id]
-            weight_loaded = weight_loaded - weight_to_subtract 
-            items_list.remove(ch)
-            self.my_mapping[bin_id] = (weight_loaded, items_list)
 
-
+            if ch in items_list:
+                weight_loaded = weight_loaded - weight_to_subtract 
+                items_list.remove(ch)
+                self.my_mapping[bin_id] = (weight_loaded, items_list)
 
 
 
