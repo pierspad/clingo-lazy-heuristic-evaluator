@@ -53,7 +53,7 @@ class CapacityPropagator:
                 self.lit_mapping[lit] = (item_id, bin_id, weights[item_id])
 
 
-    def find_minimum_set(slit_list, bin_capacity):
+    def find_minimum_set(self, slit_list, bin_capacity):
         helper_list = {}
         for slit in slit_list:
             helper_list[slit] = self.lit_mapping[slit][2]

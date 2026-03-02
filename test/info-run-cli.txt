@@ -1,69 +1,63 @@
 clingo version 5.8.0
 Reading from ./encoding.lp ...
 Solving...
-Answer: 1 (Time: 0.007s)
-used(1) used(2) used(3) used(4) used(5) used(6) used(7) used(8) used(9) used(10) used(11) used(12) assign(1,12) used(13) used(14) assign(2,11) assign(3,2) assign(4,3) assign(5,1) assign(6,7) assign(7,5) assign(8,8) assign(9,10) assign(10,9) assign(11,6) assign(12,13) assign(13,14) assign(14,6) assign(15,4) assign(16,11) assign(17,1) assign(18,13) assign(19,14)
-Optimization: 14
-Answer: 2 (Time: 0.007s)
-used(1) used(2) used(3) used(4) used(5) used(6) used(7) used(8) used(9) used(10) used(11) used(12) assign(1,12) used(13) assign(2,11) assign(3,2) assign(4,3) assign(5,1) assign(6,7) assign(7,5) assign(8,8) assign(9,10) assign(10,9) assign(11,6) assign(12,13) assign(13,13) assign(14,6) assign(15,4) assign(16,11) assign(17,1) assign(18,13) assign(19,12)
-Optimization: 13
-Answer: 3 (Time: 0.007s)
-used(1) used(2) used(3) used(4) used(5) used(6) used(7) used(8) used(9) used(10) used(11) used(12) assign(1,12) assign(2,11) assign(3,2) assign(4,3) assign(5,1) assign(6,7) assign(7,5) assign(8,8) assign(9,10) assign(10,9) assign(11,6) assign(12,12) assign(13,12) assign(14,6) assign(15,4) assign(16,11) assign(17,1) assign(18,10) assign(19,12)
+Answer: 1 (Time: 0.005s)
+used(1) used(2) used(3) used(4) used(5) used(6) used(7) used(8) used(9) used(10) used(11) used(12) assign(1,12) assign(2,9) assign(3,2) assign(4,8) assign(5,5) assign(6,12) assign(7,11) assign(8,1) assign(9,10) assign(10,10) assign(11,12) assign(12,4) assign(13,3) assign(14,6) assign(15,7) assign(16,12) assign(17,12) assign(18,9)
 Optimization: 12
-Answer: 4 (Time: 0.007s)
-used(1) used(2) used(3) used(4) used(5) used(6) used(7) used(8) used(9) used(11) used(12) assign(1,12) assign(2,11) assign(3,2) assign(4,3) assign(5,1) assign(6,7) assign(7,5) assign(8,8) assign(9,11) assign(10,9) assign(11,6) assign(12,12) assign(13,12) assign(14,6) assign(15,4) assign(16,11) assign(17,1) assign(18,8) assign(19,12)
+Answer: 2 (Time: 0.005s)
+used(1) used(2) used(3) used(4) used(5) used(6) used(8) used(9) used(10) used(11) used(12) assign(1,12) assign(2,9) assign(3,2) assign(4,8) assign(5,5) assign(6,12) assign(7,11) assign(8,1) assign(9,10) assign(10,10) assign(11,12) assign(12,4) assign(13,3) assign(14,6) assign(15,12) assign(16,12) assign(17,9) assign(18,9)
 Optimization: 11
-Answer: 5 (Time: 0.007s)
-used(1) used(2) used(3) used(4) used(6) used(7) used(8) used(9) used(11) used(12) assign(1,12) assign(2,11) assign(3,2) assign(4,3) assign(5,1) assign(6,7) assign(7,12) assign(8,12) assign(9,11) assign(10,9) assign(11,6) assign(12,12) assign(13,11) assign(14,6) assign(15,4) assign(16,11) assign(17,1) assign(18,8) assign(19,11)
+Answer: 3 (Time: 0.005s)
+used(2) used(3) used(4) used(5) used(6) used(8) used(9) used(10) used(11) used(12) assign(1,12) assign(2,9) assign(3,2) assign(4,8) assign(5,5) assign(6,12) assign(7,11) assign(8,9) assign(9,10) assign(10,10) assign(11,12) assign(12,4) assign(13,3) assign(14,6) assign(15,12) assign(16,12) assign(17,9) assign(18,9)
 Optimization: 10
-Answer: 6 (Time: 0.007s)
-used(1) used(2) used(3) used(4) used(6) used(7) used(8) used(9) used(11) assign(1,11) assign(2,11) assign(3,2) assign(4,8) assign(5,1) assign(6,7) assign(7,11) assign(8,11) assign(9,9) assign(10,9) assign(11,6) assign(12,9) assign(13,8) assign(14,6) assign(15,4) assign(16,11) assign(17,1) assign(18,3) assign(19,8)
+Answer: 4 (Time: 0.006s)
+used(3) used(5) used(6) used(7) used(8) used(9) used(10) used(11) used(12) assign(1,12) assign(2,12) assign(3,9) assign(4,8) assign(5,5) assign(6,12) assign(7,11) assign(8,9) assign(9,10) assign(10,10) assign(11,12) assign(12,7) assign(13,3) assign(14,6) assign(15,9) assign(16,6) assign(17,9) assign(18,9)
 Optimization: 9
-Answer: 7 (Time: 0.007s)
-used(1) used(2) used(4) used(5) used(6) used(7) used(9) used(11) assign(1,11) assign(2,11) assign(3,2) assign(4,1) assign(5,1) assign(6,7) assign(7,11) assign(8,11) assign(9,9) assign(10,9) assign(11,6) assign(12,9) assign(13,7) assign(14,6) assign(15,4) assign(16,11) assign(17,2) assign(18,5) assign(19,7)
+Answer: 5 (Time: 0.007s)
+used(5) used(6) used(7) used(8) used(9) used(10) used(11) used(12) assign(1,12) assign(2,9) assign(3,9) assign(4,8) assign(5,5) assign(6,12) assign(7,11) assign(8,9) assign(9,10) assign(10,10) assign(11,12) assign(12,7) assign(13,12) assign(14,6) assign(15,7) assign(16,12) assign(17,6) assign(18,9)
 Optimization: 8
-Answer: 8 (Time: 0.009s)
-used(1) used(3) used(7) used(8) assign(1,8) used(9) used(11) used(14) assign(2,1) assign(3,1) assign(4,7) assign(5,7) assign(6,3) assign(7,11) assign(8,1) assign(9,1) assign(10,9) assign(11,9) assign(12,11) assign(13,11) assign(14,3) assign(15,14) assign(16,1) assign(17,1) assign(18,8) assign(19,11)
+Answer: 6 (Time: 0.009s)
+used(2) used(5) used(6) used(7) assign(1,7) used(9) used(10) used(12) assign(2,6) assign(3,7) assign(4,2) assign(5,7) assign(6,9) assign(7,7) assign(8,5) assign(9,10) assign(10,10) assign(11,12) assign(12,9) assign(13,6) assign(14,12) assign(15,9) assign(16,12) assign(17,9) assign(18,12)
 Optimization: 7
-Answer: 9 (Time: 0.009s)
-used(3) used(7) used(8) assign(1,8) used(9) used(11) used(14) assign(2,8) assign(3,11) assign(4,7) assign(5,7) assign(6,3) assign(7,11) assign(8,14) assign(9,3) assign(10,9) assign(11,14) assign(12,3) assign(13,11) assign(14,9) assign(15,14) assign(16,8) assign(17,7) assign(18,8) assign(19,7)
+Answer: 7 (Time: 0.012s)
+used(4) used(5) used(7) used(8) used(9) used(12) assign(1,12) assign(2,9) assign(3,7) assign(4,12) assign(5,9) assign(6,9) assign(7,9) assign(8,5) assign(9,7) assign(10,8) assign(11,7) assign(12,4) assign(13,7) assign(14,9) assign(15,9) assign(16,9) assign(17,9) assign(18,7)
 Optimization: 6
-Answer: 10 (Time: 0.018s)
-used(3) used(7) used(8) assign(1,8) used(10) used(11) assign(2,11) assign(3,3) assign(4,3) assign(5,7) assign(6,10) assign(7,11) assign(8,7) assign(9,8) assign(10,7) assign(11,7) assign(12,7) assign(13,7) assign(14,11) assign(15,10) assign(16,8) assign(17,7) assign(18,8) assign(19,8)
+Answer: 8 (Time: 0.013s)
+used(1) used(4) used(7) used(9) used(12) assign(1,12) assign(2,7) assign(3,7) assign(4,9) assign(5,1) assign(6,9) assign(7,9) assign(8,9) assign(9,7) assign(10,12) assign(11,1) assign(12,4) assign(13,7) assign(14,7) assign(15,1) assign(16,1) assign(17,9) assign(18,7)
 Optimization: 5
 OPTIMUM FOUND
 
-Models       : 10
+Models       : 8
   Optimum    : yes
 Optimization : 5
 Calls        : 1
-Time         : 5.996s (Solving: 5.99s 1st Model: 0.00s Unsat: 5.98s)
-CPU Time     : 5.964s
+Time         : 0.778s (Solving: 0.77s 1st Model: 0.00s Unsat: 0.77s)
+CPU Time     : 0.776s
 
-Choices      : 939658  
-Conflicts    : 821950   (Analyzed: 821949)
-Restarts     : 20       (Average: 41097.45 Last: 157024 Blocked: 0)
-Model-Level  : 45.8    
+Choices      : 130936  
+Conflicts    : 117322   (Analyzed: 117321)
+Restarts     : 15       (Average: 7821.40 Last: 29808 Blocked: 0)
+Model-Level  : 24.9    
 Problems     : 1        (Average Length: 0.00 Splits: 0)
-Lemmas       : 821949   (Deleted: 818489)
-  Binary     : 39       (Ratio:   0.00%)
-  Ternary    : 133      (Ratio:   0.02%)
-  Conflict   : 821949   (Average Length:   44.7 Ratio: 100.00%) 
+Lemmas       : 117321   (Deleted: 115653)
+  Binary     : 33       (Ratio:   0.03%)
+  Ternary    : 87       (Ratio:   0.07%)
+  Conflict   : 117321   (Average Length:   37.0 Ratio: 100.00%) 
   Loop       : 0        (Average Length:    0.0 Ratio:   0.00%) 
   Other      : 0        (Average Length:    0.0 Ratio:   0.00%) 
-Backjumps    : 821949   (Average:  1.14 Max:  13 Sum: 939188)
-  Executed   : 821949   (Average:  1.14 Max:  13 Sum: 939188 Ratio: 100.00%)
+Backjumps    : 117321   (Average:  1.11 Max:  13 Sum: 130720)
+  Executed   : 117321   (Average:  1.11 Max:  13 Sum: 130720 Ratio: 100.00%)
   Bounded    : 0        (Average:  0.00 Max:   0 Sum:      0 Ratio:   0.00%)
 
-Rules        : 475     
-  Choice     : 19      
+Rules        : 409     
+  Choice     : 18      
   Minimize   : 1       
-Atoms        : 436     
-Bodies       : 338     
-  Sum        : 14      
-  Count      : 38      
-Equivalences : 316      (Atom=Atom: 19 Body=Body: 0 Other: 297)
+Atoms        : 372     
+Bodies       : 283     
+  Sum        : 12      
+  Count      : 36      
+Equivalences : 254      (Atom=Atom: 18 Body=Body: 0 Other: 236)
 Tight        : Yes
-Variables    : 273      (Eliminated:    0 Frozen:  254)
-Constraints  : 306      (Binary:  78.4% Ternary:   0.0% Other:  21.6%)
+Variables    : 212      (Eliminated:    0 Frozen:  194)
+Constraints  : 242      (Binary:  75.2% Ternary:   0.4% Other:  24.4%)
 
