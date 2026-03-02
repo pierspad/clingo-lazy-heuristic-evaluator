@@ -16,6 +16,8 @@ class CapacityPropagator:
         # Formato: bin_id -> capacity
         self.bin_capacities = {}
 
+        self.my_mapping = defaultdict(lambda: (0, []))
+
     def init(self, init_context):
         # 1. Estrazione delle capacità variabili dal predicato capacity/2
         for atom in init_context.symbolic_atoms.by_signature("capacity", 2):
@@ -50,18 +52,29 @@ class CapacityPropagator:
         # butto giù una struttura del codice non avendo contezza di come changes è strutturato
         # changes è una lista di "solver literals", numeri interi che indicano come il solver gestisce quel letterale
 
-        my_mapping = defaultdict(lambda: (0, []))
 
         # per ogni change ci contiamo i pesi che aggiunge a quel bidone
         for ch in changes:
             item_id, bin_id, weight_to_add = self.lit_mapping[ch]
 
-            weight_loaded, items_list = my_mapping[bin_id]
-            weight_loaded += weight_to_add 
-            items_list.append(item_id)
+            weight_loaded, items_list = self.my_mapping[bin_id]
+            weight_loaded = weight_loaded + weight_to_add 
+            items_list.append(ch)
+            self.my_mapping[bin_id] = (weight_loaded, items_list)
 
-            if(my_mapping[bin_id] > self.bin_capacities[bin_id]):
+            if(self.my_mapping[bin_id][0] > self.bin_capacities[bin_id]):
                 control.add_nogood(items_list)
+
+    def undo(self, control, changes):
+
+        # per ogni change ci contiamo i pesi che aggiunge a quel bidone
+        for ch in changes:
+            item_id, bin_id, weight_to_subtract = self.lit_mapping[ch]
+
+            weight_loaded, items_list = self.my_mapping[bin_id]
+            weight_loaded = weight_loaded - weight_to_subtract 
+            items_list.remove(ch)
+            self.my_mapping[bin_id] = (weight_loaded, items_list)
 
 
 
