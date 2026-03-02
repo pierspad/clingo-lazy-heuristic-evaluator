@@ -56,16 +56,19 @@ class CapacityPropagator:
     def find_minimum_set(slit_list, bin_capacity):
         helper_list = {}
         for slit in slit_list:
-            helper_list[slit] = self.lit_mapping[slit][1]
+            helper_list[slit] = self.lit_mapping[slit][2]
         
-        sorted_list = sorted(helper_list, key=itemgetter(1), reverse=True)
+        sorted_list = sorted(helper_list.items(), key=lambda x: x[1], reverse=True)
 
         weight = 0
-        list_to_return = {}
-        for elem in sorted_list:
-            weight += elem[1]
-            if(weight < bin_capacity):
-                list_to_return.append(elem)
+        list_to_return = []
+
+        for elem, w in sorted_list:
+            weight += w
+            list_to_return.append(slit)
+
+            if weight > bin_capacity:
+                break
         
         return list_to_return
 

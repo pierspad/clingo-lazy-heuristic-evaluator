@@ -1,19 +1,19 @@
 clingo version 5.8.0
 Reading from ./encoding.lp ...
 Solving...
-Answer: 1 (Time: 0.006s)
+Answer: 1 (Time: 0.007s)
 used(1) used(2) used(3) used(4) used(5) used(6) used(7) used(8) used(9) used(10) used(11) used(12) assign(1,12) used(13) used(14) assign(2,11) assign(3,2) assign(4,3) assign(5,1) assign(6,7) assign(7,5) assign(8,8) assign(9,10) assign(10,9) assign(11,6) assign(12,13) assign(13,14) assign(14,6) assign(15,4) assign(16,11) assign(17,1) assign(18,13) assign(19,14)
 Optimization: 14
-Answer: 2 (Time: 0.006s)
+Answer: 2 (Time: 0.007s)
 used(1) used(2) used(3) used(4) used(5) used(6) used(7) used(8) used(9) used(10) used(11) used(12) assign(1,12) used(13) assign(2,11) assign(3,2) assign(4,3) assign(5,1) assign(6,7) assign(7,5) assign(8,8) assign(9,10) assign(10,9) assign(11,6) assign(12,13) assign(13,13) assign(14,6) assign(15,4) assign(16,11) assign(17,1) assign(18,13) assign(19,12)
 Optimization: 13
-Answer: 3 (Time: 0.006s)
+Answer: 3 (Time: 0.007s)
 used(1) used(2) used(3) used(4) used(5) used(6) used(7) used(8) used(9) used(10) used(11) used(12) assign(1,12) assign(2,11) assign(3,2) assign(4,3) assign(5,1) assign(6,7) assign(7,5) assign(8,8) assign(9,10) assign(10,9) assign(11,6) assign(12,12) assign(13,12) assign(14,6) assign(15,4) assign(16,11) assign(17,1) assign(18,10) assign(19,12)
 Optimization: 12
-Answer: 4 (Time: 0.006s)
+Answer: 4 (Time: 0.007s)
 used(1) used(2) used(3) used(4) used(5) used(6) used(7) used(8) used(9) used(11) used(12) assign(1,12) assign(2,11) assign(3,2) assign(4,3) assign(5,1) assign(6,7) assign(7,5) assign(8,8) assign(9,11) assign(10,9) assign(11,6) assign(12,12) assign(13,12) assign(14,6) assign(15,4) assign(16,11) assign(17,1) assign(18,8) assign(19,12)
 Optimization: 11
-Answer: 5 (Time: 0.006s)
+Answer: 5 (Time: 0.007s)
 used(1) used(2) used(3) used(4) used(6) used(7) used(8) used(9) used(11) used(12) assign(1,12) assign(2,11) assign(3,2) assign(4,3) assign(5,1) assign(6,7) assign(7,12) assign(8,12) assign(9,11) assign(10,9) assign(11,6) assign(12,12) assign(13,11) assign(14,6) assign(15,4) assign(16,11) assign(17,1) assign(18,8) assign(19,11)
 Optimization: 10
 Answer: 6 (Time: 0.007s)
@@ -37,8 +37,8 @@ Models       : 10
   Optimum    : yes
 Optimization : 5
 Calls        : 1
-Time         : 6.133s (Solving: 6.13s 1st Model: 0.00s Unsat: 6.11s)
-CPU Time     : 6.086s
+Time         : 5.996s (Solving: 5.99s 1st Model: 0.00s Unsat: 5.98s)
+CPU Time     : 5.964s
 
 Choices      : 939658  
 Conflicts    : 821950   (Analyzed: 821949)
