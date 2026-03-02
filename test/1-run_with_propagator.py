@@ -12,102 +12,93 @@ INSTANCE = "./instance.lp"
 
 class CapacityPropagator:
     def __init__(self):
-        # Mappa il letterale interno del solver alle informazioni utili durante il solving
-        # Formato: solver_literal -> (item_id, bin_id, peso_item)
-        self.lit_mapping = {}
-        
-        # Mappa l'id del bin alla sua capacità specifica
-        # Formato: bin_id -> capacity
-        self.bin_capacities = {}
+        # --- STATO STATICO (Sola lettura durante il solving) ---
+        self.bin_capacities = {}  # bin_id -> capacity
+        self.lit_mapping = {}     # slit -> (item_id, bin_id, weight)
+        self.items_sorted = []    # lista ordinata di tuple: (item_id, weight)
 
-        self.my_mapping = defaultdict(lambda: (0, []))
+        # --- STATO DINAMICO (Modificato da propagate e undo) ---
+        # bin_id -> {'current_weight': int, 'slits': list}
+        self.bin_state = defaultdict(lambda: {'current_weight': 0, 'slits': []})
 
     def init(self, init_context):
-        # 1. Estrazione delle capacità variabili dal predicato capacity/2
+        # 1. Estrazione capacità
         for atom in init_context.symbolic_atoms.by_signature("capacity", 2):
             bin_id = atom.symbol.arguments[0].number
             cap = atom.symbol.arguments[1].number
             self.bin_capacities[bin_id] = cap
 
-        # 2. Estrazione dei pesi dal predicato weight/2
+        # 2. Estrazione pesi
         weights = {}
         for atom in init_context.symbolic_atoms.by_signature("weight", 2):
             item_id = atom.symbol.arguments[0].number
             w = atom.symbol.arguments[1].number
             weights[item_id] = w
+            self.items_sorted.append((item_id, w))
 
-        # 3. Impostazione dei watch sui letterali assign/2
+        # Prepariamo già la lista globale ordinata per peso decrescente
+        self.items_sorted.sort(key=lambda x: x[1], reverse=True)
+
+        # 3. Impostazione watch sui solver literals
         for atom in init_context.symbolic_atoms.by_signature("assign", 2):
             item_id = atom.symbol.arguments[0].number
             bin_id = atom.symbol.arguments[1].number
+            slit = init_context.solver_literal(atom.literal)
             
-            # Convertiamo la rappresentazione simbolica nel letterale intero usato dal CDNL solver
-            lit = init_context.solver_literal(atom.literal)
+            init_context.add_watch(slit)
             
-            # Registriamo un watch: il solver chiamerà il metodo propagate() 
-            # quando questo letterale diventerà vero durante l'esplorazione dell'albero di ricerca
-            init_context.add_watch(lit)
-            
-            # Salviamo il mapping per avere accesso immediato (O(1)) ai dati in fase di propagazione
             if item_id in weights:
-                self.lit_mapping[lit] = (item_id, bin_id, weights[item_id])
+                self.lit_mapping[slit] = (item_id, bin_id, weights[item_id])
 
 
-    def find_minimum_set(self, slit_list, bin_capacity):
-        helper_list = {}
-        for slit in slit_list:
-            helper_list[slit] = self.lit_mapping[slit][2]
+
+    def _get_minimal_conflict(self, current_slits, limit):
+        # per ogni solver literal nell'assegnamento che sfora dal bin corrente aggiungi
+        # alla lista insieme al peso e poi ordina decrescente 
+        slits_with_weights = [(s, self.lit_mapping[s][2]) for s in current_slits]
+        slits_with_weights.sort(key=lambda x: x[1], reverse=True)
         
-        sorted_list = sorted(helper_list.items(), key=lambda x: x[1], reverse=True)
-
-        weight = 0
-        list_to_return = []
-
-        for elem, w in sorted_list:
-            weight += w
-            list_to_return.append(slit)
-
-            if weight > bin_capacity:
+        core = []
+        acc_weight = 0
+        for slit, w in slits_with_weights:
+            core.append(slit)
+            acc_weight += w
+            if acc_weight > limit:
                 break
-        
-        return list_to_return
+                
+        return core
 
 
     def propagate(self, control, changes):
-        # per ogni change ci contiamo i pesi che aggiunge a quel bidone
         for slit in changes:
-            item_id, bin_id, weight_to_add = self.lit_mapping[slit]
+            # Recuperiamo le info statiche e lo stato dinamico del bin
+            item_id, bin_id, weight = self.lit_mapping[slit]
+            current_bin_weight = self.bin_state[bin_id]
 
-            weight_loaded, items_list = self.my_mapping[bin_id]
-            weight_loaded = weight_loaded + weight_to_add 
-            items_list.append(slit)
-            self.my_mapping[bin_id] = (weight_loaded, items_list)
+            # 1. AGGIORNAMENTO STATO INTERNO
+            current_bin_weight['current_weight'] += weight
+            current_bin_weight['slits'].append(slit)
 
-            capacity_current_bin = self.bin_capacities[bin_id]
-            weight_current_bin = self.my_mapping[bin_id][0]
-
-            if(weight_current_bin > capacity_current_bin):
-                # control.add_nogood restituisce False se il nogood appena aggiunto
-                # rende l'assegnamento corrente inconsistente (conflicting)
-                minimum_set = self.find_minimum_set(items_list, capacity_current_bin)
-
-                if not control.add_nogood(minimum_set):
-                    # Il solver è ora in stato di conflitto. 
-                    # Dobbiamo interrompere immediatamente il loop di propagazione.
+            # 2. CONTROLLO REATTIVO (Siamo in conflitto?)
+            current_bin_limit = self.bin_capacities[bin_id]
+            if current_bin_weight['current_weight'] > current_bin_limit:
+                
+                core = self._get_minimal_conflict(current_bin_weight['slits'], current_bin_limit)
+                
+                # Se l'assegnamento collassa, torniamo il controllo per il backjumping
+                if not control.add_nogood(core):
                     return
 
 
     def undo(self, thread_id, assignment, changes):
-        # per ogni change ci contiamo i pesi che rimuoviamo da quel bidone
-        for ch in changes:
-            item_id, bin_id, weight_to_subtract = self.lit_mapping[ch]
+        for slit in changes:
+            _, bin_id, weight = self.lit_mapping[slit]
+            state = self.bin_state[bin_id]
 
-            weight_loaded, items_list = self.my_mapping[bin_id]
-
-            if ch in items_list:
-                weight_loaded = weight_loaded - weight_to_subtract 
-                items_list.remove(ch)
-                self.my_mapping[bin_id] = (weight_loaded, items_list)
+            # Ripristino tollerante (idempotente)
+            if slit in state['slits']:
+                state['current_weight'] -= weight
+                state['slits'].remove(slit)
 
 
 
