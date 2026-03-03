@@ -268,7 +268,7 @@ Answer Set: SAT
                 "lits_learnt": 8908322.0,
                 "lemmas_binary": 187.0,
                 "lemmas_ternary": 346.0,
-                "cpu_time": 2.489743,
+                "cpu_time": 2.363974,
                 "integrated_imps": 0.0,
                 "integrated_jumps": 0.0,
                 "guiding_paths_lits": 1.0,
@@ -306,11 +306,11 @@ Answer Set: SAT
         "concurrency": 1.0,
         "winner": 0.0,
         "times": {
-            "total": 2.498918056488037,
-            "cpu": 2.491655,
-            "solve": 2.496411085128784,
-            "unsat": 2.4898431301116943,
-            "sat": 0.00033402442932128906
+            "total": 2.3730220794677734,
+            "cpu": 2.36599,
+            "solve": 2.370490074157715,
+            "unsat": 2.364150047302246,
+            "sat": 0.0003190040588378906
         },
         "models": {
             "enumerated": 8.0,
@@ -319,11 +319,11 @@ Answer Set: SAT
     },
     "accu": {
         "times": {
-            "total": 2.498918056488037,
-            "cpu": 2.491655,
-            "solve": 2.496411085128784,
-            "unsat": 2.4898431301116943,
-            "sat": 0.00033402442932128906
+            "total": 2.3730220794677734,
+            "cpu": 2.36599,
+            "solve": 2.370490074157715,
+            "unsat": 2.364150047302246,
+            "sat": 0.0003190040588378906
         },
         "models": {
             "enumerated": 8.0,
@@ -351,7 +351,7 @@ Answer Set: SAT
                     "lits_learnt": 8908322.0,
                     "lemmas_binary": 187.0,
                     "lemmas_ternary": 346.0,
-                    "cpu_time": 2.489743,
+                    "cpu_time": 2.363974,
                     "integrated_imps": 0.0,
                     "integrated_jumps": 0.0,
                     "guiding_paths_lits": 1.0,
@@ -380,5 +380,5 @@ Answer Set: SAT
     "user_accu": {}
 }
 
-Total CPU Time(Clingo): 2.491655
-Total Solving time(Clingo): 2.496411085128784
+Total CPU Time(Clingo): 2.36599
+Total Solving time(Clingo): 2.370490074157715

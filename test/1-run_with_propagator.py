@@ -65,7 +65,6 @@ class CapacityPropagator:
             acc_weight += w
             if acc_weight > limit:
                 break
-                
         return core
 
 
@@ -73,21 +72,25 @@ class CapacityPropagator:
         for slit in changes:
             # Recuperiamo le info statiche e lo stato dinamico del bin
             item_id, bin_id, weight = self.lit_mapping[slit]
-            current_bin_weight = self.bin_state[bin_id]
+            bin_data = self.bin_state[bin_id]
 
             # 1. AGGIORNAMENTO STATO INTERNO
-            current_bin_weight['current_weight'] += weight
-            current_bin_weight['slits'].append(slit)
+            bin_data['current_weight'] += weight
+            bin_data['slits'].append(slit)
 
             # 2. CONTROLLO REATTIVO (Siamo in conflitto?)
             current_bin_limit = self.bin_capacities[bin_id]
-            if current_bin_weight['current_weight'] > current_bin_limit:
+            if bin_data['current_weight'] > current_bin_limit:
                 
-                core = self._get_minimal_conflict(current_bin_weight['slits'], current_bin_limit)
+                core = self._get_minimal_conflict(bin_data['slits'], current_bin_limit)
                 
                 # Se l'assegnamento collassa, torniamo il controllo per il backjumping
                 if not control.add_nogood(core):
                     return
+
+        # controllo proattivo per trovare i nogood
+        # se siamo qui è perchè dopo aver controllato i slit turnati a vero per ora
+        # nel bin corrente c'è ancora spazio, quindi tocca trovare quali sono altri cor
 
 
     def undo(self, thread_id, assignment, changes):
@@ -99,6 +102,7 @@ class CapacityPropagator:
             if slit in state['slits']:
                 state['current_weight'] -= weight
                 state['slits'].remove(slit)
+
 
 
 
