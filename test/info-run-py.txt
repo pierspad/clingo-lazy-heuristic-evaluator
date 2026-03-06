@@ -1,171 +1,108 @@
 Clingo library version: 5.8.0
 
 --- New AS found ---
-assign(2,1)
-assign(3,1)
-assign(4,2)
+assign(5,1)
+assign(1,2)
 assign(6,3)
-assign(5,4)
-assign(7,5)
-assign(9,6)
+assign(2,4)
+assign(3,5)
+assign(7,6)
 assign(8,7)
-assign(10,8)
-assign(11,9)
+assign(9,8)
+assign(18,8)
 assign(12,9)
-assign(13,10)
-assign(18,10)
-assign(17,11)
-assign(1,12)
-assign(14,12)
-assign(15,12)
-assign(16,12)
+assign(16,9)
+assign(17,9)
+assign(10,10)
+assign(14,10)
+assign(15,10)
+assign(13,11)
+assign(4,12)
+assign(11,12)
 Costo di questa soluzione: [12]
 
 --- New AS found ---
-assign(1,1)
-assign(2,1)
-assign(3,1)
-assign(4,2)
+assign(5,1)
+assign(1,2)
 assign(6,3)
-assign(5,4)
-assign(7,5)
-assign(9,6)
+assign(2,4)
+assign(3,5)
+assign(7,6)
+assign(18,6)
 assign(8,7)
-assign(15,7)
-assign(10,8)
+assign(10,7)
+assign(9,8)
+assign(17,8)
 assign(12,9)
-assign(13,9)
+assign(14,9)
+assign(15,9)
 assign(16,9)
-assign(17,9)
-assign(14,11)
+assign(13,11)
+assign(4,12)
 assign(11,12)
-assign(18,12)
 Costo di questa soluzione: [11]
 
 --- New AS found ---
-assign(1,1)
 assign(2,1)
-assign(3,1)
-assign(4,2)
-assign(6,3)
-assign(5,4)
-assign(7,5)
-assign(8,7)
-assign(15,7)
-assign(10,8)
-assign(12,9)
-assign(13,9)
-assign(16,9)
-assign(17,9)
-assign(14,11)
-assign(9,12)
-assign(11,12)
-assign(18,12)
-Costo di questa soluzione: [10]
-
---- New AS found ---
-assign(1,1)
-assign(2,1)
-assign(3,1)
-assign(4,2)
-assign(6,3)
-assign(5,4)
-assign(8,7)
-assign(15,7)
-assign(18,7)
-assign(10,8)
-assign(12,9)
-assign(13,9)
-assign(16,9)
-assign(17,9)
-assign(14,11)
-assign(7,12)
-assign(9,12)
-assign(11,12)
-Costo di questa soluzione: [9]
-
---- New AS found ---
-assign(1,1)
-assign(2,1)
-assign(3,1)
-assign(4,2)
-assign(6,3)
-assign(5,4)
-assign(18,4)
-assign(7,5)
-assign(13,5)
-assign(15,5)
-assign(16,5)
-assign(17,5)
-assign(8,7)
-assign(10,7)
-assign(11,7)
-assign(9,9)
-assign(12,9)
-assign(14,11)
-Costo di questa soluzione: [8]
-
---- New AS found ---
-assign(1,1)
-assign(2,1)
-assign(3,1)
 assign(11,1)
 assign(13,1)
-assign(6,5)
-assign(9,5)
-assign(14,5)
-assign(15,5)
-assign(12,7)
-assign(16,7)
-assign(4,8)
-assign(5,9)
-assign(10,9)
-assign(17,9)
-assign(18,9)
-assign(8,10)
-assign(7,11)
+assign(14,1)
+assign(17,1)
+assign(5,4)
+assign(8,7)
+assign(9,7)
+assign(15,8)
+assign(16,8)
+assign(18,8)
+assign(3,9)
+assign(12,9)
+assign(6,10)
+assign(7,10)
+assign(10,10)
+assign(1,12)
+assign(4,12)
 Costo di questa soluzione: [7]
 
 --- New AS found ---
-assign(2,1)
-assign(6,1)
-assign(11,1)
-assign(13,1)
-assign(15,1)
-assign(16,1)
-assign(18,1)
-assign(8,5)
-assign(7,6)
-assign(9,6)
-assign(12,7)
-assign(14,7)
-assign(4,9)
-assign(5,9)
-assign(10,9)
-assign(1,10)
-assign(3,10)
-assign(17,10)
+assign(2,4)
+assign(5,4)
+assign(11,4)
+assign(13,4)
+assign(17,4)
+assign(8,7)
+assign(9,7)
+assign(16,7)
+assign(1,8)
+assign(15,8)
+assign(18,8)
+assign(3,9)
+assign(12,9)
+assign(6,10)
+assign(7,10)
+assign(10,10)
+assign(4,12)
+assign(14,12)
 Costo di questa soluzione: [6]
 
 --- New AS found ---
-assign(2,1)
-assign(5,1)
+assign(3,1)
 assign(9,1)
+assign(10,1)
 assign(12,4)
-assign(8,7)
-assign(10,7)
-assign(16,7)
+assign(5,5)
+assign(17,5)
+assign(2,7)
+assign(4,7)
+assign(6,7)
+assign(11,7)
+assign(14,7)
+assign(18,7)
 assign(1,9)
-assign(3,9)
-assign(4,9)
-assign(6,9)
 assign(7,9)
+assign(8,9)
+assign(13,9)
 assign(15,9)
-assign(17,9)
-assign(11,10)
-assign(13,10)
-assign(14,10)
-assign(18,10)
+assign(16,9)
 Costo di questa soluzione: [5]
 
 Answer Set: SAT
@@ -248,45 +185,45 @@ Answer Set: SAT
     },
     "solving": {
         "solvers": {
-            "choices": 412749.0,
-            "conflicts": 324026.0,
-            "conflicts_analyzed": 324025.0,
-            "restarts": 18.0,
-            "restarts_last": 28389.0,
+            "choices": 153757.0,
+            "conflicts": 131297.0,
+            "conflicts_analyzed": 131296.0,
+            "restarts": 15.0,
+            "restarts_last": 42813.0,
             "restarts_blocked": 0.0,
             "extra": {
                 "domain_choices": 0.0,
-                "models": 8.0,
-                "models_level": 516.0,
+                "models": 5.0,
+                "models_level": 285.0,
                 "hcc_tests": 0.0,
                 "hcc_partial": 0.0,
-                "lemmas_deleted": 322955.0,
+                "lemmas_deleted": 397924.0,
                 "distributed": 0.0,
                 "distributed_sum_lbd": 0.0,
                 "integrated": 0.0,
-                "lemmas": 324025.0,
-                "lits_learnt": 8908322.0,
-                "lemmas_binary": 187.0,
-                "lemmas_ternary": 346.0,
-                "cpu_time": 2.363974,
+                "lemmas": 399309.0,
+                "lits_learnt": 7745596.0,
+                "lemmas_binary": 241.0,
+                "lemmas_ternary": 540.0,
+                "cpu_time": 8.555769,
                 "integrated_imps": 0.0,
                 "integrated_jumps": 0.0,
                 "guiding_paths_lits": 1.0,
                 "guiding_paths": 1.0,
                 "splits": 0.0,
-                "lemmas_conflict": 324025.0,
+                "lemmas_conflict": 131296.0,
                 "lemmas_loop": 0.0,
-                "lemmas_other": 0.0,
-                "lits_conflict": 8908322.0,
+                "lemmas_other": 268013.0,
+                "lits_conflict": 6376651.0,
                 "lits_loop": 0.0,
-                "lits_other": 0.0,
+                "lits_other": 1368945.0,
                 "jumps": {
-                    "jumps": 324025.0,
-                    "jumps_bounded": 34.0,
-                    "levels": 412265.0,
-                    "levels_bounded": 34.0,
-                    "max": 112.0,
-                    "max_executed": 112.0,
+                    "jumps": 131296.0,
+                    "jumps_bounded": 33.0,
+                    "levels": 153422.0,
+                    "levels_bounded": 33.0,
+                    "max": 34.0,
+                    "max_executed": 34.0,
                     "max_bounded": 1.0
                 }
             }
@@ -306,70 +243,70 @@ Answer Set: SAT
         "concurrency": 1.0,
         "winner": 0.0,
         "times": {
-            "total": 2.3730220794677734,
-            "cpu": 2.36599,
-            "solve": 2.370490074157715,
-            "unsat": 2.364150047302246,
-            "sat": 0.0003190040588378906
+            "total": 8.58712887763977,
+            "cpu": 8.560886000000002,
+            "solve": 8.582130908966064,
+            "unsat": 8.020067930221558,
+            "sat": 0.0012669563293457031
         },
         "models": {
-            "enumerated": 8.0,
+            "enumerated": 5.0,
             "optimal": 1.0
         }
     },
     "accu": {
         "times": {
-            "total": 2.3730220794677734,
-            "cpu": 2.36599,
-            "solve": 2.370490074157715,
-            "unsat": 2.364150047302246,
-            "sat": 0.0003190040588378906
+            "total": 8.58712887763977,
+            "cpu": 8.560886000000002,
+            "solve": 8.582130908966064,
+            "unsat": 8.020067930221558,
+            "sat": 0.0012669563293457031
         },
         "models": {
-            "enumerated": 8.0,
+            "enumerated": 5.0,
             "optimal": 1.0
         },
         "solving": {
             "solvers": {
-                "choices": 412749.0,
-                "conflicts": 324026.0,
-                "conflicts_analyzed": 324025.0,
-                "restarts": 18.0,
-                "restarts_last": 28389.0,
+                "choices": 153757.0,
+                "conflicts": 131297.0,
+                "conflicts_analyzed": 131296.0,
+                "restarts": 15.0,
+                "restarts_last": 42813.0,
                 "restarts_blocked": 0.0,
                 "extra": {
                     "domain_choices": 0.0,
-                    "models": 8.0,
-                    "models_level": 516.0,
+                    "models": 5.0,
+                    "models_level": 285.0,
                     "hcc_tests": 0.0,
                     "hcc_partial": 0.0,
-                    "lemmas_deleted": 322955.0,
+                    "lemmas_deleted": 397924.0,
                     "distributed": 0.0,
                     "distributed_sum_lbd": 0.0,
                     "integrated": 0.0,
-                    "lemmas": 324025.0,
-                    "lits_learnt": 8908322.0,
-                    "lemmas_binary": 187.0,
-                    "lemmas_ternary": 346.0,
-                    "cpu_time": 2.363974,
+                    "lemmas": 399309.0,
+                    "lits_learnt": 7745596.0,
+                    "lemmas_binary": 241.0,
+                    "lemmas_ternary": 540.0,
+                    "cpu_time": 8.555769,
                     "integrated_imps": 0.0,
                     "integrated_jumps": 0.0,
                     "guiding_paths_lits": 1.0,
                     "guiding_paths": 1.0,
                     "splits": 0.0,
-                    "lemmas_conflict": 324025.0,
+                    "lemmas_conflict": 131296.0,
                     "lemmas_loop": 0.0,
-                    "lemmas_other": 0.0,
-                    "lits_conflict": 8908322.0,
+                    "lemmas_other": 268013.0,
+                    "lits_conflict": 6376651.0,
                     "lits_loop": 0.0,
-                    "lits_other": 0.0,
+                    "lits_other": 1368945.0,
                     "jumps": {
-                        "jumps": 324025.0,
-                        "jumps_bounded": 34.0,
-                        "levels": 412265.0,
-                        "levels_bounded": 34.0,
-                        "max": 112.0,
-                        "max_executed": 112.0,
+                        "jumps": 131296.0,
+                        "jumps_bounded": 33.0,
+                        "levels": 153422.0,
+                        "levels_bounded": 33.0,
+                        "max": 34.0,
+                        "max_executed": 34.0,
                         "max_bounded": 1.0
                     }
                 }
@@ -380,5 +317,5 @@ Answer Set: SAT
     "user_accu": {}
 }
 
-Total CPU Time(Clingo): 2.36599
-Total Solving time(Clingo): 2.370490074157715
+Total CPU Time(Clingo): 8.560886000000002
+Total Solving time(Clingo): 8.582130908966064

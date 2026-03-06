@@ -14,7 +14,10 @@ class CapacityPropagator:
     def __init__(self):
         # --- STATO STATICO (Sola lettura durante il solving) ---
         self.bin_capacities = {}  # bin_id -> capacity
-        self.lit_mapping = {}     # slit -> (item_id, bin_id, weight)
+        
+        self.lit_mapping = {}   # slit -> (item_id, bin_id, weight)
+        self.inverse_lit_mapping = {} # (item_id, bin_id) -> slit
+
         self.items_sorted = []    # lista ordinata di tuple: (item_id, weight)
 
         # --- STATO DINAMICO (Modificato da propagate e undo) ---
@@ -49,48 +52,80 @@ class CapacityPropagator:
             
             if item_id in weights:
                 self.lit_mapping[slit] = (item_id, bin_id, weights[item_id])
+                self.inverse_lit_mapping[(item_id, bin_id)] = slit
+        
 
 
 
     def _get_minimal_conflict(self, current_slits, limit):
-        # per ogni solver literal nell'assegnamento che sfora dal bin corrente aggiungi
-        # alla lista insieme al peso e poi ordina decrescente 
+        # per ogni solver literal presente nell'assegnamento che ha sforato dal
+        # bin corrente aggiungi alla lista insieme al peso e poi ordina decrescente 
         slits_with_weights = [(s, self.lit_mapping[s][2]) for s in current_slits]
         slits_with_weights.sort(key=lambda x: x[1], reverse=True)
         
         core = []
-        acc_weight = 0
+        accum_weight = 0
         for slit, w in slits_with_weights:
             core.append(slit)
-            acc_weight += w
-            if acc_weight > limit:
+            accum_weight += w
+            if accum_weight > limit:
                 break
         return core
 
 
     def propagate(self, control, changes):
+        modified_bins = set()
+
+        # 1. AGGIORNAMENTO STATO INTERNO (processiamo tutti i cambiamenti prima)
         for slit in changes:
-            # Recuperiamo le info statiche e lo stato dinamico del bin
-            item_id, bin_id, weight = self.lit_mapping[slit]
+            _, bin_id, weight = self.lit_mapping[slit]
             bin_data = self.bin_state[bin_id]
 
-            # 1. AGGIORNAMENTO STATO INTERNO
             bin_data['current_weight'] += weight
             bin_data['slits'].append(slit)
+            modified_bins.add(bin_id)
+
+        # 2 & 3. CONTROLLI SUI BIN MODIFICATI
+        for bin_id in modified_bins:
+            bin_data = self.bin_state[bin_id]
+            current_bin_limit = self.bin_capacities[bin_id]
 
             # 2. CONTROLLO REATTIVO (Siamo in conflitto?)
-            current_bin_limit = self.bin_capacities[bin_id]
             if bin_data['current_weight'] > current_bin_limit:
-                
                 core = self._get_minimal_conflict(bin_data['slits'], current_bin_limit)
+                if not control.add_nogood(core):
+                    return
+                # Se siamo in conflitto reattivo, saltiamo il proattivo per questo bin
+                continue 
                 
-                # Se l'assegnamento collassa, torniamo il controllo per il backjumping
+            # 3. CONTROLLO PROATTIVO (Inferenza per Unit Propagation)
+            remaining_weight = current_bin_limit - bin_data["current_weight"]
+
+            for item_id, w in self.items_sorted:
+                # Grazie all'ordinamento, se w ci sta, ci staranno anche i successivi
+                if w <= remaining_weight:
+                    break
+
+                slit_scelto = self.inverse_lit_mapping.get((item_id, bin_id))
+
+                # Se l'item non esiste o è già nel bin, ignoriamo
+                if slit_scelto is None or slit_scelto in bin_data["slits"]:
+                    continue
+
+                # Calcoliamo il core parziale che, unito all'item corrente, sfora la capacità
+                """ potrei tranquillamente fare, ma un pelino di performance si risparmiano così
+                core = self._get_minimal_conflict(bin_data['slits'].append(self.inverse_lit_mapping(item_id,bin_id)), limit_for_existing)
+                """
+                limit_for_existing = current_bin_limit - w
+                core = self._get_minimal_conflict(bin_data['slits'], limit_for_existing)
+
+                # Creiamo il nogood aggiungendo l'item vietato
+                core.append(slit_scelto)
+                
+                # Iniettiamo il nogood per forzare la propagazione a False di slit_scelto
                 if not control.add_nogood(core):
                     return
 
-        # controllo proattivo per trovare i nogood
-        # se siamo qui è perchè dopo aver controllato i slit turnati a vero per ora
-        # nel bin corrente c'è ancora spazio, quindi tocca trovare quali sono altri cor
 
 
     def undo(self, thread_id, assignment, changes):
