@@ -11,7 +11,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-clingo currently has a bug, to patch and build it from the `clingo-modified` directory, run the following commands from the root of the project:
+clingo currently has a bug with re2c and needs to be patched
 
 ```bash
 sh ./patch_and_build_clingo/setup_clingo.sh
