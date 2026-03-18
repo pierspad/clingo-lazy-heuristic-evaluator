@@ -1,0 +1,1 @@
+../clingo-modified/build/bin/clingo test_base.lp 
