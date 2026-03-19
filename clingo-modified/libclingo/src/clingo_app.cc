@@ -26,6 +26,9 @@
 #include <climits>
 #include <clingo/clingo_app.hh>
 
+#include <clingo.hh>
+#include "clingo/heuristic_propagator.hh"
+
 #ifdef CLINGO_PROFILE
 #include <gperftools/profiler.h>
 #endif
@@ -208,6 +211,11 @@ void ClingoApp::run(Clasp::ClaspFacade &clasp) {
                 std::bind(&ClingoApp::handlePreSolveOptions, this, _1),
                 app_->has_log() ? Logger::Printer{std::bind(&IClingoApp::log, app_.get(), _1, _2)} : nullptr,
                 app_->message_limit());
+
+            Clingo::Control ctl(reinterpret_cast<clingo_control_t*>(grd.get()));
+            static HeuristicPropagator my_propagator;
+            ctl.register_propagator(my_propagator);
+            
             grd->main(*app_, claspAppOpts_.input, grOpts_, lp);
         } else {
             ClaspAppBase::run(clasp);
