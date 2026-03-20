@@ -1,1 +1,1 @@
-../clingo-modified/build/bin/clingo 0_test_base.lp 
+/home/ribben/Desktop/thesis-clingo/clingo-modified/build/bin/clingo _0_test_base.lp 
