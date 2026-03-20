@@ -1,1 +1,1 @@
-/home/ribben/Desktop/thesis-clingo/clingo-modified/build/bin/clingo _0_test_base.lp 
+/home/ribben/Desktop/thesis-clingo/clingo-modified/build/bin/clingo _0_test_base.lp -n 1
