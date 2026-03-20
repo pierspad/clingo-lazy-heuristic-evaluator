@@ -2,7 +2,7 @@
 #include <clingo.hh>
 #include <vector>
 
-class HeuristicPropagator : public Clingo::Propagator {
+class HeuristicPropagator : public Clingo::Heuristic {
 
 private:
     // temp vector to save atom active in the trace

@@ -1,0 +1,1 @@
+../clingo-modified/build/bin/clingo 1_grounded.lp
