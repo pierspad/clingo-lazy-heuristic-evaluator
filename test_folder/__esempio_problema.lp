@@ -6,7 +6,7 @@ useremmo queste euristiche per guidare la ricerca.
 
 #heuristic b(x): x(X), not c(X), S = #sum{Y : c(Y)}, [X@S].
 
-#heuristic c(x): x(X), not c(X), S = #sum{Y : c(Y)}, [X@S].
+#heuristic c(x): x(X), not b(X), S = #sum{Y : b(Y)}, [X@S].
 
 il problema di queste euristiche è che gringo le grounderebbe secondo questo pattern ancor prima di iniziare la fase di solving finendo per riempire la ram con tutte le possibili regole
 
