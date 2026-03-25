@@ -7,4 +7,7 @@ d :- b.
 e :- c.
 
 % 3. La nostra direttiva euristica custom (Caso Ground)
-@heuristic c : a. [1@1, true]
+% questa euristica
+% #heuristic c : a. [1@1, true]
+% la riscriviamo in questo modo:
+__heuristic(c,1,1,true) :- a.

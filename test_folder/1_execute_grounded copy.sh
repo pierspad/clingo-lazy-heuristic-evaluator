@@ -1,1 +1,1 @@
-/home/ribben/Desktop/clingo-lazy-heuristics/clingo-modified/build/bin/clingo _1_grounded.lp -n 1
+~/Desktop/clingo-lazy-heuristics/clingo-modified/build/bin/clingo _1_grounded.lp -n 1

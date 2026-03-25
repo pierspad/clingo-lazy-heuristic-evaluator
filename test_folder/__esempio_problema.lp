@@ -64,3 +64,43 @@ il problema di queste euristiche è che gringo le grounderebbe secondo questo pa
 
 
 l'obiettivo è far si che il calcolo dell'aggregato avvenga a runtime valutando esclusivamente l'assegnazione parziale corrente 
+
+
+avendo implementato un propagatore custom riscriviamo le euristiche in questo modo:
+
+invece di scrivere:
+
+#heuristic <term> : <body>. [<weight>@<priority>, <sign>]
+
+scriviamo:
+
+__heuristic(<term>, <weight>, <priority>, <sign>) :- <body>.
+
+alcuni esempi:
+
+
+
+% 1. Caso base (Senza corpo, l'euristica si applica sempre)
+#heuristic a. [1@2, true]                  
+% --------------
+__heuristic(a, 1, 2, true).
+
+% 2. Caso con singolo letterale nel corpo
+#heuristic c : a. [1@1, true]              
+% --------------
+__heuristic(c, 1, 1, true) :- a.
+
+% 3. Caso con letterali multipli nel corpo (possono essere N letterali, positivi o negativi)
+#heuristic c : a, b, not d. [5@2, false]
+% --------------
+__heuristic(c, 5, 2, false) :- a, b, not d.
+
+% 4. Caso con variabili (Non-Ground, valutabile dinamicamente dal tuo propagatore in futuro)
+#heuristic b(X) : x(X), not c(X). [X@1, sign]
+% --------------
+__heuristic(b(X), X, 1, sign) :- x(X), not c(X).
+
+
+
+
+

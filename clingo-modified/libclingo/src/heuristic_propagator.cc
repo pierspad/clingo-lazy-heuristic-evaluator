@@ -9,19 +9,11 @@ void HeuristicPropagator::init(Clingo::PropagateInit &init) {
     auto atoms = init.symbolic_atoms();
     for (auto it = atoms.begin(); it != atoms.end(); ++it) {
         // Cerchiamo solo atomi della forma h_watch/1.
-        if (it->match("h_watch", 1)) {
-            // Leggiamo l'argomento X di h_watch(X).
+        if (it->match("__heuristic", 4)) {
+            // Leggiamo i 4 argomenti di __heuristic
             auto args = it->symbol().arguments();
 
-
-            // Guardia difensiva: con match("h_watch", 1) non dovrebbe capitare,
-            // ma lasciamo il controllo per robustezza.
-            if (args.size() != 1) {
-                continue;
-            }
-
-            // Troviamo l'atomo simbolico corrispondente a X.
-            // Se X non esiste come atomo nel programma, non possiamo forzarlo.
+            // cerchiamo e se X non esiste come atomo nel programma, non possiamo forzarlo.
             auto target_it = atoms.find(args[0]);
             if (target_it == atoms.end()) {
                 continue;
