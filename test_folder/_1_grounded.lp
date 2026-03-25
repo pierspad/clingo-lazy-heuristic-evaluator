@@ -11,4 +11,3 @@ e :- c.
 % #heuristic c : a. [1@1, true]
 % in questo modo:
 __heuristic(c,1,1,true) :- a.
-

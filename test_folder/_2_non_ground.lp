@@ -1,13 +1,11 @@
 % 1. Fatti iniziali e regole di scelta
-a.
-{ b; c }.
+x(1..3).
+{ b(X); c(X) } :- x(X).
 
-% 2. Regole logiche standard
-d :- b.
-e :- c.
 
-% 3. La nostra direttiva euristica custom (Caso Ground)
-% questa euristica
-% #heuristic c : a. [1@1, true]
-% la riscriviamo in questo modo:
-__heuristic(c,1,1,true) :- a.
+% Dichiariamo i target candidati (Caso Non-Ground base)
+% #heuristic b(x): x(X), not c(X), S = #sum{Y : c(Y)}, [X@S].
+% #heuristic c(x): x(X), not b(X), S = #sum{Y : b(Y)}, [X@S].
+
+% Il peso verrà calcolato dinamicamente dal propagatore C++
+__heuristic(b(X)) :- x(X).
