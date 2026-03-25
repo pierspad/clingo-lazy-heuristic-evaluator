@@ -1,1 +1,0 @@
-clingo _0_test_base.lp -n 1
