@@ -2,16 +2,19 @@
 #include <algorithm>
 
 void HeuristicPropagator::init(Clingo::PropagateInit &init) {
-    // Sicurezza: resettiamo la struttura dati ad ogni nuova inizializzazione.
     watched_to_targets_.clear();
 
-    // In questa fase abbiamo accesso agli atomi simbolici del programma ground.
     auto atoms = init.symbolic_atoms();
     for (auto it = atoms.begin(); it != atoms.end(); ++it) {
-        // Cerchiamo solo atomi della forma h_watch/1.
+        // Cerchiamo solo atomi della forma __heuristic/4.
         if (it->match("__heuristic", 4)) {
             // Leggiamo i 4 argomenti di __heuristic
             auto args = it->symbol().arguments();
+
+            // args[0] = target (es. c)
+            // args[1] = peso (es. 1)
+            // args[2] = livello (es. 1)
+            // args[3] = modificatore (es. true)
 
             // cerchiamo e se X non esiste come atomo nel programma, non possiamo forzarlo.
             auto target_it = atoms.find(args[0]);
@@ -19,23 +22,19 @@ void HeuristicPropagator::init(Clingo::PropagateInit &init) {
                 continue;
             }
 
-            // Conversione da symbolic literal a solver literal.
-            // Solo i solver literals sono validi in decide()/assignment.
+            // watched literal è il letterale __heuristic(<term>, <weight>, <priority>, <sign>) 
+            // target literal è il <term>
             Clingo::literal_t watched_lit = init.solver_literal(it->literal());
             Clingo::literal_t target_lit = init.solver_literal(target_it->literal());
             if (watched_lit == 0 || target_lit == 0) {
-                // 0 indica conversione non valida/non disponibile.
                 continue;
             }
 
-            // Registriamo la condizione come watch: se cambia, clingo puo'
-            // invocare propagate(). Nel prototipo attuale non usiamo propagate
-            // per stato incrementale, ma il watch e' comunque coerente con il
-            // design che userai nelle estensioni successive.
+            //clingo invoca propagate quando cambia il watched
             init.add_watch(watched_lit);
 
-            // Salviamo la regola euristica base:
-            // quando watched_lit e' vero, proviamo a scegliere target_lit.
+            // mappa di <slit,vector<slit>>
+            // ogni watched ha un vettore di target slit associati
             watched_to_targets_[watched_lit].push_back(target_lit);
         }
     }
@@ -55,9 +54,6 @@ void HeuristicPropagator::undo(Clingo::PropagateControl const &control, Clingo::
 }
 
 Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id, Clingo::Assignment const &assignment, Clingo::literal_t fallback) {
-    // In questo prototipo non usiamo thread_id/fallback direttamente.
-    // - thread_id: utile in versioni multi-thread con stato per thread.
-    // - fallback: clingo lo usa automaticamente quando noi ritorniamo 0.
     static_cast<void>(thread_id);
     static_cast<void>(fallback);
 
@@ -76,6 +72,5 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id, Clingo::As
         }
     }
 
-    // Nessuna scelta euristica applicabile: delega alla euristica standard.
     return 0;
 }
