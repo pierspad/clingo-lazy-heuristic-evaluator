@@ -1,1 +1,1 @@
-~/Desktop/clingo-lazy-heuristics/clingo-modified/build/bin/clingo _2_non_ground.lp -n 1
+~/Desktop/clingo-lazy-heuristics/clingo-modified/build/bin/clingo _2_non_ground.lp __.common_range.lp -n 1
