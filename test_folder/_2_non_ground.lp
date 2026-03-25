@@ -18,6 +18,6 @@ sumC(Sum) :- Sum = #sum{Y : c(Y)}.
 % #heuristic c(X) : x(X), not b(X), S = #sum{Y : b(Y)}. [X@S, true]
 
 % le riscriviamo come:
-__heuristic(b(X),X,S,true) :- x(X), not c(X), S = __dyn_sum(c).
-__heuristic(c(X),X,S,true) :- x(X), not b(X), S = __dyn_sum(b).
+__heuristic(b(X),X,S,true) :- x(X), not c(X), S = __sum(c).
+__heuristic(c(X),X,S,true) :- x(X), not b(X), S = __sum(b).
 

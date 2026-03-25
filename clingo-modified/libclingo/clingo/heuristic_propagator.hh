@@ -11,7 +11,7 @@ private:
     struct TargetInfo {
         Clingo::literal_t lit;
         int weight;
-        std::string dynamic_op;   // Es: "__dyn_sum"
+        std::string dynamic_op;   // Es: "__sum"
         std::string dynamic_pred; // Es: "c" oppure "b"
     };
     
