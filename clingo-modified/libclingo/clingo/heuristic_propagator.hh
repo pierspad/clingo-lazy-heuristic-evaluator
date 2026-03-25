@@ -3,14 +3,6 @@
 #include <unordered_map>
 #include <vector>
 
-// Prototipo minimo di euristica di dominio per il caso ground.
-//
-// Idea: usiamo atomi di supporto della forma h_watch(X).
-// Se h_watch(X) diventa vero nel solver, allora in decide() proviamo a
-// scegliere X (se X e' ancora libero).
-//
-// Questo prototipo non implementa ancora il caso non-ground/lazy completo,
-// ma fornisce una base chiara e funzionante per la prima fase della tesi.
 class HeuristicPropagator : public Clingo::Heuristic {
 
 private:

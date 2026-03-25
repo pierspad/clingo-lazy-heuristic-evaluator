@@ -1,1 +1,0 @@
-/home/ribben/Desktop/thesis-clingo/clingo-modified/build/bin/clingo _1_grounded.lp -n 1

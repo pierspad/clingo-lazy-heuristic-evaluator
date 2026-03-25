@@ -61,3 +61,6 @@ il problema di queste euristiche è che gringo le grounderebbe secondo questo pa
 #heuristic c(3):not b(3),#sum{1:b(1);2:b(2);3:b(3)}=4.[3@4,true]
 #heuristic c(3):not b(3),#sum{1:b(1);2:b(2);3:b(3)}=5.[3@5,true]
 #heuristic c(3):not b(3),#sum{1:b(1);2:b(2);3:b(3)}=6.[3@6,true]
+
+
+l'obiettivo è far si che il calcolo dell'aggregato avvenga a runtime valutando esclusivamente l'assegnazione parziale corrente 
