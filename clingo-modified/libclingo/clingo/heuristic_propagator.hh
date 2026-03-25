@@ -106,11 +106,12 @@ inline std::unique_ptr<AggregateState> make_aggregate(std::string const &op_name
 /// Un aggregato è identificato dalla coppia (tipo_operazione, predicato).
 /// Es: ("__sum", "c") è diverso da ("__count", "c").
 struct AggregateKey {
-    std::string op;   // Es: "__sum"
-    std::string pred; // Es: "c"
+    std::string op;     // Es: "__sum"
+    std::string pred;   // Es: "c"
+    int arg_index = -1; // Indice 0-based dell'argomento numerico (-1 = ultimo numerico)
 
     bool operator==(AggregateKey const &o) const {
-        return op == o.op && pred == o.pred;
+        return op == o.op && pred == o.pred && arg_index == o.arg_index;
     }
 };
 
@@ -119,7 +120,8 @@ struct AggregateKeyHash {
     std::size_t operator()(AggregateKey const &k) const {
         auto h1 = std::hash<std::string>{}(k.op);
         auto h2 = std::hash<std::string>{}(k.pred);
-        return h1 ^ (h2 << 1);
+        auto h3 = std::hash<int>{}(k.arg_index);
+        return h1 ^ (h2 << 1) ^ (h3 << 2);
     }
 };
 
@@ -132,9 +134,10 @@ class HeuristicPropagator : public Clingo::Heuristic {
 private:
     /// Informazioni associate a ciascuna direttiva euristica target
     struct TargetInfo {
-        Clingo::literal_t lit;
+        Clingo::literal_t lit;           // Literal del target (es. b(X))
+        Clingo::literal_t heuristic_lit; // Literal dell'atomo __heuristic(...) stesso
         int weight;
-        AggregateKey agg_key; // Chiave dell'aggregato usato come priority
+        AggregateKey agg_key;            // Chiave dell'aggregato usato come priority
     };
 
     /// Lista di tutti i target euristici estratti
