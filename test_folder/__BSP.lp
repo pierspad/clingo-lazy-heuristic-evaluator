@@ -1,7 +1,8 @@
-% Definizione del dominio
-x(1..3).
+% Definizione del dominio come definito nel paper di alpha
+% il range è definito in 
+% __.common_range.lp
 
-% Scelta (guessing)
+% Guess
 b(X) :- x(X), not c(X).
 c(X) :- x(X), not b(X).
 
@@ -9,7 +10,7 @@ c(X) :- x(X), not b(X).
 sumB(Sum) :- Sum = #sum{Y : b(Y)}.
 sumC(Sum) :- Sum = #sum{Y : c(Y)}.
 
-% Vincolo sulla differenza
+% Check
 :- sumB(SB), sumC(SC), (SB-SC)**2 > 1.
 
 % euristiche di dominio
