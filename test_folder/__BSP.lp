@@ -2,6 +2,8 @@
 % il range è definito in 
 % __.common_range.lp
 
+x(1..n).
+
 % Guess
 b(X) :- x(X), not c(X).
 c(X) :- x(X), not b(X).

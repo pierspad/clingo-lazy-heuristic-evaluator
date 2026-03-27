@@ -1,6 +1,18 @@
 
 
-nel baalnced sum proble immaginando di dover distribuire equamente i nueri da 1 a 3 tra due insiemi, b e c, con la condizione che ogni numero può essere assegnato solo a uno dei due insiemi. L'obiettivo è massimizzare la somma dei numeri assegnati all'insieme b, tenendo conto che la somma dei numeri in c deve essere il più possibile vicina a quella in b.
+
+Asp è un linguaggio di programmazione logica che consente di esprimere problemi complessi in modo dichiarativo. 
+
+In clingo:
+Il funzionamento di asp si basa su due fasi principali: grounding e solving. Durante la fase di grounding, viene costruito l'universo di herbrand, ovvero l'insieme di tutte le possibili istanze di regole e fatti basati sui termini presenti nel programma dal grounder gringo
+
+Una volta che l'universo di herbrand è stato costruito, l'insieme di regole e fatti viene trasformato in un programma proposizionale, (ovvero un programma senza variabili) che viene poi tradotto in booleano e risolto da clasp, il solver di clingo.
+
+Uno dei problemi principali di questo processo è che, in alcune situazioni, per via della natura o della formalizzazione del problema, il processo di grounding può portare alla generazione di un numero esponenziale di regole e fatti, causando un consumo eccessivo di memoria e rendendo il processo di solving impraticabile.
+
+il problema del groudning avviene anche quando si utilizzano euristiche per guidare la ricerca, come ad esempio l'uso di aggregati nei corpi delle regole euristiche.
+
+Nel baalnced sum proble immaginando di dover distribuire equamente i nueri da 1 a 3 tra due insiemi, b e c, con la condizione che ogni numero può essere assegnato solo a uno dei due insiemi. L'obiettivo è massimizzare la somma dei numeri assegnati all'insieme b, tenendo conto che la somma dei numeri in c deve essere il più possibile vicina a quella in b.
 
 useremmo queste euristiche per guidare la ricerca.
 
@@ -61,6 +73,8 @@ il problema di queste euristiche è che gringo le grounderebbe secondo questo pa
 #heuristic c(3):not b(3),#sum{1:b(1);2:b(2);3:b(3)}=4.[3@4,true]
 #heuristic c(3):not b(3),#sum{1:b(1);2:b(2);3:b(3)}=5.[3@5,true]
 #heuristic c(3):not b(3),#sum{1:b(1);2:b(2);3:b(3)}=6.[3@6,true]
+
+
 
 
 l'obiettivo è far si che il calcolo dell'aggregato avvenga a runtime valutando esclusivamente l'assegnazione parziale corrente 

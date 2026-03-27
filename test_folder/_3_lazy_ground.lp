@@ -12,6 +12,8 @@
 % il range è definito in
 % __.common_range.lp
 
+x(1..n).
+
 % Guess
 1 { b(X); c(X) } 1 :- x(X).
 
