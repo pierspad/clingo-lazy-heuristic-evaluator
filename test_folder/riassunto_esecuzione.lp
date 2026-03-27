@@ -1,26 +1,19 @@
 
 
 
-Asp è un linguaggio di programmazione logica che consente di esprimere problemi complessi in modo dichiarativo. 
+Answer Set Programming (ASP) è un framework di rappresentazione della conoscenza e ragionamento dichiarativo basato sulla logica del primo ordine. Il paradigma di calcolo dei moderni sistemi ASP, come Clingo, si articola in due fasi principali. Inizialmente, il grounder (Gringo) trasforma le descrizioni del primo ordine in logica proposizionale, costruendo l'universo di Herbrand ed eliminando le variabili. Successivamente, il programma proposizionale equivalente viene risolto dal solver (Clasp), il quale opera sullo spazio di ricerca tramite tecniche avanzate come il CDNL (Conflict-Driven Clause Learning) per generare le soluzioni .
 
-In clingo:
-Il funzionamento di asp si basa su due fasi principali: grounding e solving. Durante la fase di grounding, viene costruito l'universo di herbrand, ovvero l'insieme di tutte le possibili istanze di regole e fatti basati sui termini presenti nel programma dal grounder gringo
+Un problema critico di questo processo è che istanze di grandi dimensioni non possono essere groundate in tempi e spazi di memoria accettabili. Questa esplosione combinatoria, nota come grounding bottleneck, si può notare persino quando si utilizzano euristiche domain-specific che incorporano aggregati.  
+La semantica degli aggregati in ASP prevede che essi siano valutati esclusivamente rispetto a un assegnamento di verità completo. Poiché Gringo non può conoscere a priori quali atomi risulteranno veri durante la ricerca, è costretto a generare preventivamente tutte le possibili combinazioni di valori per le variabili presenti nel corpo dell'euristica.
+L'euristica che viene aggiunta con lo scopo di velocizzare il tempo di solving finisce per saturare la RAM e rendere il processo di grounding impraticabile o il processo di solving inefficiente a causa dell'enorme spazio di ricerca generato.
 
-Una volta che l'universo di herbrand è stato costruito, l'insieme di regole e fatti viene trasformato in un programma proposizionale, (ovvero un programma senza variabili) che viene poi tradotto in booleano e risolto da clasp, il solver di clingo.
+Nel balanced sum problem, come definito nel paper di Comploi-Taupe, l'obiettivo è che la differenza in valore assoluto della somma degli elementi contenuti in due insiemi sia uguale a 1.
+Immaginando di dover distribuire equamente i numeri da 1 a 3 tra due insiemi, b e c, con la condizione che ogni numero può essere assegnato solo a uno dei due insiemi. Per indirizzare il solver, è utile massimizzare l'assegnazione a un insieme valutando dinamicamente la somma dell'altro. Usando la sintassi nativa, scriveremmo:
 
-Uno dei problemi principali di questo processo è che, in alcune situazioni, per via della natura o della formalizzazione del problema, il processo di grounding può portare alla generazione di un numero esponenziale di regole e fatti, causando un consumo eccessivo di memoria e rendendo il processo di solving impraticabile.
+#heuristic b(X): x(X), not c(X), S = #sum{Y : c(Y)}. [X@S]
+#heuristic c(X): x(X), not b(X), S = #sum{Y : b(Y)}. [X@S]
 
-il problema del groudning avviene anche quando si utilizzano euristiche per guidare la ricerca, come ad esempio l'uso di aggregati nei corpi delle regole euristiche.
-
-Nel baalnced sum proble immaginando di dover distribuire equamente i nueri da 1 a 3 tra due insiemi, b e c, con la condizione che ogni numero può essere assegnato solo a uno dei due insiemi. L'obiettivo è massimizzare la somma dei numeri assegnati all'insieme b, tenendo conto che la somma dei numeri in c deve essere il più possibile vicina a quella in b.
-
-useremmo queste euristiche per guidare la ricerca.
-
-#heuristic b(x): x(X), not c(X), S = #sum{Y : c(Y)}, [X@S].
-
-#heuristic c(x): x(X), not b(X), S = #sum{Y : b(Y)}, [X@S].
-
-il problema di queste euristiche è che gringo le grounderebbe secondo questo pattern ancor prima di iniziare la fase di solving finendo per riempire la ram con tutte le possibili regole
+Il problema di questa formulazione risiede nel fatto che Gringo grounderebbe l'euristica secondo il seguente pattern prima ancora di avviare il solving, esaurendo rapidamente la memoria RAM con regole superflue:
 
 
 % prima euristica
@@ -75,11 +68,14 @@ il problema di queste euristiche è che gringo le grounderebbe secondo questo pa
 #heuristic c(3):not b(3),#sum{1:b(1);2:b(2);3:b(3)}=6.[3@6,true]
 
 
+Per rendere quindi il processo più efficiente l'obiettivo è far si che il calcolo dell'aggregato venga effettuato a runtime valutando esclusivamente l'assegnazione parziale corrente, evitando così di dover pre-calcolare tutte le possibili combinazioni di valori per le variabili presenti nel corpo dell'euristica.
 
+Il programma viene passato a Clingo, ma invece di far groundare a Gringo le euristiche secondo il pattern classico, queste vengono codificate come template strutturali, ovvero fatti proposizionali statici della forma:
 
-l'obiettivo è far si che il calcolo dell'aggregato avvenga a runtime valutando esclusivamente l'assegnazione parziale corrente 
+__heuristic_rule(RuleID, TargetPred, BodyPred, NegBodyPred, WeightSource, PrioritySpec, Sign).
 
-quindi la logica sarebbe che:
+così facendo gringo grounderebbe l'equivalente di:
+
 
 si passa il programma non ground a clingo (o gringo?) e lui ne fa il grounding, ma invece di groundare le euristiche secondo il pattern classico, le trasforma in regole del tipo __heuristic(<term>, <weight>, <priority>, <sign>) :- <body>.
 
@@ -89,7 +85,32 @@ quell'atomo groundato viene poi valutato dinamicamente dal propagatore custom du
 
 
 
+% 1. Caso base con variabile e singolo letterale positivo
+% (Assumiamo un predicato fittizio 'none' per il negative body se assente)
+#heuristic b(X) : x(X). [1@2, true]                  
+% --------------
+__heuristic_rule(r1, b, x, none, 1, 2, true).
 
+% 2. Caso Non-Ground completo (Valutato dinamicamente dal propagatore)
+% Il peso usa il valore stesso della variabile X ('self')
+#heuristic b(X) : x(X), not c(X). [X@1, sign]
+% --------------
+__heuristic_rule(r2, b, x, c, self, 1, sign).
+
+% 3. Caso con letterali multipli nel corpo
+% Il propagatore C++ accetta un solo BodyPred. Per supportare N letterali, 
+% definiamo un predicato ausiliario nel programma ASP.
+#heuristic c(X) : a(X), b(X), not d(X). [5@2, false]
+% --------------
+% Regola ausiliaria per raggruppare le condizioni positive:
+body_aux_r3(X) :- a(X), b(X).
+% Template euristico:
+__heuristic_rule(r3, c, body_aux_r3, d, 5, 2, false).
+
+% 4. Caso con Aggregati Dinamici (PrioritySpec dinamica)
+#heuristic b(X) : x(X), not c(X). [X@S, true] % dove S è la somma corrente di c
+% --------------
+__heuristic_rule(r4, b, x, c, self, __sum(c), true).
 
 
 
