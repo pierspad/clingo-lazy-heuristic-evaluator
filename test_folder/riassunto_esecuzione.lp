@@ -79,40 +79,18 @@ il problema di queste euristiche è che gringo le grounderebbe secondo questo pa
 
 l'obiettivo è far si che il calcolo dell'aggregato avvenga a runtime valutando esclusivamente l'assegnazione parziale corrente 
 
+quindi la logica sarebbe che:
 
-avendo implementato un propagatore custom riscriviamo le euristiche in questo modo:
+si passa il programma non ground a clingo (o gringo?) e lui ne fa il grounding, ma invece di groundare le euristiche secondo il pattern classico, le trasforma in regole del tipo __heuristic(<term>, <weight>, <priority>, <sign>) :- <body>.
 
-invece di scrivere:
+questo fa si che gringo groundi una singola istanza dell'atomo heuristic per ogni possibile scelta, invece dell'instanziare tutte le possibili combinazioni di valori per le variabili presenti nel corpo dell'euristica, evitando così l'esplosione combinatoria (lato euristiche)
 
-#heuristic <term> : <body>. [<weight>@<priority>, <sign>]
-
-scriviamo:
-
-__heuristic(<term>, <weight>, <priority>, <sign>) :- <body>.
-
-alcuni esempi:
+quell'atomo groundato viene poi valutato dinamicamente dal propagatore custom durante la fase di solving, permettendo di calcolare il peso e la priorità dell'euristica in base all'assegnazione parziale corrente, senza dover pre-calcolare tutte le possibili combinazioni di valori per le variabili presenti nel corpo dell'euristica.
 
 
 
-% 1. Caso base (Senza corpo, l'euristica si applica sempre)
-#heuristic a. [1@2, true]                  
-% --------------
-__heuristic(a, 1, 2, true).
 
-% 2. Caso con singolo letterale nel corpo
-#heuristic c : a. [1@1, true]              
-% --------------
-__heuristic(c, 1, 1, true) :- a.
 
-% 3. Caso con letterali multipli nel corpo (possono essere N letterali, positivi o negativi)
-#heuristic c : a, b, not d. [5@2, false]
-% --------------
-__heuristic(c, 5, 2, false) :- a, b, not d.
-
-% 4. Caso con variabili (Non-Ground, valutabile dinamicamente dal tuo propagatore in futuro)
-#heuristic b(X) : x(X), not c(X). [X@1, sign]
-% --------------
-__heuristic(b(X), X, 1, sign) :- x(X), not c(X).
 
 
 
