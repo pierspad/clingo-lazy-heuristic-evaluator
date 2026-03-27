@@ -1,13 +1,6 @@
 """
-_01_benchmark.py
-Reads benchmark results from ./timings/results.csv and generates graphs
-in ./graphs/.
-
-CSV format (produced by _00_execute_benchmark.sh):
-    n,variant,elapsed_s,memory_mb
-
-Run from the test_folder directory:
-    python _01_benchmark.py [--csv ./timings/results.csv] [--out ./graphs]
+benchmark.py
+Legge i risultati da ./test-results/results.csv e genera grafici in ./graphs/
 """
 
 import argparse
@@ -15,28 +8,11 @@ import csv
 import os
 import sys
 
-# ---------------------------------------------------------------------------
-# Defaults
-# ---------------------------------------------------------------------------
-DEFAULT_CSV = os.path.join("timings", "results.csv")
+DEFAULT_CSV = os.path.join("test-results", "results.csv")
 DEFAULT_GRAPHS_DIR = "graphs"
 
-
-# ---------------------------------------------------------------------------
-# CSV loading
-# ---------------------------------------------------------------------------
-
 def load_csv(csv_path: str):
-    """
-    Reads the CSV and returns a dict:
-        {
-            "std": {"n": [...], "time": [...], "memory": [...]},
-            "mod": {"n": [...], "time": [...], "memory": [...]},
-        }
-    Missing/NA values are stored as None.
-    """
     results = {}
-
     with open(csv_path, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
@@ -58,11 +34,6 @@ def load_csv(csv_path: str):
 
     return results
 
-
-# ---------------------------------------------------------------------------
-# Graph generation
-# ---------------------------------------------------------------------------
-
 VARIANT_LABELS = {
     "std": "Clingo Standard",
     "mod": "Clingo Lazy (Modificato)",
@@ -76,23 +47,17 @@ VARIANT_MARKERS = {
     "mod": "s",
 }
 
-
 def _filter_none(xs, ys):
-    """Remove pairs where y is None (missing measurement)."""
     pairs = [(x, y) for x, y in zip(xs, ys) if y is not None]
     if not pairs:
         return [], []
     return zip(*pairs)
 
-
 def generate_graphs(results: dict, graphs_dir: str):
     try:
         import matplotlib.pyplot as plt
     except ImportError:
-        print(
-            "Matplotlib non installato: impossibile generare grafici. "
-            "Per abilitarlo: pip install matplotlib"
-        )
+        print("Matplotlib non installato: impossibile generare grafici. Per abilitarlo: pip install matplotlib")
         sys.exit(1)
 
     os.makedirs(graphs_dir, exist_ok=True)
@@ -139,34 +104,18 @@ def generate_graphs(results: dict, graphs_dir: str):
     plt.close()
     print(f"Grafico salvato in '{out_path}'.")
 
-
-# ---------------------------------------------------------------------------
-# CLI
-# ---------------------------------------------------------------------------
-
 def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Genera grafici dai risultati del benchmark (CSV)."
-    )
-    parser.add_argument(
-        "--csv",
-        default=DEFAULT_CSV,
-        help=f"Percorso del file CSV dei risultati (default: {DEFAULT_CSV})",
-    )
-    parser.add_argument(
-        "--out",
-        default=DEFAULT_GRAPHS_DIR,
-        help=f"Cartella di output per i grafici (default: {DEFAULT_GRAPHS_DIR})",
-    )
+    parser = argparse.ArgumentParser(description="Genera grafici dai risultati del benchmark (CSV).")
+    parser.add_argument("--csv", default=DEFAULT_CSV, help=f"Percorso del file CSV dei risultati (default: {DEFAULT_CSV})")
+    parser.add_argument("--out", default=DEFAULT_GRAPHS_DIR, help=f"Cartella di output per i grafici (default: {DEFAULT_GRAPHS_DIR})")
     return parser.parse_args()
-
 
 def main():
     args = parse_args()
 
     if not os.path.isfile(args.csv):
         print(f"Errore: file CSV non trovato: '{args.csv}'")
-        print("Esegui prima _00_execute_benchmark.sh per raccogliere i dati.")
+        print("Esegui prima il file .sh per raccogliere i dati.")
         sys.exit(1)
 
     print(f"Caricamento risultati da '{args.csv}'...")
@@ -176,7 +125,6 @@ def main():
         print("Errore: il CSV è vuoto o non contiene dati validi.")
         sys.exit(1)
 
-    # Print summary table
     variants = list(results.keys())
     all_ns = sorted({n for v in variants for n in results[v]["n"]})
     print(f"\n{'N':>5}  " + "  ".join(f"{VARIANT_LABELS.get(v,v):>30}" for v in variants))
@@ -198,7 +146,6 @@ def main():
 
     print()
     generate_graphs(results, args.out)
-
 
 if __name__ == "__main__":
     main()
