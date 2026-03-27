@@ -5,8 +5,7 @@
 x(1..n).
 
 % Guess
-b(X) :- x(X), not c(X).
-c(X) :- x(X), not b(X).
+1 { b(X); c(X) } 1 :- x(X).
 
 % Calcolo delle somme
 sumB(Sum) :- Sum = #sum{Y : b(Y)}.

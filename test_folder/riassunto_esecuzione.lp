@@ -13,8 +13,11 @@ Immaginando di dover distribuire equamente i numeri da 1 a 3 tra due insiemi, b 
 #heuristic b(X): x(X), not c(X), S = #sum{Y : c(Y)}. [X@S]
 #heuristic c(X): x(X), not b(X), S = #sum{Y : b(Y)}. [X@S]
 
-Il problema di questa formulazione risiede nel fatto che Gringo grounderebbe l'euristica secondo il seguente pattern prima ancora di avviare il solving, esaurendo rapidamente la memoria RAM con regole superflue:
+è importante specificare che non è l'aggregato in se a generare un esplosione combinatoria.
+Se venisse usato in un normale vincolo logico, gringo lo tradurrebbe in un weight constraint.
+il problema sorge quando viene usato in un'euristica, poiché allo stato dell'arte, gli aggregati in ASP sono valutati esclusivamente rispetto a un assegnamento completo di valori di verità, il che implica che il loro valore non può mutare dinamicamente durante il solving. Contestualmente, la direttiva euristica esige che il livello di priorità, rappresentato dalla variabile S nel costrutto [X@S], sia un numero intero concreto e definito già durante la fase di grounding. Tuttavia, Gringo opera prima dell'inizio della ricerca e non ha modo di prevedere l'assegnamento parziale, ovvero non sa quanti e quali atomi c(Y) o b(Y) diventeranno veri.
 
+Di conseguenza, non potendo calcolare un valore univoco per S, il grounder è costretto a coprire ogni possibile scenario futuro per preservare la correttezza logica del programma.  Per farlo, genera una direttiva euristica proposizionale separata per ogni singolo valore intero che l'aggregato potrebbe ipoteticamente restituire. Gringo grounderebbe quindi l'euristica secondo il seguente pattern prima ancora di avviare la fase di solving, esaurendo rapidamente la memoria RAM con regole superflue:
 
 % prima euristica
 #heuristic b(1):not c(1),#sum{1:c(1);2:c(2);3:c(3)}=0.[1@0,true]
@@ -74,19 +77,22 @@ Il programma viene passato a Clingo, ma invece di far groundare a Gringo le euri
 
 __heuristic_rule(RuleID, TargetPred, BodyPred, NegBodyPred, WeightSource, PrioritySpec, Sign).
 
-così facendo gringo grounderebbe l'equivalente di:
+Questo fa sì che Gringo includa nel programma proposizionale una singola riga per ogni template euristico, senza espandere le variabili di dominio, generando quindi invece soltanto:
+
+__heuristic_rule(r1,b,x,c,self,__sum(c),true).
+__heuristic_rule(r2,c,x,b,self,__sum(b),true).
 
 
-si passa il programma non ground a clingo (o gringo?) e lui ne fa il grounding, ma invece di groundare le euristiche secondo il pattern classico, le trasforma in regole del tipo __heuristic(<term>, <weight>, <priority>, <sign>) :- <body>.
 
-questo fa si che gringo groundi una singola istanza dell'atomo heuristic per ogni possibile scelta, invece dell'instanziare tutte le possibili combinazioni di valori per le variabili presenti nel corpo dell'euristica, evitando così l'esplosione combinatoria (lato euristiche)
+I fatti generato vengono successivamente interpretati dinamicamente dal propagatore custom durante la fase di solving in Clasp. 
+Il propagatore monitora l'assegnazione parziale corrente e istanzia l'euristica (calcolandone peso e priorità) in tempo reale, unicamente quando i letterali trigger nel corpo diventano veri. 
 
-quell'atomo groundato viene poi valutato dinamicamente dal propagatore custom durante la fase di solving, permettendo di calcolare il peso e la priorità dell'euristica in base all'assegnazione parziale corrente, senza dover pre-calcolare tutte le possibili combinazioni di valori per le variabili presenti nel corpo dell'euristica.
 
+alcuni esempi:
 
 
 % 1. Caso base con variabile e singolo letterale positivo
-% (Assumiamo un predicato fittizio 'none' per il negative body se assente)
+% (Si assume un predicato fittizio 'none' per il negative body se assente)
 #heuristic b(X) : x(X). [1@2, true]                  
 % --------------
 __heuristic_rule(r1, b, x, none, 1, 2, true).
@@ -111,9 +117,3 @@ __heuristic_rule(r3, c, body_aux_r3, d, 5, 2, false).
 #heuristic b(X) : x(X), not c(X). [X@S, true] % dove S è la somma corrente di c
 % --------------
 __heuristic_rule(r4, b, x, c, self, __sum(c), true).
-
-
-
-
-
-
