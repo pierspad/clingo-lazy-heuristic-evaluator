@@ -45,5 +45,9 @@ sumC(Sum) :- Sum = #sum{Y : c(Y)}.
 %   __heuristic(b(X),X,__sum(c),true) :- x(X), not c(X).
 %   __heuristic(c(X),X,__sum(b),true) :- x(X), not b(X).
 
+% #heuristic b(X) : x(X), not c(X), S = #sum{Y : c(Y)}. [X@S, true]
+% #heuristic c(X) : x(X), not b(X), S = #sum{Y : b(Y)}. [X@S, true]
+
+
 __heuristic_rule(r1, b, x, c, self, __sum(c), true).
 __heuristic_rule(r2, c, x, b, self, __sum(b), true).

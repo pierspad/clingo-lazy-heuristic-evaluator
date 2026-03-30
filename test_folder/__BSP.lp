@@ -18,3 +18,7 @@ sumC(Sum) :- Sum = #sum{Y : c(Y)}.
 
 #heuristic b(X) : x(X), not c(X), S = #sum{Y : c(Y)}. [X@S, true]
 #heuristic c(X) : x(X), not b(X), S = #sum{Y : b(Y)}. [X@S, true]
+
+
+
+
