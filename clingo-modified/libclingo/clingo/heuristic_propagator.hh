@@ -130,36 +130,47 @@ struct AggregateKeyHash {
 // STRUTTURE PER IL LAZY GROUNDING
 // ============================================================================
 
-/// Template di una regola euristica (letto da __heuristic_rule/7).
+/// Template di una regola euristica (letto da __heuristic/N).
 /// NON contiene istanziazioni concrete, solo la "forma" della regola.
 ///
-/// Formato ASP:
-///   __heuristic_rule(RuleID, TargetPred, BodyPred, NegBodyPred,
-///                    WeightSource, PrioritySpec, Sign)
+/// Formato ASP (argomenti flessibili, ordine libero tranne il primo):
+///   __heuristic(TargetPred, ...args...).
+///
+/// Il primo argomento è sempre il predicato target.
+/// Gli argomenti successivi vengono classificati automaticamente dal parser C++:
+///   - atomo semplice senza prefisso  → body positivo (es. x)
+///   - prefisso __n_                  → body negativo (es. __n_c → c)
+///   - "self"                         → weight = valore del dominio
+///   - numero intero                  → weight costante
+///   - __sum(p), __count(p), etc.     → aggregato per la priority
+///   - __w_sum(p), __w_count(p), etc. → aggregato per il weight
+///   - "true" / "false" / "sign"      → segno dell'euristica
 ///
 /// Esempio:
-///   __heuristic_rule(r1, b, x, c, self, __sum(c), true).
+///   __heuristic(b, x, __n_c, self, __sum(c), true).
+///   __heuristic(b, x, __n_c, __w_count(c), __sum(c), true).  % weight e priority dinamici
 ///
-/// Significato: "Per ogni X t.c. BodyPred(X) è vero e NegBodyPred(X) non è vero,
-///               suggerisci TargetPred(X) con weight=X e priority=PrioritySpec"
+/// Significato: "Per ogni X t.c. tutti i BodyPred(X) sono veri e nessun
+///               NegBodyPred(X) è vero, suggerisci TargetPred(X)"
 struct HeuristicRuleTemplate {
-    std::string rule_id;        // Identificatore univoco (es. "r1")
-    std::string target_pred;    // Predicato target (es. "b")
-    std::string body_pred;      // Predicato positivo del body (es. "x")
-    std::string neg_body_pred;  // Predicato negativo del body (es. "c")
-    std::string weight_source;  // "self" = usa il valore dell'atomo, oppure intero
-    AggregateKey agg_key;       // Chiave dell'aggregato per la priority
-    std::string sign;           // "true", "false", "sign"
+    std::string target_pred;                  // Primo argomento: predicato target (es. "b")
+    std::vector<std::string> pos_body_preds;  // Body positivi (es. {"x"})
+    std::vector<std::string> neg_body_preds;  // Body negativi (es. {"c"} da __n_c)
+    std::string weight_source;                // "self", costante numerica, o "" se da aggregato
+    AggregateKey weight_agg_key;              // Aggregato per il weight (es. __w_sum(c))
+    AggregateKey priority_agg_key;            // Aggregato per la priority (es. __sum(c))
+    std::string sign;                         // "true", "false", "sign"
 };
 
 /// Istanza euristica creata dinamicamente durante propagate.
 /// Equivale al TargetInfo della modalità statica ma generata on-demand.
 struct LazyTargetInstance {
-    Clingo::literal_t target_lit;     // Literal del target (es. b(27))
-    Clingo::literal_t neg_body_lit;   // Literal per il check negativo (es. c(27))
-    int weight;                        // Peso estratto
-    AggregateKey agg_key;              // Riferimento all'aggregato
-    size_t rule_idx;                   // Indice del template che l'ha generata
+    Clingo::literal_t target_lit;                  // Literal del target (es. b(27))
+    std::vector<Clingo::literal_t> neg_body_lits;  // Literal per i check negativi
+    int weight;                                     // Peso statico (se non da aggregato)
+    AggregateKey weight_agg_key;                   // Aggregato per il weight
+    AggregateKey priority_agg_key;                 // Aggregato per la priority
+    size_t rule_idx;                                // Indice del template che l'ha generata
 };
 
 // ============================================================================
@@ -169,7 +180,7 @@ struct LazyTargetInstance {
 class HeuristicPropagator : public Clingo::Heuristic {
 
 private:
-    // === MODALITÀ STATICA (backward-compatible con __heuristic/4) ===
+    // === MODALITÀ STATICA (per regole __heuristic/4 custom non-ground) ===
 
     /// Informazioni associate a ciascuna direttiva euristica target
     struct TargetInfo {
@@ -191,18 +202,18 @@ private:
     /// Mappa un solver_literal ai suoi aggregate di appartenenza
     std::unordered_map<Clingo::literal_t, WatchedAtomInfo> watched_atoms_;
 
-    // === MODALITÀ LAZY (ground-on-demand con __heuristic_rule/7) ===
+    // === MODALITÀ LAZY (ground-on-demand con __heuristic/N) ===
 
     /// Template delle regole euristiche
     std::vector<HeuristicRuleTemplate> rule_templates_;
 
-    /// Mappa: body_literal → lista di (rule_index, valore_dominio) che possono
-    /// essere triggerati quando quel body literal diventa vero.
+    /// Mappa: body_literal → lista di trigger che possono
+    /// essere attivati quando quel body literal diventa vero.
     struct BodyTriggerInfo {
-        size_t rule_idx;          // Indice in rule_templates_
-        int domain_value;         // Il valore X del dominio (es. 27 per x(27))
-        Clingo::literal_t target_lit;   // Literal target pre-risolto (es. b(27))
-        Clingo::literal_t neg_body_lit; // Literal neg body pre-risolto (es. c(27))
+        size_t rule_idx;                                // Indice in rule_templates_
+        int domain_value;                               // Il valore X del dominio (es. 27 per x(27))
+        Clingo::literal_t target_lit;                   // Literal target pre-risolto (es. b(27))
+        std::vector<Clingo::literal_t> neg_body_lits;   // Literal neg body pre-risolti
     };
     std::unordered_map<Clingo::literal_t, std::vector<BodyTriggerInfo>> body_triggers_;
 
@@ -214,7 +225,7 @@ private:
     /// Set dei body literal attivi (per iterazione efficiente in decide)
     std::vector<Clingo::literal_t> active_body_lits_;
 
-    /// Flag: true se sono stati trovati template __heuristic_rule/7
+    /// Flag: true se sono stati trovati template __heuristic/N (lazy mode)
     bool has_lazy_rules_ = false;
 
     // === CONDIVISO tra le due modalità ===

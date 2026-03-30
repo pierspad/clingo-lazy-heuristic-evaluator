@@ -1,6 +1,7 @@
 
 
 
+
 Answer Set Programming (ASP) è un framework di rappresentazione della conoscenza e ragionamento dichiarativo basato sulla logica del primo ordine. Il paradigma di calcolo dei moderni sistemi ASP, come Clingo, si articola in due fasi principali. Inizialmente, il grounder (Gringo) trasforma le descrizioni del primo ordine in logica proposizionale, costruendo l'universo di Herbrand ed eliminando le variabili. Successivamente, il programma proposizionale equivalente viene risolto dal solver (Clasp), il quale opera sullo spazio di ricerca tramite tecniche avanzate come il CDNL (Conflict-Driven Clause Learning) per generare le soluzioni .
 
 Un problema critico di questo processo è che istanze di grandi dimensioni non possono essere groundate in tempi e spazi di memoria accettabili. Questa esplosione combinatoria, nota come grounding bottleneck, si può notare persino quando si utilizzano euristiche domain-specific che incorporano aggregati.  
@@ -75,16 +76,26 @@ Per rendere quindi il processo più efficiente l'obiettivo è far si che il calc
 
 Il programma viene passato a Clingo, ma invece di far groundare a Gringo le euristiche secondo il pattern classico, queste vengono codificate come template strutturali, ovvero fatti proposizionali statici della forma:
 
-__heuristic_rule(RuleID, TargetPred, BodyPred, NegBodyPred, WeightSource, PrioritySpec, Sign).
+__heuristic(TargetPred, ...argomenti flessibili...).
+
+Il primo argomento è sempre il predicato target. Gli argomenti successivi sono in ordine libero
+e vengono classificati automaticamente dal parser C++:
+  - atomo semplice (es. x)         → body positivo
+  - prefisso __n_ (es. __n_c)     → body negativo (not c(X))
+  - "self"                         → weight = valore del dominio
+  - numero intero                  → weight costante
+  - __sum(p), __count(p), etc.     → aggregato per la priority
+  - __w_sum(p), __w_count(p), etc. → aggregato per il weight
+  - "true" / "false" / "sign"      → segno dell'euristica
 
 Questo fa sì che Gringo includa nel programma proposizionale una singola riga per ogni template euristico, senza espandere le variabili di dominio, generando quindi invece soltanto:
 
-__heuristic_rule(r1,b,x,c,self,__sum(c),true).
-__heuristic_rule(r2,c,x,b,self,__sum(b),true).
+__heuristic(b, x, __n_c, self, __sum(c), true).
+__heuristic(c, x, __n_b, self, __sum(b), true).
 
 
 
-I fatti generato vengono successivamente interpretati dinamicamente dal propagatore custom durante la fase di solving in Clasp. 
+I fatti generati vengono successivamente interpretati dinamicamente dal propagatore custom durante la fase di solving in Clasp. 
 Il propagatore monitora l'assegnazione parziale corrente e istanzia l'euristica (calcolandone peso e priorità) in tempo reale, unicamente quando i letterali trigger nel corpo diventano veri. 
 
 
@@ -92,28 +103,35 @@ alcuni esempi:
 
 
 % 1. Caso base con variabile e singolo letterale positivo
-% (Si assume un predicato fittizio 'none' per il negative body se assente)
 #heuristic b(X) : x(X). [1@2, true]                  
 % --------------
-__heuristic_rule(r1, b, x, none, 1, 2, true).
+__heuristic(b, x, 1, 2, true).
 
 % 2. Caso Non-Ground completo (Valutato dinamicamente dal propagatore)
 % Il peso usa il valore stesso della variabile X ('self')
 #heuristic b(X) : x(X), not c(X). [X@1, sign]
 % --------------
-__heuristic_rule(r2, b, x, c, self, 1, sign).
+__heuristic(b, x, __n_c, self, 1, sign).
 
 % 3. Caso con letterali multipli nel corpo
-% Il propagatore C++ accetta un solo BodyPred. Per supportare N letterali, 
-% definiamo un predicato ausiliario nel programma ASP.
+% Il propagatore C++ ora supporta N body positivi e M body negativi direttamente,
+% senza bisogno di predicati ausiliari!
 #heuristic c(X) : a(X), b(X), not d(X). [5@2, false]
 % --------------
-% Regola ausiliaria per raggruppare le condizioni positive:
-body_aux_r3(X) :- a(X), b(X).
-% Template euristico:
-__heuristic_rule(r3, c, body_aux_r3, d, 5, 2, false).
+__heuristic(c, a, b, __n_d, 5, 2, false).
 
 % 4. Caso con Aggregati Dinamici (PrioritySpec dinamica)
 #heuristic b(X) : x(X), not c(X). [X@S, true] % dove S è la somma corrente di c
 % --------------
-__heuristic_rule(r4, b, x, c, self, __sum(c), true).
+__heuristic(b, x, __n_c, self, __sum(c), true).
+
+% 5. L'ordine degli argomenti (dopo il primo) è irrilevante:
+__heuristic(b, __n_c, x, self, __sum(c), true).
+% è equivalente a:
+__heuristic(b, x, __n_c, self, __sum(c), true).
+
+% 6. Caso con Aggregato Dinamico per il WEIGHT
+% Il peso viene calcolato a runtime con __w_sum, __w_count, __w_min, __w_max
+#heuristic b(X) : x(X), not c(X). [S1@S2, true] % S1=count(c), S2=sum(c)
+% --------------
+__heuristic(b, x, __n_c, __w_count(c), __sum(c), true).
