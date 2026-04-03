@@ -1,18 +1,18 @@
 % Definizione del dominio come definito nel paper di alpha
 % il range è definito in 
-% __.common_range.lp
+% __.BSP_range.lp
 
 x(1..n).
+
+#const tot = (n*(n+1))/2.
+#const min_val = (tot-1)/2.
+#const max_val = (tot+1)/2.
 
 % Guess
 1 { b(X); c(X) } 1 :- x(X).
 
-% Calcolo delle somme
-sumB(Sum) :- Sum = #sum{Y : b(Y)}.
-sumC(Sum) :- Sum = #sum{Y : c(Y)}.
-
-% Check
-:- sumB(SB), sumC(SC), (SB-SC)**2 > 1.
+% Check lineare equivalente al vincolo sulla differenza tra le somme.
+:- not min_val <= #sum{ Y : b(Y) } <= max_val.
 
 % euristiche di dominio
 
