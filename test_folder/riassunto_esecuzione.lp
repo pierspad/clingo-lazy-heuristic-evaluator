@@ -216,3 +216,174 @@ riduzione del 28.80% (N=40). A N=100, il consumo passa da 3746.45 MB a
 confermano che il lazy grounding delle euristiche attenua il grounding
 bottleneck e rende il comportamento molto piu' scalabile su istanze grandi,
 evitando l'esplosione preventiva delle combinazioni aggregate.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 13) Contestualizzazione dei grafici solving/conflicts/choices
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+L'osservazione sperimentale "solving time ~ 0" e "conflicts = 0" nella
+modalita' lazy non va interpretata come una disattivazione del motore CDNL.
+Il solver continua a operare con la stessa pipeline decisione-propagazione-
+analisi-conflitto-backjump, ma in queste istanze la sequenza di decisioni
+indotta dall'euristica coincide con un cammino risolutivo privo di scelte
+errate. In altre parole, l'albero di ricerca non viene bypassato: viene
+percorso lungo un unico ramo utile senza generare nodi di conflitto.
+
+Il grafico "Choices" mostra infatti una crescita lineare coerente con il
+numero di assegnamenti necessari per completare la soluzione BSP. L'assenza di
+backtracking riduce a zero i conflitti e rende trascurabile il tempo di
+solving residuo. Il miglioramento osservato e' quindi una evidenza di
+euristica di dominio quasi perfetta, resa praticabile dal fatto che il
+grounding non esplode piu' in memoria.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 14) Definizione formale della sintassi (__heuristic/N)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Per rendere la specifica rigorosa, la sintassi accettata dal costrutto
+__heuristic/N puo' essere formalizzata in EBNF come segue.
+
+<heuristic-fact>   ::= "__heuristic(" <target> {"," <h-arg>} ")."
+
+<target>           ::= <pred-id>
+
+<h-arg>            ::= <pos-lit>
+              | <neg-lit>
+              | <bind>
+              | <weight>
+              | <priority>
+              | <sign>
+
+<pos-lit>          ::= <pred-id>
+<neg-lit>          ::= "__n_" <pred-id>
+
+<bind>             ::= "__bind(" <var-id> "," <agg-expr> ")"
+<agg-expr>         ::= "__sum(" <pred-id> ")"
+              | "__count(" <pred-id> ")"
+              | "__min(" <pred-id> ")"
+              | "__max(" <pred-id> ")"
+
+<weight>           ::= "__weight(" <arith-expr> ")"
+<priority>         ::= "__priority(" <arith-expr> ")"
+
+<arith-expr>       ::= <int>
+              | "self"
+              | <var-id>
+              | "__add(" <arith-expr> "," <arith-expr> ")"
+              | "__sub(" <arith-expr> "," <arith-expr> ")"
+              | "__mul(" <arith-expr> "," <arith-expr> ")"
+
+<sign>             ::= "true" | "false" | "sign"
+
+<pred-id>          ::= identificatore predicato ASP valido
+<var-id>           ::= identificatore variabile locale valida
+<int>              ::= intero con segno in base 10
+
+Vincoli semantici addizionali:
+1) il primo argomento deve essere sempre <target>;
+2) ogni <var-id> usata in <arith-expr> deve essere introdotta da almeno un
+  __bind nello stesso fatto __heuristic/N;
+3) la semantica di "self" coincide con il valore di dominio dell'atomo target
+  nell'istanza corrente;
+4) l'ordine degli argomenti dopo il primo e' irrilevante;
+5) in presenza di bind multipli sullo stesso <var-id> si applica il vincolo di
+  unicita' (errore di parsing/inizializzazione).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 15) Analisi di complessita' temporale e spaziale
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Si introducono le seguenti grandezze:
+- T = numero di template __heuristic/N nel programma ground;
+- B = numero medio di letterali di body monitorati per template;
+- K = numero medio di bind/aggregati per template;
+- E = dimensione media (nodi) degli AST di weight/priority;
+- A = numero di aggiornamenti aggregato attivati da un literal in propagate;
+- U = numero di literal annullati in un singolo undo.
+
+Complessita' di inizializzazione (init_lazy_mode):
+- tempo: O(T * (B + K + E));
+- spazio: O(T * (B + K + E)) per indici, metadata e AST compilati.
+
+Complessita' del percorso caldo (decide):
+- accesso ai valori locali tramite env_buffer_ indicizzato: O(1) per variabile;
+- valutazione espressioni precompilate: O(E);
+- overhead totale per istanza attiva: O(E), senza parsing dinamico, allocazioni
+  heap o lookup stringa.
+
+Complessita' di propagate:
+- per ciascun trigger attivato: aggiornamento stato body in O(1);
+- aggiornamento aggregati incrementali sum/count in O(A);
+- per min/max con multiset implicito: inserimento/rimozione in O(log M), dove
+  M e' il numero di valori distinti correnti nell'aggregato;
+- costo complessivo su un passo di propagazione: O(A) (sum/count) oppure
+  O(A * log M) nel caso peggiore dominato da min/max.
+
+Complessita' di undo (backjump):
+- ripristino incrementale sum/count: O(U);
+- ripristino min/max con multiset implicito: O(U * log M);
+- rimozione istanze lazy non piu' attive: O(U) rispetto ai trigger toccati.
+
+In sintesi, il contributo del propagatore rimane lineare nel numero di eventi
+effettivamente attivati dall'assegnamento parziale, evitando il costo
+combinatorio a monte dovuto al grounding esaustivo delle euristiche aggregate.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 16) Estensione benchmark su domini non sintetici (protocollo)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Per consolidare la validita' esterna, e' necessario aggiungere almeno un
+benchmark su dominio reale con dipendenze causali irregolari. Protocollo
+proposto:
+
+Dataset minimo:
+1) Planning: istanze Blocks/Logistics/PDDL gia' convertite in ASP.
+2) Scheduling: job-shop o course timetabling con vincoli multipli.
+3) Routing: VRP/TSP con capacita' e finestre temporali (almeno una famiglia).
+
+Configurazione sperimentale:
+1) stessa versione di Clingo/Clasp e stessi flag tra baseline e lazy;
+2) timeout fisso (es. 600s) e limite memoria fisso (es. 8GB);
+3) almeno 5 run per istanza con media e deviazione standard;
+4) metriche: grounding time, solving time, totale, RSS max, conflicts,
+  choices, propagations, numero regole groundate.
+
+Obiettivo analitico:
+1) verificare se il beneficio persiste oltre BSP quando la ricerca non e'
+  deterministica;
+2) misurare trade-off tra overhead runtime del propagatore e riduzione del
+  grounding;
+3) identificare classi di istanze in cui la strategia lazy e' neutra o peggiora
+  (analisi di robustezza, non solo best-case).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 17) Confronto con letteratura e sistemi concorrenti
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Motivazione della modifica interna a Clasp:
+- le API esterne standard consentono euristiche efficaci solo quando i valori
+  necessari sono gia' disponibili in forma ground, ma non forniscono un canale
+  equivalente per compilare e valutare espressioni aggregate dinamiche
+  all'interno dell'hot path decisionale senza esplodere il grounding;
+- il requisito di calcolo "on partial assignment" per peso/priorita' richiede
+  accesso diretto allo stato incrementale del solver e sincronizzazione stretta
+  con propagate/undo, ottenibile in modo robusto intervenendo nel core.
+
+Confronto critico da esplicitare nel capitolo stato dell'arte:
+1) WASP: discutere limiti del modello di integrazione euristica rispetto al
+  calcolo dinamico di aggregati dipendenti dall'assegnamento parziale.
+2) Alpha e approcci di lazy grounding nativi: evidenziare differenza di livello
+  (grounding complessivo del programma vs lazy grounding mirato alle sole
+  direttive euristiche), vantaggi e limiti di ciascuna scelta.
+3) Contributo originale della tesi: introduzione di una pipeline ibrida in cui
+  la semantica euristica viene "compilata" in template statici e poi valutata
+  incrementalmente nel solver CDNL, preservando correttezza e scalabilita'.
+
+Questa sezione deve includere anche una discussione dei limiti attuali:
+copertura parziale degli aggregati supportati, costo logaritmico per min/max,
+e necessita' di ulteriore validazione cross-domain.
