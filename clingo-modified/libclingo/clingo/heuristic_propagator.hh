@@ -132,63 +132,67 @@ struct AggregateKeyHash {
 // L'AST permette di esprimere calcoli come S+1, S*10, ecc.
 // dove S è una variabile locale legata a un aggregato tramite __bind.
 //
-// Esempio ASP:  __bind(s, __sum(c)), __weight(__add(s, 1))
-// AST risultante: BinOpExpr(ADD, VarExpr("s"), ConstExpr(1))
+// OTTIMIZZAZIONE: le variabili sono indicizzate con interi (non stringhe).
+// L'environment a runtime è un flat array int[] dove:
+//   - env[0] = __self__ (domain_value)
+//   - env[1] = prima variabile locale
+//   - env[2] = seconda variabile locale
+//   - ...
 //
-// A runtime, l'environment {s → 42} produce weight = 43.
+// Questo elimina ogni allocazione dinamica e hash lookup dall'hot path.
 // ============================================================================
+
+/// Indice riservato per il domain value (__self__)
+static constexpr int ENV_SELF_INDEX = 0;
 
 /// Tipo di operazione binaria
 enum class BinOp { ADD, SUB, MUL };
 
 /// Classe base astratta per un nodo dell'albero di espressioni.
-/// L'environment mappa nomi di variabili a valori interi (risolti dagli aggregati).
-/// Il campo "self" nell'environment rappresenta il domain_value dell'istanza.
+/// L'environment è un flat array di interi: env[i] è il valore della variabile i.
 struct Expression {
     virtual ~Expression() = default;
-    virtual int evaluate(std::unordered_map<std::string, int> const &env) const = 0;
+    virtual int evaluate(int const *env) const = 0;
 };
 
 /// Foglia: costante numerica (es. 1, 5, 0)
 struct ConstExpr final : Expression {
     int value;
     explicit ConstExpr(int v) : value(v) {}
-    int evaluate(std::unordered_map<std::string, int> const &) const override {
+    int evaluate(int const *) const override {
         return value;
     }
 };
 
 /// Foglia: riferimento al domain_value dell'istanza (keyword "self")
-/// Equivale a VarExpr("__self__") ma è semanticamente distinto
+/// Accede a env[ENV_SELF_INDEX]
 struct SelfExpr final : Expression {
-    int evaluate(std::unordered_map<std::string, int> const &env) const override {
-        auto it = env.find("__self__");
-        return it != env.end() ? it->second : 0;
+    int evaluate(int const *env) const override {
+        return env[ENV_SELF_INDEX];
     }
 };
 
-/// Foglia: variabile locale risolta a runtime dall'environment
-/// Es: VarExpr("s") → env["s"] → valore corrente dell'aggregato legato a "s"
+/// Foglia: variabile locale risolta a runtime dall'environment tramite indice intero
+/// Es: VarExpr(1) → env[1] → valore corrente dell'aggregato legato all'indice 1
 struct VarExpr final : Expression {
-    std::string name;
-    explicit VarExpr(std::string n) : name(std::move(n)) {}
-    int evaluate(std::unordered_map<std::string, int> const &env) const override {
-        auto it = env.find(name);
-        return it != env.end() ? it->second : 0;
+    int index;  // Indice nell'array environment
+    explicit VarExpr(int idx) : index(idx) {}
+    int evaluate(int const *env) const override {
+        return env[index];
     }
 };
 
 /// Nodo intermedio: operazione binaria tra due sotto-espressioni
-/// Es: AddExpr(VarExpr("s"), ConstExpr(1)) → s + 1
+/// Es: BinOpExpr(ADD, VarExpr(1), ConstExpr(1)) → env[1] + 1
 struct BinOpExpr final : Expression {
     BinOp op;
-    std::shared_ptr<Expression> left;
-    std::shared_ptr<Expression> right;
+    std::unique_ptr<Expression> left;
+    std::unique_ptr<Expression> right;
 
-    BinOpExpr(BinOp o, std::shared_ptr<Expression> l, std::shared_ptr<Expression> r)
+    BinOpExpr(BinOp o, std::unique_ptr<Expression> l, std::unique_ptr<Expression> r)
         : op(o), left(std::move(l)), right(std::move(r)) {}
 
-    int evaluate(std::unordered_map<std::string, int> const &env) const override {
+    int evaluate(int const *env) const override {
         int lv = left->evaluate(env);
         int rv = right->evaluate(env);
         switch (op) {
@@ -203,6 +207,13 @@ struct BinOpExpr final : Expression {
 // ============================================================================
 // STRUTTURE PER IL LAZY GROUNDING
 // ============================================================================
+
+/// Mappa una variabile locale al suo indice nell'environment e alla chiave aggregata.
+/// Pre-calcolata in init_lazy_mode per evitare lookup stringa a runtime.
+struct VarBinding {
+    int env_index;      // Indice nella flat array environment (1-based, 0 è __self__)
+    AggregateKey agg_key;  // Chiave dell'aggregato da cui leggere il valore
+};
 
 /// Template di una regola euristica (letto da __heuristic/N).
 /// NON contiene istanziazioni concrete, solo la "forma" della regola.
@@ -228,15 +239,23 @@ struct HeuristicRuleTemplate {
     std::vector<std::string> neg_body_preds;  // Body negativi (es. {"c"} da __n_c)
     std::string sign;                         // "true", "false", "sign"
 
-    // Mappa le variabili locali alle rispettive chiavi aggregate
-    // Es. "s" -> AggregateKey("__sum", "c", -1)
+    // === Fase di parsing (usato solo in init) ===
+    // Mappa le variabili locali alle rispettive chiavi aggregate (stringa → AggregateKey)
+    // Usato solo durante il parsing per risolvere i nomi nelle espressioni.
     std::unordered_map<std::string, AggregateKey> local_vars;
 
+    // === Fase di runtime (usato in decide, zero-allocation) ===
+    // Bindings pre-calcolati: per ogni variabile, il suo indice env e la chiave aggregata
+    std::vector<VarBinding> var_bindings;
+
+    // Dimensione dell'environment per questa regola (1 + numero variabili locali)
+    int env_size = 1; // Minimo 1 per __self__
+
     // AST per il calcolo del peso a runtime (nullable: default 0)
-    std::shared_ptr<Expression> weight_expr;
+    std::unique_ptr<Expression> weight_expr;
 
     // AST per il calcolo della priorità a runtime (nullable: default 0)
-    std::shared_ptr<Expression> priority_expr;
+    std::unique_ptr<Expression> priority_expr;
 };
 
 /// Istanza euristica creata dinamicamente durante propagate.
@@ -308,16 +327,23 @@ private:
     /// Mappa gli aggregate key ai loro stati dinamici (polimorfici)
     std::unordered_map<AggregateKey, std::unique_ptr<AggregateState>, AggregateKeyHash> aggregate_states_;
 
+    // === Buffer pre-allocato per decide() (zero-allocation hot path) ===
+
+    /// Flat array riutilizzato per l'environment delle espressioni in decide().
+    /// Dimensionato al massimo env_size tra tutti i template in init_lazy_mode().
+    std::vector<int> env_buffer_;
+
     // === Metodi helper privati ===
     void init_static_mode(Clingo::PropagateInit &init);
     void init_lazy_mode(Clingo::PropagateInit &init);
 
     /// Parsing ricorsivo di un termine Clingo in un AST Expression.
-    /// Riconosce costanti, "self", variabili (nomi presenti in local_vars),
+    /// Riconosce costanti, "self", variabili (nomi presenti in var_index_map),
     /// e operazioni binarie (__add, __sub, __mul).
-    static std::shared_ptr<Expression> parse_expression(
+    /// var_index_map mappa nomi di variabili ai loro indici nell'environment.
+    static std::unique_ptr<Expression> parse_expression(
         Clingo::Symbol const &sym,
-        std::unordered_map<std::string, AggregateKey> const &known_vars);
+        std::unordered_map<std::string, int> const &var_index_map);
 
 public:
     virtual ~HeuristicPropagator() = default;

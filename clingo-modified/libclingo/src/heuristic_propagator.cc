@@ -44,22 +44,25 @@ static std::string strip_neg_prefix(std::string const &name) {
 //
 // Converte un Clingo::Symbol in un albero di Expression:
 //   - Number(n)               → ConstExpr(n)
-//   - self                    → SelfExpr()
-//   - nome in known_vars      → VarExpr(nome)
+//   - self                    → SelfExpr()    (accede a env[0])
+//   - nome in var_index_map   → VarExpr(idx)  (accede a env[idx])
 //   - __add(a, b)             → BinOpExpr(ADD, parse(a), parse(b))
 //   - __sub(a, b)             → BinOpExpr(SUB, parse(a), parse(b))
 //   - __mul(a, b)             → BinOpExpr(MUL, parse(a), parse(b))
 //
 // Se il termine non è riconosciuto, restituisce ConstExpr(0) come fallback.
+//
+// NOTA: var_index_map mappa i nomi delle variabili ai loro indici interi
+// nell'environment flat array, pre-calcolati in init_lazy_mode().
 // ============================================================================
 
-std::shared_ptr<Expression> HeuristicPropagator::parse_expression(
+std::unique_ptr<Expression> HeuristicPropagator::parse_expression(
     Clingo::Symbol const &sym,
-    std::unordered_map<std::string, AggregateKey> const &known_vars)
+    std::unordered_map<std::string, int> const &var_index_map)
 {
     // Caso 1: costante numerica
     if (sym.type() == Clingo::SymbolType::Number) {
-        return std::make_shared<ConstExpr>(sym.number());
+        return std::make_unique<ConstExpr>(sym.number());
     }
 
     // Caso 2: simbolo funzionale
@@ -67,33 +70,36 @@ std::shared_ptr<Expression> HeuristicPropagator::parse_expression(
         std::string name = sym.name();
         auto args = sym.arguments();
 
-        // "self" (nessun argomento)
+        // "self" (nessun argomento) → env[0]
         if (name == "self" && args.size() == 0) {
-            return std::make_shared<SelfExpr>();
+            return std::make_unique<SelfExpr>();
         }
 
         // Operazione binaria: __add(a, b), __sub(a, b), __mul(a, b)
         if (is_binop_name(name) && args.size() == 2) {
-            auto left = parse_expression(args[0], known_vars);
-            auto right = parse_expression(args[1], known_vars);
-            return std::make_shared<BinOpExpr>(binop_from_name(name),
+            auto left = parse_expression(args[0], var_index_map);
+            auto right = parse_expression(args[1], var_index_map);
+            return std::make_unique<BinOpExpr>(binop_from_name(name),
                                                 std::move(left), std::move(right));
         }
 
-        // Variabile nota (atomo semplice senza argomenti il cui nome è in known_vars)
-        if (args.size() == 0 && known_vars.find(name) != known_vars.end()) {
-            return std::make_shared<VarExpr>(name);
+        // Variabile nota (atomo semplice senza argomenti il cui nome è in var_index_map)
+        if (args.size() == 0) {
+            auto it = var_index_map.find(name);
+            if (it != var_index_map.end()) {
+                return std::make_unique<VarExpr>(it->second);
+            }
         }
 
         // Atomo semplice senza argomenti non riconosciuto come variabile:
         // potrebbe essere un riferimento futuro o un errore, fallback a 0
         if (args.size() == 0) {
-            return std::make_shared<ConstExpr>(0);
+            return std::make_unique<ConstExpr>(0);
         }
     }
 
     // Fallback: costante 0
-    return std::make_shared<ConstExpr>(0);
+    return std::make_unique<ConstExpr>(0);
 }
 
 // ============================================================================
@@ -109,6 +115,7 @@ void HeuristicPropagator::init(Clingo::PropagateInit &init) {
     body_triggers_.clear();
     lazy_targets_.clear();
     active_body_lits_.clear();
+    env_buffer_.clear();
     has_lazy_rules_ = false;
 
     auto atoms = init.symbolic_atoms();
@@ -275,6 +282,10 @@ void HeuristicPropagator::init_static_mode(Clingo::PropagateInit &init) {
 //   - __priority(expr)               → espressione per la priorità
 //   - "true" / "false" / "sign"      → segno dell'euristica
 //
+// OTTIMIZZAZIONE: dopo il parsing, le variabili stringa vengono mappate
+// a indici interi (var_bindings, env_size) e gli AST usano VarExpr(indice)
+// anziché VarExpr("nome"). Questo elimina ogni hash lookup in decide().
+//
 // Esempio: __heuristic(b, x, __n_c, __bind(s, __sum(c)), __weight(self), __priority(s), true).
 // ============================================================================
 
@@ -288,6 +299,9 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
     std::unordered_set<std::string> target_preds;
     std::unordered_set<std::string> neg_body_preds;
     std::unordered_set<std::string> aggregate_preds;
+
+    // Dimensione massima dell'environment tra tutti i template
+    int max_env_size = 1;
 
     for (auto it = atoms.begin(); it != atoms.end(); ++it) {
         std::string sym_name = it->symbol().name();
@@ -306,8 +320,10 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
         tmpl.target_pred = args[0].name();
         tmpl.sign = "true"; // default sign
 
-        // Prima passata: raccogliamo i __bind per popolare known_vars
-        // prima di poter parsare le espressioni in __weight/__priority
+        // Prima passata: raccogliamo i __bind per popolare local_vars
+        // e assegnare indici interi a ciascuna variabile
+        int next_var_index = 1; // 0 è riservato per __self__
+
         for (size_t i = 1; i < args.size(); ++i) {
             auto const &arg = args[i];
             if (arg.type() != Clingo::SymbolType::Function) continue;
@@ -317,8 +333,6 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
 
             if (arg_name == "__bind" && arg_args.size() == 2) {
                 // __bind(var, __agg(pred)) o __bind(var, __agg(pred, idx))
-                // arg_args[0] = var (simbolo semplice)
-                // arg_args[1] = __agg(pred) (funzione aggregata)
                 if (arg_args[0].type() == Clingo::SymbolType::Function &&
                     arg_args[0].arguments().size() == 0 &&
                     arg_args[1].type() == Clingo::SymbolType::Function) {
@@ -339,14 +353,42 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
 
                         AggregateKey key{agg_op, pred, arg_idx};
                         tmpl.local_vars[var_name] = key;
+
+                        // Assegna un indice intero alla variabile
+                        VarBinding binding;
+                        binding.env_index = next_var_index++;
+                        binding.agg_key = key;
+                        tmpl.var_bindings.push_back(binding);
+
                         aggregate_preds.insert(pred);
                     }
                 }
             }
         }
 
+        // Imposta la dimensione dell'environment per questo template
+        tmpl.env_size = next_var_index;
+        if (next_var_index > max_env_size) {
+            max_env_size = next_var_index;
+        }
+
+        // Costruisci la mappa nome → indice per il parsing delle espressioni
+        std::unordered_map<std::string, int> var_index_map;
+        {
+            int idx = 1;
+            for (auto const &[var_name, agg_key] : tmpl.local_vars) {
+                // Cerca il binding corrispondente
+                for (auto const &vb : tmpl.var_bindings) {
+                    if (vb.agg_key == agg_key) {
+                        var_index_map[var_name] = vb.env_index;
+                        break;
+                    }
+                }
+            }
+        }
+
         // Seconda passata: classificazione completa degli argomenti
-        // (ora known_vars è popolato e possiamo parsare le espressioni)
+        // (ora var_index_map è popolato e possiamo parsare le espressioni)
         for (size_t i = 1; i < args.size(); ++i) {
             auto const &arg = args[i];
 
@@ -355,7 +397,7 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
                 // Per retrocompatibilità con argomenti semplici come weight costante,
                 // se non c'è un __weight esplicito, usiamo questo come weight
                 if (!tmpl.weight_expr) {
-                    tmpl.weight_expr = std::make_shared<ConstExpr>(arg.number());
+                    tmpl.weight_expr = std::make_unique<ConstExpr>(arg.number());
                 }
 
             } else if (arg.type() == Clingo::SymbolType::Function) {
@@ -368,11 +410,11 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
 
                 } else if (arg_name == "__weight" && arg_args.size() == 1) {
                     // __weight(expr) → espressione per il peso
-                    tmpl.weight_expr = parse_expression(arg_args[0], tmpl.local_vars);
+                    tmpl.weight_expr = parse_expression(arg_args[0], var_index_map);
 
                 } else if (arg_name == "__priority" && arg_args.size() == 1) {
                     // __priority(expr) → espressione per la priorità
-                    tmpl.priority_expr = parse_expression(arg_args[0], tmpl.local_vars);
+                    tmpl.priority_expr = parse_expression(arg_args[0], var_index_map);
 
                 } else if (is_sign_name(arg_name) && arg_args.size() == 0) {
                     // Sign: true, false, sign
@@ -382,7 +424,7 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
                     // "self" come argomento top-level (retrocompatibilità)
                     // Se non c'è __weight esplicito, usa self come weight
                     if (!tmpl.weight_expr) {
-                        tmpl.weight_expr = std::make_shared<SelfExpr>();
+                        tmpl.weight_expr = std::make_unique<SelfExpr>();
                     }
 
                 } else if (is_neg_body(arg_name) && arg_args.size() == 0) {
@@ -402,23 +444,23 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
 
         // Default: se nessun __weight specificato, weight = 0
         if (!tmpl.weight_expr) {
-            tmpl.weight_expr = std::make_shared<ConstExpr>(0);
+            tmpl.weight_expr = std::make_unique<ConstExpr>(0);
         }
 
         // Default: se nessun __priority specificato, priority = 0
         if (!tmpl.priority_expr) {
-            tmpl.priority_expr = std::make_shared<ConstExpr>(0);
+            tmpl.priority_expr = std::make_unique<ConstExpr>(0);
         }
 
         // Registra il predicato target
         target_preds.insert(tmpl.target_pred);
 
         // Crea gli stati aggregati per tutti i binding
-        for (auto const &[var_name, agg_key] : tmpl.local_vars) {
-            if (aggregate_states_.find(agg_key) == aggregate_states_.end()) {
-                auto state = make_aggregate(agg_key.op);
+        for (auto const &vb : tmpl.var_bindings) {
+            if (aggregate_states_.find(vb.agg_key) == aggregate_states_.end()) {
+                auto state = make_aggregate(vb.agg_key.op);
                 if (state) {
-                    aggregate_states_[agg_key] = std::move(state);
+                    aggregate_states_[vb.agg_key] = std::move(state);
                 }
             }
         }
@@ -431,6 +473,9 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
         init_static_mode(init);
         return;
     }
+
+    // Pre-alloca il buffer environment alla dimensione massima
+    env_buffer_.resize(max_env_size, 0);
 
     // ---- FASE 2: Scansione del dominio per costruire lookup tables ----
 
@@ -521,7 +566,7 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
 
     // ---- FASE 4: Registrazione watch sugli atomi aggregati ----
     //
-    // Iteriamo su tutti i local_vars di ogni template per trovare
+    // Iteriamo su tutti i var_bindings di ogni template per trovare
     // i predicati da osservare per gli aggregati.
 
     auto register_agg_watches = [&](AggregateKey const &agg_key) {
@@ -546,8 +591,8 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
     };
 
     for (auto const &tmpl : rule_templates_) {
-        for (auto const &[var_name, agg_key] : tmpl.local_vars) {
-            register_agg_watches(agg_key);
+        for (auto const &vb : tmpl.var_bindings) {
+            register_agg_watches(vb.agg_key);
         }
     }
 }
@@ -577,22 +622,25 @@ void HeuristicPropagator::propagate(Clingo::PropagateControl &control, Clingo::L
             auto trigger_it = body_triggers_.find(lit);
             if (trigger_it != body_triggers_.end()) {
                 // Questo body literal è trigger per uno o più template.
-                // Creiamo le istanze lazy corrispondenti.
-                std::vector<LazyTargetInstance> instances;
+                // Creiamo le istanze lazy corrispondenti direttamente nel container
+                // finale, evitando un vettore temporaneo.
+                auto &target_vec = lazy_targets_[lit];
+                target_vec.clear(); // Riusa la capacity se il vettore esiste già
+                target_vec.reserve(trigger_it->second.size());
 
                 for (auto const &trigger : trigger_it->second) {
-                    LazyTargetInstance inst;
-                    inst.target_lit = trigger.target_lit;
-                    inst.neg_body_lits = trigger.neg_body_lits;
-                    inst.domain_value = trigger.domain_value;
-                    inst.rule_idx = trigger.rule_idx;
-
-                    instances.push_back(std::move(inst));
+                    target_vec.push_back({
+                        trigger.target_lit,
+                        trigger.neg_body_lits,
+                        trigger.domain_value,
+                        trigger.rule_idx
+                    });
                 }
 
-                if (!instances.empty()) {
-                    lazy_targets_[lit] = std::move(instances);
+                if (!target_vec.empty()) {
                     active_body_lits_.push_back(lit);
+                } else {
+                    lazy_targets_.erase(lit);
                 }
             }
         }
@@ -640,6 +688,17 @@ void HeuristicPropagator::undo(Clingo::PropagateControl const &control, Clingo::
 // ============================================================================
 // decide() — Suggerisce il letterale da decidere
 // ============================================================================
+//
+// OTTIMIZZAZIONE: nella modalità lazy, l'environment per la valutazione
+// delle espressioni AST è un flat array di interi (env_buffer_) pre-allocato
+// in init_lazy_mode(). Nessuna allocazione dinamica avviene in questo metodo.
+//
+// Layout dell'environment:
+//   env[0] = __self__ (domain_value dell'istanza)
+//   env[1] = prima variabile locale (valore dell'aggregato)
+//   env[2] = seconda variabile locale
+//   ...
+// ============================================================================
 
 Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
                                                Clingo::Assignment const &assignment,
@@ -654,8 +713,11 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
     if (has_lazy_rules_) {
         // ---- MODALITÀ LAZY ----
         // Iteriamo sulle istanze lazy create dinamicamente in propagate.
-        // Per ciascuna, costruiamo l'environment dalle variabili locali
-        // del template e valutiamo le espressioni AST per peso e priorità.
+        // Per ciascuna, popoliamo il flat array environment (env_buffer_)
+        // e valutiamo le espressioni AST per peso e priorità.
+        // ZERO allocazioni dinamiche in questo loop.
+
+        int *env = env_buffer_.data();
 
         for (auto const &body_lit : active_body_lits_) {
             auto lazy_it = lazy_targets_.find(body_lit);
@@ -678,24 +740,23 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
                     continue;
                 }
 
-                // Costruzione dell'environment per la valutazione delle espressioni
+                // Popola il flat array environment (zero-allocation)
                 auto const &tmpl = rule_templates_[inst.rule_idx];
-                std::unordered_map<std::string, int> env;
 
-                // Inserisci il domain_value come "__self__" (usato da SelfExpr)
-                env["__self__"] = inst.domain_value;
+                // env[0] = __self__
+                env[ENV_SELF_INDEX] = inst.domain_value;
 
                 // Risolvi tutte le variabili locali dai loro aggregati
-                for (auto const &[var_name, agg_key] : tmpl.local_vars) {
+                for (auto const &vb : tmpl.var_bindings) {
                     int val = 0;
-                    auto state_it = aggregate_states_.find(agg_key);
+                    auto state_it = aggregate_states_.find(vb.agg_key);
                     if (state_it != aggregate_states_.end()) {
                         val = state_it->second->result();
                     }
-                    env[var_name] = val;
+                    env[vb.env_index] = val;
                 }
 
-                // Valutazione delle espressioni AST
+                // Valutazione delle espressioni AST (accesso diretto al flat array)
                 int current_priority = tmpl.priority_expr
                     ? tmpl.priority_expr->evaluate(env) : 0;
                 int current_weight = tmpl.weight_expr
