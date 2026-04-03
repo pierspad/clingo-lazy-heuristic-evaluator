@@ -150,3 +150,69 @@ __heuristic(b, x, __n_c, __bind(s, __sum(c)), __weight(__add(self, s)), __priori
 % 9. Stessa variabile usata sia in weight che in priority
 % Weight = S, Priority = S + 1
 __heuristic(b, x, __n_c, __bind(s, __sum(c)), __weight(s), __priority(__add(s, 1)), true).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 10) Architettura AST (Abstract Syntax Tree) per __weight/__priority
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+La sintassi flessibile di __weight(expr) e __priority(expr) non viene gestita
+come semplice parsing testuale durante la fase di scelta. In init_lazy_mode,
+il propagatore analizza i termini Clingo e costruisce un AST polimorfico
+basato sull'interfaccia Expression. Ogni forma sintattica viene trasformata in
+un nodo tipizzato: costanti numeriche in ConstExpr, self in SelfExpr,
+variabili legate da __bind in VarExpr, e operatori binari (__add/__sub/__mul)
+in BinOpExpr con due sottoalberi. Questa compilazione avviene una sola volta
+in fase di inizializzazione.
+
+Durante decide, per ogni istanza lazy attiva viene costruito un environment
+(mappa nome->valore) che contiene il valore del dominio corrente (__self__) e
+i valori correnti degli aggregati risolti dalle local_vars. La valutazione di
+weight_expr e priority_expr avviene quindi per visita dell'albero, partendo dai
+nodi foglia e propagando i risultati verso i nodi interni. In questo modo non
+si effettua alcun parsing di stringhe a runtime: il costo per decisione e'
+deterministico e legato solo alla dimensione dell'espressione gia' compilata,
+con overhead costante rispetto alla ricerca CDNL.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 11) Gestione del backtracking CDNL (metodo undo)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+La correttezza del propagatore non dipende solo dalla propagazione in avanti,
+ma anche dalla capacita' di ripristinare esattamente lo stato quando Clasp
+esegue backjump/backtracking dopo un conflitto. Questo e' gestito nel metodo
+undo, che riceve i literal rimossi dall'assegnamento e aggiorna in senso
+inverso tutte le strutture incrementali.
+
+Per gli aggregati, SumState e CountState applicano l'inversa aritmetica
+(remove) rispetto all'aggiornamento effettuato in propagate (add):
+somma e conteggio tornano al valore precedente in O(1). Per __min e __max,
+non e' sufficiente invertire con una singola operazione numerica; MinState e
+MaxState mantengono quindi un multiset implicito (mappa valore->occorrenze)
+che consente di rimuovere correttamente il contributo del literal annullato e
+di recuperare il nuovo estremo valido senza ricalcolare l'aggregato da zero.
+In parallelo, undo elimina anche le istanze lazy create dai trigger che non
+sono piu' veri, mantenendo allineate active_body_lits e lazy_targets_ con lo
+stato effettivo del solver.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 12) Valutazione empirica (benchmark.sh + graphs.py)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+La validazione sperimentale e' stata condotta con benchmark.sh, confrontando la
+codifica standard (#heuristic con aggregati groundati dal front-end) contro la
+variante lazy con template __heuristic/N e valutazione runtime nel propagatore.
+I risultati, salvati in test-results/results.csv e visualizzati da graphs.py,
+mostrano un miglioramento sistematico sia in tempo sia in memoria al crescere
+di N (10..100).
+
+In media, la variante lazy riduce il tempo di esecuzione del 44.15% e ottiene
+uno speedup medio di 1.74x (1.82x a N=100: 112.81s -> 62.00s). Sul fronte
+memoria, la RSS massima si riduce mediamente del 18.20%, con un picco di
+riduzione del 28.80% (N=40). A N=100, il consumo passa da 3746.45 MB a
+3270.48 MB, con un risparmio assoluto di circa 476 MB. Questi numeri
+confermano che il lazy grounding delle euristiche attenua il grounding
+bottleneck e rende il comportamento molto piu' scalabile su istanze grandi,
+evitando l'esplosione preventiva delle combinazioni aggregate.
