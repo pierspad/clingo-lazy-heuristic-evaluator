@@ -6,21 +6,21 @@
 // Funzioni helper per il parsing flessibile degli argomenti __heuristic
 // ============================================================================
 
-/// Controlla se un nome di funzione è un aggregato per la priority (__sum, __count, __min, __max)
+/// Controlla se un nome di funzione è un aggregato (__sum, __count, __min, __max)
 static bool is_aggregate_name(std::string const &name) {
     return name == "__sum" || name == "__count" || name == "__min" || name == "__max";
 }
 
-/// Controlla se un nome di funzione è un aggregato per il weight (__w_sum, __w_count, __w_min, __w_max)
-static bool is_weight_aggregate_name(std::string const &name) {
-    return name == "__w_sum" || name == "__w_count" || name == "__w_min" || name == "__w_max";
+/// Controlla se un nome è un'operazione binaria (__add, __sub, __mul)
+static bool is_binop_name(std::string const &name) {
+    return name == "__add" || name == "__sub" || name == "__mul";
 }
 
-/// Converte il nome di un aggregato weight nel nome dell'operazione base
-/// Es: "__w_sum" → "__sum", "__w_count" → "__count"
-static std::string weight_agg_to_op(std::string const &name) {
-    // "__w_sum" → "__" + "sum" = "__sum"
-    return "__" + name.substr(4);
+/// Converte il nome di un'operazione binaria nel tipo BinOp
+static BinOp binop_from_name(std::string const &name) {
+    if (name == "__add") return BinOp::ADD;
+    if (name == "__sub") return BinOp::SUB;
+    return BinOp::MUL; // __mul
 }
 
 /// Controlla se un nome di funzione è un segno dell'euristica (true, false, sign)
@@ -39,15 +39,65 @@ static std::string strip_neg_prefix(std::string const &name) {
 }
 
 // ============================================================================
-// init() — Punto di ingresso: decide quale modalità usare
+// parse_expression() — Parsing ricorsivo di un termine Clingo in un AST
 // ============================================================================
 //
-// Strategia di discriminazione tra static e lazy:
-//   - Se troviamo un atomo __heuristic(...) il cui primo argomento è un
-//     simbolo semplice senza argomenti (es. "b"), siamo in modalità lazy.
-//   - Se il primo argomento è un atomo compound con argomenti (es. b(1)),
-//     siamo in modalità statica (generato dal grounder di clingo).
-//   - Se non troviamo nessun __heuristic, nessuna euristica viene attivata.
+// Converte un Clingo::Symbol in un albero di Expression:
+//   - Number(n)               → ConstExpr(n)
+//   - self                    → SelfExpr()
+//   - nome in known_vars      → VarExpr(nome)
+//   - __add(a, b)             → BinOpExpr(ADD, parse(a), parse(b))
+//   - __sub(a, b)             → BinOpExpr(SUB, parse(a), parse(b))
+//   - __mul(a, b)             → BinOpExpr(MUL, parse(a), parse(b))
+//
+// Se il termine non è riconosciuto, restituisce ConstExpr(0) come fallback.
+// ============================================================================
+
+std::shared_ptr<Expression> HeuristicPropagator::parse_expression(
+    Clingo::Symbol const &sym,
+    std::unordered_map<std::string, AggregateKey> const &known_vars)
+{
+    // Caso 1: costante numerica
+    if (sym.type() == Clingo::SymbolType::Number) {
+        return std::make_shared<ConstExpr>(sym.number());
+    }
+
+    // Caso 2: simbolo funzionale
+    if (sym.type() == Clingo::SymbolType::Function) {
+        std::string name = sym.name();
+        auto args = sym.arguments();
+
+        // "self" (nessun argomento)
+        if (name == "self" && args.size() == 0) {
+            return std::make_shared<SelfExpr>();
+        }
+
+        // Operazione binaria: __add(a, b), __sub(a, b), __mul(a, b)
+        if (is_binop_name(name) && args.size() == 2) {
+            auto left = parse_expression(args[0], known_vars);
+            auto right = parse_expression(args[1], known_vars);
+            return std::make_shared<BinOpExpr>(binop_from_name(name),
+                                                std::move(left), std::move(right));
+        }
+
+        // Variabile nota (atomo semplice senza argomenti il cui nome è in known_vars)
+        if (args.size() == 0 && known_vars.find(name) != known_vars.end()) {
+            return std::make_shared<VarExpr>(name);
+        }
+
+        // Atomo semplice senza argomenti non riconosciuto come variabile:
+        // potrebbe essere un riferimento futuro o un errore, fallback a 0
+        if (args.size() == 0) {
+            return std::make_shared<ConstExpr>(0);
+        }
+    }
+
+    // Fallback: costante 0
+    return std::make_shared<ConstExpr>(0);
+}
+
+// ============================================================================
+// init() — Punto di ingresso: decide quale modalità usare
 // ============================================================================
 
 void HeuristicPropagator::init(Clingo::PropagateInit &init) {
@@ -103,9 +153,6 @@ void HeuristicPropagator::init(Clingo::PropagateInit &init) {
 
 // ============================================================================
 // init_static_mode() — Modalità classica (per regole __heuristic/4 custom)
-// Legge __heuristic/4 da symbolic_atoms() (generati dalle regole custom
-// non-ground, es. __heuristic(b(X),X,S,true) :- x(X), not c(X), S = __sum(c).
-// NON sono generati da #heuristic di clingo!)
 // ============================================================================
 
 void HeuristicPropagator::init_static_mode(Clingo::PropagateInit &init) {
@@ -215,8 +262,7 @@ void HeuristicPropagator::init_static_mode(Clingo::PropagateInit &init) {
 
 // ============================================================================
 // init_lazy_mode() — Modalità lazy (ground-on-demand)
-// Legge __heuristic/N come template con argomenti flessibili, poi scansiona
-// il dominio per pre-risolvere i literal e registrare i trigger.
+// ============================================================================
 //
 // Formato ASP: __heuristic(TargetPred, ...args...).
 //
@@ -224,12 +270,12 @@ void HeuristicPropagator::init_static_mode(Clingo::PropagateInit &init) {
 // Gli argomenti successivi vengono classificati automaticamente:
 //   - atomo semplice senza prefisso  → body positivo (es. x)
 //   - prefisso __n_                  → body negativo (es. __n_c → c)
-//   - "self"                         → weight = valore del dominio
-//   - numero intero                  → weight costante
-//   - __sum(p), __count(p), etc.     → aggregato per la priority
+//   - __bind(var, __agg(pred))       → binding variabile → aggregato
+//   - __weight(expr)                 → espressione per il peso
+//   - __priority(expr)               → espressione per la priorità
 //   - "true" / "false" / "sign"      → segno dell'euristica
 //
-// Esempio: __heuristic(b, x, __n_c, self, __sum(c), true).
+// Esempio: __heuristic(b, x, __n_c, __bind(s, __sum(c)), __weight(self), __priority(s), true).
 // ============================================================================
 
 void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
@@ -258,56 +304,86 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
 
         // Primo argomento: sempre il target
         tmpl.target_pred = args[0].name();
-        tmpl.weight_source = "";  // default: nessun weight specificato
-        tmpl.sign = "true";       // default sign
-        tmpl.priority_agg_key = {"", "", -1}; // default: nessun aggregato per la priority
-        tmpl.weight_agg_key = {"", "", -1};    // default: nessun aggregato per il weight
+        tmpl.sign = "true"; // default sign
 
-        // Classificazione automatica degli argomenti successivi
+        // Prima passata: raccogliamo i __bind per popolare known_vars
+        // prima di poter parsare le espressioni in __weight/__priority
+        for (size_t i = 1; i < args.size(); ++i) {
+            auto const &arg = args[i];
+            if (arg.type() != Clingo::SymbolType::Function) continue;
+
+            std::string arg_name = arg.name();
+            auto arg_args = arg.arguments();
+
+            if (arg_name == "__bind" && arg_args.size() == 2) {
+                // __bind(var, __agg(pred)) o __bind(var, __agg(pred, idx))
+                // arg_args[0] = var (simbolo semplice)
+                // arg_args[1] = __agg(pred) (funzione aggregata)
+                if (arg_args[0].type() == Clingo::SymbolType::Function &&
+                    arg_args[0].arguments().size() == 0 &&
+                    arg_args[1].type() == Clingo::SymbolType::Function) {
+
+                    std::string var_name = arg_args[0].name();
+                    std::string agg_op = arg_args[1].name();
+                    auto agg_inner_args = arg_args[1].arguments();
+
+                    if (is_aggregate_name(agg_op) && agg_inner_args.size() >= 1 &&
+                        agg_inner_args[0].type() == Clingo::SymbolType::Function) {
+
+                        std::string pred = agg_inner_args[0].name();
+                        int arg_idx = -1;
+                        if (agg_inner_args.size() >= 2 &&
+                            agg_inner_args[1].type() == Clingo::SymbolType::Number) {
+                            arg_idx = agg_inner_args[1].number();
+                        }
+
+                        AggregateKey key{agg_op, pred, arg_idx};
+                        tmpl.local_vars[var_name] = key;
+                        aggregate_preds.insert(pred);
+                    }
+                }
+            }
+        }
+
+        // Seconda passata: classificazione completa degli argomenti
+        // (ora known_vars è popolato e possiamo parsare le espressioni)
         for (size_t i = 1; i < args.size(); ++i) {
             auto const &arg = args[i];
 
             if (arg.type() == Clingo::SymbolType::Number) {
-                // Numero intero → weight costante
-                tmpl.weight_source = std::to_string(arg.number());
+                // Numero intero "nudo" (fuori da __weight/__priority):
+                // Per retrocompatibilità con argomenti semplici come weight costante,
+                // se non c'è un __weight esplicito, usiamo questo come weight
+                if (!tmpl.weight_expr) {
+                    tmpl.weight_expr = std::make_shared<ConstExpr>(arg.number());
+                }
 
             } else if (arg.type() == Clingo::SymbolType::Function) {
                 std::string arg_name = arg.name();
                 auto arg_args = arg.arguments();
 
-                if (is_aggregate_name(arg_name) && arg_args.size() >= 1) {
-                    // Aggregato per PRIORITY: __sum(c), __count(c), __min(c), __max(c)
-                    if (arg_args[0].type() == Clingo::SymbolType::Function) {
-                        std::string pred = arg_args[0].name();
-                        int arg_idx = -1;
-                        if (arg_args.size() >= 2 && arg_args[1].type() == Clingo::SymbolType::Number) {
-                            arg_idx = arg_args[1].number();
-                        }
-                        tmpl.priority_agg_key = {arg_name, pred, arg_idx};
-                        aggregate_preds.insert(pred);
-                    }
+                if (arg_name == "__bind") {
+                    // Già processato nella prima passata
+                    continue;
 
-                } else if (is_weight_aggregate_name(arg_name) && arg_args.size() >= 1) {
-                    // Aggregato per WEIGHT: __w_sum(c), __w_count(c), __w_min(c), __w_max(c)
-                    if (arg_args[0].type() == Clingo::SymbolType::Function) {
-                        std::string pred = arg_args[0].name();
-                        int arg_idx = -1;
-                        if (arg_args.size() >= 2 && arg_args[1].type() == Clingo::SymbolType::Number) {
-                            arg_idx = arg_args[1].number();
-                        }
-                        // Convertiamo "__w_sum" → "__sum" per usare lo stesso tipo di aggregato
-                        std::string real_op = weight_agg_to_op(arg_name);
-                        tmpl.weight_agg_key = {real_op, pred, arg_idx};
-                        aggregate_preds.insert(pred);
-                    }
+                } else if (arg_name == "__weight" && arg_args.size() == 1) {
+                    // __weight(expr) → espressione per il peso
+                    tmpl.weight_expr = parse_expression(arg_args[0], tmpl.local_vars);
+
+                } else if (arg_name == "__priority" && arg_args.size() == 1) {
+                    // __priority(expr) → espressione per la priorità
+                    tmpl.priority_expr = parse_expression(arg_args[0], tmpl.local_vars);
 
                 } else if (is_sign_name(arg_name) && arg_args.size() == 0) {
                     // Sign: true, false, sign
                     tmpl.sign = arg_name;
 
                 } else if (arg_name == "self" && arg_args.size() == 0) {
-                    // Weight source: self
-                    tmpl.weight_source = "self";
+                    // "self" come argomento top-level (retrocompatibilità)
+                    // Se non c'è __weight esplicito, usa self come weight
+                    if (!tmpl.weight_expr) {
+                        tmpl.weight_expr = std::make_shared<SelfExpr>();
+                    }
 
                 } else if (is_neg_body(arg_name) && arg_args.size() == 0) {
                     // Body negativo: __n_c → c
@@ -315,36 +391,35 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
                     tmpl.neg_body_preds.push_back(real_pred);
                     neg_body_preds.insert(real_pred);
 
-                } else if (arg_args.size() == 0) {
+                } else if (arg_args.size() == 0 && !is_aggregate_name(arg_name)) {
                     // Body positivo: atomo semplice senza prefisso speciale
                     tmpl.pos_body_preds.push_back(arg_name);
                     body_preds.insert(arg_name);
                 }
-                // Se ha argomenti ma non è un aggregato riconosciuto, lo ignoriamo
+                // Se ha argomenti ma non è riconosciuto, lo ignoriamo
             }
         }
 
-        // Se non è stato specificato un weight, default a 0
-        if (tmpl.weight_source.empty()) {
-            tmpl.weight_source = "0";
+        // Default: se nessun __weight specificato, weight = 0
+        if (!tmpl.weight_expr) {
+            tmpl.weight_expr = std::make_shared<ConstExpr>(0);
+        }
+
+        // Default: se nessun __priority specificato, priority = 0
+        if (!tmpl.priority_expr) {
+            tmpl.priority_expr = std::make_shared<ConstExpr>(0);
         }
 
         // Registra il predicato target
         target_preds.insert(tmpl.target_pred);
 
-        // Crea lo stato aggregato per la priority se non esiste
-        if (!tmpl.priority_agg_key.op.empty() && aggregate_states_.find(tmpl.priority_agg_key) == aggregate_states_.end()) {
-            auto state = make_aggregate(tmpl.priority_agg_key.op);
-            if (state) {
-                aggregate_states_[tmpl.priority_agg_key] = std::move(state);
-            }
-        }
-
-        // Crea lo stato aggregato per il weight se non esiste
-        if (!tmpl.weight_agg_key.op.empty() && aggregate_states_.find(tmpl.weight_agg_key) == aggregate_states_.end()) {
-            auto state = make_aggregate(tmpl.weight_agg_key.op);
-            if (state) {
-                aggregate_states_[tmpl.weight_agg_key] = std::move(state);
+        // Crea gli stati aggregati per tutti i binding
+        for (auto const &[var_name, agg_key] : tmpl.local_vars) {
+            if (aggregate_states_.find(agg_key) == aggregate_states_.end()) {
+                auto state = make_aggregate(agg_key.op);
+                if (state) {
+                    aggregate_states_[agg_key] = std::move(state);
+                }
             }
         }
 
@@ -358,9 +433,6 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
     }
 
     // ---- FASE 2: Scansione del dominio per costruire lookup tables ----
-    //
-    // Costruiamo mappe: predicato → { valore_intero → solver_literal }
-    // Ci servono per risolvere i literal di target, neg_body e aggregati.
 
     // Mappa: pred_name → { valore_dominio → solver_literal }
     std::unordered_map<std::string, std::unordered_map<int, Clingo::literal_t>> pred_lit_map;
@@ -398,13 +470,6 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
     }
 
     // ---- FASE 3: Pre-risolvere i trigger e registrare i watch ----
-    //
-    // Per ogni template × ogni valore nel dominio del primo body_pred positivo,
-    // risolviamo in anticipo i literal di target e neg_body,
-    // e registriamo il watch sul body_literal.
-    //
-    // Con body positivi multipli, usiamo il primo come trigger principale.
-    // Gli altri body positivi vengono verificati nel decide().
 
     for (size_t ri = 0; ri < rule_templates_.size(); ++ri) {
         auto const &tmpl = rule_templates_[ri];
@@ -456,10 +521,9 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
 
     // ---- FASE 4: Registrazione watch sugli atomi aggregati ----
     //
-    // Per gli aggregati, dobbiamo osservare i predicati come nella modalità
-    // statica (es. c(X) per __sum(c)).
+    // Iteriamo su tutti i local_vars di ogni template per trovare
+    // i predicati da osservare per gli aggregati.
 
-    // Lambda helper per registrare i watch di un aggregato
     auto register_agg_watches = [&](AggregateKey const &agg_key) {
         if (agg_key.op.empty()) return;
 
@@ -482,8 +546,9 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
     };
 
     for (auto const &tmpl : rule_templates_) {
-        register_agg_watches(tmpl.priority_agg_key);
-        register_agg_watches(tmpl.weight_agg_key);
+        for (auto const &[var_name, agg_key] : tmpl.local_vars) {
+            register_agg_watches(agg_key);
+        }
     }
 }
 
@@ -516,22 +581,10 @@ void HeuristicPropagator::propagate(Clingo::PropagateControl &control, Clingo::L
                 std::vector<LazyTargetInstance> instances;
 
                 for (auto const &trigger : trigger_it->second) {
-                    auto const &tmpl = rule_templates_[trigger.rule_idx];
-
                     LazyTargetInstance inst;
                     inst.target_lit = trigger.target_lit;
                     inst.neg_body_lits = trigger.neg_body_lits;
-                    inst.weight = 0;
-
-                    // Calcola il peso
-                    if (tmpl.weight_source == "self") {
-                        inst.weight = trigger.domain_value;
-                    } else {
-                        try { inst.weight = std::stoi(tmpl.weight_source); } catch (...) {}
-                    }
-
-                    inst.priority_agg_key = tmpl.priority_agg_key;
-                    inst.weight_agg_key = tmpl.weight_agg_key;
+                    inst.domain_value = trigger.domain_value;
                     inst.rule_idx = trigger.rule_idx;
 
                     instances.push_back(std::move(inst));
@@ -601,8 +654,8 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
     if (has_lazy_rules_) {
         // ---- MODALITÀ LAZY ----
         // Iteriamo sulle istanze lazy create dinamicamente in propagate.
-        // Solo le istanze il cui body literal è vero (presente in lazy_targets_)
-        // vengono considerate.
+        // Per ciascuna, costruiamo l'environment dalle variabili locali
+        // del template e valutiamo le espressioni AST per peso e priorità.
 
         for (auto const &body_lit : active_body_lits_) {
             auto lazy_it = lazy_targets_.find(body_lit);
@@ -625,23 +678,28 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
                     continue;
                 }
 
-                // Lettura O(1) del valore corrente della priority
-                int current_priority = 0;
-                if (!inst.priority_agg_key.op.empty()) {
-                    auto state_it = aggregate_states_.find(inst.priority_agg_key);
+                // Costruzione dell'environment per la valutazione delle espressioni
+                auto const &tmpl = rule_templates_[inst.rule_idx];
+                std::unordered_map<std::string, int> env;
+
+                // Inserisci il domain_value come "__self__" (usato da SelfExpr)
+                env["__self__"] = inst.domain_value;
+
+                // Risolvi tutte le variabili locali dai loro aggregati
+                for (auto const &[var_name, agg_key] : tmpl.local_vars) {
+                    int val = 0;
+                    auto state_it = aggregate_states_.find(agg_key);
                     if (state_it != aggregate_states_.end()) {
-                        current_priority = state_it->second->result();
+                        val = state_it->second->result();
                     }
+                    env[var_name] = val;
                 }
 
-                // Lettura O(1) del valore corrente del weight
-                int current_weight = inst.weight;
-                if (!inst.weight_agg_key.op.empty()) {
-                    auto w_state_it = aggregate_states_.find(inst.weight_agg_key);
-                    if (w_state_it != aggregate_states_.end()) {
-                        current_weight = w_state_it->second->result();
-                    }
-                }
+                // Valutazione delle espressioni AST
+                int current_priority = tmpl.priority_expr
+                    ? tmpl.priority_expr->evaluate(env) : 0;
+                int current_weight = tmpl.weight_expr
+                    ? tmpl.weight_expr->evaluate(env) : 0;
 
                 if (current_priority > max_priority ||
                    (current_priority == max_priority && current_weight > best_weight)) {

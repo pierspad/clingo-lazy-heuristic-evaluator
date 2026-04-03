@@ -2,7 +2,7 @@
 % BSP con Lazy Grounding delle euristiche
 % ============================================
 % Questa codifica usa __heuristic/N (template flessibile)
-% al posto di __heuristic/4 (istanziato da Gringo).
+% con il sistema di binding variabili ed espressioni AST.
 %
 % Il propagatore HeuristicPropagator legge i template
 % e genera dinamicamente le istanze euristiche
@@ -11,13 +11,20 @@
 % Formato __heuristic/N:
 %   - 1° argomento: predicato target (fisso)
 %   - Successivi (ordine libero):
-%     * atomo semplice  → body positivo (es. x)
-%     * __n_<pred>      → body negativo (es. __n_c → not c(X))
-%     * self            → weight = valore del dominio
-%     * numero          → weight costante
-%     * __sum(p), etc.  → aggregato per la priority
-%     * __w_sum(p), etc. → aggregato per il weight
-%     * true/false/sign → segno dell'euristica
+%     * atomo semplice        → body positivo (es. x)
+%     * __n_<pred>            → body negativo (es. __n_c → not c(X))
+%     * __bind(var, __agg(p)) → binding variabile → aggregato
+%     * __weight(expr)        → espressione per il peso
+%     * __priority(expr)      → espressione per la priorità
+%     * true/false/sign       → segno dell'euristica
+%
+% Espressioni supportate:
+%     * numero intero          → costante
+%     * self                   → valore del dominio
+%     * variabile (da __bind)  → valore corrente dell'aggregato
+%     * __add(a, b)            → somma
+%     * __sub(a, b)            → sottrazione
+%     * __mul(a, b)            → moltiplicazione
 % ============================================
 
 % il range è definito in
@@ -44,13 +51,11 @@ sumC(Sum) :- Sum = #sum{Y : c(Y)}.
 %   __heuristic(b(X),X,__sum(c),true) :- x(X), not c(X).
 %   __heuristic(c(X),X,__sum(b),true) :- x(X), not b(X).
 %
-% #heuristic b(X) : x(X), not c(X), S = #sum{Y : c(Y)}. [X@S, true]
-% #heuristic c(X) : x(X), not b(X), S = #sum{Y : b(Y)}. [X@S, true]
+% Equivalente nativo:
+%   #heuristic b(X) : x(X), not c(X), S = #sum{Y : c(Y)}. [X@S, true]
+%   #heuristic c(X) : x(X), not b(X), S = #sum{Y : b(Y)}. [X@S, true]
 %
-% L'ordine degli argomenti (dopo il primo) è irrilevante:
-%   __heuristic(b, __n_c, x, self, __sum(c), true).
-% è equivalente a:
-%   __heuristic(b, x, __n_c, self, __sum(c), true).
+% L'ordine degli argomenti (dopo il primo) è irrilevante.
 
-__heuristic(b, x, __n_c, self, __sum(c), true).
-__heuristic(c, x, __n_b, self, __sum(b), true).
+__heuristic(b, x, __n_c, __bind(s, __sum(c)), __weight(self), __priority(s), true).
+__heuristic(c, x, __n_b, __bind(s, __sum(b)), __weight(self), __priority(s), true).

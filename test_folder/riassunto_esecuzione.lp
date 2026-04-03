@@ -80,18 +80,25 @@ __heuristic(TargetPred, ...argomenti flessibili...).
 
 Il primo argomento è sempre il predicato target. Gli argomenti successivi sono in ordine libero
 e vengono classificati automaticamente dal parser C++:
-  - atomo semplice (es. x)         → body positivo
-  - prefisso __n_ (es. __n_c)     → body negativo (not c(X))
-  - "self"                         → weight = valore del dominio
-  - numero intero                  → weight costante
-  - __sum(p), __count(p), etc.     → aggregato per la priority
-  - __w_sum(p), __w_count(p), etc. → aggregato per il weight
-  - "true" / "false" / "sign"      → segno dell'euristica
+  - atomo semplice (es. x)                    → body positivo
+  - prefisso __n_ (es. __n_c)                → body negativo (not c(X))
+  - __bind(var, __agg(pred))                  → binding variabile → aggregato
+  - __weight(expr)                             → espressione per il peso
+  - __priority(expr)                           → espressione per la priorità
+  - "true" / "false" / "sign"                  → segno dell'euristica
+
+Le espressioni (expr) supportate sono:
+  - numero intero                              → costante (es. 5)
+  - self                                       → valore del dominio (es. X in b(X))
+  - variabile (nome da __bind)                 → valore corrente dell'aggregato legato
+  - __add(a, b)                                → somma di due espressioni
+  - __sub(a, b)                                → sottrazione
+  - __mul(a, b)                                → moltiplicazione
 
 Questo fa sì che Gringo includa nel programma proposizionale una singola riga per ogni template euristico, senza espandere le variabili di dominio, generando quindi invece soltanto:
 
-__heuristic(b, x, __n_c, self, __sum(c), true).
-__heuristic(c, x, __n_b, self, __sum(b), true).
+__heuristic(b, x, __n_c, __bind(s, __sum(c)), __weight(self), __priority(s), true).
+__heuristic(c, x, __n_b, __bind(s, __sum(b)), __weight(self), __priority(s), true).
 
 
 
@@ -102,36 +109,44 @@ Il propagatore monitora l'assegnazione parziale corrente e istanzia l'euristica 
 alcuni esempi:
 
 
-% 1. Caso base con variabile e singolo letterale positivo
+% 1. Caso base con costanti fisse per peso e priorità
 #heuristic b(X) : x(X). [1@2, true]                  
 % --------------
-__heuristic(b, x, 1, 2, true).
+__heuristic(b, x, __weight(1), __priority(2), true).
 
-% 2. Caso Non-Ground completo (Valutato dinamicamente dal propagatore)
-% Il peso usa il valore stesso della variabile X ('self')
+% 2. Caso con peso = valore del dominio (self)
 #heuristic b(X) : x(X), not c(X). [X@1, sign]
 % --------------
-__heuristic(b, x, __n_c, self, 1, sign).
+__heuristic(b, x, __n_c, __weight(self), __priority(1), sign).
 
 % 3. Caso con letterali multipli nel corpo
-% Il propagatore C++ ora supporta N body positivi e M body negativi direttamente,
-% senza bisogno di predicati ausiliari!
 #heuristic c(X) : a(X), b(X), not d(X). [5@2, false]
 % --------------
-__heuristic(c, a, b, __n_d, 5, 2, false).
+__heuristic(c, a, b, __n_d, __weight(5), __priority(2), false).
 
-% 4. Caso con Aggregati Dinamici (PrioritySpec dinamica)
+% 4. Caso con Aggregato Dinamico (priorità da aggregato)
 #heuristic b(X) : x(X), not c(X). [X@S, true] % dove S è la somma corrente di c
 % --------------
-__heuristic(b, x, __n_c, self, __sum(c), true).
+__heuristic(b, x, __n_c, __bind(s, __sum(c)), __weight(self), __priority(s), true).
 
 % 5. L'ordine degli argomenti (dopo il primo) è irrilevante:
-__heuristic(b, __n_c, x, self, __sum(c), true).
+__heuristic(b, __n_c, x, __bind(s, __sum(c)), __priority(s), __weight(self), true).
 % è equivalente a:
-__heuristic(b, x, __n_c, self, __sum(c), true).
+__heuristic(b, x, __n_c, __bind(s, __sum(c)), __weight(self), __priority(s), true).
 
-% 6. Caso con Aggregato Dinamico per il WEIGHT
-% Il peso viene calcolato a runtime con __w_sum, __w_count, __w_min, __w_max
+% 6. Caso con peso e priorità ENTRAMBI da aggregati diversi
 #heuristic b(X) : x(X), not c(X). [S1@S2, true] % S1=count(c), S2=sum(c)
 % --------------
-__heuristic(b, x, __n_c, __w_count(c), __sum(c), true).
+__heuristic(b, x, __n_c, __bind(s, __sum(c)), __bind(k, __count(c)), __weight(k), __priority(s), true).
+
+% 7. NOVITÀ: Espressioni matematiche complesse
+% Weight = S + 1, Priority = S * 10
+__heuristic(b, x, __n_c, __bind(s, __sum(c)), __weight(__add(s, 1)), __priority(__mul(s, 10)), true).
+
+% 8. Combinazione di self con aggregato
+% Weight = self + somma_di_c, Priority = somma_di_c
+__heuristic(b, x, __n_c, __bind(s, __sum(c)), __weight(__add(self, s)), __priority(s), true).
+
+% 9. Stessa variabile usata sia in weight che in priority
+% Weight = S, Priority = S + 1
+__heuristic(b, x, __n_c, __bind(s, __sum(c)), __weight(s), __priority(__add(s, 1)), true).

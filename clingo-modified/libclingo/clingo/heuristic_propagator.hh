@@ -127,6 +127,80 @@ struct AggregateKeyHash {
 };
 
 // ============================================================================
+// EXPRESSION AST — Albero di espressioni per peso e priorità
+// ============================================================================
+// L'AST permette di esprimere calcoli come S+1, S*10, ecc.
+// dove S è una variabile locale legata a un aggregato tramite __bind.
+//
+// Esempio ASP:  __bind(s, __sum(c)), __weight(__add(s, 1))
+// AST risultante: BinOpExpr(ADD, VarExpr("s"), ConstExpr(1))
+//
+// A runtime, l'environment {s → 42} produce weight = 43.
+// ============================================================================
+
+/// Tipo di operazione binaria
+enum class BinOp { ADD, SUB, MUL };
+
+/// Classe base astratta per un nodo dell'albero di espressioni.
+/// L'environment mappa nomi di variabili a valori interi (risolti dagli aggregati).
+/// Il campo "self" nell'environment rappresenta il domain_value dell'istanza.
+struct Expression {
+    virtual ~Expression() = default;
+    virtual int evaluate(std::unordered_map<std::string, int> const &env) const = 0;
+};
+
+/// Foglia: costante numerica (es. 1, 5, 0)
+struct ConstExpr final : Expression {
+    int value;
+    explicit ConstExpr(int v) : value(v) {}
+    int evaluate(std::unordered_map<std::string, int> const &) const override {
+        return value;
+    }
+};
+
+/// Foglia: riferimento al domain_value dell'istanza (keyword "self")
+/// Equivale a VarExpr("__self__") ma è semanticamente distinto
+struct SelfExpr final : Expression {
+    int evaluate(std::unordered_map<std::string, int> const &env) const override {
+        auto it = env.find("__self__");
+        return it != env.end() ? it->second : 0;
+    }
+};
+
+/// Foglia: variabile locale risolta a runtime dall'environment
+/// Es: VarExpr("s") → env["s"] → valore corrente dell'aggregato legato a "s"
+struct VarExpr final : Expression {
+    std::string name;
+    explicit VarExpr(std::string n) : name(std::move(n)) {}
+    int evaluate(std::unordered_map<std::string, int> const &env) const override {
+        auto it = env.find(name);
+        return it != env.end() ? it->second : 0;
+    }
+};
+
+/// Nodo intermedio: operazione binaria tra due sotto-espressioni
+/// Es: AddExpr(VarExpr("s"), ConstExpr(1)) → s + 1
+struct BinOpExpr final : Expression {
+    BinOp op;
+    std::shared_ptr<Expression> left;
+    std::shared_ptr<Expression> right;
+
+    BinOpExpr(BinOp o, std::shared_ptr<Expression> l, std::shared_ptr<Expression> r)
+        : op(o), left(std::move(l)), right(std::move(r)) {}
+
+    int evaluate(std::unordered_map<std::string, int> const &env) const override {
+        int lv = left->evaluate(env);
+        int rv = right->evaluate(env);
+        switch (op) {
+            case BinOp::ADD: return lv + rv;
+            case BinOp::SUB: return lv - rv;
+            case BinOp::MUL: return lv * rv;
+        }
+        return 0; // unreachable
+    }
+};
+
+// ============================================================================
 // STRUTTURE PER IL LAZY GROUNDING
 // ============================================================================
 
@@ -140,26 +214,29 @@ struct AggregateKeyHash {
 /// Gli argomenti successivi vengono classificati automaticamente dal parser C++:
 ///   - atomo semplice senza prefisso  → body positivo (es. x)
 ///   - prefisso __n_                  → body negativo (es. __n_c → c)
-///   - "self"                         → weight = valore del dominio
-///   - numero intero                  → weight costante
-///   - __sum(p), __count(p), etc.     → aggregato per la priority
-///   - __w_sum(p), __w_count(p), etc. → aggregato per il weight
+///   - __bind(var, __agg(pred))       → binding variabile → aggregato
+///   - __weight(expr)                 → espressione per il peso
+///   - __priority(expr)               → espressione per la priorità
 ///   - "true" / "false" / "sign"      → segno dell'euristica
 ///
 /// Esempio:
-///   __heuristic(b, x, __n_c, self, __sum(c), true).
-///   __heuristic(b, x, __n_c, __w_count(c), __sum(c), true).  % weight e priority dinamici
-///
-/// Significato: "Per ogni X t.c. tutti i BodyPred(X) sono veri e nessun
-///               NegBodyPred(X) è vero, suggerisci TargetPred(X)"
+///   __heuristic(b, x, __n_c, __bind(s, __sum(c)), __weight(self), __priority(s), true).
+///   __heuristic(b, x, __n_c, __bind(s, __sum(c)), __weight(__add(s, 1)), __priority(s), true).
 struct HeuristicRuleTemplate {
     std::string target_pred;                  // Primo argomento: predicato target (es. "b")
     std::vector<std::string> pos_body_preds;  // Body positivi (es. {"x"})
     std::vector<std::string> neg_body_preds;  // Body negativi (es. {"c"} da __n_c)
-    std::string weight_source;                // "self", costante numerica, o "" se da aggregato
-    AggregateKey weight_agg_key;              // Aggregato per il weight (es. __w_sum(c))
-    AggregateKey priority_agg_key;            // Aggregato per la priority (es. __sum(c))
     std::string sign;                         // "true", "false", "sign"
+
+    // Mappa le variabili locali alle rispettive chiavi aggregate
+    // Es. "s" -> AggregateKey("__sum", "c", -1)
+    std::unordered_map<std::string, AggregateKey> local_vars;
+
+    // AST per il calcolo del peso a runtime (nullable: default 0)
+    std::shared_ptr<Expression> weight_expr;
+
+    // AST per il calcolo della priorità a runtime (nullable: default 0)
+    std::shared_ptr<Expression> priority_expr;
 };
 
 /// Istanza euristica creata dinamicamente durante propagate.
@@ -167,9 +244,7 @@ struct HeuristicRuleTemplate {
 struct LazyTargetInstance {
     Clingo::literal_t target_lit;                  // Literal del target (es. b(27))
     std::vector<Clingo::literal_t> neg_body_lits;  // Literal per i check negativi
-    int weight;                                     // Peso statico (se non da aggregato)
-    AggregateKey weight_agg_key;                   // Aggregato per il weight
-    AggregateKey priority_agg_key;                 // Aggregato per la priority
+    int domain_value;                               // Valore del dominio (es. 27 per x(27))
     size_t rule_idx;                                // Indice del template che l'ha generata
 };
 
@@ -236,6 +311,13 @@ private:
     // === Metodi helper privati ===
     void init_static_mode(Clingo::PropagateInit &init);
     void init_lazy_mode(Clingo::PropagateInit &init);
+
+    /// Parsing ricorsivo di un termine Clingo in un AST Expression.
+    /// Riconosce costanti, "self", variabili (nomi presenti in local_vars),
+    /// e operazioni binarie (__add, __sub, __mul).
+    static std::shared_ptr<Expression> parse_expression(
+        Clingo::Symbol const &sym,
+        std::unordered_map<std::string, AggregateKey> const &known_vars);
 
 public:
     virtual ~HeuristicPropagator() = default;
