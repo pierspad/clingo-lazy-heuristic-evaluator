@@ -274,18 +274,6 @@ struct LazyTargetInstance {
 class HeuristicPropagator : public Clingo::Heuristic {
 
 private:
-    // === MODALITÀ STATICA (per regole __heuristic/4 custom non-ground) ===
-
-    /// Informazioni associate a ciascuna direttiva euristica target
-    struct TargetInfo {
-        Clingo::literal_t lit;           // Literal del target (es. b(X))
-        Clingo::literal_t heuristic_lit; // Literal dell'atomo __heuristic(...) stesso
-        int weight;
-        AggregateKey agg_key;            // Chiave dell'aggregato usato come priority
-    };
-
-    /// Lista di tutti i target euristici estratti (modalità statica)
-    std::vector<TargetInfo> heuristic_targets_;
 
     /// Info su un atomo osservato: a quali aggregati contribuisce e con quale valore
     struct WatchedAtomInfo {
@@ -319,10 +307,9 @@ private:
     /// Set dei body literal attivi (per iterazione efficiente in decide)
     std::vector<Clingo::literal_t> active_body_lits_;
 
-    /// Flag: true se sono stati trovati template __heuristic/N (lazy mode)
-    bool has_lazy_rules_ = false;
 
-    // === CONDIVISO tra le due modalità ===
+
+    // === CONDIVISO ===
 
     /// Mappa gli aggregate key ai loro stati dinamici (polimorfici)
     std::unordered_map<AggregateKey, std::unique_ptr<AggregateState>, AggregateKeyHash> aggregate_states_;
@@ -334,7 +321,6 @@ private:
     std::vector<int> env_buffer_;
 
     // === Metodi helper privati ===
-    void init_static_mode(Clingo::PropagateInit &init);
     void init_lazy_mode(Clingo::PropagateInit &init);
 
     /// Parsing ricorsivo di un termine Clingo in un AST Expression.

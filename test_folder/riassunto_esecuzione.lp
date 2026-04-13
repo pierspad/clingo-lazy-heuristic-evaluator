@@ -239,6 +239,53 @@ grounding non esplode piu' in memoria.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 13-bis) Derivazione formale del vincolo lineare BSP
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Il vincolo `:- not min_val <= #sum{ Y : b(Y) } <= max_val.` rappresenta
+un'ottimizzazione matematica applicata al Balanced Sum Problem (BSP). Nel
+problema originale, l'obiettivo e' suddividere i numeri da 1 a n in due
+insiemi disgiunti, b e c, in modo tale che la differenza in valore assoluto
+tra la somma dei loro elementi sia al massimo 1.
+
+Dimostrazione formale del check.
+Sia tot la somma totale dei numeri da 1 a n, calcolabile tramite la formula di
+Gauss: $tot = \frac{n(n+1)}{2}$. Poiche' il costrutto di scelta
+`1 { b(X); c(X) } 1 :- x(X).` impone che ogni numero appartenga esattamente a
+uno dei due insiemi, vale necessariamente: $Sum(b) + Sum(c) = tot$.
+Da questa equivalenza segue: $Sum(c) = tot - Sum(b)$.
+
+Il requisito del problema e': $|Sum(b) - Sum(c)| <= 1$.
+Sostituendo $Sum(c)$:
+$$|Sum(b) - (tot - Sum(b))| <= 1$$
+$$|2 \cdot Sum(b) - tot| <= 1$$
+
+Risolvendo il valore assoluto:
+$$-1 <= 2 \cdot Sum(b) - tot <= 1$$
+
+Aggiungendo $tot$ a tutti i membri:
+$$tot - 1 <= 2 \cdot Sum(b) <= tot + 1$$
+
+Dividendo per 2:
+$$\frac{tot - 1}{2} <= Sum(b) <= \frac{tot + 1}{2}$$
+
+Questi due estremi corrispondono matematicamente alle costanti min_val e
+max_val definite in testa al programma. L'aggregato `#sum{ Y : b(Y) }`
+calcola la somma degli elementi assegnati a b; il vincolo di integrita'
+scarta tutti i modelli in cui tale somma non ricade nell'intervallo valido.
+
+Questa formulazione e' detta lineare in contrapposizione al controllo
+commentato `(SB-SC)**2 > 1`. Il quadrato introduce una non-linearita'
+aritmetica che, in ASP, costringe il grounder a istanziare variabili per
+tutte le possibili combinazioni di somme e a valutarne la differenza
+quadratica. La forma ottimizzata riduce invece la verifica a un singolo
+aggregato lineare con due bound costanti precalcolati in grounding. Per Clasp
+questo si traduce in un singolo weight constraint, con meno aggregati da
+tracciare a runtime e meno operazioni aritmetiche costose, riducendo in modo
+netto i conflitti durante la ricerca.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 14) Definizione formale della sintassi (__heuristic/N)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

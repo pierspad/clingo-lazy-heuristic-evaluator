@@ -103,12 +103,11 @@ std::unique_ptr<Expression> HeuristicPropagator::parse_expression(
 }
 
 // ============================================================================
-// init() — Punto di ingresso: decide quale modalità usare
+// init() — Punto di ingresso: rileva e inizializza il lazy grounding
 // ============================================================================
 
 void HeuristicPropagator::init(Clingo::PropagateInit &init) {
     // Reset di tutte le strutture
-    heuristic_targets_.clear();
     aggregate_states_.clear();
     watched_atoms_.clear();
     rule_templates_.clear();
@@ -116,156 +115,21 @@ void HeuristicPropagator::init(Clingo::PropagateInit &init) {
     lazy_targets_.clear();
     active_body_lits_.clear();
     env_buffer_.clear();
-    has_lazy_rules_ = false;
 
     auto atoms = init.symbolic_atoms();
 
-    // Fase di rilevamento: cerchiamo atomi con nome "__heuristic".
-    // Se il primo argomento è un simbolo semplice (senza argomenti propri),
-    // siamo in modalità lazy. Altrimenti, se è un atomo compound (es. b(1)),
-    // siamo in modalità statica (generato da #heuristic di clingo).
-    bool found_static = false;
-    bool found_lazy = false;
-
+    // Scansione: se troviamo un simbolo __heuristic, attiviamo il lazy mode
     for (auto it = atoms.begin(); it != atoms.end(); ++it) {
         std::string name = it->symbol().name();
-        if (name != "__heuristic") continue;
-
-        auto args = it->symbol().arguments();
-        if (args.size() < 3) continue;
-
-        // Il primo argomento determina la modalità:
-        // - Se ha argomenti propri (es. b(1)) → statica
-        // - Se è un simbolo semplice senza argomenti (es. b) → lazy
-        if (args[0].type() == Clingo::SymbolType::Function) {
-            auto first_arg_args = args[0].arguments();
-            if (first_arg_args.size() > 0) {
-                found_static = true;
-            } else {
-                found_lazy = true;
-            }
+        if (name == "__heuristic") {
+            init_lazy_mode(init);
+            return;
         }
-
-        if (found_static || found_lazy) break;
-    }
-
-    if (found_lazy) {
-        has_lazy_rules_ = true;
-        init_lazy_mode(init);
-    } else if (found_static) {
-        init_static_mode(init);
     }
     // Se nessun __heuristic trovato, nessuna euristica attiva
 }
 
-// ============================================================================
-// init_static_mode() — Modalità classica (per regole __heuristic/4 custom)
-// ============================================================================
 
-void HeuristicPropagator::init_static_mode(Clingo::PropagateInit &init) {
-    auto atoms = init.symbolic_atoms();
-
-    std::unordered_map<std::string, std::vector<AggregateKey>> predicates_to_watch;
-
-    // ---- PRIMA PASSATA: Estrazione delle direttive euristiche ----
-    for (auto it = atoms.begin(); it != atoms.end(); ++it) {
-        if (it->match("__heuristic", 4)) {
-            auto args = it->symbol().arguments();
-
-            // 1. Target
-            auto target_it = atoms.find(args[0]);
-            if (target_it == atoms.end()) continue;
-            Clingo::literal_t target_lit = init.solver_literal(target_it->literal());
-            if (target_lit == 0) continue;
-
-            // 2. Weight (arg[1])
-            int weight = args[1].type() == Clingo::SymbolType::Number ? args[1].number() : 0;
-
-            // 2b. Literal dell'atomo __heuristic(...) stesso (per verifica condizione)
-            Clingo::literal_t heuristic_lit = init.solver_literal(it->literal());
-
-            // 3. Priority dinamica (arg[2], es. __sum(c), __count(c), __sum(c,1))
-            AggregateKey agg_key{"", "", -1};
-
-            if (args[2].type() == Clingo::SymbolType::Function) {
-                std::string op_name = args[2].name();
-                auto op_args = args[2].arguments();
-
-                if (op_args.size() >= 1 && op_args[0].type() == Clingo::SymbolType::Function) {
-                    std::string pred = op_args[0].name();
-                    int arg_idx = -1;
-                    if (op_args.size() >= 2 && op_args[1].type() == Clingo::SymbolType::Number) {
-                        arg_idx = op_args[1].number();
-                    }
-                    agg_key = {op_name, pred, arg_idx};
-
-                    if (aggregate_states_.find(agg_key) == aggregate_states_.end()) {
-                        auto state = make_aggregate(op_name);
-                        if (state) {
-                            aggregate_states_[agg_key] = std::move(state);
-                            predicates_to_watch[pred].push_back(agg_key);
-                        }
-                    } else {
-                        auto &keys = predicates_to_watch[pred];
-                        if (std::find(keys.begin(), keys.end(), agg_key) == keys.end()) {
-                            keys.push_back(agg_key);
-                        }
-                    }
-                }
-            }
-
-            heuristic_targets_.push_back({target_lit, heuristic_lit, weight, agg_key});
-        }
-    }
-
-    // ---- SECONDA PASSATA: Registrazione dei watch sugli atomi aggregati ----
-    for (auto it = atoms.begin(); it != atoms.end(); ++it) {
-        std::string pred_name = it->symbol().name();
-
-        auto pred_it = predicates_to_watch.find(pred_name);
-        if (pred_it == predicates_to_watch.end()) continue;
-
-        auto args = it->symbol().arguments();
-
-        for (auto const &agg_key : pred_it->second) {
-            int value = 0;
-            bool found = false;
-
-            if (agg_key.arg_index >= 0) {
-                int idx = agg_key.arg_index;
-                if (idx < static_cast<int>(args.size()) &&
-                    args[idx].type() == Clingo::SymbolType::Number) {
-                    value = args[idx].number();
-                    found = true;
-                }
-            } else {
-                for (int i = static_cast<int>(args.size()) - 1; i >= 0; --i) {
-                    if (args[i].type() == Clingo::SymbolType::Number) {
-                        value = args[i].number();
-                        found = true;
-                        break;
-                    }
-                }
-            }
-
-            if (found) {
-                Clingo::literal_t lit = init.solver_literal(it->literal());
-                if (lit != 0) {
-                    init.add_watch(lit);
-                    auto watch_it = watched_atoms_.find(lit);
-                    if (watch_it != watched_atoms_.end()) {
-                        auto &keys = watch_it->second.keys;
-                        if (std::find(keys.begin(), keys.end(), agg_key) == keys.end()) {
-                            keys.push_back(agg_key);
-                        }
-                    } else {
-                        watched_atoms_[lit] = {value, {agg_key}};
-                    }
-                }
-            }
-        }
-    }
-}
 
 // ============================================================================
 // init_lazy_mode() — Modalità lazy (ground-on-demand)
@@ -469,8 +333,6 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
     }
 
     if (rule_templates_.empty()) {
-        has_lazy_rules_ = false;
-        init_static_mode(init);
         return;
     }
 
@@ -598,14 +460,14 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
 }
 
 // ============================================================================
-// propagate() — Gestisce sia la modalità statica che lazy
+// propagate() — Aggiorna aggregati e istanzia target dinamicamente
 // ============================================================================
 
 void HeuristicPropagator::propagate(Clingo::PropagateControl &control, Clingo::LiteralSpan changes) {
     static_cast<void>(control);
 
     for (auto lit : changes) {
-        // --- Aggiornamento aggregati (comune a entrambe le modalità) ---
+        // --- Aggiornamento aggregati ---
         auto watch_it = watched_atoms_.find(lit);
         if (watch_it != watched_atoms_.end()) {
             auto const &info = watch_it->second;
@@ -617,31 +479,29 @@ void HeuristicPropagator::propagate(Clingo::PropagateControl &control, Clingo::L
             }
         }
 
-        // --- Modalità lazy: istanziazione dinamica dei target ---
-        if (has_lazy_rules_) {
-            auto trigger_it = body_triggers_.find(lit);
-            if (trigger_it != body_triggers_.end()) {
-                // Questo body literal è trigger per uno o più template.
-                // Creiamo le istanze lazy corrispondenti direttamente nel container
-                // finale, evitando un vettore temporaneo.
-                auto &target_vec = lazy_targets_[lit];
-                target_vec.clear(); // Riusa la capacity se il vettore esiste già
-                target_vec.reserve(trigger_it->second.size());
+        // --- Istanziazione dinamica dei target ---
+        auto trigger_it = body_triggers_.find(lit);
+        if (trigger_it != body_triggers_.end()) {
+            // Questo body literal è trigger per uno o più template.
+            // Creiamo le istanze lazy corrispondenti direttamente nel container
+            // finale, evitando un vettore temporaneo.
+            auto &target_vec = lazy_targets_[lit];
+            target_vec.clear(); // Riusa la capacity se il vettore esiste già
+            target_vec.reserve(trigger_it->second.size());
 
-                for (auto const &trigger : trigger_it->second) {
-                    target_vec.push_back({
-                        trigger.target_lit,
-                        trigger.neg_body_lits,
-                        trigger.domain_value,
-                        trigger.rule_idx
-                    });
-                }
+            for (auto const &trigger : trigger_it->second) {
+                target_vec.push_back({
+                    trigger.target_lit,
+                    trigger.neg_body_lits,
+                    trigger.domain_value,
+                    trigger.rule_idx
+                });
+            }
 
-                if (!target_vec.empty()) {
-                    active_body_lits_.push_back(lit);
-                } else {
-                    lazy_targets_.erase(lit);
-                }
+            if (!target_vec.empty()) {
+                active_body_lits_.push_back(lit);
+            } else {
+                lazy_targets_.erase(lit);
             }
         }
     }
@@ -655,7 +515,7 @@ void HeuristicPropagator::undo(Clingo::PropagateControl const &control, Clingo::
     static_cast<void>(control);
 
     for (auto lit : changes) {
-        // --- Aggiornamento aggregati (comune) ---
+        // --- Aggiornamento aggregati ---
         auto watch_it = watched_atoms_.find(lit);
         if (watch_it != watched_atoms_.end()) {
             auto const &info = watch_it->second;
@@ -667,19 +527,17 @@ void HeuristicPropagator::undo(Clingo::PropagateControl const &control, Clingo::
             }
         }
 
-        // --- Modalità lazy: rimozione delle istanze create da questo literal ---
-        if (has_lazy_rules_) {
-            auto lazy_it = lazy_targets_.find(lit);
-            if (lazy_it != lazy_targets_.end()) {
-                lazy_targets_.erase(lazy_it);
-                // Rimuovi da active_body_lits_
-                auto abl_it = std::find(active_body_lits_.begin(),
-                                        active_body_lits_.end(), lit);
-                if (abl_it != active_body_lits_.end()) {
-                    // Swap-and-pop per O(1)
-                    *abl_it = active_body_lits_.back();
-                    active_body_lits_.pop_back();
-                }
+        // --- Rimozione delle istanze create da questo literal ---
+        auto lazy_it = lazy_targets_.find(lit);
+        if (lazy_it != lazy_targets_.end()) {
+            lazy_targets_.erase(lazy_it);
+            // Rimuovi da active_body_lits_
+            auto abl_it = std::find(active_body_lits_.begin(),
+                                    active_body_lits_.end(), lit);
+            if (abl_it != active_body_lits_.end()) {
+                // Swap-and-pop per O(1)
+                *abl_it = active_body_lits_.back();
+                active_body_lits_.pop_back();
             }
         }
     }
@@ -689,9 +547,9 @@ void HeuristicPropagator::undo(Clingo::PropagateControl const &control, Clingo::
 // decide() — Suggerisce il letterale da decidere
 // ============================================================================
 //
-// OTTIMIZZAZIONE: nella modalità lazy, l'environment per la valutazione
-// delle espressioni AST è un flat array di interi (env_buffer_) pre-allocato
-// in init_lazy_mode(). Nessuna allocazione dinamica avviene in questo metodo.
+// L'environment per la valutazione delle espressioni AST è un flat array
+// di interi (env_buffer_) pre-allocato in init_lazy_mode().
+// Nessuna allocazione dinamica avviene in questo metodo.
 //
 // Layout dell'environment:
 //   env[0] = __self__ (domain_value dell'istanza)
@@ -710,91 +568,61 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
     int max_priority = -1;
     int best_weight = -1;
 
-    if (has_lazy_rules_) {
-        // ---- MODALITÀ LAZY ----
-        // Iteriamo sulle istanze lazy create dinamicamente in propagate.
-        // Per ciascuna, popoliamo il flat array environment (env_buffer_)
-        // e valutiamo le espressioni AST per peso e priorità.
-        // ZERO allocazioni dinamiche in questo loop.
+    // Iteriamo sulle istanze lazy create dinamicamente in propagate.
+    // Per ciascuna, popoliamo il flat array environment (env_buffer_)
+    // e valutiamo le espressioni AST per peso e priorità.
+    // ZERO allocazioni dinamiche in questo loop.
 
-        int *env = env_buffer_.data();
+    int *env = env_buffer_.data();
 
-        for (auto const &body_lit : active_body_lits_) {
-            auto lazy_it = lazy_targets_.find(body_lit);
-            if (lazy_it == lazy_targets_.end()) continue;
+    for (auto const &body_lit : active_body_lits_) {
+        auto lazy_it = lazy_targets_.find(body_lit);
+        if (lazy_it == lazy_targets_.end()) continue;
 
-            for (auto const &inst : lazy_it->second) {
-                // Verifica condizioni negative: NESSUN neg_body_pred(X) deve essere vero
-                bool neg_satisfied = false;
-                for (auto neg_lit : inst.neg_body_lits) {
-                    if (neg_lit != 0 &&
-                        assignment.truth_value(neg_lit) == Clingo::TruthValue::True) {
-                        neg_satisfied = true;
-                        break;
-                    }
-                }
-                if (neg_satisfied) continue;
-
-                // Il target deve essere ancora libero (non assegnato)
-                if (assignment.truth_value(inst.target_lit) != Clingo::TruthValue::Free) {
-                    continue;
-                }
-
-                // Popola il flat array environment (zero-allocation)
-                auto const &tmpl = rule_templates_[inst.rule_idx];
-
-                // env[0] = __self__
-                env[ENV_SELF_INDEX] = inst.domain_value;
-
-                // Risolvi tutte le variabili locali dai loro aggregati
-                for (auto const &vb : tmpl.var_bindings) {
-                    int val = 0;
-                    auto state_it = aggregate_states_.find(vb.agg_key);
-                    if (state_it != aggregate_states_.end()) {
-                        val = state_it->second->result();
-                    }
-                    env[vb.env_index] = val;
-                }
-
-                // Valutazione delle espressioni AST (accesso diretto al flat array)
-                int current_priority = tmpl.priority_expr
-                    ? tmpl.priority_expr->evaluate(env) : 0;
-                int current_weight = tmpl.weight_expr
-                    ? tmpl.weight_expr->evaluate(env) : 0;
-
-                if (current_priority > max_priority ||
-                   (current_priority == max_priority && current_weight > best_weight)) {
-                    max_priority = current_priority;
-                    best_weight = current_weight;
-                    best_target = inst.target_lit;
+        for (auto const &inst : lazy_it->second) {
+            // Verifica condizioni negative: NESSUN neg_body_pred(X) deve essere vero
+            bool neg_satisfied = false;
+            for (auto neg_lit : inst.neg_body_lits) {
+                if (neg_lit != 0 &&
+                    assignment.truth_value(neg_lit) == Clingo::TruthValue::True) {
+                    neg_satisfied = true;
+                    break;
                 }
             }
-        }
-    } else {
-        // ---- MODALITÀ STATICA (codice originale invariato) ----
-        for (auto const &target_info : heuristic_targets_) {
-            // Verifica che la condizione dell'euristica sia soddisfatta
-            if (assignment.truth_value(target_info.heuristic_lit) != Clingo::TruthValue::True) {
+            if (neg_satisfied) continue;
+
+            // Il target deve essere ancora libero (non assegnato)
+            if (assignment.truth_value(inst.target_lit) != Clingo::TruthValue::Free) {
                 continue;
             }
 
-            // Il target deve essere ancora libero
-            if (assignment.truth_value(target_info.lit) != Clingo::TruthValue::Free) {
-                continue;
+            // Popola il flat array environment (zero-allocation)
+            auto const &tmpl = rule_templates_[inst.rule_idx];
+
+            // env[0] = __self__
+            env[ENV_SELF_INDEX] = inst.domain_value;
+
+            // Risolvi tutte le variabili locali dai loro aggregati
+            for (auto const &vb : tmpl.var_bindings) {
+                int val = 0;
+                auto state_it = aggregate_states_.find(vb.agg_key);
+                if (state_it != aggregate_states_.end()) {
+                    val = state_it->second->result();
+                }
+                env[vb.env_index] = val;
             }
 
-            // Lettura O(1) del valore corrente dell'aggregato
-            int current_priority = 0;
-            auto state_it = aggregate_states_.find(target_info.agg_key);
-            if (state_it != aggregate_states_.end()) {
-                current_priority = state_it->second->result();
-            }
+            // Valutazione delle espressioni AST (accesso diretto al flat array)
+            int current_priority = tmpl.priority_expr
+                ? tmpl.priority_expr->evaluate(env) : 0;
+            int current_weight = tmpl.weight_expr
+                ? tmpl.weight_expr->evaluate(env) : 0;
 
             if (current_priority > max_priority ||
-               (current_priority == max_priority && target_info.weight > best_weight)) {
+               (current_priority == max_priority && current_weight > best_weight)) {
                 max_priority = current_priority;
-                best_weight = target_info.weight;
-                best_target = target_info.lit;
+                best_weight = current_weight;
+                best_target = inst.target_lit;
             }
         }
     }

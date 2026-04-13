@@ -146,6 +146,7 @@ def generate_graphs(stats: dict, graphs_dir: str):
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         import numpy as np
+        from matplotlib.ticker import MaxNLocator
     except ImportError:
         print("Matplotlib non installato. Per abilitarlo: pip install matplotlib numpy")
         sys.exit(1)
@@ -206,6 +207,10 @@ def generate_graphs(stats: dict, graphs_dir: str):
         ax.set_ylabel(config["ylabel"])
         ax.legend(loc="upper left")
 
+        # I conflitti sono conteggi discreti: mostra solo tacche intere sull'asse Y.
+        if metric == "conflicts":
+            ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+
         # Annotazione descrittiva
         ax.text(0.98, 0.02, config["description"],
                 transform=ax.transAxes, fontsize=7, color="#666",
@@ -251,6 +256,7 @@ def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, filename):
     try:
         import matplotlib.pyplot as plt
         import numpy as np
+        from matplotlib.ticker import MaxNLocator
     except ImportError:
         return
 
@@ -282,6 +288,8 @@ def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, filename):
     ax.set_ylabel(ylabel, fontsize=11)
     ax.legend(fontsize=10)
     ax.grid(True, alpha=0.3, linestyle="--")
+    if metric == "conflicts":
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
     plt.tight_layout()
     out_path = os.path.join(graphs_dir, filename)
