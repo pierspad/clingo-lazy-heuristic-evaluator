@@ -153,6 +153,7 @@ enum class BinOp { ADD, SUB, MUL };
 struct Expression {
     virtual ~Expression() = default;
     virtual int evaluate(int const *env) const = 0;
+    virtual bool depends_on_bindings() const = 0;
 };
 
 /// Foglia: costante numerica (es. 1, 5, 0)
@@ -162,6 +163,9 @@ struct ConstExpr final : Expression {
     int evaluate(int const *) const override {
         return value;
     }
+    bool depends_on_bindings() const override {
+        return false;
+    }
 };
 
 /// Foglia: riferimento al domain_value dell'istanza (keyword "self")
@@ -169,6 +173,9 @@ struct ConstExpr final : Expression {
 struct SelfExpr final : Expression {
     int evaluate(int const *env) const override {
         return env[ENV_SELF_INDEX];
+    }
+    bool depends_on_bindings() const override {
+        return false;
     }
 };
 
@@ -179,6 +186,9 @@ struct VarExpr final : Expression {
     explicit VarExpr(int idx) : index(idx) {}
     int evaluate(int const *env) const override {
         return env[index];
+    }
+    bool depends_on_bindings() const override {
+        return index != ENV_SELF_INDEX;
     }
 };
 
@@ -201,6 +211,10 @@ struct BinOpExpr final : Expression {
             case BinOp::MUL: return lv * rv;
         }
         return 0; // unreachable
+    }
+
+    bool depends_on_bindings() const override {
+        return left->depends_on_bindings() || right->depends_on_bindings();
     }
 };
 
@@ -239,11 +253,6 @@ struct HeuristicRuleTemplate {
     std::vector<std::string> neg_body_preds;  // Body negativi (es. {"c"} da __n_c)
     std::string sign;                         // "true", "false", "sign"
 
-    // === Fase di parsing (usato solo in init) ===
-    // Mappa le variabili locali alle rispettive chiavi aggregate (stringa → AggregateKey)
-    // Usato solo durante il parsing per risolvere i nomi nelle espressioni.
-    std::unordered_map<std::string, AggregateKey> local_vars;
-
     // === Fase di runtime (usato in decide, zero-allocation) ===
     // Bindings pre-calcolati: per ogni variabile, il suo indice env e la chiave aggregata
     std::vector<VarBinding> var_bindings;
@@ -251,11 +260,15 @@ struct HeuristicRuleTemplate {
     // Dimensione dell'environment per questa regola (1 + numero variabili locali)
     int env_size = 1; // Minimo 1 per __self__
 
-    // AST per il calcolo del peso a runtime (nullable: default 0)
-    std::unique_ptr<Expression> weight_expr;
+    // AST per il calcolo del peso a runtime (default: costante 0)
+    std::unique_ptr<Expression> weight_expr = std::make_unique<ConstExpr>(0);
 
-    // AST per il calcolo della priorità a runtime (nullable: default 0)
-    std::unique_ptr<Expression> priority_expr;
+    // AST per il calcolo della priorità a runtime (default: costante 0)
+    std::unique_ptr<Expression> priority_expr = std::make_unique<ConstExpr>(0);
+
+    // True se l'espressione usa almeno una variabile da __bind.
+    bool weight_depends_on_bindings = false;
+    bool priority_depends_on_bindings = false;
 };
 
 /// Istanza euristica creata dinamicamente durante propagate.
@@ -265,6 +278,12 @@ struct LazyTargetInstance {
     std::vector<Clingo::literal_t> neg_body_lits;  // Literal per i check negativi
     int domain_value;                               // Valore del dominio (es. 27 per x(27))
     size_t rule_idx;                                // Indice del template che l'ha generata
+
+    // Cache opzionale: espressioni senza variabili __bind, valutate in propagate().
+    int cached_weight = 0;
+    int cached_priority = 0;
+    bool has_cached_weight = false;
+    bool has_cached_priority = false;
 };
 
 // ============================================================================
@@ -307,6 +326,9 @@ private:
     /// Set dei body literal attivi (per iterazione efficiente in decide)
     std::vector<Clingo::literal_t> active_body_lits_;
 
+    /// Posizione di ciascun body active nel vettore (per rimozione O(1)).
+    std::unordered_map<Clingo::literal_t, size_t> active_body_pos_;
+
 
 
     // === CONDIVISO ===
@@ -329,7 +351,9 @@ private:
     /// var_index_map mappa nomi di variabili ai loro indici nell'environment.
     static std::unique_ptr<Expression> parse_expression(
         Clingo::Symbol const &sym,
-        std::unordered_map<std::string, int> const &var_index_map);
+        std::unordered_map<std::string, int> const &var_index_map,
+        bool &ok,
+        std::string &error_message);
 
 public:
     virtual ~HeuristicPropagator() = default;

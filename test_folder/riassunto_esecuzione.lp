@@ -165,14 +165,14 @@ variabili legate da __bind in VarExpr, e operatori binari (__add/__sub/__mul)
 in BinOpExpr con due sottoalberi. Questa compilazione avviene una sola volta
 in fase di inizializzazione.
 
-Durante decide, per ogni istanza lazy attiva viene costruito un environment
-(mappa nome->valore) che contiene il valore del dominio corrente (__self__) e
-i valori correnti degli aggregati risolti dalle local_vars. La valutazione di
-weight_expr e priority_expr avviene quindi per visita dell'albero, partendo dai
-nodi foglia e propagando i risultati verso i nodi interni. In questo modo non
-si effettua alcun parsing di stringhe a runtime: il costo per decisione e'
-deterministico e legato solo alla dimensione dell'espressione gia' compilata,
-con overhead costante rispetto alla ricerca CDNL.
+Durante decide, per ogni istanza lazy attiva viene riusato un environment flat
+array preallocato (env_buffer_), dove env[0] rappresenta __self__ e gli altri
+slot sono risolti tramite var_bindings pre-calcolati in init_lazy_mode.
+La valutazione di weight_expr e priority_expr avviene quindi per visita
+dell'albero, partendo dai nodi foglia e propagando i risultati verso i nodi
+interni, senza parsing di stringhe a runtime. Inoltre, quando un'espressione
+non dipende da variabili __bind (es. costante o solo self), il valore viene
+pre-valutato in propagate e riusato in decide senza nuova evaluate().
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -188,13 +188,12 @@ inverso tutte le strutture incrementali.
 Per gli aggregati, SumState e CountState applicano l'inversa aritmetica
 (remove) rispetto all'aggiornamento effettuato in propagate (add):
 somma e conteggio tornano al valore precedente in O(1). Per __min e __max,
-non e' sufficiente invertire con una singola operazione numerica; MinState e
-MaxState mantengono quindi un multiset implicito (mappa valore->occorrenze)
-che consente di rimuovere correttamente il contributo del literal annullato e
-di recuperare il nuovo estremo valido senza ricalcolare l'aggregato da zero.
-In parallelo, undo elimina anche le istanze lazy create dai trigger che non
-sono piu' veri, mantenendo allineate active_body_lits e lazy_targets_ con lo
-stato effettivo del solver.
+non basta l'inversa aritmetica: MinState e MaxState mantengono un multiset
+implicito (mappa valore->occorrenze) che permette di recuperare l'estremo
+precedente in O(log M) senza ricalcolo totale dell'aggregato. In parallelo,
+undo elimina anche le istanze lazy create dai trigger non piu' veri,
+mantenendo allineate active_body_lits e lazy_targets_ con lo stato effettivo
+del solver.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -205,17 +204,22 @@ La validazione sperimentale e' stata condotta con benchmark.sh, confrontando la
 codifica standard (#heuristic con aggregati groundati dal front-end) contro la
 variante lazy con template __heuristic/N e valutazione runtime nel propagatore.
 I risultati, salvati in test-results/results.csv e visualizzati da graphs.py,
-mostrano un miglioramento sistematico sia in tempo sia in memoria al crescere
-di N (10..100).
+coprono N=10..100 su 5 seed per punto.
 
-In media, la variante lazy riduce il tempo di esecuzione del 44.15% e ottiene
-uno speedup medio di 1.74x (1.82x a N=100: 112.81s -> 62.00s). Sul fronte
-memoria, la RSS massima si riduce mediamente del 18.20%, con un picco di
-riduzione del 28.80% (N=40). A N=100, il consumo passa da 3746.45 MB a
-3270.48 MB, con un risparmio assoluto di circa 476 MB. Questi numeri
-confermano che il lazy grounding delle euristiche attenua il grounding
-bottleneck e rende il comportamento molto piu' scalabile su istanze grandi,
-evitando l'esplosione preventiva delle combinazioni aggregate.
+Lettura sintetica dei grafici:
+1) RAM: la variante standard cresce da circa 10 MB (N=10) a circa 452 MB
+  (media a N=100), mentre la variante lazy resta circa costante attorno a
+  10 MB anche alle istanze massime.
+2) Solving Time: resta molto basso in entrambe le varianti (ordine
+  sub-secondo). A N=100 il solving medio e' 0.078s (standard) contro ~0s
+  (lazy), indicando che il propagatore non introduce overhead significativo
+  nel core CDNL.
+3) Grounding/Tempo totale: a N=100 le regole ground passano da 1,041,498
+  (standard) a 806 (lazy) e il tempo totale medio da 2.3266s a 0.0020s.
+
+Questi dati confermano che il vantaggio principale e' la rimozione del
+grounding bottleneck; la fase di solving rimane invece sostanzialmente
+comparabile e non penalizzata dalla valutazione lazy.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -350,6 +354,21 @@ Si introducono le seguenti grandezze:
 - E = dimensione media (nodi) degli AST di weight/priority;
 - A = numero di aggiornamenti aggregato attivati da un literal in propagate;
 - U = numero di literal annullati in un singolo undo.
+
+Tabella di confronto sintetico (per il testo tesi):
+
+| Caratteristica | Grounding Standard | Lazy Heuristic |
+| :--- | :--- | :--- |
+| Dimensione programma | Esplosione combinatoria O(N^k) | O(T) template |
+| Utilizzo RAM | Cresce con le istanze (fino a saturazione) | Basso e quasi costante |
+| Flessibilita' euristica | Statica (valori fissati al grounding) | Dinamica (valutata su assegnamento parziale) |
+| Costo decisione | Lookup su regole gia' groundate | O(E) su AST precompilato |
+
+Confronto asintotico ad alto livello:
+- Standard: il grounding delle euristiche aggregate puo' richiedere O(N^k)
+  regole, dove k e' il numero di variabili nel corpo euristico.
+- Lazy: il grounding resta O(T) sui template; il costo runtime e' O(E) per
+  istanza attiva, con T numero template ed E dimensione AST.
 
 Complessita' di inizializzazione (init_lazy_mode):
 - tempo: O(T * (B + K + E));

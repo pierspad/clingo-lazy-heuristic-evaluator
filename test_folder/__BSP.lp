@@ -4,15 +4,15 @@
 
 x(1..n).
 
-#const tot = (n*(n+1))/2.
-#const min_val = (tot-1)/2.
-#const max_val = (tot+1)/2.
-
 % Guess
 1 { b(X); c(X) } 1 :- x(X).
 
-% Check lineare equivalente al vincolo sulla differenza tra le somme.
-:- not min_val <= #sum{ Y : b(Y) } <= max_val.
+% Calcolo delle somme
+sumB(Sum) :- Sum = #sum{Y : b(Y)}.
+sumC(Sum) :- Sum = #sum{Y : c(Y)}.
+
+% Check
+:- sumB(SB), sumC(SC), (SB-SC)**2 > 1.
 
 % euristiche di dominio
 

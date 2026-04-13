@@ -13,7 +13,7 @@ set -euo pipefail
 CLINGO_STD="clingo"
 CLINGO_MOD="/home/ribben/Desktop/clingo-lazy-heuristics/clingo-modified/build/bin/clingo"
 FILE_STD="__BSP.lp"
-FILE_MOD="_2_lazy_ground.lp"
+FILE_MOD="_1_lazy_ground.lp"
 FILE_RANGE="__.BSP_range.lp"
 
 N_START=10

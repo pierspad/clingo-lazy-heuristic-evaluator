@@ -58,8 +58,13 @@ static std::string strip_neg_prefix(std::string const &name) {
 
 std::unique_ptr<Expression> HeuristicPropagator::parse_expression(
     Clingo::Symbol const &sym,
-    std::unordered_map<std::string, int> const &var_index_map)
+    std::unordered_map<std::string, int> const &var_index_map,
+    bool &ok,
+    std::string &error_message)
 {
+    ok = true;
+    error_message.clear();
+
     // Caso 1: costante numerica
     if (sym.type() == Clingo::SymbolType::Number) {
         return std::make_unique<ConstExpr>(sym.number());
@@ -76,9 +81,23 @@ std::unique_ptr<Expression> HeuristicPropagator::parse_expression(
         }
 
         // Operazione binaria: __add(a, b), __sub(a, b), __mul(a, b)
-        if (is_binop_name(name) && args.size() == 2) {
-            auto left = parse_expression(args[0], var_index_map);
-            auto right = parse_expression(args[1], var_index_map);
+        if (is_binop_name(name)) {
+            if (args.size() != 2) {
+                ok = false;
+                error_message = "operatore " + name + " richiede arita' 2";
+                return std::make_unique<ConstExpr>(0);
+            }
+
+            auto left = parse_expression(args[0], var_index_map, ok, error_message);
+            if (!ok) {
+                return std::make_unique<ConstExpr>(0);
+            }
+
+            auto right = parse_expression(args[1], var_index_map, ok, error_message);
+            if (!ok) {
+                return std::make_unique<ConstExpr>(0);
+            }
+
             return std::make_unique<BinOpExpr>(binop_from_name(name),
                                                 std::move(left), std::move(right));
         }
@@ -89,16 +108,19 @@ std::unique_ptr<Expression> HeuristicPropagator::parse_expression(
             if (it != var_index_map.end()) {
                 return std::make_unique<VarExpr>(it->second);
             }
-        }
 
-        // Atomo semplice senza argomenti non riconosciuto come variabile:
-        // potrebbe essere un riferimento futuro o un errore, fallback a 0
-        if (args.size() == 0) {
+            ok = false;
+            error_message = "simbolo '" + name + "' non dichiarato con __bind";
             return std::make_unique<ConstExpr>(0);
         }
+
+        ok = false;
+        error_message = "funzione non supportata in espressione: '" + name + "'";
+        return std::make_unique<ConstExpr>(0);
     }
 
-    // Fallback: costante 0
+    ok = false;
+    error_message = "tipo simbolo non supportato in espressione";
     return std::make_unique<ConstExpr>(0);
 }
 
@@ -114,6 +136,7 @@ void HeuristicPropagator::init(Clingo::PropagateInit &init) {
     body_triggers_.clear();
     lazy_targets_.clear();
     active_body_lits_.clear();
+    active_body_pos_.clear();
     env_buffer_.clear();
 
     auto atoms = init.symbolic_atoms();
@@ -126,7 +149,6 @@ void HeuristicPropagator::init(Clingo::PropagateInit &init) {
             return;
         }
     }
-    // Se nessun __heuristic trovato, nessuna euristica attiva
 }
 
 
@@ -184,137 +206,174 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
         tmpl.target_pred = args[0].name();
         tmpl.sign = "true"; // default sign
 
-        // Prima passata: raccogliamo i __bind per popolare local_vars
-        // e assegnare indici interi a ciascuna variabile
+        // Parsing in passata unica degli argomenti dopo il target.
         int next_var_index = 1; // 0 è riservato per __self__
-
-        for (size_t i = 1; i < args.size(); ++i) {
-            auto const &arg = args[i];
-            if (arg.type() != Clingo::SymbolType::Function) continue;
-
-            std::string arg_name = arg.name();
-            auto arg_args = arg.arguments();
-
-            if (arg_name == "__bind" && arg_args.size() == 2) {
-                // __bind(var, __agg(pred)) o __bind(var, __agg(pred, idx))
-                if (arg_args[0].type() == Clingo::SymbolType::Function &&
-                    arg_args[0].arguments().size() == 0 &&
-                    arg_args[1].type() == Clingo::SymbolType::Function) {
-
-                    std::string var_name = arg_args[0].name();
-                    std::string agg_op = arg_args[1].name();
-                    auto agg_inner_args = arg_args[1].arguments();
-
-                    if (is_aggregate_name(agg_op) && agg_inner_args.size() >= 1 &&
-                        agg_inner_args[0].type() == Clingo::SymbolType::Function) {
-
-                        std::string pred = agg_inner_args[0].name();
-                        int arg_idx = -1;
-                        if (agg_inner_args.size() >= 2 &&
-                            agg_inner_args[1].type() == Clingo::SymbolType::Number) {
-                            arg_idx = agg_inner_args[1].number();
-                        }
-
-                        AggregateKey key{agg_op, pred, arg_idx};
-                        tmpl.local_vars[var_name] = key;
-
-                        // Assegna un indice intero alla variabile
-                        VarBinding binding;
-                        binding.env_index = next_var_index++;
-                        binding.agg_key = key;
-                        tmpl.var_bindings.push_back(binding);
-
-                        aggregate_preds.insert(pred);
-                    }
-                }
-            }
-        }
-
-        // Imposta la dimensione dell'environment per questo template
-        tmpl.env_size = next_var_index;
-        if (next_var_index > max_env_size) {
-            max_env_size = next_var_index;
-        }
-
-        // Costruisci la mappa nome → indice per il parsing delle espressioni
         std::unordered_map<std::string, int> var_index_map;
-        {
-            int idx = 1;
-            for (auto const &[var_name, agg_key] : tmpl.local_vars) {
-                // Cerca il binding corrispondente
-                for (auto const &vb : tmpl.var_bindings) {
-                    if (vb.agg_key == agg_key) {
-                        var_index_map[var_name] = vb.env_index;
-                        break;
-                    }
-                }
-            }
-        }
+        std::unique_ptr<Expression> legacy_weight_expr;
+        std::unique_ptr<Clingo::Symbol> weight_term;
+        std::unique_ptr<Clingo::Symbol> priority_term;
 
-        // Seconda passata: classificazione completa degli argomenti
-        // (ora var_index_map è popolato e possiamo parsare le espressioni)
         for (size_t i = 1; i < args.size(); ++i) {
             auto const &arg = args[i];
 
             if (arg.type() == Clingo::SymbolType::Number) {
-                // Numero intero "nudo" (fuori da __weight/__priority):
-                // Per retrocompatibilità con argomenti semplici come weight costante,
-                // se non c'è un __weight esplicito, usiamo questo come weight
-                if (!tmpl.weight_expr) {
-                    tmpl.weight_expr = std::make_unique<ConstExpr>(arg.number());
+                // Retrocompatibilità: numero top-level usato come weight
+                // solo se non c'è una __weight esplicita.
+                if (!weight_term && !legacy_weight_expr) {
+                    legacy_weight_expr = std::make_unique<ConstExpr>(arg.number());
                 }
+                continue;
+            }
 
-            } else if (arg.type() == Clingo::SymbolType::Function) {
-                std::string arg_name = arg.name();
-                auto arg_args = arg.arguments();
+            if (arg.type() != Clingo::SymbolType::Function) {
+                continue;
+            }
 
-                if (arg_name == "__bind") {
-                    // Già processato nella prima passata
+            std::string arg_name = arg.name();
+            auto arg_args = arg.arguments();
+
+            if (arg_name == "__bind") {
+                if (arg_args.size() != 2 ||
+                    arg_args[0].type() != Clingo::SymbolType::Function ||
+                    arg_args[0].arguments().size() != 0 ||
+                    arg_args[1].type() != Clingo::SymbolType::Function) {
+                    std::cerr << "[heuristic_propagator] __bind malformato in __heuristic(" 
+                              << tmpl.target_pred << ", ...): atteso __bind(var, __agg(pred[, idx])).\n";
                     continue;
-
-                } else if (arg_name == "__weight" && arg_args.size() == 1) {
-                    // __weight(expr) → espressione per il peso
-                    tmpl.weight_expr = parse_expression(arg_args[0], var_index_map);
-
-                } else if (arg_name == "__priority" && arg_args.size() == 1) {
-                    // __priority(expr) → espressione per la priorità
-                    tmpl.priority_expr = parse_expression(arg_args[0], var_index_map);
-
-                } else if (is_sign_name(arg_name) && arg_args.size() == 0) {
-                    // Sign: true, false, sign
-                    tmpl.sign = arg_name;
-
-                } else if (arg_name == "self" && arg_args.size() == 0) {
-                    // "self" come argomento top-level (retrocompatibilità)
-                    // Se non c'è __weight esplicito, usa self come weight
-                    if (!tmpl.weight_expr) {
-                        tmpl.weight_expr = std::make_unique<SelfExpr>();
-                    }
-
-                } else if (is_neg_body(arg_name) && arg_args.size() == 0) {
-                    // Body negativo: __n_c → c
-                    std::string real_pred = strip_neg_prefix(arg_name);
-                    tmpl.neg_body_preds.push_back(real_pred);
-                    neg_body_preds.insert(real_pred);
-
-                } else if (arg_args.size() == 0 && !is_aggregate_name(arg_name)) {
-                    // Body positivo: atomo semplice senza prefisso speciale
-                    tmpl.pos_body_preds.push_back(arg_name);
-                    body_preds.insert(arg_name);
                 }
-                // Se ha argomenti ma non è riconosciuto, lo ignoriamo
+
+                std::string var_name = arg_args[0].name();
+                std::string agg_op = arg_args[1].name();
+                auto agg_inner_args = arg_args[1].arguments();
+
+                if (!is_aggregate_name(agg_op) ||
+                    agg_inner_args.empty() ||
+                    agg_inner_args[0].type() != Clingo::SymbolType::Function) {
+                    std::cerr << "[heuristic_propagator] aggregato non valido in __bind(" 
+                              << var_name << ", ...): supportati __sum/__count/__min/__max.\n";
+                    continue;
+                }
+
+                if (var_index_map.find(var_name) != var_index_map.end()) {
+                    std::cerr << "[heuristic_propagator] variabile duplicata in __bind: '"
+                              << var_name << "'.\n";
+                    continue;
+                }
+
+                std::string pred = agg_inner_args[0].name();
+                int arg_idx = -1;
+                if (agg_inner_args.size() >= 2 &&
+                    agg_inner_args[1].type() == Clingo::SymbolType::Number) {
+                    arg_idx = agg_inner_args[1].number();
+                }
+
+                AggregateKey key{agg_op, pred, arg_idx};
+                VarBinding binding;
+                binding.env_index = next_var_index++;
+                binding.agg_key = key;
+
+                var_index_map[var_name] = binding.env_index;
+                tmpl.var_bindings.push_back(binding);
+                aggregate_preds.insert(pred);
+                continue;
+            }
+
+            if (arg_name == "__weight") {
+                if (arg_args.size() != 1) {
+                    std::cerr << "[heuristic_propagator] __weight malformato in __heuristic(" 
+                              << tmpl.target_pred << ", ...): atteso __weight(expr).\n";
+                    continue;
+                }
+                if (weight_term) {
+                    std::cerr << "[heuristic_propagator] __weight duplicato in __heuristic(" 
+                              << tmpl.target_pred << ", ...): uso l'ultimo valore.\n";
+                }
+                weight_term = std::make_unique<Clingo::Symbol>(arg_args[0]);
+                continue;
+            }
+
+            if (arg_name == "__priority") {
+                if (arg_args.size() != 1) {
+                    std::cerr << "[heuristic_propagator] __priority malformato in __heuristic(" 
+                              << tmpl.target_pred << ", ...): atteso __priority(expr).\n";
+                    continue;
+                }
+                if (priority_term) {
+                    std::cerr << "[heuristic_propagator] __priority duplicato in __heuristic(" 
+                              << tmpl.target_pred << ", ...): uso l'ultimo valore.\n";
+                }
+                priority_term = std::make_unique<Clingo::Symbol>(arg_args[0]);
+                continue;
+            }
+
+            if (is_sign_name(arg_name) && arg_args.size() == 0) {
+                tmpl.sign = arg_name;
+                continue;
+            }
+
+            if (arg_name == "self" && arg_args.size() == 0) {
+                // Retrocompatibilità top-level: self come weight implicito.
+                if (!weight_term && !legacy_weight_expr) {
+                    legacy_weight_expr = std::make_unique<SelfExpr>();
+                }
+                continue;
+            }
+
+            if (is_neg_body(arg_name) && arg_args.size() == 0) {
+                std::string real_pred = strip_neg_prefix(arg_name);
+                tmpl.neg_body_preds.push_back(real_pred);
+                neg_body_preds.insert(real_pred);
+                continue;
+            }
+
+            if (arg_args.size() == 0 && !is_aggregate_name(arg_name)) {
+                tmpl.pos_body_preds.push_back(arg_name);
+                body_preds.insert(arg_name);
+                continue;
+            }
+            // Argomento non riconosciuto: ignorato deliberatamente.
+        }
+
+        // Imposta la dimensione dell'environment per questo template
+        tmpl.env_size = next_var_index;
+        max_env_size = std::max(max_env_size, tmpl.env_size);
+
+        if (weight_term) {
+            bool ok = true;
+            std::string error_message;
+            auto expr = parse_expression(*weight_term, var_index_map, ok, error_message);
+            if (ok) {
+                tmpl.weight_expr = std::move(expr);
+            }
+            else {
+                std::cerr << "[heuristic_propagator] errore parsing __weight in __heuristic("
+                          << tmpl.target_pred << ", ...): " << error_message
+                          << ". Uso fallback 0.\n";
+                tmpl.weight_expr = std::make_unique<ConstExpr>(0);
             }
         }
 
-        // Default: se nessun __weight specificato, weight = 0
-        if (!tmpl.weight_expr) {
-            tmpl.weight_expr = std::make_unique<ConstExpr>(0);
+        if (!weight_term && legacy_weight_expr) {
+            tmpl.weight_expr = std::move(legacy_weight_expr);
         }
 
-        // Default: se nessun __priority specificato, priority = 0
-        if (!tmpl.priority_expr) {
-            tmpl.priority_expr = std::make_unique<ConstExpr>(0);
+        if (priority_term) {
+            bool ok = true;
+            std::string error_message;
+            auto expr = parse_expression(*priority_term, var_index_map, ok, error_message);
+            if (ok) {
+                tmpl.priority_expr = std::move(expr);
+            }
+            else {
+                std::cerr << "[heuristic_propagator] errore parsing __priority in __heuristic("
+                          << tmpl.target_pred << ", ...): " << error_message
+                          << ". Uso fallback 0.\n";
+                tmpl.priority_expr = std::make_unique<ConstExpr>(0);
+            }
         }
+
+        tmpl.weight_depends_on_bindings = tmpl.weight_expr->depends_on_bindings();
+        tmpl.priority_depends_on_bindings = tmpl.priority_expr->depends_on_bindings();
 
         // Registra il predicato target
         target_preds.insert(tmpl.target_pred);
@@ -466,6 +525,27 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
 void HeuristicPropagator::propagate(Clingo::PropagateControl &control, Clingo::LiteralSpan changes) {
     static_cast<void>(control);
 
+    auto remove_active_body_lit = [&](Clingo::literal_t body_lit) {
+        auto pos_it = active_body_pos_.find(body_lit);
+        if (pos_it == active_body_pos_.end()) {
+            return;
+        }
+
+        size_t pos = pos_it->second;
+        size_t last = active_body_lits_.size() - 1;
+        Clingo::literal_t last_lit = active_body_lits_[last];
+
+        active_body_lits_[pos] = last_lit;
+        active_body_lits_.pop_back();
+        active_body_pos_.erase(pos_it);
+
+        if (pos < active_body_lits_.size()) {
+            active_body_pos_[last_lit] = pos;
+        }
+    };
+
+    int *env = env_buffer_.data();
+
     for (auto lit : changes) {
         // --- Aggiornamento aggregati ---
         auto watch_it = watched_atoms_.find(lit);
@@ -490,18 +570,36 @@ void HeuristicPropagator::propagate(Clingo::PropagateControl &control, Clingo::L
             target_vec.reserve(trigger_it->second.size());
 
             for (auto const &trigger : trigger_it->second) {
-                target_vec.push_back({
-                    trigger.target_lit,
-                    trigger.neg_body_lits,
-                    trigger.domain_value,
-                    trigger.rule_idx
-                });
+                auto const &tmpl = rule_templates_[trigger.rule_idx];
+
+                LazyTargetInstance inst;
+                inst.target_lit = trigger.target_lit;
+                inst.neg_body_lits = trigger.neg_body_lits;
+                inst.domain_value = trigger.domain_value;
+                inst.rule_idx = trigger.rule_idx;
+
+                // Cache su istanza: espressioni senza variabili __bind.
+                env[ENV_SELF_INDEX] = inst.domain_value;
+                if (!tmpl.weight_depends_on_bindings) {
+                    inst.cached_weight = tmpl.weight_expr->evaluate(env);
+                    inst.has_cached_weight = true;
+                }
+                if (!tmpl.priority_depends_on_bindings) {
+                    inst.cached_priority = tmpl.priority_expr->evaluate(env);
+                    inst.has_cached_priority = true;
+                }
+
+                target_vec.push_back(std::move(inst));
             }
 
             if (!target_vec.empty()) {
-                active_body_lits_.push_back(lit);
+                if (active_body_pos_.find(lit) == active_body_pos_.end()) {
+                    active_body_pos_[lit] = active_body_lits_.size();
+                    active_body_lits_.push_back(lit);
+                }
             } else {
                 lazy_targets_.erase(lit);
+                remove_active_body_lit(lit);
             }
         }
     }
@@ -513,6 +611,25 @@ void HeuristicPropagator::propagate(Clingo::PropagateControl &control, Clingo::L
 
 void HeuristicPropagator::undo(Clingo::PropagateControl const &control, Clingo::LiteralSpan changes) noexcept {
     static_cast<void>(control);
+
+    auto remove_active_body_lit = [&](Clingo::literal_t body_lit) {
+        auto pos_it = active_body_pos_.find(body_lit);
+        if (pos_it == active_body_pos_.end()) {
+            return;
+        }
+
+        size_t pos = pos_it->second;
+        size_t last = active_body_lits_.size() - 1;
+        Clingo::literal_t last_lit = active_body_lits_[last];
+
+        active_body_lits_[pos] = last_lit;
+        active_body_lits_.pop_back();
+        active_body_pos_.erase(pos_it);
+
+        if (pos < active_body_lits_.size()) {
+            active_body_pos_[last_lit] = pos;
+        }
+    };
 
     for (auto lit : changes) {
         // --- Aggiornamento aggregati ---
@@ -531,14 +648,7 @@ void HeuristicPropagator::undo(Clingo::PropagateControl const &control, Clingo::
         auto lazy_it = lazy_targets_.find(lit);
         if (lazy_it != lazy_targets_.end()) {
             lazy_targets_.erase(lazy_it);
-            // Rimuovi da active_body_lits_
-            auto abl_it = std::find(active_body_lits_.begin(),
-                                    active_body_lits_.end(), lit);
-            if (abl_it != active_body_lits_.end()) {
-                // Swap-and-pop per O(1)
-                *abl_it = active_body_lits_.back();
-                active_body_lits_.pop_back();
-            }
+            remove_active_body_lit(lit);
         }
     }
 }
@@ -599,24 +709,30 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
             // Popola il flat array environment (zero-allocation)
             auto const &tmpl = rule_templates_[inst.rule_idx];
 
-            // env[0] = __self__
-            env[ENV_SELF_INDEX] = inst.domain_value;
+            bool need_weight_eval = !inst.has_cached_weight;
+            bool need_priority_eval = !inst.has_cached_priority;
 
-            // Risolvi tutte le variabili locali dai loro aggregati
-            for (auto const &vb : tmpl.var_bindings) {
-                int val = 0;
-                auto state_it = aggregate_states_.find(vb.agg_key);
-                if (state_it != aggregate_states_.end()) {
-                    val = state_it->second->result();
+            if (need_weight_eval || need_priority_eval) {
+                // env[0] = __self__
+                env[ENV_SELF_INDEX] = inst.domain_value;
+
+                // Risolvi tutte le variabili locali dai loro aggregati
+                for (auto const &vb : tmpl.var_bindings) {
+                    int val = 0;
+                    auto state_it = aggregate_states_.find(vb.agg_key);
+                    if (state_it != aggregate_states_.end()) {
+                        val = state_it->second->result();
+                    }
+                    env[vb.env_index] = val;
                 }
-                env[vb.env_index] = val;
             }
 
-            // Valutazione delle espressioni AST (accesso diretto al flat array)
-            int current_priority = tmpl.priority_expr
-                ? tmpl.priority_expr->evaluate(env) : 0;
-            int current_weight = tmpl.weight_expr
-                ? tmpl.weight_expr->evaluate(env) : 0;
+            int current_priority = inst.has_cached_priority
+                ? inst.cached_priority
+                : tmpl.priority_expr->evaluate(env);
+            int current_weight = inst.has_cached_weight
+                ? inst.cached_weight
+                : tmpl.weight_expr->evaluate(env);
 
             if (current_priority > max_priority ||
                (current_priority == max_priority && current_weight > best_weight)) {
