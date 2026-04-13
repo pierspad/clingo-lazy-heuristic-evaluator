@@ -14,6 +14,7 @@ CLINGO_STD="clingo"
 CLINGO_MOD="/home/ribben/Desktop/clingo-lazy-heuristics/clingo-modified/build/bin/clingo"
 FILE_STD="__BSP.lp"
 FILE_MOD="_1_lazy_ground.lp"
+FILE_MOD_OPT="_2_lg_constraint_optimized.lp"
 FILE_RANGE="__.BSP_range.lp"
 
 N_START=10
@@ -33,7 +34,7 @@ mkdir -p "${TIMINGS_DIR}"
 # ============================================================================
 # Colonne:
 #   n           - dimensione del problema
-#   variant     - "std" o "mod"
+#   variant     - "std", "mod" o "mod_opt"
 #   seed        - seed usato per questa esecuzione
 #   solving_s   - tempo di solving netto (dal solver CDNL)
 #   total_s     - tempo totale (grounding + solving)
@@ -129,7 +130,7 @@ run_stats() {
 # LOOP PRINCIPALE
 # ============================================================================
 
-total_runs=$(( ((N_END - N_START) / N_STEP + 1) * 2 * REPEATS ))
+total_runs=$(( ((N_END - N_START) / N_STEP + 1) * 3 * REPEATS ))
 current_run=0
 
 for n in $(seq "${N_START}" "${N_STEP}" "${N_END}"); do
@@ -148,6 +149,13 @@ for n in $(seq "${N_START}" "${N_STEP}" "${N_END}"); do
         echo "--- mod (run ${current_run}/${total_runs}) ---"
         run_stats "${n}" "mod" "${seed}" \
             ${CLINGO_MOD} "${FILE_RANGE}" "${FILE_MOD}" "-n" "1" "-c" "n=${n}"
+    done
+
+    for seed in $(seq 1 "${REPEATS}"); do
+        current_run=$((current_run + 1))
+        echo "--- mod_opt (run ${current_run}/${total_runs}) ---"
+        run_stats "${n}" "mod_opt" "${seed}" \
+            ${CLINGO_MOD} "${FILE_RANGE}" "${FILE_MOD_OPT}" "-n" "1" "-c" "n=${n}"
     done
 done
 

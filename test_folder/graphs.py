@@ -84,16 +84,28 @@ def compute_stats(raw):
 VARIANT_LABELS = {
     "std": "Clingo Standard",
     "mod": "Clingo Lazy (Modificato)",
+    "mod_opt": "Clingo Lazy (Constraint Ottimizzato)",
 }
 VARIANT_COLORS = {
     "std": "#E74C3C",   # rosso elegante
     "mod": "#2ECC71",   # verde elegante
+    "mod_opt": "#3498DB",  # blu elegante
 }
 VARIANT_FILL_ALPHA = 0.15
 VARIANT_MARKERS = {
     "std": "o",
     "mod": "s",
+    "mod_opt": "^",
 }
+VARIANT_ORDER = ["std", "mod", "mod_opt"]
+
+
+def _ordered_variants(stats: dict):
+    """Ordina le varianti in modo stabile, mantenendo eventuali varianti extra in coda."""
+    present = set(stats.keys())
+    ordered = [v for v in VARIANT_ORDER if v in present]
+    ordered.extend(sorted(present - set(ordered)))
+    return ordered
 
 # Definizione dei 6 grafici
 PLOT_CONFIGS = [
@@ -171,7 +183,7 @@ def generate_graphs(stats: dict, graphs_dir: str):
     fig, axes = plt.subplots(3, 2, figsize=(14, 16))
     axes = axes.flatten()
 
-    variants = sorted(stats.keys())
+    variants = _ordered_variants(stats)
 
     for idx, config in enumerate(PLOT_CONFIGS):
         ax = axes[idx]
@@ -221,7 +233,7 @@ def generate_graphs(stats: dict, graphs_dir: str):
             ax.text(0.5, 0.5, "Nessun dato", transform=ax.transAxes,
                     ha="center", va="center", fontsize=14, color="#CCC")
 
-    fig.suptitle("Benchmark: Clingo Standard vs Lazy Heuristic Grounding\n"
+    fig.suptitle("Benchmark BSP: Standard e Varianti Lazy Heuristic Grounding\n"
                  f"(media ± σ su {_detect_seeds(stats)} seed per punto)",
                  fontsize=14, fontweight="bold", y=0.98)
 
@@ -261,7 +273,7 @@ def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, filename):
         return
 
     fig, ax = plt.subplots(figsize=(8, 5))
-    variants = sorted(stats.keys())
+    variants = _ordered_variants(stats)
 
     for variant in variants:
         if metric not in stats[variant]:
@@ -313,9 +325,10 @@ def _detect_seeds(stats):
 
 def print_summary_table(stats):
     """Stampa una tabella riepilogativa con le medie per le metriche chiave."""
-    variants = sorted(stats.keys())
+    variants = _ordered_variants(stats)
+    table_width = 8 + len(variants) * 38
 
-    print(f"\n{'='*90}")
+    print(f"\n{'='*table_width}")
     print(f"{'N':>5}  ", end="")
     for v in variants:
         label = VARIANT_LABELS.get(v, v)
@@ -325,7 +338,7 @@ def print_summary_table(stats):
     for _ in variants:
         print(f"  {'Solving(s)':>10} {'Choices':>8} {'Confl.':>8} {'Rules':>7}", end="")
     print()
-    print("-" * 90)
+    print("-" * table_width)
 
     # Raccogli tutti gli N
     all_ns = set()
@@ -349,7 +362,7 @@ def print_summary_table(stats):
             row += f"  {s_str:>10} {c_str:>8} {f_str:>8} {r_str:>7}"
         print(row)
 
-    print(f"{'='*90}\n")
+    print(f"{'='*table_width}\n")
 
 
 def _get_mean_at_n(variant_stats, metric, n):
