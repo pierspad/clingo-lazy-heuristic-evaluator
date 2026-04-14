@@ -1,7 +1,6 @@
 #pragma once
 #include <clingo.hh>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 #include <string>
 #include <memory>
@@ -344,6 +343,7 @@ private:
 
     // === Metodi helper privati ===
     void init_lazy_mode(Clingo::PropagateInit &init);
+    void remove_active_body_lit(Clingo::literal_t body_lit) noexcept;
 
     /// Parsing ricorsivo di un termine Clingo in un AST Expression.
     /// Riconosce costanti, "self", variabili (nomi presenti in var_index_map),
@@ -356,7 +356,7 @@ private:
         std::string &error_message);
 
 public:
-    virtual ~HeuristicPropagator() = default;
+    ~HeuristicPropagator() override = default;
 
     void init(Clingo::PropagateInit &init) override;
     void propagate(Clingo::PropagateControl &control, Clingo::LiteralSpan changes) override;
