@@ -368,6 +368,20 @@ private:
     void init_lazy_mode(Clingo::PropagateInit &init);
     void parse_lazy_templates(Clingo::SymbolicAtoms const &atoms, LazyInitInfo &info);
     void parse_lazy_template_symbol(Clingo::Symbol const &symbol, LazyInitInfo &info);
+    bool try_parse_bind_argument(Clingo::Symbol const &arg,
+                                 HeuristicRuleTemplate &tmpl,
+                                 LazyInitInfo &info,
+                                 TemplateParseState &state);
+    bool try_parse_weight_argument(Clingo::Symbol const &arg,
+                                   HeuristicRuleTemplate &tmpl,
+                                   TemplateParseState &state);
+    bool try_parse_priority_argument(Clingo::Symbol const &arg,
+                                     HeuristicRuleTemplate &tmpl,
+                                     TemplateParseState &state);
+    bool try_parse_simple_argument(Clingo::Symbol const &arg,
+                                   HeuristicRuleTemplate &tmpl,
+                                   LazyInitInfo &info,
+                                   TemplateParseState &state);
     void parse_template_argument(Clingo::Symbol const &arg,
                                 HeuristicRuleTemplate &tmpl,
                                 LazyInitInfo &info,

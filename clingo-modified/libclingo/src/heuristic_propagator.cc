@@ -186,6 +186,147 @@ void HeuristicPropagator::parse_lazy_template_symbol(Clingo::Symbol const &symbo
     finalize_lazy_template(tmpl, info, state);
 }
 
+bool HeuristicPropagator::try_parse_bind_argument(Clingo::Symbol const &arg,
+                                                  HeuristicRuleTemplate &tmpl,
+                                                  LazyInitInfo &info,
+                                                  TemplateParseState &state) {
+    if (arg.name() != "__bind") {
+        return false;
+    }
+
+    auto const arg_args = arg.arguments();
+    if (arg_args.size() != 2 ||
+        arg_args[0].type() != Clingo::SymbolType::Function ||
+        !arg_args[0].arguments().empty() ||
+        arg_args[1].type() != Clingo::SymbolType::Function) {
+        std::cerr << "[heuristic_propagator] __bind malformato in __heuristic("
+                  << tmpl.target_pred << ", ...): atteso __bind(var, __agg(pred[, idx])).\n";
+        return true;
+    }
+
+    std::string const var_name = arg_args[0].name();
+    std::string const agg_op = arg_args[1].name();
+    auto const agg_inner_args = arg_args[1].arguments();
+
+    if (!is_aggregate_name(agg_op) ||
+        agg_inner_args.empty() ||
+        agg_inner_args[0].type() != Clingo::SymbolType::Function) {
+        std::cerr << "[heuristic_propagator] aggregato non valido in __bind("
+                  << var_name << ", ...): supportati __sum/__count/__min/__max.\n";
+        return true;
+    }
+
+    if (state.var_index_map.find(var_name) != state.var_index_map.end()) {
+        std::cerr << "[heuristic_propagator] variabile duplicata in __bind: '"
+                  << var_name << "'.\n";
+        return true;
+    }
+
+    std::string const pred = agg_inner_args[0].name();
+    int arg_idx = -1;
+    if (agg_inner_args.size() >= 2 &&
+        agg_inner_args[1].type() == Clingo::SymbolType::Number) {
+        arg_idx = agg_inner_args[1].number();
+    }
+
+    AggregateKey key{agg_op, pred, arg_idx};
+    VarBinding binding;
+    binding.env_index = state.next_var_index++;
+    binding.agg_key = key;
+
+    state.var_index_map[var_name] = binding.env_index;
+    tmpl.var_bindings.push_back(binding);
+    info.aggregate_preds.insert(pred);
+    return true;
+}
+
+bool HeuristicPropagator::try_parse_weight_argument(Clingo::Symbol const &arg,
+                                                    HeuristicRuleTemplate &tmpl,
+                                                    TemplateParseState &state) {
+    if (arg.name() != "__weight") {
+        return false;
+    }
+
+    auto const arg_args = arg.arguments();
+    if (arg_args.size() != 1) {
+        std::cerr << "[heuristic_propagator] __weight malformato in __heuristic("
+                  << tmpl.target_pred << ", ...): atteso __weight(expr).\n";
+        return true;
+    }
+    if (state.weight_term) {
+        std::cerr << "[heuristic_propagator] __weight duplicato in __heuristic("
+                  << tmpl.target_pred << ", ...): uso l'ultimo valore.\n";
+    }
+    state.weight_term = std::make_unique<Clingo::Symbol>(arg_args[0]);
+    return true;
+}
+
+bool HeuristicPropagator::try_parse_priority_argument(Clingo::Symbol const &arg,
+                                                      HeuristicRuleTemplate &tmpl,
+                                                      TemplateParseState &state) {
+    if (arg.name() != "__priority") {
+        return false;
+    }
+
+    auto const arg_args = arg.arguments();
+    if (arg_args.size() != 1) {
+        std::cerr << "[heuristic_propagator] __priority malformato in __heuristic("
+                  << tmpl.target_pred << ", ...): atteso __priority(expr).\n";
+        return true;
+    }
+    if (state.priority_term) {
+        std::cerr << "[heuristic_propagator] __priority duplicato in __heuristic("
+                  << tmpl.target_pred << ", ...): uso l'ultimo valore.\n";
+    }
+    state.priority_term = std::make_unique<Clingo::Symbol>(arg_args[0]);
+    return true;
+}
+
+bool HeuristicPropagator::try_parse_simple_argument(Clingo::Symbol const &arg,
+                                                    HeuristicRuleTemplate &tmpl,
+                                                    LazyInitInfo &info,
+                                                    TemplateParseState &state) {
+    auto const arg_args = arg.arguments();
+    if (!arg_args.empty()) {
+        return false;
+    }
+
+    std::string const arg_name = arg.name();
+    if (is_sign_name(arg_name)) {
+        tmpl.sign = arg_name;
+        return true;
+    }
+
+    if (arg_name == "self") {
+        if (!state.weight_term && !state.legacy_weight_expr) {
+            state.legacy_weight_expr = std::make_unique<SelfExpr>();
+        }
+        return true;
+    }
+
+    if (is_neg_body(arg_name)) {
+        std::string const real_pred = strip_neg_prefix(arg_name);
+        tmpl.neg_body_preds.push_back(real_pred);
+        info.neg_body_preds.insert(real_pred);
+        return true;
+    }
+
+    if (is_aggregate_name(arg_name)) {
+        return false;
+    }
+
+    if (tmpl.pos_body_preds.empty()) {
+        tmpl.pos_body_preds.push_back(arg_name);
+        info.body_preds.insert(arg_name);
+    }
+    else {
+        std::cerr << "[heuristic_propagator] body positivo extra '" << arg_name
+                  << "' in __heuristic(" << tmpl.target_pred
+                  << ", ...): supportato un solo body positivo, ignoro i successivi.\n";
+    }
+    return true;
+}
+
 void HeuristicPropagator::parse_template_argument(Clingo::Symbol const &arg,
                                                   HeuristicRuleTemplate &tmpl,
                                                   LazyInitInfo &info,
@@ -201,106 +342,19 @@ void HeuristicPropagator::parse_template_argument(Clingo::Symbol const &arg,
         return;
     }
 
-    std::string const arg_name = arg.name();
-    auto const arg_args = arg.arguments();
-
-    if (arg_name == "__bind") {
-        if (arg_args.size() != 2 ||
-            arg_args[0].type() != Clingo::SymbolType::Function ||
-            !arg_args[0].arguments().empty() ||
-            arg_args[1].type() != Clingo::SymbolType::Function) {
-            std::cerr << "[heuristic_propagator] __bind malformato in __heuristic("
-                      << tmpl.target_pred << ", ...): atteso __bind(var, __agg(pred[, idx])).\n";
-            return;
-        }
-
-        std::string const var_name = arg_args[0].name();
-        std::string const agg_op = arg_args[1].name();
-        auto const agg_inner_args = arg_args[1].arguments();
-
-        if (!is_aggregate_name(agg_op) ||
-            agg_inner_args.empty() ||
-            agg_inner_args[0].type() != Clingo::SymbolType::Function) {
-            std::cerr << "[heuristic_propagator] aggregato non valido in __bind("
-                      << var_name << ", ...): supportati __sum/__count/__min/__max.\n";
-            return;
-        }
-
-        if (state.var_index_map.find(var_name) != state.var_index_map.end()) {
-            std::cerr << "[heuristic_propagator] variabile duplicata in __bind: '"
-                      << var_name << "'.\n";
-            return;
-        }
-
-        std::string const pred = agg_inner_args[0].name();
-        int arg_idx = -1;
-        if (agg_inner_args.size() >= 2 &&
-            agg_inner_args[1].type() == Clingo::SymbolType::Number) {
-            arg_idx = agg_inner_args[1].number();
-        }
-
-        AggregateKey key{agg_op, pred, arg_idx};
-        VarBinding binding;
-        binding.env_index = state.next_var_index++;
-        binding.agg_key = key;
-
-        state.var_index_map[var_name] = binding.env_index;
-        tmpl.var_bindings.push_back(binding);
-        info.aggregate_preds.insert(pred);
+    if (try_parse_bind_argument(arg, tmpl, info, state)) {
         return;
     }
 
-    if (arg_name == "__weight") {
-        if (arg_args.size() != 1) {
-            std::cerr << "[heuristic_propagator] __weight malformato in __heuristic("
-                      << tmpl.target_pred << ", ...): atteso __weight(expr).\n";
-            return;
-        }
-        if (state.weight_term) {
-            std::cerr << "[heuristic_propagator] __weight duplicato in __heuristic("
-                      << tmpl.target_pred << ", ...): uso l'ultimo valore.\n";
-        }
-        state.weight_term = std::make_unique<Clingo::Symbol>(arg_args[0]);
+    if (try_parse_weight_argument(arg, tmpl, state)) {
         return;
     }
 
-    if (arg_name == "__priority") {
-        if (arg_args.size() != 1) {
-            std::cerr << "[heuristic_propagator] __priority malformato in __heuristic("
-                      << tmpl.target_pred << ", ...): atteso __priority(expr).\n";
-            return;
-        }
-        if (state.priority_term) {
-            std::cerr << "[heuristic_propagator] __priority duplicato in __heuristic("
-                      << tmpl.target_pred << ", ...): uso l'ultimo valore.\n";
-        }
-        state.priority_term = std::make_unique<Clingo::Symbol>(arg_args[0]);
+    if (try_parse_priority_argument(arg, tmpl, state)) {
         return;
     }
 
-    if (is_sign_name(arg_name) && arg_args.empty()) {
-        tmpl.sign = arg_name;
-        return;
-    }
-
-    if (arg_name == "self" && arg_args.empty()) {
-        if (!state.weight_term && !state.legacy_weight_expr) {
-            state.legacy_weight_expr = std::make_unique<SelfExpr>();
-        }
-        return;
-    }
-
-    if (is_neg_body(arg_name) && arg_args.empty()) {
-        std::string const real_pred = strip_neg_prefix(arg_name);
-        tmpl.neg_body_preds.push_back(real_pred);
-        info.neg_body_preds.insert(real_pred);
-        return;
-    }
-
-    if (arg_args.empty() && !is_aggregate_name(arg_name)) {
-        tmpl.pos_body_preds.push_back(arg_name);
-        info.body_preds.insert(arg_name);
-    }
+    static_cast<void>(try_parse_simple_argument(arg, tmpl, info, state));
 }
 
 void HeuristicPropagator::finalize_lazy_template(HeuristicRuleTemplate &tmpl,
@@ -309,19 +363,23 @@ void HeuristicPropagator::finalize_lazy_template(HeuristicRuleTemplate &tmpl,
     tmpl.env_size = state.next_var_index;
     info.max_env_size = std::max(info.max_env_size, tmpl.env_size);
 
-    if (state.weight_term) {
+    auto parse_term_or_fallback = [&](std::unique_ptr<Clingo::Symbol> const &term,
+                                      char const *term_name) -> std::unique_ptr<Expression> {
         bool ok = true;
         std::string error_message;
-        auto expr = parse_expression(*state.weight_term, state.var_index_map, ok, error_message);
+        auto expr = parse_expression(*term, state.var_index_map, ok, error_message);
         if (ok) {
-            tmpl.weight_expr = std::move(expr);
+            return std::move(expr);
         }
-        else {
-            std::cerr << "[heuristic_propagator] errore parsing __weight in __heuristic("
-                      << tmpl.target_pred << ", ...): " << error_message
-                      << ". Uso fallback 0.\n";
-            tmpl.weight_expr = std::make_unique<ConstExpr>(0);
-        }
+
+        std::cerr << "[heuristic_propagator] errore parsing " << term_name
+                  << " in __heuristic(" << tmpl.target_pred << ", ...): "
+                  << error_message << ". Uso fallback 0.\n";
+        return std::make_unique<ConstExpr>(0);
+    };
+
+    if (state.weight_term) {
+        tmpl.weight_expr = parse_term_or_fallback(state.weight_term, "__weight");
     }
 
     if (!state.weight_term && state.legacy_weight_expr) {
@@ -329,18 +387,7 @@ void HeuristicPropagator::finalize_lazy_template(HeuristicRuleTemplate &tmpl,
     }
 
     if (state.priority_term) {
-        bool ok = true;
-        std::string error_message;
-        auto expr = parse_expression(*state.priority_term, state.var_index_map, ok, error_message);
-        if (ok) {
-            tmpl.priority_expr = std::move(expr);
-        }
-        else {
-            std::cerr << "[heuristic_propagator] errore parsing __priority in __heuristic("
-                      << tmpl.target_pred << ", ...): " << error_message
-                      << ". Uso fallback 0.\n";
-            tmpl.priority_expr = std::make_unique<ConstExpr>(0);
-        }
+        tmpl.priority_expr = parse_term_or_fallback(state.priority_term, "__priority");
     }
 
     tmpl.weight_depends_on_bindings = tmpl.weight_expr->depends_on_bindings();
@@ -602,8 +649,9 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
 
     Clingo::literal_t best_target = 0;
     std::string const *best_sign = nullptr;
-    int max_priority = -1;
-    int best_weight = -1;
+    int max_priority = 0;
+    int best_weight = 0;
+    bool has_best = false;
 
     int *env = env_buffer_.data();
 
@@ -651,8 +699,10 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
                 ? inst.cached_weight
                 : tmpl.weight_expr->evaluate(env);
 
-            if (current_priority > max_priority ||
-               (current_priority == max_priority && current_weight > best_weight)) {
+            if (!has_best ||
+                current_priority > max_priority ||
+                (current_priority == max_priority && current_weight > best_weight)) {
+                has_best = true;
                 max_priority = current_priority;
                 best_weight = current_weight;
                 best_target = inst.target_lit;
@@ -661,7 +711,7 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
         }
     }
 
-    if (best_target == 0 || best_sign == nullptr) {
+    if (!has_best || best_target == 0 || best_sign == nullptr) {
         return 0;
     }
     return apply_sign(*best_sign, best_target, fallback);
