@@ -1,6 +1,7 @@
 #pragma once
 #include <clingo.hh>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <string>
 #include <memory>
@@ -341,8 +342,40 @@ private:
     /// Dimensionato al massimo env_size tra tutti i template in init_lazy_mode().
     std::vector<int> env_buffer_;
 
+    using PredLitMap = std::unordered_map<std::string, std::unordered_map<int, Clingo::literal_t>>;
+
+    struct LazyInitInfo {
+        std::unordered_set<std::string> body_preds;
+        std::unordered_set<std::string> target_preds;
+        std::unordered_set<std::string> neg_body_preds;
+        std::unordered_set<std::string> aggregate_preds;
+        int max_env_size = 1;
+    };
+
+    struct TemplateParseState {
+        int next_var_index = 1;
+        std::unordered_map<std::string, int> var_index_map;
+        std::unique_ptr<Expression> legacy_weight_expr;
+        std::unique_ptr<Clingo::Symbol> weight_term;
+        std::unique_ptr<Clingo::Symbol> priority_term;
+    };
+
     // === Metodi helper privati ===
     void init_lazy_mode(Clingo::PropagateInit &init);
+    void parse_lazy_templates(Clingo::SymbolicAtoms const &atoms, LazyInitInfo &info);
+    void parse_lazy_template_symbol(Clingo::Symbol const &symbol, LazyInitInfo &info);
+    void parse_template_argument(Clingo::Symbol const &arg,
+                                HeuristicRuleTemplate &tmpl,
+                                LazyInitInfo &info,
+                                TemplateParseState &state);
+    void finalize_lazy_template(HeuristicRuleTemplate &tmpl,
+                                LazyInitInfo &info,
+                                TemplateParseState &state);
+    PredLitMap build_pred_lit_map(Clingo::PropagateInit &init,
+                                  Clingo::SymbolicAtoms const &atoms,
+                                  LazyInitInfo const &info);
+    void build_body_triggers(Clingo::PropagateInit &init, PredLitMap const &pred_lit_map);
+    void register_aggregate_watches(Clingo::PropagateInit &init, PredLitMap const &pred_lit_map);
     void remove_active_body_lit(Clingo::literal_t body_lit) noexcept;
 
     /// Parsing ricorsivo di un termine Clingo in un AST Expression.
