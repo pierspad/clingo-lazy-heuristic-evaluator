@@ -294,10 +294,14 @@ class HeuristicPropagator : public Clingo::Heuristic {
 
 private:
 
-    /// Info su un atomo osservato: a quali aggregati contribuisce e con quale valore
+    struct WatchedAtomContribution {
+        AggregateKey key;
+        int value;
+    };
+
+    /// Info su un atomo osservato: contributi verso i vari aggregati
     struct WatchedAtomInfo {
-        int value;                       // Valore numerico (es. 3 per c(3))
-        std::vector<AggregateKey> keys;  // Aggregati a cui contribuisce
+        std::vector<WatchedAtomContribution> contributions;
     };
 
     /// Mappa un solver_literal ai suoi aggregate di appartenenza
@@ -375,7 +379,7 @@ private:
                                   Clingo::SymbolicAtoms const &atoms,
                                   LazyInitInfo const &info);
     void build_body_triggers(Clingo::PropagateInit &init, PredLitMap const &pred_lit_map);
-    void register_aggregate_watches(Clingo::PropagateInit &init, PredLitMap const &pred_lit_map);
+    void register_aggregate_watches(Clingo::PropagateInit &init, Clingo::SymbolicAtoms const &atoms);
     void remove_active_body_lit(Clingo::literal_t body_lit) noexcept;
 
     /// Parsing ricorsivo di un termine Clingo in un AST Expression.

@@ -29,6 +29,53 @@ static std::string strip_neg_prefix(std::string const &name) {
     return name.substr(4);
 }
 
+static bool extract_numeric_argument(Clingo::Symbol const &symbol, int arg_index, int &value) {
+    if (symbol.type() != Clingo::SymbolType::Function) {
+        return false;
+    }
+
+    auto const args = symbol.arguments();
+    if (args.empty()) {
+        return false;
+    }
+
+    if (arg_index >= 0) {
+        int numeric_pos = 0;
+        for (auto const &arg : args) {
+            if (arg.type() != Clingo::SymbolType::Number) {
+                continue;
+            }
+            if (numeric_pos == arg_index) {
+                value = arg.number();
+                return true;
+            }
+            ++numeric_pos;
+        }
+        return false;
+    }
+
+    bool found = false;
+    for (auto const &arg : args) {
+        if (arg.type() == Clingo::SymbolType::Number) {
+            value = arg.number();
+            found = true;
+        }
+    }
+    return found;
+}
+
+static Clingo::literal_t apply_sign(std::string const &sign,
+                                    Clingo::literal_t target_lit,
+                                    Clingo::literal_t fallback) {
+    if (sign == "false") {
+        return -target_lit;
+    }
+    if (sign == "sign") {
+        return fallback < 0 ? -target_lit : target_lit;
+    }
+    return target_lit;
+}
+
 std::unique_ptr<Expression> HeuristicPropagator::parse_expression(
     Clingo::Symbol const &sym,
     std::unordered_map<std::string, int> const &var_index_map,
@@ -330,12 +377,10 @@ HeuristicPropagator::PredLitMap HeuristicPropagator::build_pred_lit_map(Clingo::
         auto const sym_args = it->symbol().arguments();
         if (sym_args.empty()) continue;
 
-        auto const num_it = std::find_if(sym_args.begin(), sym_args.end(), [](Clingo::Symbol const &arg) {
-            return arg.type() == Clingo::SymbolType::Number;
-        });
-        if (num_it == sym_args.end()) continue;
-
-        int const domain_val = num_it->number();
+        int domain_val = 0;
+        if (!extract_numeric_argument(it->symbol(), 0, domain_val)) {
+            continue;
+        }
 
         Clingo::literal_t slit = init.solver_literal(it->literal());
         if (slit != 0) {
@@ -393,27 +438,36 @@ void HeuristicPropagator::build_body_triggers(Clingo::PropagateInit &init, PredL
 }
 
 void HeuristicPropagator::register_aggregate_watches(Clingo::PropagateInit &init,
-                                                     PredLitMap const &pred_lit_map) {
+                                                     Clingo::SymbolicAtoms const &atoms) {
     auto register_agg_watches = [&](AggregateKey const &agg_key) {
         if (agg_key.op.empty()) return;
 
-        auto agg_pred_it = pred_lit_map.find(agg_key.pred);
-        if (agg_pred_it == pred_lit_map.end()) return;
+        for (auto it = atoms.begin(); it != atoms.end(); ++it) {
+            auto const symbol = it->symbol();
+            if (symbol.name() != agg_key.pred) {
+                continue;
+            }
 
-        for (auto const &entry : agg_pred_it->second) {
-            int const domain_val = entry.first;
-            Clingo::literal_t const slit = entry.second;
+            int value = 0;
+            if (!extract_numeric_argument(symbol, agg_key.arg_index, value)) {
+                continue;
+            }
+
+            Clingo::literal_t const slit = init.solver_literal(it->literal());
+            if (slit == 0) {
+                continue;
+            }
+
             init.add_watch(slit);
 
-            auto watch_it = watched_atoms_.find(slit);
-            if (watch_it != watched_atoms_.end()) {
-                auto &keys = watch_it->second.keys;
-                if (std::find(keys.begin(), keys.end(), agg_key) == keys.end()) {
-                    keys.push_back(agg_key);
-                }
-            }
-            else {
-                watched_atoms_.emplace(slit, WatchedAtomInfo{domain_val, {agg_key}});
+            auto &watch_info = watched_atoms_[slit];
+            auto contrib_it = std::find_if(
+                watch_info.contributions.begin(), watch_info.contributions.end(),
+                [&](WatchedAtomContribution const &contrib) {
+                    return contrib.key == agg_key;
+                });
+            if (contrib_it == watch_info.contributions.end()) {
+                watch_info.contributions.push_back(WatchedAtomContribution{agg_key, value});
             }
         }
     };
@@ -438,7 +492,7 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
 
     auto pred_lit_map = build_pred_lit_map(init, atoms, info);
     build_body_triggers(init, pred_lit_map);
-    register_aggregate_watches(init, pred_lit_map);
+    register_aggregate_watches(init, atoms);
 }
 
 void HeuristicPropagator::remove_active_body_lit(Clingo::literal_t body_lit) noexcept {
@@ -469,10 +523,10 @@ void HeuristicPropagator::propagate(Clingo::PropagateControl &control, Clingo::L
         auto watch_it = watched_atoms_.find(lit);
         if (watch_it != watched_atoms_.end()) {
             auto const &info = watch_it->second;
-            for (auto const &key : info.keys) {
-                auto state_it = aggregate_states_.find(key);
+            for (auto const &contrib : info.contributions) {
+                auto state_it = aggregate_states_.find(contrib.key);
                 if (state_it != aggregate_states_.end()) {
-                    state_it->second->add(info.value);
+                    state_it->second->add(contrib.value);
                 }
             }
         }
@@ -525,10 +579,10 @@ void HeuristicPropagator::undo(Clingo::PropagateControl const &control, Clingo::
         auto watch_it = watched_atoms_.find(lit);
         if (watch_it != watched_atoms_.end()) {
             auto const &info = watch_it->second;
-            for (auto const &key : info.keys) {
-                auto state_it = aggregate_states_.find(key);
+            for (auto const &contrib : info.contributions) {
+                auto state_it = aggregate_states_.find(contrib.key);
                 if (state_it != aggregate_states_.end()) {
-                    state_it->second->remove(info.value);
+                    state_it->second->remove(contrib.value);
                 }
             }
         }
@@ -545,9 +599,9 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
                                                Clingo::Assignment const &assignment,
                                                Clingo::literal_t fallback) {
     static_cast<void>(thread_id);
-    static_cast<void>(fallback);
 
     Clingo::literal_t best_target = 0;
+    std::string const *best_sign = nullptr;
     int max_priority = -1;
     int best_weight = -1;
 
@@ -602,9 +656,13 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
                 max_priority = current_priority;
                 best_weight = current_weight;
                 best_target = inst.target_lit;
+                best_sign = &tmpl.sign;
             }
         }
     }
 
-    return best_target;
+    if (best_target == 0 || best_sign == nullptr) {
+        return 0;
+    }
+    return apply_sign(*best_sign, best_target, fallback);
 }
