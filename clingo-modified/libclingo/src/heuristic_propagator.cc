@@ -17,8 +17,20 @@ static BinOp binop_from_name(std::string const &name) {
     return BinOp::MUL; // __mul
 }
 
-static bool is_sign_name(std::string const &name) {
-    return name == "true" || name == "false" || name == "sign";
+static bool try_parse_sign(std::string const &name, HeuristicSign &out) {
+    if (name == "true") {
+        out = HeuristicSign::True;
+        return true;
+    }
+    if (name == "false") {
+        out = HeuristicSign::False;
+        return true;
+    }
+    if (name == "sign") {
+        out = HeuristicSign::FollowFallback;
+        return true;
+    }
+    return false;
 }
 
 static bool is_neg_body(std::string const &name) {
@@ -64,16 +76,18 @@ static bool extract_numeric_argument(Clingo::Symbol const &symbol, int arg_index
     return found;
 }
 
-static Clingo::literal_t apply_sign(std::string const &sign,
+static Clingo::literal_t apply_sign(HeuristicSign sign,
                                     Clingo::literal_t target_lit,
                                     Clingo::literal_t fallback) {
-    if (sign == "false") {
-        return -target_lit;
+    switch (sign) {
+        case HeuristicSign::True:
+            return target_lit;
+        case HeuristicSign::False:
+            return -target_lit;
+        case HeuristicSign::FollowFallback:
+            return fallback < 0 ? -target_lit : target_lit;
     }
-    if (sign == "sign") {
-        return fallback < 0 ? -target_lit : target_lit;
-    }
-    return target_lit;
+    return target_lit; // unreachable
 }
 
 std::unique_ptr<Expression> HeuristicPropagator::parse_expression(
@@ -166,17 +180,21 @@ void HeuristicPropagator::parse_lazy_template_symbol(Clingo::Symbol const &symbo
     }
 
     auto const args = symbol.arguments();
-    if (args.size() < 3) {
+    if (args.size() < 2) {
+        std::cerr << "[heuristic_propagator] __heuristic malformato: atteso almeno "
+                  << "__heuristic(target, arg, ...), regola ignorata.\n";
         return;
     }
 
     if (args[0].type() != Clingo::SymbolType::Function || !args[0].arguments().empty()) {
+        std::cerr << "[heuristic_propagator] __heuristic malformato: il primo argomento "
+                  << "deve essere un predicato nullo (es. b), regola ignorata.\n";
         return;
     }
 
     HeuristicRuleTemplate tmpl;
     tmpl.target_pred = args[0].name();
-    tmpl.sign = "true";
+    tmpl.sign = HeuristicSign::True;
 
     TemplateParseState state;
     for (size_t i = 1; i < args.size(); ++i) {
@@ -224,9 +242,27 @@ bool HeuristicPropagator::try_parse_bind_argument(Clingo::Symbol const &arg,
 
     std::string const pred = agg_inner_args[0].name();
     int arg_idx = -1;
-    if (agg_inner_args.size() >= 2 &&
-        agg_inner_args[1].type() == Clingo::SymbolType::Number) {
-        arg_idx = agg_inner_args[1].number();
+    if (agg_inner_args.size() >= 2) {
+        if (agg_inner_args[1].type() != Clingo::SymbolType::Number) {
+            std::cerr << "[heuristic_propagator] idx non numerico in __bind(" << var_name
+                      << ", ...): uso -1 (ultimo argomento numerico).\n";
+        }
+        else {
+            int const parsed_idx = agg_inner_args[1].number();
+            if (parsed_idx < -1) {
+                std::cerr << "[heuristic_propagator] idx " << parsed_idx
+                          << " non valido in __bind(" << var_name
+                          << ", ...): supportati -1 o valori >= 0, uso -1.\n";
+            }
+            else {
+                arg_idx = parsed_idx;
+            }
+        }
+    }
+
+    if (agg_inner_args.size() > 2) {
+        std::cerr << "[heuristic_propagator] argomenti extra in __bind(" << var_name
+                  << ", ...): supportato solo pred[, idx], ignoro i successivi.\n";
     }
 
     AggregateKey key{agg_op, pred, arg_idx};
@@ -292,8 +328,9 @@ bool HeuristicPropagator::try_parse_simple_argument(Clingo::Symbol const &arg,
     }
 
     std::string const arg_name = arg.name();
-    if (is_sign_name(arg_name)) {
-        tmpl.sign = arg_name;
+    HeuristicSign parsed_sign = HeuristicSign::True;
+    if (try_parse_sign(arg_name, parsed_sign)) {
+        tmpl.sign = parsed_sign;
         return true;
     }
 
@@ -339,6 +376,9 @@ void HeuristicPropagator::parse_template_argument(Clingo::Symbol const &arg,
     }
 
     if (arg.type() != Clingo::SymbolType::Function) {
+        std::cerr << "[heuristic_propagator] argomento ignorato in __heuristic(" << tmpl.target_pred
+                  << ", ...): tipo simbolo non supportato (" << static_cast<int>(arg.type())
+                  << ").\n";
         return;
     }
 
@@ -354,7 +394,11 @@ void HeuristicPropagator::parse_template_argument(Clingo::Symbol const &arg,
         return;
     }
 
-    static_cast<void>(try_parse_simple_argument(arg, tmpl, info, state));
+    if (!try_parse_simple_argument(arg, tmpl, info, state)) {
+        std::cerr << "[heuristic_propagator] argomento non riconosciuto '" << arg.name()
+                  << "' in __heuristic(" << tmpl.target_pred
+                  << ", ...): attesi body, __n_*, __bind, __weight, __priority, true/false/sign.\n";
+    }
 }
 
 void HeuristicPropagator::finalize_lazy_template(HeuristicRuleTemplate &tmpl,
@@ -648,7 +692,7 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
     static_cast<void>(thread_id);
 
     Clingo::literal_t best_target = 0;
-    std::string const *best_sign = nullptr;
+    HeuristicSign best_sign = HeuristicSign::True;
     int max_priority = 0;
     int best_weight = 0;
     bool has_best = false;
@@ -706,13 +750,13 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
                 max_priority = current_priority;
                 best_weight = current_weight;
                 best_target = inst.target_lit;
-                best_sign = &tmpl.sign;
+                best_sign = tmpl.sign;
             }
         }
     }
 
-    if (!has_best || best_target == 0 || best_sign == nullptr) {
+    if (!has_best || best_target == 0) {
         return 0;
     }
-    return apply_sign(*best_sign, best_target, fallback);
+    return apply_sign(best_sign, best_target, fallback);
 }

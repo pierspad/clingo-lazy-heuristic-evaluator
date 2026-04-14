@@ -148,6 +148,9 @@ static constexpr int ENV_SELF_INDEX = 0;
 /// Tipo di operazione binaria
 enum class BinOp { ADD, SUB, MUL };
 
+/// Semantica del segno per la decisione euristica.
+enum class HeuristicSign { True, False, FollowFallback };
+
 /// Classe base astratta per un nodo dell'albero di espressioni.
 /// L'environment è un flat array di interi: env[i] è il valore della variabile i.
 struct Expression {
@@ -251,7 +254,7 @@ struct HeuristicRuleTemplate {
     std::string target_pred;                  // Primo argomento: predicato target (es. "b")
     std::vector<std::string> pos_body_preds;  // Body positivi (es. {"x"})
     std::vector<std::string> neg_body_preds;  // Body negativi (es. {"c"} da __n_c)
-    std::string sign;                         // "true", "false", "sign"
+    HeuristicSign sign = HeuristicSign::True; // true, false, sign
 
     // === Fase di runtime (usato in decide, zero-allocation) ===
     // Bindings pre-calcolati: per ogni variabile, il suo indice env e la chiave aggregata
