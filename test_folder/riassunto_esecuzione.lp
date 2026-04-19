@@ -246,13 +246,15 @@ grounding non esplode piu' in memoria.
 % 13-bis) Derivazione formale del vincolo lineare BSP
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Il vincolo `:- not min_val <= #sum{ Y : b(Y) } <= max_val.` rappresenta
-un'ottimizzazione matematica applicata al Balanced Sum Problem (BSP). Nel
-problema originale, l'obiettivo e' suddividere i numeri da 1 a n in due
-insiemi disgiunti, b e c, in modo tale che la differenza in valore assoluto
-tra la somma dei loro elementi sia al massimo 1.
+Il vincolo 
+
+:- not min_val <= #sum{ Y : b(Y) } <= max_val.
+
+rappresenta un'ottimizzazione matematica applicata al Balanced Sum Problem (BSP). 
+Nel problema originale, l'obiettivo e' suddividere i numeri da 1 a n in due insiemi disgiunti, b e c, in modo tale che la differenza in valore assoluto tra la somma dei loro elementi sia al massimo 1.
 
 Dimostrazione formale del check.
+
 Sia tot la somma totale dei numeri da 1 a n, calcolabile tramite la formula di
 Gauss: $tot = \frac{n(n+1)}{2}$. Poiche' il costrutto di scelta
 `1 { b(X); c(X) } 1 :- x(X).` impone che ogni numero appartenga esattamente a
@@ -287,6 +289,124 @@ aggregato lineare con due bound costanti precalcolati in grounding. Per Clasp
 questo si traduce in un singolo weight constraint, con meno aggregati da
 tracciare a runtime e meno operazioni aritmetiche costose, riducendo in modo
 netto i conflitti durante la ricerca.
+
+
+
+
+% output di 
+% gringo --text __BSP.lp __.BSP_range.lp   
+
+x(1).
+x(2).
+x(3).
+#delayed(1).
+#delayed(2).
+#delayed(3).
+#heuristic c(1):not b(1),#sum{1:b(1);2:b(2);3:b(3)}=0.[1@0,true]
+#heuristic c(1):not b(1),#sum{1:b(1);2:b(2);3:b(3)}=1.[1@1,true]
+#heuristic c(1):not b(1),#sum{1:b(1);2:b(2);3:b(3)}=2.[1@2,true]
+#heuristic c(1):not b(1),#sum{1:b(1);2:b(2);3:b(3)}=3.[1@3,true]
+#heuristic c(1):not b(1),#sum{1:b(1);2:b(2);3:b(3)}=4.[1@4,true]
+#heuristic c(1):not b(1),#sum{1:b(1);2:b(2);3:b(3)}=5.[1@5,true]
+#heuristic c(1):not b(1),#sum{1:b(1);2:b(2);3:b(3)}=6.[1@6,true]
+#heuristic c(2):not b(2),#sum{1:b(1);2:b(2);3:b(3)}=0.[2@0,true]
+#heuristic c(2):not b(2),#sum{1:b(1);2:b(2);3:b(3)}=1.[2@1,true]
+#heuristic c(2):not b(2),#sum{1:b(1);2:b(2);3:b(3)}=2.[2@2,true]
+#heuristic c(2):not b(2),#sum{1:b(1);2:b(2);3:b(3)}=3.[2@3,true]
+#heuristic c(2):not b(2),#sum{1:b(1);2:b(2);3:b(3)}=4.[2@4,true]
+#heuristic c(2):not b(2),#sum{1:b(1);2:b(2);3:b(3)}=5.[2@5,true]
+#heuristic c(2):not b(2),#sum{1:b(1);2:b(2);3:b(3)}=6.[2@6,true]
+#heuristic c(3):not b(3),#sum{1:b(1);2:b(2);3:b(3)}=0.[3@0,true]
+#heuristic c(3):not b(3),#sum{1:b(1);2:b(2);3:b(3)}=1.[3@1,true]
+#heuristic c(3):not b(3),#sum{1:b(1);2:b(2);3:b(3)}=2.[3@2,true]
+#heuristic c(3):not b(3),#sum{1:b(1);2:b(2);3:b(3)}=3.[3@3,true]
+#heuristic c(3):not b(3),#sum{1:b(1);2:b(2);3:b(3)}=4.[3@4,true]
+#heuristic c(3):not b(3),#sum{1:b(1);2:b(2);3:b(3)}=5.[3@5,true]
+#heuristic c(3):not b(3),#sum{1:b(1);2:b(2);3:b(3)}=6.[3@6,true]
+#heuristic b(1):not c(1),#sum{1:c(1);2:c(2);3:c(3)}=0.[1@0,true]
+#heuristic b(1):not c(1),#sum{1:c(1);2:c(2);3:c(3)}=1.[1@1,true]
+#heuristic b(1):not c(1),#sum{1:c(1);2:c(2);3:c(3)}=2.[1@2,true]
+#heuristic b(1):not c(1),#sum{1:c(1);2:c(2);3:c(3)}=3.[1@3,true]
+#heuristic b(1):not c(1),#sum{1:c(1);2:c(2);3:c(3)}=4.[1@4,true]
+#heuristic b(1):not c(1),#sum{1:c(1);2:c(2);3:c(3)}=5.[1@5,true]
+#heuristic b(1):not c(1),#sum{1:c(1);2:c(2);3:c(3)}=6.[1@6,true]
+#heuristic b(2):not c(2),#sum{1:c(1);2:c(2);3:c(3)}=0.[2@0,true]
+#heuristic b(2):not c(2),#sum{1:c(1);2:c(2);3:c(3)}=1.[2@1,true]
+#heuristic b(2):not c(2),#sum{1:c(1);2:c(2);3:c(3)}=2.[2@2,true]
+#heuristic b(2):not c(2),#sum{1:c(1);2:c(2);3:c(3)}=3.[2@3,true]
+#heuristic b(2):not c(2),#sum{1:c(1);2:c(2);3:c(3)}=4.[2@4,true]
+#heuristic b(2):not c(2),#sum{1:c(1);2:c(2);3:c(3)}=5.[2@5,true]
+#heuristic b(2):not c(2),#sum{1:c(1);2:c(2);3:c(3)}=6.[2@6,true]
+#heuristic b(3):not c(3),#sum{1:c(1);2:c(2);3:c(3)}=0.[3@0,true]
+#heuristic b(3):not c(3),#sum{1:c(1);2:c(2);3:c(3)}=1.[3@1,true]
+#heuristic b(3):not c(3),#sum{1:c(1);2:c(2);3:c(3)}=2.[3@2,true]
+#heuristic b(3):not c(3),#sum{1:c(1);2:c(2);3:c(3)}=3.[3@3,true]
+#heuristic b(3):not c(3),#sum{1:c(1);2:c(2);3:c(3)}=4.[3@4,true]
+#heuristic b(3):not c(3),#sum{1:c(1);2:c(2);3:c(3)}=5.[3@5,true]
+#heuristic b(3):not c(3),#sum{1:c(1);2:c(2);3:c(3)}=6.[3@6,true]
+sumC(0):-#sum{1:c(1);2:c(2);3:c(3)}=0.
+sumC(1):-#sum{1:c(1);2:c(2);3:c(3)}=1.
+sumC(2):-#sum{1:c(1);2:c(2);3:c(3)}=2.
+sumC(3):-#sum{1:c(1);2:c(2);3:c(3)}=3.
+sumC(4):-#sum{1:c(1);2:c(2);3:c(3)}=4.
+sumC(5):-#sum{1:c(1);2:c(2);3:c(3)}=5.
+sumC(6):-#sum{1:c(1);2:c(2);3:c(3)}=6.
+sumB(0):-#sum{1:b(1);2:b(2);3:b(3)}=0.
+sumB(1):-#sum{1:b(1);2:b(2);3:b(3)}=1.
+sumB(2):-#sum{1:b(1);2:b(2);3:b(3)}=2.
+sumB(3):-#sum{1:b(1);2:b(2);3:b(3)}=3.
+sumB(4):-#sum{1:b(1);2:b(2);3:b(3)}=4.
+sumB(5):-#sum{1:b(1);2:b(2);3:b(3)}=5.
+sumB(6):-#sum{1:b(1);2:b(2);3:b(3)}=6.
+:-sumC(0),sumB(2).
+:-sumC(0),sumB(3).
+:-sumC(0),sumB(4).
+:-sumC(0),sumB(5).
+:-sumC(0),sumB(6).
+:-sumC(1),sumB(3).
+:-sumC(1),sumB(4).
+:-sumC(1),sumB(5).
+:-sumC(1),sumB(6).
+:-sumC(2),sumB(0).
+:-sumC(2),sumB(4).
+:-sumC(2),sumB(5).
+:-sumC(2),sumB(6).
+:-sumC(3),sumB(0).
+:-sumC(3),sumB(1).
+:-sumC(3),sumB(5).
+:-sumC(3),sumB(6).
+:-sumC(4),sumB(0).
+:-sumC(4),sumB(1).
+:-sumC(4),sumB(2).
+:-sumC(4),sumB(6).
+:-sumC(5),sumB(0).
+:-sumC(5),sumB(1).
+:-sumC(5),sumB(2).
+:-sumC(5),sumB(3).
+:-sumC(6),sumB(0).
+:-sumC(6),sumB(1).
+:-sumC(6),sumB(2).
+:-sumC(6),sumB(3).
+:-sumC(6),sumB(4).
+#delayed(1) <=> 1<=#count{0,b(1):b(1);0,c(1):c(1)}<=1
+#delayed(2) <=> 1<=#count{0,b(2):b(2);0,c(2):c(2)}<=1
+#delayed(3) <=> 1<=#count{0,b(3):b(3);0,c(3):c(3)}<=1
+
+% output di 
+% gringo --text _2_lg_constraint_optimized.lp __.BSP_range.lp
+
+__heuristic(b,x,__n_c,__bind(s,__sum(c)),__weight(self),__priority(s),true).
+__heuristic(c,x,__n_b,__bind(s,__sum(b)),__weight(self),__priority(s),true).
+x(1).
+x(2).
+x(3).
+#delayed(1).
+#delayed(2).
+#delayed(3).
+:-not 3<=#sum{1:b(1);2:b(2);3:b(3)}<=3.
+#delayed(1) <=> 1<=#count{0,b(1):b(1);0,c(1):c(1)}<=1
+#delayed(2) <=> 1<=#count{0,b(2):b(2);0,c(2):c(2)}<=1
+#delayed(3) <=> 1<=#count{0,b(3):b(3);0,c(3):c(3)}<=1
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -33,8 +33,8 @@
 x(1..n).
 
 #const tot = (n*(n+1))/2.
-#const min_val = (tot-1)/2.
-#const max_val = (tot+1)/2.
+#const min_val = tot / 2.
+#const max_val = (tot + 1) / 2.
 
 % Guess
 1 { b(X); c(X) } 1 :- x(X).
@@ -43,15 +43,8 @@ x(1..n).
 :- not min_val <= #sum{ Y : b(Y) } <= max_val.
 
 
-% ============================================
-% TEMPLATE EURISTICI (solo 2 fatti ground!)
-% ============================================
+% Lazy heuristics, they are equivalent to the original:
 %
-% Queste 2 regole sostituiscono le O(n) regole __heuristic/4:
-%   __heuristic(b(X),X,__sum(c),true) :- x(X), not c(X).
-%   __heuristic(c(X),X,__sum(b),true) :- x(X), not b(X).
-%
-% Equivalente nativo:
 %   #heuristic b(X) : x(X), not c(X), S = #sum{Y : c(Y)}. [X@S, true]
 %   #heuristic c(X) : x(X), not b(X), S = #sum{Y : b(Y)}. [X@S, true]
 %
