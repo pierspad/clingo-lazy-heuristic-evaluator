@@ -17,7 +17,11 @@ Uso:
     python asp_heuristic_converter.py input.lp --dry-run
 
 Limitazioni:
-    - Supporta un singolo predicato di dominio (la variabile X del target).
+    - Il propagatore C++ usa solo il PRIMO body positivo come trigger.
+      Se ci sono più body positivi, viene emesso un warning.
+    - Target multi-argomento: solo la prima variabile viene usata come
+      domain variable. Le altre sono ignorate con un warning.
+    - Euristiche senza body positivo non vengono mai attivate nel modo lazy.
     - Gli aggregati nel body sono della forma VAR = #agg{Y : pred(Y)} con un singolo predicato.
     - Espressioni aritmetiche nel peso/priorità: +, -, * tra variabili e costanti.
     - Non gestisce join tra predicati multi-argomento con variabili distinte.
@@ -137,6 +141,20 @@ def _convert_arith_expr(
     """
     expr = expr.strip()
 
+    # Gestione meno unario: -expr → __sub(0, converted_expr)
+    # Riconosce pattern come -X, -S, -(expr)
+    if expr.startswith('-') and len(expr) > 1:
+        rest = expr[1:].strip()
+        # Distingui meno unario da numero negativo
+        try:
+            int(expr)  # Es: -5 è un intero valido → restituisci come costante
+            return expr
+        except ValueError:
+            pass
+        # Non è un numero negativo → meno unario
+        inner = _convert_arith_expr(rest, target_var, binding_vars)
+        return f"__sub(0, {inner})"
+
     # Prova a riconoscere operatori binari: a OP b
     # Cerca l'operatore di livello più basso (+ o -), poi *
     depth = 0
@@ -223,8 +241,8 @@ def _parse_body_literals(body_str: str) -> tuple:
         if not lit:
             continue
 
-        # Letterale negativo: not pred(...)
-        neg_match = re.match(r'not\s+(\w+)\s*\(', lit)
+        # Letterale negativo: not pred(...) oppure not pred (ground)
+        neg_match = re.match(r'not\s+(\w+)(?:\s*\(|$)', lit)
         if neg_match:
             neg_body.append(neg_match.group(1))
             continue
@@ -239,6 +257,11 @@ def _parse_body_literals(body_str: str) -> tuple:
 
         # Potrebbe essere una variabile residua dall'aggregato, skip
         if re.match(r'^[A-Z_]\w*$', lit):
+            continue
+
+        # Letterale ground senza argomenti: atomo proposizionale (es. "ok")
+        if re.match(r'^[a-z_]\w*$', lit):
+            pos_body.append(lit)
             continue
 
     return pos_body, neg_body, bindings
@@ -285,11 +308,21 @@ def parse_heuristic_line(line: str) -> Optional[HeuristicDirective]:
 
     # La prima variabile (uppercase) è la variabile di dominio
     target_var = None
-    for arg in target_args.split(','):
-        arg = arg.strip()
+    target_arg_list = [a.strip() for a in target_args.split(',')]
+    for arg in target_arg_list:
         if re.match(r'^[A-Z_]\w*$', arg):
             target_var = arg
             break
+
+    # Warning: target multi-argomento — le variabili extra sono ignorate dal propagatore
+    var_args = [a for a in target_arg_list if re.match(r'^[A-Z_]\w*$', a)]
+    if len(var_args) > 1:
+        print(
+            f"  ⚠ WARNING: target '{target_pred}({target_args})' ha {len(var_args)} variabili "
+            f"({', '.join(var_args)}). Il propagatore C++ usa solo la prima ('{var_args[0]}') "
+            f"come domain variable.",
+            file=sys.stderr
+        )
 
     # Parsa il body
     pos_body, neg_body, bindings = _parse_body_literals(body_str)
@@ -313,10 +346,37 @@ def parse_heuristic_line(line: str) -> Optional[HeuristicDirective]:
 # Generatore della sintassi __heuristic/N
 # =============================================================================
 
-def generate_lazy_heuristic(directive: HeuristicDirective) -> str:
+def generate_lazy_heuristic(directive: HeuristicDirective) -> list:
     """
     Genera la riga __heuristic/N dalla rappresentazione intermedia.
+    Restituisce una lista di stringhe: [warning_lines..., output_line].
     """
+    warnings = []
+
+    # Warning: body positivi multipli — il propagatore C++ usa solo il primo come trigger
+    if len(directive.pos_body) > 1:
+        warnings.append(
+            f"% WARNING: body positivi multipli ({', '.join(directive.pos_body)}). "
+            f"Il propagatore C++ usa solo '{directive.pos_body[0]}' come trigger.\n"
+        )
+        print(
+            f"  ⚠ WARNING: body positivi multipli ({', '.join(directive.pos_body)}). "
+            f"Solo '{directive.pos_body[0]}' sarà usato come trigger dal propagatore.",
+            file=sys.stderr
+        )
+
+    # Warning: euristica senza body positivo — non sarà mai attivata in modo lazy
+    if not directive.pos_body:
+        warnings.append(
+            f"% WARNING: euristica senza body positivo. "
+            f"Non sarà mai attivata nel modo lazy (nessun trigger).\n"
+        )
+        print(
+            f"  ⚠ WARNING: euristica per '{directive.target_pred}' senza body positivo. "
+            f"Non sarà mai attivata nel modo lazy.",
+            file=sys.stderr
+        )
+
     args = [directive.target_pred]
 
     # Body positivi
@@ -349,7 +409,8 @@ def generate_lazy_heuristic(directive: HeuristicDirective) -> str:
     # Segno
     args.append(directive.sign)
 
-    return f"__heuristic({', '.join(args)})."
+    result_line = f"__heuristic({', '.join(args)})."
+    return warnings, result_line
 
 
 # =============================================================================
@@ -384,8 +445,9 @@ def process_file(input_path: str, dry_run: bool = False) -> tuple:
                 # Direttiva su singola riga
                 directive = parse_heuristic_line(stripped)
                 if directive:
-                    lazy_line = generate_lazy_heuristic(directive)
+                    warn_lines, lazy_line = generate_lazy_heuristic(directive)
                     output_lines.append(f"% Originale: {directive.original_line}\n")
+                    output_lines.extend(warn_lines)
                     output_lines.append(f"{lazy_line}\n")
                     conversions += 1
                     if dry_run:
@@ -410,8 +472,9 @@ def process_file(input_path: str, dry_run: bool = False) -> tuple:
                 accumulating = False
                 directive = parse_heuristic_line(accumulated)
                 if directive:
-                    lazy_line = generate_lazy_heuristic(directive)
+                    warn_lines, lazy_line = generate_lazy_heuristic(directive)
                     output_lines.append(f"% Originale: {directive.original_line}\n")
+                    output_lines.extend(warn_lines)
                     output_lines.append(f"{lazy_line}\n")
                     conversions += 1
                     if dry_run:

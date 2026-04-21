@@ -157,6 +157,7 @@ void HeuristicPropagator::init(Clingo::PropagateInit &init) {
     active_body_pos_.clear();
     env_buffer_.clear();
     pred_intern_.clear();
+    pred_names_.clear();
     next_pred_id_ = 0;
 
     auto atoms = init.symbolic_atoms();
@@ -537,14 +538,9 @@ void HeuristicPropagator::register_aggregate_watches(Clingo::PropagateInit &init
     auto register_agg_watches = [&](AggregateKey const &agg_key) {
         if (agg_key.op_id == AggregateOp::INVALID) return;
 
-        // Cerchiamo il nome predicato dall'ID internato per il matching con gli atomi
-        std::string pred_name;
-        for (auto const &entry : pred_intern_) {
-            if (entry.second == agg_key.pred_id) {
-                pred_name = entry.first;
-                break;
-            }
-        }
+        // Lookup O(1) tramite pred_names_ al posto del loop O(P) su pred_intern_
+        if (agg_key.pred_id < 0 || agg_key.pred_id >= static_cast<int>(pred_names_.size())) return;
+        std::string const &pred_name = pred_name_from_id(agg_key.pred_id);
         if (pred_name.empty()) return;
 
         for (auto it = atoms.begin(); it != atoms.end(); ++it) {
@@ -725,13 +721,13 @@ void HeuristicPropagator::undo(Clingo::PropagateControl const &control, Clingo::
 
 Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
                                                Clingo::Assignment const &assignment,
-                                               Clingo::literal_t fallback) {
+                                               Clingo::literal_t fallback) noexcept {
     static_cast<void>(thread_id);
 
     Clingo::literal_t best_target = 0;
     HeuristicSign best_sign = HeuristicSign::True;
-    int max_priority = 0;
-    int best_weight = 0;
+    int max_priority = INT_MIN;
+    int best_weight = INT_MIN;
     bool has_best = false;
 
     int *env = env_buffer_.data();

@@ -144,14 +144,16 @@ struct AggregateKey {
     }
 };
 
-/// Hash per AggregateKey — operazioni su 3 interi, O(1) garantito.
+/// Hash per AggregateKey — mixing robusto su 3 interi, O(1) garantito.
 struct AggregateKeyHash {
     std::size_t operator()(AggregateKey const &k) const {
-        // Hash leggero su 3 interi: nessuna allocazione, nessun confronto stringa
-        auto h1 = std::hash<int>{}(static_cast<int>(k.op_id));
-        auto h2 = std::hash<int>{}(k.pred_id);
-        auto h3 = std::hash<int>{}(k.arg_index);
-        return h1 ^ (h2 << 1) ^ (h3 << 2);
+        // Hash con mixing moltiplicativo per ridurre collisioni
+        // rispetto al semplice XOR con shift
+        std::size_t h = 17;
+        h = h * 31 + std::hash<int>{}(static_cast<int>(k.op_id));
+        h = h * 31 + std::hash<int>{}(k.pred_id);
+        h = h * 31 + std::hash<int>{}(k.arg_index);
+        return h;
     }
 };
 
@@ -383,11 +385,16 @@ private:
     /// Dimensionato al massimo env_size tra tutti i template in init_lazy_mode().
     std::vector<int> env_buffer_;
 
-    // === Tabella di internamento predicati (init-time only) ===
+    /// Tabella di internamento predicati (init-time only)
     /// Mappa nome predicato → ID intero. Usata solo durante init per costruire
     /// AggregateKey con interi. Dopo init, i nomi stringa non servono più.
     std::unordered_map<std::string, int> pred_intern_;
     int next_pred_id_ = 0;
+
+    /// Lookup inverso: ID intero → nome predicato.
+    /// Usata in register_aggregate_watches per risolvere pred_id in O(1)
+    /// al posto del loop O(P) su pred_intern_.
+    std::vector<std::string> pred_names_;
 
     /// Restituisce l'ID internato del predicato, creandolo se non esiste.
     int intern_pred(std::string const &name) {
@@ -395,7 +402,13 @@ private:
         if (it != pred_intern_.end()) return it->second;
         int id = next_pred_id_++;
         pred_intern_[name] = id;
+        pred_names_.push_back(name);
         return id;
+    }
+
+    /// Restituisce il nome del predicato dato il suo ID internato.
+    std::string const &pred_name_from_id(int id) const {
+        return pred_names_[id];
     }
 
     using PredLitMap = std::unordered_map<std::string, std::unordered_map<int, Clingo::literal_t>>;
@@ -464,5 +477,5 @@ public:
     void init(Clingo::PropagateInit &init) override;
     void propagate(Clingo::PropagateControl &control, Clingo::LiteralSpan changes) override;
     void undo(Clingo::PropagateControl const &control, Clingo::LiteralSpan changes) noexcept override;
-    Clingo::literal_t decide(Clingo::id_t thread_id, Clingo::Assignment const &assignment, Clingo::literal_t fallback) override;
+    Clingo::literal_t decide(Clingo::id_t thread_id, Clingo::Assignment const &assignment, Clingo::literal_t fallback) noexcept override;
 };
