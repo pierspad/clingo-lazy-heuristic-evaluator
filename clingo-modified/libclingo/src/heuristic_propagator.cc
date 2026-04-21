@@ -3,9 +3,7 @@
 #include <iostream>
 #include <unordered_set>
 
-static bool is_aggregate_name(std::string const &name) {
-    return name == "__sum" || name == "__count" || name == "__min" || name == "__max";
-}
+
 
 static bool is_binop_name(std::string const &name) {
     return name == "__add" || name == "__sub" || name == "__mul";
@@ -158,6 +156,8 @@ void HeuristicPropagator::init(Clingo::PropagateInit &init) {
     active_body_lits_.clear();
     active_body_pos_.clear();
     env_buffer_.clear();
+    pred_intern_.clear();
+    next_pred_id_ = 0;
 
     auto atoms = init.symbolic_atoms();
     for (auto it = atoms.begin(); it != atoms.end(); ++it) {
@@ -226,7 +226,8 @@ bool HeuristicPropagator::try_parse_bind_argument(Clingo::Symbol const &arg,
     std::string const agg_op = arg_args[1].name();
     auto const agg_inner_args = arg_args[1].arguments();
 
-    if (!is_aggregate_name(agg_op) ||
+    AggregateOp const agg_op_id = aggregate_op_from_name(agg_op);
+    if (agg_op_id == AggregateOp::INVALID ||
         agg_inner_args.empty() ||
         agg_inner_args[0].type() != Clingo::SymbolType::Function) {
         std::cerr << "[heuristic_propagator] aggregato non valido in __bind("
@@ -265,7 +266,7 @@ bool HeuristicPropagator::try_parse_bind_argument(Clingo::Symbol const &arg,
                   << ", ...): supportato solo pred[, idx], ignoro i successivi.\n";
     }
 
-    AggregateKey key{agg_op, pred, arg_idx};
+    AggregateKey key{agg_op_id, intern_pred(pred), arg_idx};
     VarBinding binding;
     binding.env_index = state.next_var_index++;
     binding.agg_key = key;
@@ -348,7 +349,7 @@ bool HeuristicPropagator::try_parse_simple_argument(Clingo::Symbol const &arg,
         return true;
     }
 
-    if (is_aggregate_name(arg_name)) {
+    if (aggregate_op_from_name(arg_name) != AggregateOp::INVALID) {
         return false;
     }
 
@@ -443,7 +444,7 @@ void HeuristicPropagator::finalize_lazy_template(HeuristicRuleTemplate &tmpl,
         if (aggregate_states_.find(vb.agg_key) != aggregate_states_.end()) {
             continue;
         }
-        if (auto state_obj = make_aggregate(vb.agg_key.op)) {
+        if (auto state_obj = make_aggregate(vb.agg_key.op_id)) {
             aggregate_states_.emplace(vb.agg_key, std::move(state_obj));
         }
     }
@@ -530,12 +531,25 @@ void HeuristicPropagator::build_body_triggers(Clingo::PropagateInit &init, PredL
 
 void HeuristicPropagator::register_aggregate_watches(Clingo::PropagateInit &init,
                                                      Clingo::SymbolicAtoms const &atoms) {
+    // Raccogliamo le chiavi aggregate uniche per evitare iterazioni duplicate
+    std::unordered_set<int> processed_pred_ids;
+
     auto register_agg_watches = [&](AggregateKey const &agg_key) {
-        if (agg_key.op.empty()) return;
+        if (agg_key.op_id == AggregateOp::INVALID) return;
+
+        // Cerchiamo il nome predicato dall'ID internato per il matching con gli atomi
+        std::string pred_name;
+        for (auto const &entry : pred_intern_) {
+            if (entry.second == agg_key.pred_id) {
+                pred_name = entry.first;
+                break;
+            }
+        }
+        if (pred_name.empty()) return;
 
         for (auto it = atoms.begin(); it != atoms.end(); ++it) {
             auto const symbol = it->symbol();
-            if (symbol.name() != agg_key.pred) {
+            if (symbol.name() != pred_name) {
                 continue;
             }
 
@@ -584,6 +598,24 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
     auto pred_lit_map = build_pred_lit_map(init, atoms, info);
     build_body_triggers(init, pred_lit_map);
     register_aggregate_watches(init, atoms);
+
+    // === Ottimizzazione memoria: shrink_to_fit() su strutture post-init ===
+    // Dopo l'inizializzazione, i vettori interni non cresceranno più.
+    // Rilasciamo la capacità in eccesso per ridurre il footprint di memoria.
+    for (auto &entry : watched_atoms_) {
+        entry.second.contributions.shrink_to_fit();
+    }
+    for (auto &entry : body_triggers_) {
+        entry.second.shrink_to_fit();
+    }
+    for (auto &tmpl : rule_templates_) {
+        tmpl.pos_body_preds.shrink_to_fit();
+        tmpl.neg_body_preds.shrink_to_fit();
+        tmpl.var_bindings.shrink_to_fit();
+    }
+
+    // Pre-alloca active_body_lits_ con la dimensione massima possibile
+    active_body_lits_.reserve(body_triggers_.size());
 }
 
 void HeuristicPropagator::remove_active_body_lit(Clingo::literal_t body_lit) noexcept {
@@ -624,18 +656,20 @@ void HeuristicPropagator::propagate(Clingo::PropagateControl &control, Clingo::L
 
         auto trigger_it = body_triggers_.find(lit);
         if (trigger_it != body_triggers_.end()) {
+            // Riuso del vettore senza deallocazione: clear() preserva la capacità
             auto &target_vec = lazy_targets_[lit];
             target_vec.clear();
             target_vec.reserve(trigger_it->second.size());
 
-            for (auto const &trigger : trigger_it->second) {
+            for (size_t ti = 0; ti < trigger_it->second.size(); ++ti) {
+                auto const &trigger = trigger_it->second[ti];
                 auto const &tmpl = rule_templates_[trigger.rule_idx];
 
                 LazyTargetInstance inst;
                 inst.target_lit = trigger.target_lit;
-                inst.neg_body_lits = trigger.neg_body_lits;
                 inst.domain_value = trigger.domain_value;
                 inst.rule_idx = trigger.rule_idx;
+                inst.trigger_index = ti;
 
                 env[ENV_SELF_INDEX] = inst.domain_value;
                 if (!tmpl.weight_depends_on_bindings) {
@@ -656,7 +690,8 @@ void HeuristicPropagator::propagate(Clingo::PropagateControl &control, Clingo::L
                     active_body_lits_.push_back(lit);
                 }
             } else {
-                lazy_targets_.erase(lit);
+                // Vettore vuoto: rimuoviamo dalla lista attivi ma NON dal map
+                // per preservare la capacità allocata
                 remove_active_body_lit(lit);
             }
         }
@@ -679,8 +714,10 @@ void HeuristicPropagator::undo(Clingo::PropagateControl const &control, Clingo::
         }
 
         auto lazy_it = lazy_targets_.find(lit);
-        if (lazy_it != lazy_targets_.end()) {
-            lazy_targets_.erase(lazy_it);
+        if (lazy_it != lazy_targets_.end() && !lazy_it->second.empty()) {
+            // Clear senza erase: preserva la capacità allocata del vettore
+            // per il prossimo propagate sullo stesso body literal
+            lazy_it->second.clear();
             remove_active_body_lit(lit);
         }
     }
@@ -701,15 +738,23 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
 
     for (auto const &body_lit : active_body_lits_) {
         auto lazy_it = lazy_targets_.find(body_lit);
-        if (lazy_it == lazy_targets_.end()) continue;
+        if (lazy_it == lazy_targets_.end() || lazy_it->second.empty()) continue;
+
+        // Accesso ai trigger per i neg_body_lits (shared, non copiati)
+        auto trigger_it = body_triggers_.find(body_lit);
 
         for (auto const &inst : lazy_it->second) {
+            // Controlla i body negativi tramite trigger_index
             bool neg_satisfied = false;
-            for (auto neg_lit : inst.neg_body_lits) {
-                if (neg_lit != 0 &&
-                    assignment.truth_value(neg_lit) == Clingo::TruthValue::True) {
-                    neg_satisfied = true;
-                    break;
+            if (trigger_it != body_triggers_.end() &&
+                inst.trigger_index < trigger_it->second.size()) {
+                auto const &trigger = trigger_it->second[inst.trigger_index];
+                for (auto neg_lit : trigger.neg_body_lits) {
+                    if (neg_lit != 0 &&
+                        assignment.truth_value(neg_lit) == Clingo::TruthValue::True) {
+                        neg_satisfied = true;
+                        break;
+                    }
                 }
             }
             if (neg_satisfied) continue;

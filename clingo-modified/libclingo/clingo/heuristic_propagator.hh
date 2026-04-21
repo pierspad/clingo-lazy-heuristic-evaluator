@@ -90,6 +90,18 @@ struct MaxState final : AggregateState {
 // Factory function
 // ============================================================================
 
+/// ID numerici per i tipi di aggregato (evita confronto stringhe nell'hot path)
+enum class AggregateOp : int { SUM = 0, COUNT = 1, MIN = 2, MAX = 3, INVALID = -1 };
+
+/// Converte un nome operazione stringa in AggregateOp.
+inline AggregateOp aggregate_op_from_name(std::string const &op_name) {
+    if (op_name == "__sum")   return AggregateOp::SUM;
+    if (op_name == "__count") return AggregateOp::COUNT;
+    if (op_name == "__min")   return AggregateOp::MIN;
+    if (op_name == "__max")   return AggregateOp::MAX;
+    return AggregateOp::INVALID;
+}
+
 /// Crea lo stato aggregato appropriato a partire dal nome dell'operazione.
 /// Restituisce nullptr se il nome non è riconosciuto.
 inline std::unique_ptr<AggregateState> make_aggregate(std::string const &op_name) {
@@ -100,27 +112,44 @@ inline std::unique_ptr<AggregateState> make_aggregate(std::string const &op_name
     return nullptr;
 }
 
+/// Crea lo stato aggregato appropriato a partire dall'ID numerico.
+inline std::unique_ptr<AggregateState> make_aggregate(AggregateOp op) {
+    switch (op) {
+        case AggregateOp::SUM:   return std::make_unique<SumState>();
+        case AggregateOp::COUNT: return std::make_unique<CountState>();
+        case AggregateOp::MIN:   return std::make_unique<MinState>();
+        case AggregateOp::MAX:   return std::make_unique<MaxState>();
+        default: return nullptr;
+    }
+}
+
 // ============================================================================
 // Chiave composita per identificare un aggregato univocamente
 // ============================================================================
+// OTTIMIZZAZIONE: usa ID interi invece di stringhe per eliminare
+// allocazioni heap e hash costosi nell'hot path (decide/propagate/undo).
+// Le stringhe vengono risolte una sola volta in init_lazy_mode tramite
+// la tabella di internamento pred_intern_ del propagatore.
+// ============================================================================
 
-/// Un aggregato è identificato dalla coppia (tipo_operazione, predicato).
-/// Es: ("__sum", "c") è diverso da ("__count", "c").
+/// Un aggregato è identificato dalla terna (tipo_operazione, predicato_id, arg_index).
+/// Es: (SUM, 2, -1) dove 2 è l'ID internato di "c".
 struct AggregateKey {
-    std::string op;     // Es: "__sum"
-    std::string pred;   // Es: "c"
-    int arg_index = -1; // Indice 0-based dell'argomento numerico (-1 = ultimo numerico)
+    AggregateOp op_id = AggregateOp::INVALID;  // Tipo aggregato come enum
+    int pred_id = -1;                           // Indice internato del predicato
+    int arg_index = -1;                         // Indice 0-based dell'argomento numerico (-1 = ultimo)
 
     bool operator==(AggregateKey const &o) const {
-        return op == o.op && pred == o.pred && arg_index == o.arg_index;
+        return op_id == o.op_id && pred_id == o.pred_id && arg_index == o.arg_index;
     }
 };
 
-/// Hash per AggregateKey per l'uso in unordered_map
+/// Hash per AggregateKey — operazioni su 3 interi, O(1) garantito.
 struct AggregateKeyHash {
     std::size_t operator()(AggregateKey const &k) const {
-        auto h1 = std::hash<std::string>{}(k.op);
-        auto h2 = std::hash<std::string>{}(k.pred);
+        // Hash leggero su 3 interi: nessuna allocazione, nessun confronto stringa
+        auto h1 = std::hash<int>{}(static_cast<int>(k.op_id));
+        auto h2 = std::hash<int>{}(k.pred_id);
         auto h3 = std::hash<int>{}(k.arg_index);
         return h1 ^ (h2 << 1) ^ (h3 << 2);
     }
@@ -276,11 +305,16 @@ struct HeuristicRuleTemplate {
 
 /// Istanza euristica creata dinamicamente durante propagate.
 /// Equivale al TargetInfo della modalità statica ma generata on-demand.
+///
+/// OTTIMIZZAZIONE: non contiene più una copia di neg_body_lits.
+/// I neg_body_lits sono accessibili tramite body_triggers_[body_lit][trigger_index].
+/// Questo elimina un std::vector<literal_t> per ogni istanza, riducendo le
+/// allocazioni heap durante propagate/undo.
 struct LazyTargetInstance {
-    Clingo::literal_t target_lit;                  // Literal del target (es. b(27))
-    std::vector<Clingo::literal_t> neg_body_lits;  // Literal per i check negativi
-    int domain_value;                               // Valore del dominio (es. 27 per x(27))
-    size_t rule_idx;                                // Indice del template che l'ha generata
+    Clingo::literal_t target_lit;   // Literal del target (es. b(27))
+    int domain_value;               // Valore del dominio (es. 27 per x(27))
+    size_t rule_idx;                // Indice del template che l'ha generata
+    size_t trigger_index;           // Indice nel vettore body_triggers_[body_lit]
 
     // Cache opzionale: espressioni senza variabili __bind, valutate in propagate().
     int cached_weight = 0;
@@ -348,6 +382,21 @@ private:
     /// Flat array riutilizzato per l'environment delle espressioni in decide().
     /// Dimensionato al massimo env_size tra tutti i template in init_lazy_mode().
     std::vector<int> env_buffer_;
+
+    // === Tabella di internamento predicati (init-time only) ===
+    /// Mappa nome predicato → ID intero. Usata solo durante init per costruire
+    /// AggregateKey con interi. Dopo init, i nomi stringa non servono più.
+    std::unordered_map<std::string, int> pred_intern_;
+    int next_pred_id_ = 0;
+
+    /// Restituisce l'ID internato del predicato, creandolo se non esiste.
+    int intern_pred(std::string const &name) {
+        auto it = pred_intern_.find(name);
+        if (it != pred_intern_.end()) return it->second;
+        int id = next_pred_id_++;
+        pred_intern_[name] = id;
+        return id;
+    }
 
     using PredLitMap = std::unordered_map<std::string, std::unordered_map<int, Clingo::literal_t>>;
 
