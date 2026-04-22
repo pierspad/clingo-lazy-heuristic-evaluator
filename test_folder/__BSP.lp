@@ -1,5 +1,6 @@
+% ============================================
 % Definizione del dominio come definito nel paper di alpha
-% il range è definito in 
+% il range è definito in :
 % __.BSP_range.lp
 
 x(1..n).

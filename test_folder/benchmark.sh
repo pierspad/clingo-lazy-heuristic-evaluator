@@ -18,11 +18,11 @@ FILE_MOD_OPT="_2_lg_constraint_optimized.lp"
 FILE_RANGE="__.BSP_range.lp"
 
 N_START=10
-N_END=100
-N_STEP=5
+N_END=200
+N_STEP=10
 
 # Numero di ripetizioni per ogni (N, variant) con seed diversi
-REPEATS=5
+REPEATS=3
 
 TIMINGS_DIR="./test-results"
 CSV_FILE="${TIMINGS_DIR}/results.csv"
