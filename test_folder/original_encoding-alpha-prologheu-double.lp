@@ -65,9 +65,6 @@ assigned_sensor(S) :- assigned_sensor_unit(S,U).
 
 %%% auxiliary predicates for heuristics
 
-dyn_deg_sensor(S,Z) :- zone2sensor(Z,S), assigned_zone_unit(Z,U).
-dyn_direct_con(U,S,Z) :- assigned_zone_unit(Z,U), zone2sensor(Z,S).
-
 
 num_sensors_on_unit(N,U) :-  comUnit(U), sensorNumbers(N), N <= #count {S1: assigned_sensor_unit(S1,U)}.
 num_sensors_on_unit(2,0).
@@ -107,15 +104,16 @@ num_forbidden_places_of_sensors(S,N1+4) :- assignable_sensor_unit(S,_),
         assignable_sensor_unit(S,U),
         not not_assigned_sensor_unit(S,U),
         
-        Deg_sensor_dyn = #count{Z: dyn_deg_sensor(S,Z)},
+        Deg_sensor_dyn = #count{Z: zone2sensor(Z,S), assigned_zone_unit(Z, _)},
 	
         Forbidden_placement_total = #max{N: num_forbidden_places_of_sensors(S,N)},
 	
         Assigned_sensors_unit = #count{SN: assigned_sensor_unit(SN,U)},
 
         
-        Direct_con_zones = #count{Z: dyn_direct_con(U,S,Z)}.
-        [Deg_sensor_dyn * 10000 + Forbidden_placement_total * 1000 + Assigned_sensors_unit * 100 + Direct_con_zones * 10@0, true]
+        Direct_con_zones = #count{Z: assigned_zone_unit(Z,U), zone2sensor(Z,S)},
+
+        W = Deg_sensor_dyn * 10000 + Forbidden_placement_total * 1000 + Assigned_sensors_unit * 100 + Direct_con_zones * 10.  [W@0]
 
         
 #heuristic assigned_zone_unit(Z,U) : 
@@ -130,8 +128,11 @@ num_forbidden_places_of_sensors(S,N1+4) :- assignable_sensor_unit(S,_),
         N0 = #max{N: num_sensors_on_unit(N,U)},
         
         N1 = #max{N: num_sensors_on_unit(N,U1)},
-        N2 = #max{N: num_sensors_on_unit(N,U2)}.
-        [Assigned_zones_unit * 10 + (6 - (N0 + N1 + N2))@1, true]
+        N2 = #max{N: num_sensors_on_unit(N,U2)},
+        
+        Available_spaces_for_sensors = 6 - (N0 + N1 + N2),
+        
+        W = Assigned_zones_unit * 10 + Available_spaces_for_sensors.  [W@1]
 	
 
 

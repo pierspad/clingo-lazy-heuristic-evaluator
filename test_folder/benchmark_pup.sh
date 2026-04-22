@@ -1,22 +1,23 @@
 #!/usr/bin/env bash
 # benchmark_pup.sh
 # Benchmark per il problema PUP (Paired Unit Placement).
-# Testa 4 encoding con clingo standard:
+# Testa 4 encoding con il binario clingo modificato:
 #
 #   pup          — encoding dichiarativo   (__PUP.lp)
 #   pup_heur     — encoding con euristiche statiche (__PUP_heur.lp)
-#   pup_double   — encoding con aggregati dinamici  (__PUP_double.lp)
-#   pup_doublev  — encoding variante                (__PUP_double_variant.lp)
+#   pup_double   — encoding lazy convertito         (_PUP_double_lg.lp)
+#   pup_doublev  — encoding lazy convertito variante (_PUP_double_variant_lg.lp)
 #
-# Istanze usate:
-#   pup, pup_heur, pup_double  → PUP_instances/Double/
-#   pup_doublev                → PUP_instances/DoubleVariant/
+# Istanze usate (stessa baseline per entrambe le famiglie):
+#   Double/         → pup, pup_heur, pup_double
+#   DoubleVariant/  → pup, pup_heur, pup_doublev
 #
 # Ogni combinazione (instance, variant) viene eseguita REPEATS volte con seed diversi.
-# Tutte le esecuzioni usano --heuristic=Domain --time-limit=600.
+# Le varianti euristiche usano --heuristic=Domain; baseline pup usa euristica default.
+# Ogni run è protetta da timeout esterno a 600s e limite memoria 32GiB (se prlimit è disponibile).
 # Salva i risultati in:
 #   ./test-results/pup_double_results.csv    (pup, pup_heur, pup_double su Double/)
-#   ./test-results/pup_doublev_results.csv   (pup_doublev su DoubleVariant/)
+#   ./test-results/pup_doublev_results.csv   (pup, pup_heur, pup_doublev su DoubleVariant/)
 
 set -euo pipefail
 
@@ -24,13 +25,31 @@ set -euo pipefail
 # CONFIGURAZIONE
 # ============================================================================
 
-CLINGO="clingo"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+CLINGO_MOD=""
+
+for candidate in \
+    "${REPO_ROOT}/build/bin/clingo" \
+    "${REPO_ROOT}/clingo-modified/build/bin/clingo"; do
+    if [ -x "${candidate}" ]; then
+        CLINGO_MOD="${candidate}"
+        break
+    fi
+done
+
+TIMEOUT_SECONDS=600
+MEM_LIMIT_BYTES=$((32 * 1024 * 1024 * 1024))
+
+CONVERTER="${SCRIPT_DIR}/asp_heuristic_converter.py"
 
 # Encoding files
 FILE_PUP="__PUP.lp"
 FILE_PUP_HEUR="__PUP_heur.lp"
-FILE_PUP_DOUBLE="__PUP_double.lp"
-FILE_PUP_DOUBLEV="__PUP_double_variant.lp"
+FILE_PUP_DOUBLE_SRC="__PUP_double.lp"
+FILE_PUP_DOUBLEV_SRC="__PUP_double_variant.lp"
+FILE_PUP_DOUBLE="_PUP_double_lg.lp"
+FILE_PUP_DOUBLEV="_PUP_double_variant_lg.lp"
 
 # Instance directories
 INSTANCES_DOUBLE="PUP_instances/Double"
@@ -40,6 +59,20 @@ INSTANCES_DOUBLEV="PUP_instances/DoubleVariant"
 REPEATS=3
 
 TIMINGS_DIR="./test-results"
+
+if [ -z "${CLINGO_MOD}" ]; then
+    echo "Errore: binario clingo modificato non trovato. Percorsi provati:"
+    echo "  - ${REPO_ROOT}/build/bin/clingo"
+    echo "  - ${REPO_ROOT}/clingo-modified/build/bin/clingo"
+    exit 1
+fi
+
+if [ ! -f "${CONVERTER}" ]; then
+    echo "Errore: convertitore non trovato: ${CONVERTER}"
+    exit 1
+fi
+
+cd "${SCRIPT_DIR}"
 
 mkdir -p "${TIMINGS_DIR}"
 
@@ -53,6 +86,17 @@ if ! file "${TIME_BIN}" 2>/dev/null | grep -q "ELF"; then
         fi
     done
 fi
+
+# ============================================================================
+# PREPARAZIONE: genera encoding lazy per gli aggregati dinamici
+# ============================================================================
+
+generate_lazy_encodings() {
+    echo ""
+    echo "Genero encoding lazy con ${CONVERTER}..."
+    python3 "${CONVERTER}" "${FILE_PUP_DOUBLE_SRC}" -o "${FILE_PUP_DOUBLE}"
+    python3 "${CONVERTER}" "${FILE_PUP_DOUBLEV_SRC}" -o "${FILE_PUP_DOUBLEV}"
+}
 
 # ============================================================================
 # FUNZIONE: estrae la dimensione N dal nome file (es. "double-30.lp" → 30)
@@ -78,7 +122,11 @@ run_stats() {
     echo "  [seed=${seed}] ${cmd[*]}"
 
     local output
-    output="$( { "${TIME_BIN}" -v "${cmd[@]}" --stats=2 --seed="${seed}" ; } 2>&1 )" || true
+    if command -v prlimit >/dev/null 2>&1; then
+        output="$( { "${TIME_BIN}" -v prlimit --as="${MEM_LIMIT_BYTES}" -- timeout "${TIMEOUT_SECONDS}" "${cmd[@]}" --stats=2 --seed="${seed}" ; } 2>&1 )" || true
+    else
+        output="$( { "${TIME_BIN}" -v timeout "${TIMEOUT_SECONDS}" "${cmd[@]}" --stats=2 --seed="${seed}" ; } 2>&1 )" || true
+    fi
 
     local solving_s
     solving_s="$(echo "${output}" | grep -oP '(?<=Solving: )[0-9.]+(?=s)' | head -1 || echo "NA")"
@@ -131,6 +179,7 @@ run_encoding_on_instances() {
     local csv_file="$4"
     local total_runs="$5"
     local current_run_ref="$6"   # nome della variabile (passata per riferimento via nameref)
+    local use_domain="$7"
 
     local -n _current_run="${current_run_ref}"
 
@@ -164,9 +213,11 @@ run_encoding_on_instances() {
         for seed in $(seq 1 "${REPEATS}"); do
             _current_run=$((_current_run + 1))
             echo "--- ${variant_name} (run ${_current_run}/${total_runs}) ---"
-            run_stats "${instance_size}" "${variant_name}" "${seed}" "${csv_file}" \
-                ${CLINGO} "${inst}" "${encoding}" "-n" "1" \
-                "--heuristic=Domain" "--time-limit=600"
+            local cmd=("${CLINGO_MOD}" "${inst}" "${encoding}" "-n" "1" "--time-limit=600")
+            if [ "${use_domain}" = "yes" ]; then
+                cmd+=("--heuristic=Domain")
+            fi
+            run_stats "${instance_size}" "${variant_name}" "${seed}" "${csv_file}" "${cmd[@]}"
         done
     done
 }
@@ -178,9 +229,11 @@ run_encoding_on_instances() {
 n_double=$(find "${INSTANCES_DOUBLE}" -name "*.lp" | wc -l)
 n_doublev=$(find "${INSTANCES_DOUBLEV}" -name "*.lp" | wc -l)
 
-# 3 encoding su Double, 1 encoding su DoubleVariant
-total_runs=$(( (n_double * 3 + n_doublev * 1) * REPEATS ))
+# 3 encoding su Double, 3 encoding su DoubleVariant
+total_runs=$(( (n_double * 3 + n_doublev * 3) * REPEATS ))
 current_run=0
+
+generate_lazy_encodings
 
 # ============================================================================
 # CSV: istanze Double (pup, pup_heur, pup_double)
@@ -197,18 +250,18 @@ echo "================================================================"
 
 echo ""
 echo "--- Encoding: ${FILE_PUP} ---"
-run_encoding_on_instances "pup"        "${FILE_PUP}"        "${INSTANCES_DOUBLE}" "${CSV_DOUBLE}" "${total_runs}" current_run
+run_encoding_on_instances "pup"        "${FILE_PUP}"        "${INSTANCES_DOUBLE}" "${CSV_DOUBLE}" "${total_runs}" current_run "no"
 
 echo ""
 echo "--- Encoding: ${FILE_PUP_HEUR} ---"
-run_encoding_on_instances "pup_heur"   "${FILE_PUP_HEUR}"   "${INSTANCES_DOUBLE}" "${CSV_DOUBLE}" "${total_runs}" current_run
+run_encoding_on_instances "pup_heur"   "${FILE_PUP_HEUR}"   "${INSTANCES_DOUBLE}" "${CSV_DOUBLE}" "${total_runs}" current_run "yes"
 
 echo ""
 echo "--- Encoding: ${FILE_PUP_DOUBLE} ---"
-run_encoding_on_instances "pup_double" "${FILE_PUP_DOUBLE}" "${INSTANCES_DOUBLE}" "${CSV_DOUBLE}" "${total_runs}" current_run
+run_encoding_on_instances "pup_double" "${FILE_PUP_DOUBLE}" "${INSTANCES_DOUBLE}" "${CSV_DOUBLE}" "${total_runs}" current_run "yes"
 
 # ============================================================================
-# CSV: istanze DoubleVariant (pup_doublev)
+# CSV: istanze DoubleVariant (pup, pup_heur, pup_doublev)
 # ============================================================================
 
 CSV_DOUBLEV="${TIMINGS_DIR}/pup_doublev_results.csv"
@@ -221,8 +274,16 @@ echo "  Directory: ${INSTANCES_DOUBLEV}"
 echo "================================================================"
 
 echo ""
+echo "--- Encoding: ${FILE_PUP} ---"
+run_encoding_on_instances "pup"         "${FILE_PUP}"         "${INSTANCES_DOUBLEV}" "${CSV_DOUBLEV}" "${total_runs}" current_run "no"
+
+echo ""
+echo "--- Encoding: ${FILE_PUP_HEUR} ---"
+run_encoding_on_instances "pup_heur"    "${FILE_PUP_HEUR}"    "${INSTANCES_DOUBLEV}" "${CSV_DOUBLEV}" "${total_runs}" current_run "yes"
+
+echo ""
 echo "--- Encoding: ${FILE_PUP_DOUBLEV} ---"
-run_encoding_on_instances "pup_doublev" "${FILE_PUP_DOUBLEV}" "${INSTANCES_DOUBLEV}" "${CSV_DOUBLEV}" "${total_runs}" current_run
+run_encoding_on_instances "pup_doublev" "${FILE_PUP_DOUBLEV}" "${INSTANCES_DOUBLEV}" "${CSV_DOUBLEV}" "${total_runs}" current_run "yes"
 
 # ============================================================================
 # FINE

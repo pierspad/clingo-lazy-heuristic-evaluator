@@ -103,35 +103,12 @@ num_forbidden_places_of_sensors(S,N1+4) :- assignable_sensor_unit(S,_),
 
 %%% heuristics
 
-#heuristic assigned_sensor_unit(S,U) : 
-        assignable_sensor_unit(S,U),
-        not not_assigned_sensor_unit(S,U),
-        
-        Deg_sensor_dyn = #count{Z: dyn_deg_sensor(S,Z)},
-	
-        Forbidden_placement_total = #max{N: num_forbidden_places_of_sensors(S,N)},
-	
-        Assigned_sensors_unit = #count{SN: assigned_sensor_unit(SN,U)},
+% Originale: #heuristic assigned_sensor_unit(S,U) : assignable_sensor_unit(S,U), not not_assigned_sensor_unit(S,U),  Deg_sensor_dyn = #count{Z: dyn_deg_sensor(S,Z)},  Forbidden_placement_total = #max{N: num_forbidden_places_of_sensors(S,N)},  Assigned_sensors_unit = #count{SN: assigned_sensor_unit(SN,U)},   Direct_con_zones = #count{Z: dyn_direct_con(U,S,Z)}. [Deg_sensor_dyn * 10000 + Forbidden_placement_total * 1000 + Assigned_sensors_unit * 100 + Direct_con_zones * 10@0, true]
+__heuristic(assigned_sensor_unit, assignable_sensor_unit, __n_not_assigned_sensor_unit, __bind(deg_sensor_dyn, __count(dyn_deg_sensor)), __bind(forbidden_placement_total, __max(num_forbidden_places_of_sensors)), __bind(assigned_sensors_unit, __count(assigned_sensor_unit)), __bind(direct_con_zones, __count(dyn_direct_con)), __weight(__add(__add(__add(__mul(deg_sensor_dyn, 10000), __mul(forbidden_placement_total, 1000)), __mul(assigned_sensors_unit, 100)), __mul(direct_con_zones, 10))), __priority(0), true).
 
         
-        Direct_con_zones = #count{Z: dyn_direct_con(U,S,Z)}.
-        [Deg_sensor_dyn * 10000 + Forbidden_placement_total * 1000 + Assigned_sensors_unit * 100 + Direct_con_zones * 10@0, true]
-
-        
-#heuristic assigned_zone_unit(Z,U) : 
-        assignable_zone_unit(Z,U),
-        not not_assigned_zone_unit(Z,U),
-
-        Assigned_zones_unit = #count{ZN: assigned_zone_unit(ZN,U)},
-        
-        U1 = U - 1,
-        U2 = U + 1,
-        
-        N0 = #max{N: num_sensors_on_unit(N,U)},
-        
-        N1 = #max{N: num_sensors_on_unit(N,U1)},
-        N2 = #max{N: num_sensors_on_unit(N,U2)}.
-        [Assigned_zones_unit * 10 + (6 - (N0 + N1 + N2))@1, true]
+% Originale: #heuristic assigned_zone_unit(Z,U) : assignable_zone_unit(Z,U), not not_assigned_zone_unit(Z,U),  Assigned_zones_unit = #count{ZN: assigned_zone_unit(ZN,U)},  U1 = U - 1, U2 = U + 1,  N0 = #max{N: num_sensors_on_unit(N,U)},  N1 = #max{N: num_sensors_on_unit(N,U1)}, N2 = #max{N: num_sensors_on_unit(N,U2)}. [Assigned_zones_unit * 10 + (6 - (N0 + N1 + N2))@1, true]
+__heuristic(assigned_zone_unit, assignable_zone_unit, __n_not_assigned_zone_unit, __bind(assigned_zones_unit, __count(assigned_zone_unit)), __bind(n0, __max(num_sensors_on_unit)), __bind(n1, __max(num_sensors_on_unit)), __bind(n2, __max(num_sensors_on_unit)), __weight(__add(__mul(assigned_zones_unit, 10), __sub(6, __add(__add(n0, n1), n2)))), __priority(1), true).
 	
 
 

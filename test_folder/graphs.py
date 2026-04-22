@@ -129,15 +129,15 @@ BSP_THEME = {
     "baseline": "std",
 }
 
-# PUP: tutte e 4 le varianti usano clingo standard.
+# PUP: benchmark con binario clingo modificato.
 # Double/  → pup, pup_heur, pup_double
-# DoubleVariant/ → pup_doublev
+# DoubleVariant/ → pup, pup_heur, pup_doublev
 PUP_THEME = {
     "variant_labels": {
         "pup":        "Dichiarativo (__PUP.lp)",
         "pup_heur":   "Euristiche Statiche (__PUP_heur.lp)",
-        "pup_double": "Aggregati Dinamici (__PUP_double.lp)",
-        "pup_doublev":"Aggregati Dinamici Variante (__PUP_double_variant.lp)",
+        "pup_double": "Aggregati Dinamici (_PUP_double_lg.lp)",
+        "pup_doublev":"Aggregati Dinamici Variante (_PUP_double_variant_lg.lp)",
     },
     "variant_colors": {
         "pup":        "#E74C3C",   # red

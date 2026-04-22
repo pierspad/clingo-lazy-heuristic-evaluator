@@ -1,0 +1,4 @@
+n,variant,seed,solving_s,total_s,choices,conflicts,restarts,rules,variables,memory_mb
+20,pup,1,0.16,0.180,13343,4540,21,11525,9158,13.6445
+20,pup,2,0.15,0.172,13343,4540,21,11525,9158,13.6484
+20,pup,3,0.16,0.175,13343,4540,21,11525,9158,13.5859

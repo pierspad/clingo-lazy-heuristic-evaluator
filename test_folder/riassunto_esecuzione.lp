@@ -577,3 +577,22 @@ Confronto critico da esplicitare nel capitolo stato dell'arte:
 Questa sezione deve includere anche una discussione dei limiti attuali:
 copertura parziale degli aggregati supportati, costo logaritmico per min/max,
 e necessita' di ulteriore validazione cross-domain.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 19) Normalizzazione strutturale e Knowledge Compilation degli Encoding
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+L'integrazione delle euristiche native nel framework lazy richiede una fase preliminare di normalizzazione sintattica degli encoding originali.
+Gli encoding nativi del PUP presentano spesso aggregati con corpi congiuntivi complessi e variabili logiche intermedie utilizzate per il calcolo dei pesi. 
+Per garantire la compatibilità con il parser C++ e il convertitore Python, i file originali subiscono due trasformazioni architetturali rigorose.
+
+In primo luogo, si applica l'estrazione dei corpi complessi. 
+Le congiunzioni all'interno degli aggregati originali vengono isolate e appiattite in predicati ausiliari dinamici dedicati (ad esempio, definendo un dyn_deg_sensor). 
+Questo garantisce che l'aggregato lazy dipenda da un singolo letterale trigger valutabile in tempo reale dal propagatore custom, soddisfacendo i requisiti di linearità sintattica del costrutto __bind.
+
+In secondo luogo, si procede con l'inlining delle espressioni matematiche. 
+Le variabili intermedie definite nel corpo dell'euristica per scomporre il calcolo di peso e priorità vengono eliminate. 
+L'intera logica aritmetica viene collassata direttamente all'interno dei modificatori della direttiva finale. Questa espansione è architetturalmente obbligatoria affinché l'Abstract Syntax Tree (AST) precompilato nella fase di init_lazy_mode  possa mappare direttamente le variabili di aggregazione sull'ambiente di valutazione (environment array) . 
+Ciò elimina la necessità di eseguire il parsing di dipendenze annidate a runtime o di effettuare allocazioni dinamiche sulla memoria heap. 
+Queste modifiche mantengono intatta la semantica logica del problema originale e assicurano che il propagatore non introduca overhead durante la propagazione e l'undo.

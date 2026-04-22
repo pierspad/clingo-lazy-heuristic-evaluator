@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # benchmark_bsp.sh
 # Benchmark per il problema BSP (Balanced Sum Partition).
-# Testa 3 configurazioni con clingo standard:
+# Testa 3 configurazioni con il binario clingo modificato:
 #   std      — encoding dichiarativo puro  (__BSP.lp)
 #   lg       — lazy grounding              (_BSP_lg.lp)
 #   colg     — lazy grounding + vincolo ottimizzato (_BSP_colg.lp)
 #
 # Ogni combinazione (N, variant) viene eseguita REPEATS volte con seed diversi.
-# Tutte le esecuzioni usano --heuristic=Domain --time-limit=600.
+# Le varianti lazy usano --heuristic=Domain.
+# Ogni run è protetta da timeout esterno a 600s e limite memoria 32GiB (se prlimit è disponibile).
 # Salva i risultati in ./test-results/bsp_results.csv
 
 set -euo pipefail
@@ -16,7 +17,30 @@ set -euo pipefail
 # CONFIGURAZIONE
 # ============================================================================
 
-CLINGO="clingo"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+CLINGO_MOD=""
+
+for candidate in \
+    "${REPO_ROOT}/build/bin/clingo" \
+    "${REPO_ROOT}/clingo-modified/build/bin/clingo"; do
+    if [ -x "${candidate}" ]; then
+        CLINGO_MOD="${candidate}"
+        break
+    fi
+done
+
+TIMEOUT_SECONDS=600
+MEM_LIMIT_BYTES=$((32 * 1024 * 1024 * 1024))
+
+if [ -z "${CLINGO_MOD}" ]; then
+    echo "Errore: binario clingo modificato non trovato. Percorsi provati:"
+    echo "  - ${REPO_ROOT}/build/bin/clingo"
+    echo "  - ${REPO_ROOT}/clingo-modified/build/bin/clingo"
+    exit 1
+fi
+
+cd "${SCRIPT_DIR}"
 
 # Encoding files
 FILE_STD="__BSP.lp"
@@ -69,7 +93,11 @@ run_stats() {
     echo "  [seed=${seed}] ${cmd[*]}"
 
     local output
-    output="$( { "${TIME_BIN}" -v "${cmd[@]}" --stats=2 --seed="${seed}" ; } 2>&1 )" || true
+    if command -v prlimit >/dev/null 2>&1; then
+        output="$( { "${TIME_BIN}" -v prlimit --as="${MEM_LIMIT_BYTES}" -- timeout "${TIMEOUT_SECONDS}" "${cmd[@]}" --stats=2 --seed="${seed}" ; } 2>&1 )" || true
+    else
+        output="$( { "${TIME_BIN}" -v timeout "${TIMEOUT_SECONDS}" "${cmd[@]}" --stats=2 --seed="${seed}" ; } 2>&1 )" || true
+    fi
 
     local solving_s
     solving_s="$(echo "${output}" | grep -oP '(?<=Solving: )[0-9.]+(?=s)' | head -1 || echo "NA")"
@@ -127,8 +155,8 @@ for n in $(seq "${N_START}" "${N_STEP}" "${N_END}"); do
         current_run=$((current_run + 1))
         echo "--- std (run ${current_run}/${total_runs}) ---"
         run_stats "${n}" "std" "${seed}" \
-            ${CLINGO} "${FILE_RANGE}" "${FILE_STD}" "-c" "n=${n}" "-n" "1" \
-            "--heuristic=Domain" "--time-limit=600"
+            "${CLINGO_MOD}" "${FILE_RANGE}" "${FILE_STD}" "-c" "n=${n}" "-n" "1" \
+            "--time-limit=600"
     done
 
     # 2) Lazy grounding
@@ -136,7 +164,7 @@ for n in $(seq "${N_START}" "${N_STEP}" "${N_END}"); do
         current_run=$((current_run + 1))
         echo "--- lg (run ${current_run}/${total_runs}) ---"
         run_stats "${n}" "lg" "${seed}" \
-            ${CLINGO} "${FILE_RANGE}" "${FILE_LG}" "-n" "1" "-c" "n=${n}" \
+            "${CLINGO_MOD}" "${FILE_RANGE}" "${FILE_LG}" "-n" "1" "-c" "n=${n}" \
             "--heuristic=Domain" "--time-limit=600"
     done
 
@@ -145,7 +173,7 @@ for n in $(seq "${N_START}" "${N_STEP}" "${N_END}"); do
         current_run=$((current_run + 1))
         echo "--- colg (run ${current_run}/${total_runs}) ---"
         run_stats "${n}" "colg" "${seed}" \
-            ${CLINGO} "${FILE_RANGE}" "${FILE_COLG}" "-n" "1" "-c" "n=${n}" \
+            "${CLINGO_MOD}" "${FILE_RANGE}" "${FILE_COLG}" "-n" "1" "-c" "n=${n}" \
             "--heuristic=Domain" "--time-limit=600"
     done
 done
