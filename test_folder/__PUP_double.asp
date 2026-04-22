@@ -113,7 +113,7 @@ num_forbidden_places_of_sensors(S,N1+4) :- assignable_sensor_unit(S,_),
         
         Direct_con_zones = #count{Z: assigned_zone_unit(Z,U), zone2sensor(Z,S)},
 
-        W = Deg_sensor_dyn * 10000 + Forbidden_placement_total * 1000 + Assigned_sensors_unit * 100 + Direct_con_zones * 10.  [W@0]
+        W = Deg_sensor_dyn * 10000 + Forbidden_placement_total * 1000 + Assigned_sensors_unit * 100 + Direct_con_zones * 10.  [W@0, true]
 
         
 #heuristic assigned_zone_unit(Z,U) : 
@@ -132,7 +132,7 @@ num_forbidden_places_of_sensors(S,N1+4) :- assignable_sensor_unit(S,_),
         
         Available_spaces_for_sensors = 6 - (N0 + N1 + N2),
         
-        W = Assigned_zones_unit * 10 + Available_spaces_for_sensors.  [W@1]
+        W = Assigned_zones_unit * 10 + Available_spaces_for_sensors.  [W@1, true]
 	
 
 

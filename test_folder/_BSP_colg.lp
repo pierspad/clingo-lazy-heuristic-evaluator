@@ -1,7 +1,7 @@
 % ============================================
 % Lazy grounding delle euristiche e vincolo ottimizzato
-% il range è definito in :
-% __.BSP_range.lp
+% il range è definito in:
+% BSP_instances/__.BSP_range.lp
 
 x(1..n).
 
