@@ -3,10 +3,10 @@
 # Benchmark per il problema PUP (Paired Unit Placement).
 # Testa 4 encoding con clingo standard:
 #
-#   pup          — encoding dichiarativo   (__PUP.asp)
-#   pup_heur     — encoding con euristiche statiche (__PUP_heur.asp)
-#   pup_double   — encoding con aggregati dinamici  (__PUP_double.asp)
-#   pup_doublev  — encoding variante                (__PUP_double_variant.asp)
+#   pup          — encoding dichiarativo   (__PUP.lp)
+#   pup_heur     — encoding con euristiche statiche (__PUP_heur.lp)
+#   pup_double   — encoding con aggregati dinamici  (__PUP_double.lp)
+#   pup_doublev  — encoding variante                (__PUP_double_variant.lp)
 #
 # Istanze usate:
 #   pup, pup_heur, pup_double  → PUP_instances/Double/
@@ -27,10 +27,10 @@ set -euo pipefail
 CLINGO="clingo"
 
 # Encoding files
-FILE_PUP="__PUP.asp"
-FILE_PUP_HEUR="__PUP_heur.asp"
-FILE_PUP_DOUBLE="__PUP_double.asp"
-FILE_PUP_DOUBLEV="__PUP_double_variant.asp"
+FILE_PUP="__PUP.lp"
+FILE_PUP_HEUR="__PUP_heur.lp"
+FILE_PUP_DOUBLE="__PUP_double.lp"
+FILE_PUP_DOUBLEV="__PUP_double_variant.lp"
 
 # Instance directories
 INSTANCES_DOUBLE="PUP_instances/Double"
@@ -55,7 +55,7 @@ if ! file "${TIME_BIN}" 2>/dev/null | grep -q "ELF"; then
 fi
 
 # ============================================================================
-# FUNZIONE: estrae la dimensione N dal nome file (es. "double-30.asp" → 30)
+# FUNZIONE: estrae la dimensione N dal nome file (es. "double-30.lp" → 30)
 # ============================================================================
 
 extract_instance_size() {
@@ -136,7 +136,7 @@ run_encoding_on_instances() {
 
     # Raccogli e ordina le istanze per dimensione
     local instances=()
-    for inst in "${instance_dir}"/*.asp; do
+    for inst in "${instance_dir}"/*.lp; do
         [ -f "${inst}" ] || continue
         instances+=("${inst}")
     done
@@ -175,8 +175,8 @@ run_encoding_on_instances() {
 # CALCOLO TOTALE ESECUZIONI
 # ============================================================================
 
-n_double=$(find "${INSTANCES_DOUBLE}" -name "*.asp" | wc -l)
-n_doublev=$(find "${INSTANCES_DOUBLEV}" -name "*.asp" | wc -l)
+n_double=$(find "${INSTANCES_DOUBLE}" -name "*.lp" | wc -l)
+n_doublev=$(find "${INSTANCES_DOUBLEV}" -name "*.lp" | wc -l)
 
 # 3 encoding su Double, 1 encoding su DoubleVariant
 total_runs=$(( (n_double * 3 + n_doublev * 1) * REPEATS ))

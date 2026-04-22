@@ -1,164 +1,36 @@
 #!/usr/bin/env bash
 # benchmark.sh
-# Esegue i benchmark con --stats=2 di Clingo per estrarre metriche CDNL dettagliate.
-# Ogni combinazione (N, variant) viene eseguita REPEATS volte con seed diversi.
-# Salva i risultati in ./test-results/results.csv
+# Launcher unico: esegue benchmark BSP e benchmark PUP in sequenza.
 
 set -euo pipefail
 
-# ============================================================================
-# CONFIGURAZIONE
-# ============================================================================
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+BSP_SCRIPT="${SCRIPT_DIR}/benchmark_bsp.sh"
+PUP_SCRIPT="${SCRIPT_DIR}/benchmark_pup.sh"
 
-CLINGO_STD="clingo"
-CLINGO_MOD="/home/ribben/Desktop/clingo-lazy-heuristics/clingo-modified/build/bin/clingo"
-FILE_STD="__BSP.lp"
-FILE_MOD="_1_lazy_ground.lp"
-FILE_MOD_OPT="_2_lg_constraint_optimized.lp"
-FILE_RANGE="__.BSP_range.lp"
-
-N_START=10
-N_END=200
-N_STEP=10
-
-# Numero di ripetizioni per ogni (N, variant) con seed diversi
-REPEATS=3
-
-TIMINGS_DIR="./test-results"
-CSV_FILE="${TIMINGS_DIR}/results.csv"
-
-mkdir -p "${TIMINGS_DIR}"
-
-# ============================================================================
-# INTESTAZIONE CSV
-# ============================================================================
-# Colonne:
-#   n           - dimensione del problema
-#   variant     - "std", "mod" o "mod_opt"
-#   seed        - seed usato per questa esecuzione
-#   solving_s   - tempo di solving netto (dal solver CDNL)
-#   total_s     - tempo totale (grounding + solving)
-#   choices     - numero di scelte (decisioni) del solver
-#   conflicts   - numero di conflitti
-#   restarts    - numero di restart
-#   rules       - numero di regole ground (dimensione grounding)
-#   variables   - numero di variabili proposizionali
-#   memory_mb   - memoria RSS massima (via /usr/bin/time, fallback)
-# ============================================================================
-
-echo "n,variant,seed,solving_s,total_s,choices,conflicts,restarts,rules,variables,memory_mb" > "${CSV_FILE}"
-
-# Cerchiamo GNU time per la memoria
-TIME_BIN="$(command -v time || true)"
-if ! file "${TIME_BIN}" 2>/dev/null | grep -q "ELF"; then
-    for candidate in /usr/bin/time /usr/local/bin/time; do
-        if [ -x "${candidate}" ]; then
-            TIME_BIN="${candidate}"
-            break
-        fi
-    done
+if [ ! -f "${BSP_SCRIPT}" ]; then
+    echo "Errore: script non trovato: ${BSP_SCRIPT}"
+    exit 1
 fi
 
-# ============================================================================
-# FUNZIONE: esegui un singolo test e parsa le statistiche
-# ============================================================================
+if [ ! -f "${PUP_SCRIPT}" ]; then
+    echo "Errore: script non trovato: ${PUP_SCRIPT}"
+    exit 1
+fi
 
-run_stats() {
-    local n="$1"
-    local variant="$2"
-    local seed="$3"
-    shift 3
-    local cmd=("$@")
-
-    echo "  [seed=${seed}] ${cmd[*]}"
-
-    # Eseguiamo con GNU time per avere la memoria RSS
-    local output
-    output="$( { "${TIME_BIN}" -v "${cmd[@]}" --stats=2 --seed="${seed}" ; } 2>&1 )" || true
-
-    # --- Parsing del tempo di solving (dal report interno di Clingo) ---
-    # Formato: "Time         : 0.001s (Solving: 0.00s 1st Model: 0.00s Unsat: 0.00s)"
-    local solving_s
-    solving_s="$(echo "${output}" | grep -oP '(?<=Solving: )[0-9.]+(?=s)' | head -1 || echo "NA")"
-    if [ -z "${solving_s}" ]; then solving_s="NA"; fi
-
-    # --- Parsing del tempo totale (dal report interno di Clingo) ---
-    # Formato: "Time         : 0.001s (Solving: ...)"
-    local total_s
-    total_s="$(echo "${output}" | grep -P '^Time\s+:' | grep -oP '[0-9.]+(?=s)' | head -1 || echo "NA")"
-    if [ -z "${total_s}" ]; then total_s="NA"; fi
-
-    # --- Choices ---
-    local choices
-    choices="$(echo "${output}" | grep -P '^Choices\s+:' | grep -oP '\d+' | head -1 || echo "NA")"
-    if [ -z "${choices}" ]; then choices="NA"; fi
-
-    # --- Conflicts ---
-    local conflicts
-    conflicts="$(echo "${output}" | grep -P '^Conflicts\s+:' | grep -oP '\d+' | head -1 || echo "NA")"
-    if [ -z "${conflicts}" ]; then conflicts="NA"; fi
-
-    # --- Restarts ---
-    local restarts
-    restarts="$(echo "${output}" | grep -P '^Restarts\s+:' | grep -oP '\d+' | head -1 || echo "NA")"
-    if [ -z "${restarts}" ]; then restarts="NA"; fi
-
-    # --- Rules (grounding size) ---
-    local rules
-    rules="$(echo "${output}" | grep -P '^Rules\s+:' | grep -oP '\d+' | head -1 || echo "NA")"
-    if [ -z "${rules}" ]; then rules="NA"; fi
-
-    # --- Variables ---
-    local variables
-    variables="$(echo "${output}" | grep -P '^Variables\s+:' | grep -oP '\d+' | head -1 || echo "NA")"
-    if [ -z "${variables}" ]; then variables="NA"; fi
-
-    # --- Memoria RSS (da GNU time) ---
-    local rss_kb memory_mb
-    rss_kb="$(echo "${output}" | grep -oP '(?<=Maximum resident set size \(kbytes\): )\d+' || echo "")"
-    if [ -z "${rss_kb}" ]; then
-        memory_mb="NA"
-    else
-        memory_mb="$(echo "${rss_kb}" | awk '{printf "%.4f", $1/1024}')"
-    fi
-
-    echo "    solving=${solving_s}s total=${total_s}s choices=${choices} conflicts=${conflicts} restarts=${restarts} rules=${rules} vars=${variables} mem=${memory_mb}MB"
-    echo "${n},${variant},${seed},${solving_s},${total_s},${choices},${conflicts},${restarts},${rules},${variables},${memory_mb}" >> "${CSV_FILE}"
-}
-
-# ============================================================================
-# LOOP PRINCIPALE
-# ============================================================================
-
-total_runs=$(( ((N_END - N_START) / N_STEP + 1) * 3 * REPEATS ))
-current_run=0
-
-for n in $(seq "${N_START}" "${N_STEP}" "${N_END}"); do
-    echo ""
-    echo "=== N=${n} ==="
-
-    for seed in $(seq 1 "${REPEATS}"); do
-        current_run=$((current_run + 1))
-        echo "--- std (run ${current_run}/${total_runs}) ---"
-        run_stats "${n}" "std" "${seed}" \
-            ${CLINGO_STD} "${FILE_RANGE}" "${FILE_STD}" "-c" "n=${n}" "-n" "1"
-    done
-
-    for seed in $(seq 1 "${REPEATS}"); do
-        current_run=$((current_run + 1))
-        echo "--- mod (run ${current_run}/${total_runs}) ---"
-        run_stats "${n}" "mod" "${seed}" \
-            ${CLINGO_MOD} "${FILE_RANGE}" "${FILE_MOD}" "-n" "1" "-c" "n=${n}"
-    done
-
-    for seed in $(seq 1 "${REPEATS}"); do
-        current_run=$((current_run + 1))
-        echo "--- mod_opt (run ${current_run}/${total_runs}) ---"
-        run_stats "${n}" "mod_opt" "${seed}" \
-            ${CLINGO_MOD} "${FILE_RANGE}" "${FILE_MOD_OPT}" "-n" "1" "-c" "n=${n}"
-    done
-done
+echo "==============================================================="
+echo " Avvio benchmark BSP"
+echo "==============================================================="
+bash "${BSP_SCRIPT}"
 
 echo ""
-echo "Benchmark completato. ${current_run} esecuzioni totali."
-echo "Risultati salvati in: ${CSV_FILE}"
+echo "==============================================================="
+echo " Avvio benchmark PUP"
+echo "==============================================================="
+bash "${PUP_SCRIPT}"
+
+echo ""
+echo "==============================================================="
+echo " Benchmark completi (BSP + PUP)."
+echo " Risultati disponibili in ./test-results"
+echo "==============================================================="

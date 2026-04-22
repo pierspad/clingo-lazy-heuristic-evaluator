@@ -134,10 +134,10 @@ BSP_THEME = {
 # DoubleVariant/ → pup_doublev
 PUP_THEME = {
     "variant_labels": {
-        "pup":        "Dichiarativo (__PUP.asp)",
-        "pup_heur":   "Euristiche Statiche (__PUP_heur.asp)",
-        "pup_double": "Aggregati Dinamici (__PUP_double.asp)",
-        "pup_doublev":"Aggregati Dinamici Variante (__PUP_double_variant.asp)",
+        "pup":        "Dichiarativo (__PUP.lp)",
+        "pup_heur":   "Euristiche Statiche (__PUP_heur.lp)",
+        "pup_double": "Aggregati Dinamici (__PUP_double.lp)",
+        "pup_doublev":"Aggregati Dinamici Variante (__PUP_double_variant.lp)",
     },
     "variant_colors": {
         "pup":        "#E74C3C",   # red
