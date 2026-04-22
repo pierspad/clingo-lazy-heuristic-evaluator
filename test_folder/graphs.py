@@ -109,48 +109,51 @@ PLOT_CONFIGS = [
 
 BSP_THEME = {
     "variant_labels": {
-        "std": "Clingo Standard",
-        "h-clingo": "h-Clingo (Static Heuristic)",
-        "mod": "Clingo Lazy (Modified)",
-        "mod_opt": "Clingo Lazy (Optimized Constraint)",
+        "std":  "Standard (__BSP.lp)",
+        "lg":   "Lazy Grounding (_BSP_lg.lp)",
+        "colg": "Lazy + Optimized Constraint (_BSP_colg.lp)",
     },
     "variant_colors": {
-        "std": "#E74C3C",       # red
-        "h-clingo": "#F39C12",  # orange
-        "mod": "#2ECC71",       # green
-        "mod_opt": "#3498DB",   # blue
+        "std":  "#E74C3C",   # red
+        "lg":   "#2ECC71",   # green
+        "colg": "#3498DB",   # blue
     },
     "variant_markers": {
-        "std": "o",
-        "h-clingo": "D",
-        "mod": "s",
-        "mod_opt": "^",
+        "std":  "o",
+        "lg":   "s",
+        "colg": "^",
     },
-    "variant_order": ["std", "h-clingo", "mod", "mod_opt"],
+    "variant_order": ["std", "lg", "colg"],
     "xlabel": "Problem size (N)",
     "suptitle": "BSP Benchmark: Standard vs Lazy Heuristic Grounding",
     "baseline": "std",
 }
 
+# PUP: tutte e 4 le varianti usano clingo standard.
+# Double/  → pup, pup_heur, pup_double
+# DoubleVariant/ → pup_doublev
 PUP_THEME = {
     "variant_labels": {
-        "clingo": "Clingo (baseline)",
-        "h-clingo": "h-Clingo (Static Heuristic)",
-        "alpha": "Alpha (Dynamic Aggregates)",
+        "pup":        "Dichiarativo (__PUP.asp)",
+        "pup_heur":   "Euristiche Statiche (__PUP_heur.asp)",
+        "pup_double": "Aggregati Dinamici (__PUP_double.asp)",
+        "pup_doublev":"Aggregati Dinamici Variante (__PUP_double_variant.asp)",
     },
     "variant_colors": {
-        "clingo": "#E74C3C",      # red
-        "h-clingo": "#F39C12",    # orange
-        "alpha": "#2ECC71",       # green
+        "pup":        "#E74C3C",   # red
+        "pup_heur":   "#F39C12",   # orange
+        "pup_double": "#2ECC71",   # green
+        "pup_doublev":"#9B59B6",   # purple
     },
     "variant_markers": {
-        "clingo": "o",
-        "h-clingo": "D",
-        "alpha": "s",
+        "pup":        "o",
+        "pup_heur":   "D",
+        "pup_double": "s",
+        "pup_doublev":"^",
     },
-    "variant_order": ["clingo", "h-clingo", "alpha"],
+    "variant_order": ["pup", "pup_heur", "pup_double", "pup_doublev"],
     "xlabel": "Instance size (N)",
-    "baseline": "clingo",
+    "baseline": "pup",
 }
 
 

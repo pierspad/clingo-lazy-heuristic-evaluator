@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # benchmark_bsp.sh
 # Benchmark per il problema BSP (Balanced Sum Partition).
-# Testa 4 configurazioni:
-#   std      — Clingo standard, encoding dichiarativo (no --heuristic=Domain)
-#   h-clingo — Clingo standard, encoding con euristiche + --heuristic=Domain
-#   mod      — Clingo modificato, lazy grounding
-#   mod_opt  — Clingo modificato, lazy grounding + vincolo ottimizzato
+# Testa 3 configurazioni con clingo standard:
+#   std      — encoding dichiarativo puro  (__BSP.lp)
+#   lg       — lazy grounding              (_BSP_lg.lp)
+#   colg     — lazy grounding + vincolo ottimizzato (_BSP_colg.lp)
 #
 # Ogni combinazione (N, variant) viene eseguita REPEATS volte con seed diversi.
+# Tutte le esecuzioni usano --heuristic=Domain --time-limit=600.
 # Salva i risultati in ./test-results/bsp_results.csv
 
 set -euo pipefail
@@ -16,15 +16,14 @@ set -euo pipefail
 # CONFIGURAZIONE
 # ============================================================================
 
-CLINGO_STD="clingo"
-CLINGO_MOD="/home/ribben/Desktop/clingo-lazy-heuristics/clingo-modified/build/bin/clingo"
+CLINGO="clingo"
 
 # Encoding files
-FILE_STD="__BSP.lp"                             # encoding dichiarativo con euristiche (usato come base)
-FILE_MOD="_BSP_lg.lp"                           # lazy grounding
-FILE_MOD_OPT="_BSP_colg.lp"                     # lazy grounding + vincolo ottimizzato
+FILE_STD="__BSP.lp"
+FILE_LG="_BSP_lg.lp"
+FILE_COLG="_BSP_colg.lp"
 
-# Range file (ora in BSP_instances/)
+# Range file (in BSP_instances/)
 FILE_RANGE="BSP_instances/__.BSP_range.lp"
 
 N_START=10
@@ -34,9 +33,6 @@ N_STEP=10
 # Numero di ripetizioni per ogni (N, variant) con seed diversi
 REPEATS=3
 
-# Timeout in secondi (10 minuti come nel paper)
-TIME_LIMIT=600
-
 TIMINGS_DIR="./test-results"
 CSV_FILE="${TIMINGS_DIR}/bsp_results.csv"
 
@@ -44,19 +40,6 @@ mkdir -p "${TIMINGS_DIR}"
 
 # ============================================================================
 # INTESTAZIONE CSV
-# ============================================================================
-# Colonne:
-#   n           - dimensione del problema
-#   variant     - "std", "h-clingo", "mod" o "mod_opt"
-#   seed        - seed usato per questa esecuzione
-#   solving_s   - tempo di solving netto (dal solver CDNL)
-#   total_s     - tempo totale (grounding + solving)
-#   choices     - numero di scelte (decisioni) del solver
-#   conflicts   - numero di conflitti
-#   restarts    - numero di restart
-#   rules       - numero di regole ground (dimensione grounding)
-#   variables   - numero di variabili proposizionali
-#   memory_mb   - memoria RSS massima (via /usr/bin/time, fallback)
 # ============================================================================
 
 echo "n,variant,seed,solving_s,total_s,choices,conflicts,restarts,rules,variables,memory_mb" > "${CSV_FILE}"
@@ -85,46 +68,37 @@ run_stats() {
 
     echo "  [seed=${seed}] ${cmd[*]}"
 
-    # Eseguiamo con GNU time per avere la memoria RSS
     local output
-    output="$( { "${TIME_BIN}" -v "${cmd[@]}" --stats=2 --seed="${seed}" --time-limit="${TIME_LIMIT}" ; } 2>&1 )" || true
+    output="$( { "${TIME_BIN}" -v "${cmd[@]}" --stats=2 --seed="${seed}" ; } 2>&1 )" || true
 
-    # --- Parsing del tempo di solving (dal report interno di Clingo) ---
     local solving_s
     solving_s="$(echo "${output}" | grep -oP '(?<=Solving: )[0-9.]+(?=s)' | head -1 || echo "NA")"
     if [ -z "${solving_s}" ]; then solving_s="NA"; fi
 
-    # --- Parsing del tempo totale (dal report interno di Clingo) ---
     local total_s
     total_s="$(echo "${output}" | grep -P '^Time\s+:' | grep -oP '[0-9.]+(?=s)' | head -1 || echo "NA")"
     if [ -z "${total_s}" ]; then total_s="NA"; fi
 
-    # --- Choices ---
     local choices
     choices="$(echo "${output}" | grep -P '^Choices\s+:' | grep -oP '\d+' | head -1 || echo "NA")"
     if [ -z "${choices}" ]; then choices="NA"; fi
 
-    # --- Conflicts ---
     local conflicts
     conflicts="$(echo "${output}" | grep -P '^Conflicts\s+:' | grep -oP '\d+' | head -1 || echo "NA")"
     if [ -z "${conflicts}" ]; then conflicts="NA"; fi
 
-    # --- Restarts ---
     local restarts
     restarts="$(echo "${output}" | grep -P '^Restarts\s+:' | grep -oP '\d+' | head -1 || echo "NA")"
     if [ -z "${restarts}" ]; then restarts="NA"; fi
 
-    # --- Rules (grounding size) ---
     local rules
     rules="$(echo "${output}" | grep -P '^Rules\s+:' | grep -oP '\d+' | head -1 || echo "NA")"
     if [ -z "${rules}" ]; then rules="NA"; fi
 
-    # --- Variables ---
     local variables
     variables="$(echo "${output}" | grep -P '^Variables\s+:' | grep -oP '\d+' | head -1 || echo "NA")"
     if [ -z "${variables}" ]; then variables="NA"; fi
 
-    # --- Memoria RSS (da GNU time) ---
     local rss_kb memory_mb
     rss_kb="$(echo "${output}" | grep -oP '(?<=Maximum resident set size \(kbytes\): )\d+' || echo "")"
     if [ -z "${rss_kb}" ]; then
@@ -141,43 +115,38 @@ run_stats() {
 # LOOP PRINCIPALE
 # ============================================================================
 
-total_runs=$(( ((N_END - N_START) / N_STEP + 1) * 4 * REPEATS ))
+total_runs=$(( ((N_END - N_START) / N_STEP + 1) * 3 * REPEATS ))
 current_run=0
 
 for n in $(seq "${N_START}" "${N_STEP}" "${N_END}"); do
     echo ""
     echo "=== N=${n} ==="
 
-    # 1) Baseline: Clingo standard senza --heuristic=Domain (euristiche ignorate)
+    # 1) Encoding standard dichiarativo
     for seed in $(seq 1 "${REPEATS}"); do
         current_run=$((current_run + 1))
         echo "--- std (run ${current_run}/${total_runs}) ---"
         run_stats "${n}" "std" "${seed}" \
-            ${CLINGO_STD} "${FILE_RANGE}" "${FILE_STD}" "-c" "n=${n}" "-n" "1"
+            ${CLINGO} "${FILE_RANGE}" "${FILE_STD}" "-c" "n=${n}" "-n" "1" \
+            "--heuristic=Domain" "--time-limit=600"
     done
 
-    # 2) h-Clingo: Clingo standard con --heuristic=Domain (euristiche statiche)
+    # 2) Lazy grounding
     for seed in $(seq 1 "${REPEATS}"); do
         current_run=$((current_run + 1))
-        echo "--- h-clingo (run ${current_run}/${total_runs}) ---"
-        run_stats "${n}" "h-clingo" "${seed}" \
-            ${CLINGO_STD} "${FILE_RANGE}" "${FILE_STD}" "-c" "n=${n}" "-n" "1" "--heuristic=Domain"
+        echo "--- lg (run ${current_run}/${total_runs}) ---"
+        run_stats "${n}" "lg" "${seed}" \
+            ${CLINGO} "${FILE_RANGE}" "${FILE_LG}" "-n" "1" "-c" "n=${n}" \
+            "--heuristic=Domain" "--time-limit=600"
     done
 
-    # 3) Clingo modificato con lazy grounding
+    # 3) Lazy grounding + vincolo ottimizzato
     for seed in $(seq 1 "${REPEATS}"); do
         current_run=$((current_run + 1))
-        echo "--- mod (run ${current_run}/${total_runs}) ---"
-        run_stats "${n}" "mod" "${seed}" \
-            ${CLINGO_MOD} "${FILE_RANGE}" "${FILE_MOD}" "-n" "1" "-c" "n=${n}"
-    done
-
-    # 4) Clingo modificato con lazy grounding + vincolo ottimizzato
-    for seed in $(seq 1 "${REPEATS}"); do
-        current_run=$((current_run + 1))
-        echo "--- mod_opt (run ${current_run}/${total_runs}) ---"
-        run_stats "${n}" "mod_opt" "${seed}" \
-            ${CLINGO_MOD} "${FILE_RANGE}" "${FILE_MOD_OPT}" "-n" "1" "-c" "n=${n}"
+        echo "--- colg (run ${current_run}/${total_runs}) ---"
+        run_stats "${n}" "colg" "${seed}" \
+            ${CLINGO} "${FILE_RANGE}" "${FILE_COLG}" "-n" "1" "-c" "n=${n}" \
+            "--heuristic=Domain" "--time-limit=600"
     done
 done
 
