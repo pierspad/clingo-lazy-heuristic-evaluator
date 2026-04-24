@@ -162,24 +162,26 @@ __heuristic(b, x, __n_c, __bind(s, __sum(c)), __weight(s), __priority(__add(s, 1
 Di solito il funzionamento di un propagatore (nello specifico della classe CLingo::Heuristic che eredita da Clingo::Propagator) si articola in 4 fasi:
 
 1) prima di fare qualunque cosa c'è il metodo init, in init il propagatore euristico analizza i fatti e va a registrare sui fatti che gli interessano dei watch con il metodo add_watch.
+Per essere notificati quando un letterale viene assegnato a falso bisogna registrare il watch sul letterale negativo
 
-2) prima fase di unit propagation, il solver cerca di trarre conclusioni induttivamente in base alla conoscenza che possiede.
+2) prima fase di unit propagation, il solver cerca di trarre conclusioni deduttivamente in base alla conoscenza che possiede.
 Durante questa fase, ogni volta che un letterale sotto watch viene assegnato a vero il solver si ferma momentaneamente dal processo di unit propagation e invoca il metodo propagate su quel letterale.
+
+In questo moemnto il propagatore aggiorna le strutture dati e se nota inconsistenze può generare direttamente un nogood tramite add_clause()
 
 questa tiritera si ripete fino a quando non si raggiunge un fixpoint, ovvero un punto in cui ne la unit propagation ne il metodo propagate possono dedurre nuovi valori
 
 3) raggiunto il fixpoint il solver è costretto a esplorare una diramazione dell'albero di ricerca e qui chiama il metodo decide.
 
-il metodo decide sceglie un letterale da far diventare vero e il ciclo si ripete dal punto 2 
+il metodo decide sceglie un letterale (che può essere di segno positivo o negativo) da far diventare vero nel ramo corrente e il ciclo si ripete dal punto 2.
 fino a quando non si è dimostrato che non si possono trovare più nuovi AS
 
-3*) passaggio "extra", se durante la unit propagation il solver si rende conto di una clausola logica falsificata es: il decide mette a vero un valore che in una regola era presente come falso; allora viene generato esplicitamente un conflitto.
+4) Raggiunto un assegnamento totale, o un fixpoint intermedio a seconda della configurazione, il solver invoca il metodo check. In questa fase il propagatore effettua una validazione globale sul modello candidato, potendo generare "lazy no-good" per scartare soluzioni che soddisfano le regole ASP ma violano logiche complesse del dominio esterno valutabili solo a modello completo.
+
+5) passaggio "extra", se durante la unit propagation il solver si rende conto di una clausola logica falsificata es: il decide mette a vero un valore che in una regola era presente come falso; allora viene generato esplicitamente un conflitto.
 Viene analizzato il conflitto per sapere che nogood costruire e a quale first unique implication point fare backjumping
 
 allo stesso tempo viene chiamato il metodo "undo" passandogli l'indieme dei letterali che stanno per essere de-assegnati così che il propagatore euristico possa fare un "revert" delle operazioni che aveva fatto sulle strutture dati durante il processo di propagate ritornando allo stato corretto
-
-4) in fine se tutte le variabili hanno ricevuto un valore di verità viene eseguito il metodo check.
-Se il propagatore rileva che l'assegnamento viola qualche vincolo del dominio allora viene creato un nogood, il modello viene scartato e si fa backjumping.
 
 
 
