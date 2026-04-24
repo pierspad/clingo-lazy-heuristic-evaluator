@@ -170,12 +170,18 @@ questa tiritera si ripete fino a quando non si raggiunge un fixpoint, ovvero un 
 
 3) raggiunto il fixpoint il solver è costretto a esplorare una diramazione dell'albero di ricerca e qui chiama il metodo decide.
 
-il metodo decide sceglie un letterale da far diventare vero e il ciclo si ripete dal punto 2 fino a quando non si è dimostrato che non si possono trovare più nuovi AS
+il metodo decide sceglie un letterale da far diventare vero e il ciclo si ripete dal punto 2 
+fino a quando non si è dimostrato che non si possono trovare più nuovi AS
 
-4*) passaggio "extra", se durante la unit propagation il solver si rende conto di una clausola logica falsificata es: il decide mette a vero un valore che in una regola era presente come falso; allora viene generato esplicitamente un conflitto.
+3*) passaggio "extra", se durante la unit propagation il solver si rende conto di una clausola logica falsificata es: il decide mette a vero un valore che in una regola era presente come falso; allora viene generato esplicitamente un conflitto.
 Viene analizzato il conflitto per sapere che nogood costruire e a quale first unique implication point fare backjumping
 
 allo stesso tempo viene chiamato il metodo "undo" passandogli l'indieme dei letterali che stanno per essere de-assegnati così che il propagatore euristico possa fare un "revert" delle operazioni che aveva fatto sulle strutture dati durante il processo di propagate ritornando allo stato corretto
+
+4) in fine se tutte le variabili hanno ricevuto un valore di verità viene eseguito il metodo check.
+Se il propagatore rileva che l'assegnamento viola qualche vincolo del dominio allora viene creato un nogood, il modello viene scartato e si fa backjumping.
+
+
 
 %% ------------------------------------------------------
 
