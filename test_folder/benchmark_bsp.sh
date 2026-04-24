@@ -51,7 +51,7 @@ FILE_COLG="_BSP_colg.lp"
 FILE_RANGE="BSP_instances/__.BSP_range.lp"
 
 N_START=10
-N_END=200
+N_END=100
 N_STEP=10
 
 # Numero di ripetizioni per ogni (N, variant) con seed diversi

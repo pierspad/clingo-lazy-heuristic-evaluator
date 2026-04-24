@@ -120,23 +120,29 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
     // Phase 1: Parse __heuristic/N facts into rule templates
     for (auto it = atoms.begin(); it != atoms.end(); ++it) {
         auto const symbol = it->symbol();
+        // se è un fatto o è una funziona ma non si chiama __heuristic continua
         if (symbol.type() != Clingo::SymbolType::Function || symbol.name() != "__heuristic")
             continue;
 
+        // è __heruistic quindi prendiamo gli argomenti e controlliamo se l'arità è minore di 2
+        // se è >= 2 allora controlliamo che il primo argomento non sia una funzione a sua volta ma solo il nome del letterale
         auto const args = symbol.arguments();
         if (args.size() < 2) continue;
         if (args[0].type() != Clingo::SymbolType::Function || !args[0].arguments().empty())
             continue;
 
+        // istanziamo la classe HeuristicRuleTemplate come vuota eccetto per il predicato su cui vogliamo applicare l'euristica che invece lo conosciamo già
         HeuristicRuleTemplate tmpl;
         tmpl.target_pred = args[0].name();
         tmpl.sign = HeuristicSign::True;
         tmpl.weight_term = Clingo::Number(0);
         tmpl.priority_term = Clingo::Number(0);
 
+        // scorro i vari argomenti del 
         for (size_t i = 1; i < args.size(); ++i) {
             auto const &arg = args[i];
 
+            // 
             if (arg.type() == Clingo::SymbolType::Number) {
                 tmpl.weight_term = arg;
                 continue;

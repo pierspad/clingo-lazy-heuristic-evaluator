@@ -156,6 +156,31 @@ __heuristic(b, x, __n_c, __bind(s, __sum(c)), __weight(__add(self, s)), __priori
 __heuristic(b, x, __n_c, __bind(s, __sum(c)), __weight(s), __priority(__add(s, 1)), true).
 
 
+
+%% ------------------------------------------------------
+
+Di solito il funzionamento di un propagatore (nello specifico della classe CLingo::Heuristic che eredita da Clingo::Propagator) si articola in 4 fasi:
+
+1) prima di fare qualunque cosa c'è il metodo init, in init il propagatore euristico analizza i fatti e va a registrare sui fatti che gli interessano dei watch con il metodo add_watch.
+
+2) prima fase di unit propagation, il solver cerca di trarre conclusioni induttivamente in base alla conoscenza che possiede.
+Durante questa fase, ogni volta che un letterale sotto watch viene assegnato a vero il solver si ferma momentaneamente dal processo di unit propagation e invoca il metodo propagate su quel letterale.
+
+questa tiritera si ripete fino a quando non si raggiunge un fixpoint, ovvero un punto in cui ne la unit propagation ne il metodo propagate possono dedurre nuovi valori
+
+3) raggiunto il fixpoint il solver è costretto a esplorare una diramazione dell'albero di ricerca e qui chiama il metodo decide.
+
+il metodo decide sceglie un letterale da far diventare vero e il ciclo si ripete dal punto 2 fino a quando non si è dimostrato che non si possono trovare più nuovi AS
+
+4*) passaggio "extra", se durante la unit propagation il solver si rende conto di una clausola logica falsificata es: il decide mette a vero un valore che in una regola era presente come falso; allora viene generato esplicitamente un conflitto.
+Viene analizzato il conflitto per sapere che nogood costruire e a quale first unique implication point fare backjumping
+
+allo stesso tempo viene chiamato il metodo "undo" passandogli l'indieme dei letterali che stanno per essere de-assegnati così che il propagatore euristico possa fare un "revert" delle operazioni che aveva fatto sulle strutture dati durante il processo di propagate ritornando allo stato corretto
+
+%% ------------------------------------------------------
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 10) Architettura AST (Abstract Syntax Tree) per __weight/__priority
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
