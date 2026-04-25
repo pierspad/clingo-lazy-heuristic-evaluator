@@ -248,6 +248,16 @@ private:
         std::vector<Clingo::literal_t> neg_body_lits;
     };
 
+    struct RulePredicateSets {
+        std::unordered_set<std::string> body_preds;
+        std::unordered_set<std::string> target_preds;
+        std::unordered_set<std::string> neg_preds;
+        std::unordered_set<std::string> agg_preds;
+    };
+
+    using LitByTuple = std::unordered_map<AtomKey, Clingo::literal_t, AtomKeyHash>;
+    using PredLitMap = std::unordered_map<std::string, LitByTuple>;
+
     std::unordered_map<Clingo::literal_t, WatchedAtomInfo> watched_atoms_;
     std::vector<HeuristicRuleTemplate> rule_templates_;
     std::unordered_map<Clingo::literal_t, std::vector<BodyTriggerInfo>> body_triggers_;
@@ -256,6 +266,13 @@ private:
     std::unordered_map<RuntimeAggregateKey, std::unique_ptr<AggregateState>, RuntimeAggregateKeyHash> aggregate_states_;
 
     void init_lazy_mode(Clingo::PropagateInit &init);
+    void parse_lazy_heuristic_templates(Clingo::SymbolicAtoms const &atoms);
+    RulePredicateSets extract_lazy_predicate_sets() const;
+    PredLitMap build_lazy_predicate_literal_map(Clingo::PropagateInit &init,
+                                                Clingo::SymbolicAtoms const &atoms,
+                                                RulePredicateSets const &predicates) const;
+    void register_lazy_body_triggers(Clingo::PropagateInit &init, PredLitMap const &pred_lit_map);
+    void register_lazy_aggregate_watches(Clingo::PropagateInit &init, Clingo::SymbolicAtoms const &atoms);
 
 public:
     ~HeuristicPropagator() override = default;

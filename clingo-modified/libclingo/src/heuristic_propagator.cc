@@ -274,17 +274,7 @@ static AggregateOperator parse_aggregate_op(std::string const &op_name) {
 }
 
 
-void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
-    auto atoms = init.symbolic_atoms();
-
-    std::unordered_set<std::string> all_body_preds;
-    std::unordered_set<std::string> all_target_preds;
-    std::unordered_set<std::string> all_neg_preds;
-    std::unordered_set<std::string> all_agg_preds;
-
-    // Phase 1: Parse __heuristic/N facts into rule templates.
-    // In questa fase non registriamo ancora watch: costruiamo una descrizione
-    // compatta delle euristiche e validiamo subito la sintassi strutturale.
+void HeuristicPropagator::parse_lazy_heuristic_templates(Clingo::SymbolicAtoms const &atoms) {
     for (auto it = atoms.begin(); it != atoms.end(); ++it) {
         auto const symbol = it->symbol();
 
@@ -368,7 +358,6 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
 
                 AggregateKey key{agg_op_str, pred, arg_idx, std::move(filters)};
                 tmpl.var_bindings[var_name] = key;
-                all_agg_preds.insert(pred);
                 continue;
             }
 
@@ -411,7 +400,6 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
                 if (is_neg_body(arg_name)) {
                     std::string const real_pred = strip_neg_prefix(arg_name);
                     tmpl.neg_body_preds.push_back(real_pred);
-                    all_neg_preds.insert(real_pred);
                     continue;
                 }
                 
@@ -419,7 +407,6 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
                 //    l'intersezione sulla stessa tupla, quindi a(X), b(X)
                 //    deve essere vero in entrambi i predicati.
                 tmpl.pos_body_preds.push_back(arg_name);
-                all_body_preds.insert(arg_name);
                 continue;
             }
 
@@ -433,24 +420,44 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
         tmpl.weight_expr = parse_arithmetic_expression(weight_symbol, tmpl.var_bindings, "__weight");
         tmpl.priority_expr = parse_arithmetic_expression(priority_symbol, tmpl.var_bindings, "__priority");
 
-        all_target_preds.insert(tmpl.target_pred);
         rule_templates_.push_back(std::move(tmpl));
     }
+}
 
-    if (rule_templates_.empty()) return;
+HeuristicPropagator::RulePredicateSets HeuristicPropagator::extract_lazy_predicate_sets() const {
+    RulePredicateSets predicates;
 
-    // Phase 2: Build predicate -> (numeric tuple -> solver literal) map.
-    // Prima era indicizzato solo dal primo argomento: b(X) andava bene, ma
-    // assigned_sensor_unit(S,U) perdeva tutte le alternative con stesso S.
-    using LitByTuple = std::unordered_map<AtomKey, Clingo::literal_t, AtomKeyHash>;
-    using PredLitMap = std::unordered_map<std::string, LitByTuple>;
+    for (auto const &tmpl : rule_templates_) {
+        predicates.target_preds.insert(tmpl.target_pred);
+
+        for (auto const &pos_pred : tmpl.pos_body_preds) {
+            predicates.body_preds.insert(pos_pred);
+        }
+
+        for (auto const &neg_pred : tmpl.neg_body_preds) {
+            predicates.neg_preds.insert(neg_pred);
+        }
+
+        for (auto const &binding : tmpl.var_bindings) {
+            predicates.agg_preds.insert(binding.second.pred_name);
+        }
+    }
+
+    return predicates;
+}
+
+HeuristicPropagator::PredLitMap HeuristicPropagator::build_lazy_predicate_literal_map(
+    Clingo::PropagateInit &init,
+    Clingo::SymbolicAtoms const &atoms,
+    RulePredicateSets const &predicates
+) const {
     PredLitMap pred_lit_map;
 
     std::unordered_set<std::string> all_preds;
-    all_preds.insert(all_body_preds.begin(), all_body_preds.end());
-    all_preds.insert(all_target_preds.begin(), all_target_preds.end());
-    all_preds.insert(all_neg_preds.begin(), all_neg_preds.end());
-    all_preds.insert(all_agg_preds.begin(), all_agg_preds.end());
+    all_preds.insert(predicates.body_preds.begin(), predicates.body_preds.end());
+    all_preds.insert(predicates.target_preds.begin(), predicates.target_preds.end());
+    all_preds.insert(predicates.neg_preds.begin(), predicates.neg_preds.end());
+    all_preds.insert(predicates.agg_preds.begin(), predicates.agg_preds.end());
 
     for (auto it = atoms.begin(); it != atoms.end(); ++it) {
         auto const symbol = it->symbol();
@@ -468,11 +475,11 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
         Clingo::literal_t slit = init.solver_literal(it->literal());
         if (slit != 0) pred_lit_map[pname][AtomKey{std::move(tuple_values)}] = slit;
     }
+    return pred_lit_map;
+}
 
-    // Phase 3: Build body triggers.
-    // Ogni trigger rappresenta una congiunzione di body positivi sulla stessa
-    // tupla. Registriamo un watch su ciascun positivo: decide controllera'
-    // comunque che tutti siano veri, quindi a(X), b(X) viene gestito davvero.
+void HeuristicPropagator::register_lazy_body_triggers(Clingo::PropagateInit &init,
+                                                      PredLitMap const &pred_lit_map) {
     std::unordered_set<Clingo::literal_t> watched_body_lits;
     for (size_t ri = 0; ri < rule_templates_.size(); ++ri) {
         auto const &tmpl = rule_templates_[ri];
@@ -537,11 +544,10 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
             }
         }
     }
+}
 
-    // Phase 4: Register watches on aggregate source atoms.
-    // Ogni atomo sorgente puo' contribuire a uno o piu' aggregati. Per gli
-    // aggregati filtrati salviamo gia' la chiave runtime concreta, cosi'
-    // propagate/undo fanno solo add/remove.
+void HeuristicPropagator::register_lazy_aggregate_watches(Clingo::PropagateInit &init,
+                                                          Clingo::SymbolicAtoms const &atoms) {
     std::unordered_set<Clingo::literal_t> watched_aggregate_lits;
     for (auto const &tmpl : rule_templates_) {
         for (auto const &vb : tmpl.var_bindings) {
@@ -578,6 +584,36 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
             }
         }
     }
+}
+
+void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
+    auto atoms = init.symbolic_atoms();
+
+    // Phase 1: Parse __heuristic/N facts into rule templates.
+    // In questa fase non registriamo ancora watch: costruiamo una descrizione
+    // compatta delle euristiche e validiamo subito la sintassi strutturale.
+    parse_lazy_heuristic_templates(atoms);
+    if (rule_templates_.empty()) return;
+
+    // Phase 2: Extract the predicate sets required by the runtime indexes.
+    RulePredicateSets predicates = extract_lazy_predicate_sets();
+
+    // Phase 3: Build predicate -> (numeric tuple -> solver literal) map.
+    // Prima era indicizzato solo dal primo argomento: b(X) andava bene, ma
+    // assigned_sensor_unit(S,U) perdeva tutte le alternative con stesso S.
+    PredLitMap pred_lit_map = build_lazy_predicate_literal_map(init, atoms, predicates);
+
+    // Phase 4: Build body triggers.
+    // Ogni trigger rappresenta una congiunzione di body positivi sulla stessa
+    // tupla. Registriamo un watch su ciascun positivo: decide controllera'
+    // comunque che tutti siano veri, quindi a(X), b(X) viene gestito davvero.
+    register_lazy_body_triggers(init, pred_lit_map);
+
+    // Phase 5: Register watches on aggregate source atoms.
+    // Ogni atomo sorgente puo' contribuire a uno o piu' aggregati. Per gli
+    // aggregati filtrati salviamo gia' la chiave runtime concreta, cosi'
+    // propagate/undo fanno solo add/remove.
+    register_lazy_aggregate_watches(init, atoms);
 }
 
 void HeuristicPropagator::propagate(Clingo::PropagateControl &control, Clingo::LiteralSpan changes) {
