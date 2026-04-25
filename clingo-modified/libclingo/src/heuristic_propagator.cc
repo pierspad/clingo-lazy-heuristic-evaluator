@@ -35,6 +35,19 @@ static std::string strip_neg_prefix(std::string const &name) {
     return name.substr(4);
 }
 
+static bool extract_numeric_arguments(Clingo::Symbol const &symbol, std::vector<int> &values) {
+    if (!is_clingo_symbol_function(symbol)) return false;
+
+    // Il propagatore MVP usa tuple numeriche come chiave di matching.
+    // Questo copre BSP (X) e le euristiche PUP generate (S,U)/(Z,U).
+    values.clear();
+    for (auto const &arg : symbol.arguments()) {
+        if (!is_clingo_symbol_number(arg)) return false;
+        values.push_back(arg.number());
+    }
+    return !values.empty();
+}
+
 static bool extract_numeric_argument(Clingo::Symbol const &symbol, int arg_index, int &value) {
     if (!is_clingo_symbol_function(symbol)) return false;
     auto const args = symbol.arguments();
@@ -56,6 +69,13 @@ static bool extract_numeric_argument(Clingo::Symbol const &symbol, int arg_index
     return found;
 }
 
+static bool extract_numeric_argument_from_args(Clingo::SymbolSpan const &args, int arg_index, int &value) {
+    if (arg_index < 0 || static_cast<size_t>(arg_index) >= args.size()) return false;
+    if (!is_clingo_symbol_number(args[arg_index])) return false;
+    value = args[arg_index].number();
+    return true;
+}
+
 enum class ArithmeticOperator {
     Add,
     Sub,
@@ -70,15 +90,24 @@ static ArithmeticOperator parse_arithmetic_operator(std::string const &name) {
     return ArithmeticOperator::Unknown;
 }
 
-static bool is_bound_variable(Clingo::Symbol const &symbol,
-                              std::unordered_map<std::string, AggregateKey> const &bindings) {
-    return is_nullary_function(symbol) && bindings.find(symbol.name()) != bindings.end();
+static ArithmeticExpressionKind expression_kind_for_operator(ArithmeticOperator op) {
+    switch (op) {
+        case ArithmeticOperator::Add: return ArithmeticExpressionKind::Add;
+        case ArithmeticOperator::Sub: return ArithmeticExpressionKind::Sub;
+        case ArithmeticOperator::Mul: return ArithmeticExpressionKind::Mul;
+        case ArithmeticOperator::Unknown: break;
+    }
+    return ArithmeticExpressionKind::Number;
 }
 
-static void validate_arithmetic_term(Clingo::Symbol const &term,
-                                     std::unordered_map<std::string, AggregateKey> const &bindings,
-                                     std::string const &field_name) {
-    if (is_clingo_symbol_number(term)) return;
+static ArithmeticExpression parse_arithmetic_expression(
+    Clingo::Symbol const &term,
+    std::unordered_map<std::string, AggregateKey> const &bindings,
+    std::string const &field_name
+) {
+    if (is_clingo_symbol_number(term)) {
+        return ArithmeticExpression::number(term.number());
+    }
 
     if (!is_clingo_symbol_function(term)) {
         throw std::runtime_error("Sintassi euristica malformata: " + field_name +
@@ -88,13 +117,20 @@ static void validate_arithmetic_term(Clingo::Symbol const &term,
     std::string const name = term.name();
     auto const args = term.arguments();
 
+    // Costanti nullarie: self oppure una variabile definita con __bind.
     if (args.empty()) {
-        if (name == "self" || is_bound_variable(term, bindings)) return;
+        if (name == "self") {
+            return ArithmeticExpression::self();
+        }
+        if (bindings.find(name) != bindings.end()) {
+            return ArithmeticExpression::bound_variable(name);
+        }
         throw std::runtime_error("Sintassi euristica malformata: variabile '" + name +
                                  "' usata in " + field_name + " ma non definita con __bind.");
     }
 
-    if (parse_arithmetic_operator(name) == ArithmeticOperator::Unknown) {
+    ArithmeticOperator const op = parse_arithmetic_operator(name);
+    if (op == ArithmeticOperator::Unknown) {
         throw std::runtime_error("Sintassi euristica malformata: operatore '" + name +
                                  "' non valido in " + field_name + ".");
     }
@@ -103,8 +139,9 @@ static void validate_arithmetic_term(Clingo::Symbol const &term,
                                  "' in " + field_name + " richiede esattamente due argomenti.");
     }
 
-    validate_arithmetic_term(args[0], bindings, field_name);
-    validate_arithmetic_term(args[1], bindings, field_name);
+    auto lhs = parse_arithmetic_expression(args[0], bindings, field_name);
+    auto rhs = parse_arithmetic_expression(args[1], bindings, field_name);
+    return ArithmeticExpression::binary(expression_kind_for_operator(op), std::move(lhs), std::move(rhs));
 }
 
 static Clingo::literal_t apply_sign(HeuristicSign sign, Clingo::literal_t target_lit, Clingo::literal_t fallback) {
@@ -116,39 +153,91 @@ static Clingo::literal_t apply_sign(HeuristicSign sign, Clingo::literal_t target
     return target_lit;
 }
 
-static int evaluate_term(Clingo::Symbol const &term, int domain_value,
-                         std::unordered_map<std::string, int> const &var_env) {
-    if (is_clingo_symbol_number(term)) {
-        return term.number();
-    }
-    if (!is_clingo_symbol_function(term)) {
-        return 0;
-    }
-
-    std::string const name = term.name();
-    auto const args = term.arguments();
-
-    if (name == "self" && args.empty()) {
-        return domain_value;
-    }
-
-    if (args.size() == 2) {
-        int const lhs = evaluate_term(args[0], domain_value, var_env);
-        int const rhs = evaluate_term(args[1], domain_value, var_env);
-        switch (parse_arithmetic_operator(name)) {
-            case ArithmeticOperator::Add: return lhs + rhs;
-            case ArithmeticOperator::Sub: return lhs - rhs;
-            case ArithmeticOperator::Mul: return lhs * rhs;
-            case ArithmeticOperator::Unknown: break;
+static int evaluate_arithmetic_expression(
+    ArithmeticExpression const &expr,
+    int self_value,
+    std::unordered_map<std::string, int> const &var_env
+) {
+    switch (expr.kind) {
+        case ArithmeticExpressionKind::Number:
+            return expr.value;
+        case ArithmeticExpressionKind::Self:
+            return self_value;
+        case ArithmeticExpressionKind::BoundVariable: {
+            auto it = var_env.find(expr.variable_name);
+            return it != var_env.end() ? it->second : 0;
         }
+        case ArithmeticExpressionKind::Add:
+            return evaluate_arithmetic_expression(*expr.left, self_value, var_env) +
+                   evaluate_arithmetic_expression(*expr.right, self_value, var_env);
+        case ArithmeticExpressionKind::Sub:
+            return evaluate_arithmetic_expression(*expr.left, self_value, var_env) -
+                   evaluate_arithmetic_expression(*expr.right, self_value, var_env);
+        case ArithmeticExpressionKind::Mul:
+            return evaluate_arithmetic_expression(*expr.left, self_value, var_env) *
+                   evaluate_arithmetic_expression(*expr.right, self_value, var_env);
     }
-
-    if (args.empty()) {
-        auto it = var_env.find(name);
-        if (it != var_env.end()) return it->second;
-    }
-
     return 0;
+}
+
+static AggregateFilter parse_aggregate_filter(Clingo::Symbol const &filter_symbol) {
+    if (!is_named_function(filter_symbol, "__filter")) {
+        throw std::runtime_error("Sintassi euristica malformata: filtro aggregato non valido; usa __filter(source_idx, target_idx, offset?).");
+    }
+
+    auto const args = filter_symbol.arguments();
+    if (args.size() < 2 || args.size() > 3 ||
+        !is_clingo_symbol_number(args[0]) ||
+        !is_clingo_symbol_number(args[1]) ||
+        (args.size() == 3 && !is_clingo_symbol_number(args[2]))) {
+        throw std::runtime_error("Sintassi euristica malformata: __filter richiede indici numerici e offset numerico opzionale.");
+    }
+
+    AggregateFilter filter;
+    filter.source_arg_index = args[0].number();
+    filter.target_arg_index = args[1].number();
+    filter.target_offset = args.size() == 3 ? args[2].number() : 0;
+    return filter;
+}
+
+static bool build_runtime_key_from_source_atom(AggregateKey const &agg_key,
+                                               Clingo::Symbol const &source_atom,
+                                               RuntimeAggregateKey &runtime_key) {
+    auto const args = source_atom.arguments();
+
+    runtime_key.key = agg_key;
+    runtime_key.filter_values.clear();
+    runtime_key.filter_values.reserve(agg_key.filters.size());
+
+    // Per ogni filtro salviamo il valore concreto dell'atomo sorgente.
+    // In decide ricostruiremo la stessa chiave partendo dalla tupla target.
+    for (auto const &filter : agg_key.filters) {
+        int value = 0;
+        if (!extract_numeric_argument_from_args(args, filter.source_arg_index, value)) {
+            return false;
+        }
+        runtime_key.filter_values.push_back(value);
+    }
+
+    return true;
+}
+
+static bool build_runtime_key_from_target_tuple(AggregateKey const &agg_key,
+                                                std::vector<int> const &tuple_values,
+                                                RuntimeAggregateKey &runtime_key) {
+    runtime_key.key = agg_key;
+    runtime_key.filter_values.clear();
+    runtime_key.filter_values.reserve(agg_key.filters.size());
+
+    for (auto const &filter : agg_key.filters) {
+        if (filter.target_arg_index < 0 ||
+            static_cast<size_t>(filter.target_arg_index) >= tuple_values.size()) {
+            return false;
+        }
+        runtime_key.filter_values.push_back(tuple_values[filter.target_arg_index] + filter.target_offset);
+    }
+
+    return true;
 }
 
 void HeuristicPropagator::init(Clingo::PropagateInit &init) {
@@ -219,8 +308,8 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
         HeuristicRuleTemplate tmpl;
         tmpl.target_pred = args[0].name();
         tmpl.sign = HeuristicSign::True;
-        tmpl.weight_term = Clingo::Number(0);
-        tmpl.priority_term = Clingo::Number(0);
+        Clingo::Symbol weight_symbol = Clingo::Number(0);
+        Clingo::Symbol priority_symbol = Clingo::Number(0);
 
         // Classifica gli argomenti flessibili di __heuristic/N.
         for (size_t i = 1; i < args.size(); ++i) {
@@ -235,11 +324,15 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
             std::string const arg_name = arg.name();
             auto const arg_args = arg.arguments();
 
-            // __bind(var, __agg(pred, idx?)) collega una variabile simbolica
-            // a un aggregato mantenuto incrementalmente dal propagatore.
+            // __bind(var, __agg(pred, idx?, filters...)) collega una variabile
+            // simbolica a un aggregato mantenuto incrementalmente.
+            // Forme accettate:
+            //   __bind(s, __sum(c, 0))
+            //   __bind(n1, __max(num_sensors_on_unit, 0))
+            //   __bind(k, __count(p, 1, __filter(0, 0)))
             if (arg_name == "__bind") {
                 if (arg_args.size() != 2 || !is_nullary_function(arg_args[0]) || !is_clingo_symbol_function(arg_args[1])) {
-                    throw std::runtime_error("Sintassi euristica malformata: __bind richiede __bind(var, __agg(pred, idx?)).");
+                    throw std::runtime_error("Sintassi euristica malformata: __bind richiede __bind(var, __agg(pred, idx?, filters...)).");
                 }
 
                 std::string const var_name = arg_args[0].name();
@@ -254,12 +347,10 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
                     !is_nullary_function(agg_inner[0])) {
                     throw std::runtime_error("Sintassi euristica malformata: operatore aggregato sconosciuto o predicato interno mancante.");
                 }
-                if (agg_inner.size() > 2) {
-                    throw std::runtime_error("Sintassi euristica malformata: aggregato in __bind con troppi argomenti.");
-                }
 
                 std::string const pred = agg_inner[0].name();
                 int arg_idx = -1;
+                std::vector<AggregateFilter> filters;
 
                 // Indice dell'argomento da aggregare, es. __sum(cost, 1).
                 // Se manca resta -1 per compatibilita' con la vecchia forma.
@@ -269,24 +360,25 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
                     throw std::runtime_error("Sintassi euristica malformata: indice aggregato non numerico in __bind.");
                 }
 
-                AggregateKey key{agg_op_str, pred, arg_idx};
+                // I filtri sono opzionali e permettono aggregati contestuali:
+                // es. __max(num_sensors_on_unit, 0, __filter(1, 1, -1)).
+                for (size_t j = 2; j < agg_inner.size(); ++j) {
+                    filters.push_back(parse_aggregate_filter(agg_inner[j]));
+                }
+
+                AggregateKey key{agg_op_str, pred, arg_idx, std::move(filters)};
                 tmpl.var_bindings[var_name] = key;
                 all_agg_preds.insert(pred);
-
-                if (aggregate_states_.find(key) == aggregate_states_.end()) {
-                    if (auto state = make_aggregate(agg_op_str))
-                        aggregate_states_.emplace(key, std::move(state));
-                }
                 continue;
             }
 
-            // __weight(expr) viene salvato come termine Clingo e validato
-            // dopo il ciclo, quando tutti i __bind sono gia' noti.
+            // __weight(expr) resta temporaneamente un Symbol locale: lo
+            // trasformiamo in AST solo dopo aver visto tutti i __bind.
             if (arg_name == "__weight") {
                 if (arg_args.size() != 1) {
                     throw std::runtime_error("Sintassi euristica malformata: __weight richiede esattamente un argomento.");
                 }
-                tmpl.weight_term = arg_args[0];
+                weight_symbol = arg_args[0];
                 continue;
             }
 
@@ -295,39 +387,51 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
                 if (arg_args.size() != 1) {
                     throw std::runtime_error("Sintassi euristica malformata: __priority richiede esattamente un argomento.");
                 }
-                tmpl.priority_term = arg_args[0];
+                priority_symbol = arg_args[0];
                 continue;
             }
 
+            // Gestisce gli argomenti di arità zero (costanti o identificatori semplici)
             if (arg_args.empty()) {
                 HeuristicSign parsed_sign;
+                
+                // 1. Determina la direzione dell'assegnamento euristico (es. true, false)
                 if (try_parse_sign(arg_name, parsed_sign)) {
                     tmpl.sign = parsed_sign;
                     continue;
                 }
+                
+                // 2. Shorthand: imposta direttamente il valore di dominio come peso
                 if (arg_name == "self") {
-                    tmpl.weight_term = arg;
+                    weight_symbol = arg;
                     continue;
                 }
+                
+                // 3. Registra eventuali predicati di body negativi necessari per l'attivazione
                 if (is_neg_body(arg_name)) {
                     std::string const real_pred = strip_neg_prefix(arg_name);
                     tmpl.neg_body_preds.push_back(real_pred);
                     all_neg_preds.insert(real_pred);
                     continue;
                 }
-                if (tmpl.pos_body_preds.empty()) {
-                    tmpl.pos_body_preds.push_back(arg_name);
-                    all_body_preds.insert(arg_name);
-                }
+                
+                // 4. Registra tutti i body positivi. La fase trigger fara'
+                //    l'intersezione sulla stessa tupla, quindi a(X), b(X)
+                //    deve essere vero in entrambi i predicati.
+                tmpl.pos_body_preds.push_back(arg_name);
+                all_body_preds.insert(arg_name);
                 continue;
             }
 
+            // Se l'argomento ha arità > 0 ma non è stato gestito dai parser precedenti 
+            // (es. non è __bind o __weight validi), solleva un errore di compilazione euristica.
             throw std::runtime_error("Sintassi euristica malformata: argomento '" + arg_name +
                                      "' non riconosciuto in __heuristic.");
         }
 
-        validate_arithmetic_term(tmpl.weight_term, tmpl.var_bindings, "__weight");
-        validate_arithmetic_term(tmpl.priority_term, tmpl.var_bindings, "__priority");
+        // Da qui in poi peso/priorita' sono AST tipizzati, non piu' Symbol.
+        tmpl.weight_expr = parse_arithmetic_expression(weight_symbol, tmpl.var_bindings, "__weight");
+        tmpl.priority_expr = parse_arithmetic_expression(priority_symbol, tmpl.var_bindings, "__priority");
 
         all_target_preds.insert(tmpl.target_pred);
         rule_templates_.push_back(std::move(tmpl));
@@ -335,8 +439,11 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
 
     if (rule_templates_.empty()) return;
 
-    // Phase 2: Build predicate -> (domain_value -> solver_literal) map
-    using PredLitMap = std::unordered_map<std::string, std::unordered_map<int, Clingo::literal_t>>;
+    // Phase 2: Build predicate -> (numeric tuple -> solver literal) map.
+    // Prima era indicizzato solo dal primo argomento: b(X) andava bene, ma
+    // assigned_sensor_unit(S,U) perdeva tutte le alternative con stesso S.
+    using LitByTuple = std::unordered_map<AtomKey, Clingo::literal_t, AtomKeyHash>;
+    using PredLitMap = std::unordered_map<std::string, LitByTuple>;
     PredLitMap pred_lit_map;
 
     std::unordered_set<std::string> all_preds;
@@ -355,14 +462,18 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
         auto const sym_args = symbol.arguments();
         if (sym_args.empty()) continue;
 
-        int domain_val = 0;
-        if (!extract_numeric_argument(symbol, 0, domain_val)) continue;
+        std::vector<int> tuple_values;
+        if (!extract_numeric_arguments(symbol, tuple_values)) continue;
 
         Clingo::literal_t slit = init.solver_literal(it->literal());
-        if (slit != 0) pred_lit_map[pname][domain_val] = slit;
+        if (slit != 0) pred_lit_map[pname][AtomKey{std::move(tuple_values)}] = slit;
     }
 
-    // Phase 3: Build body triggers
+    // Phase 3: Build body triggers.
+    // Ogni trigger rappresenta una congiunzione di body positivi sulla stessa
+    // tupla. Registriamo un watch su ciascun positivo: decide controllera'
+    // comunque che tutti siano veri, quindi a(X), b(X) viene gestito davvero.
+    std::unordered_set<Clingo::literal_t> watched_body_lits;
     for (size_t ri = 0; ri < rule_templates_.size(); ++ri) {
         auto const &tmpl = rule_templates_[ri];
         if (tmpl.pos_body_preds.empty()) continue;
@@ -371,39 +482,67 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
         if (body_it == pred_lit_map.end()) continue;
 
         auto target_map_it = pred_lit_map.find(tmpl.target_pred);
+        if (target_map_it == pred_lit_map.end()) continue;
 
         for (auto const &entry : body_it->second) {
-            int const domain_val = entry.first;
-            Clingo::literal_t const body_lit = entry.second;
+            AtomKey const &tuple_key = entry.first;
+            std::vector<Clingo::literal_t> pos_lits{entry.second};
+
+            bool all_pos_available = true;
+            for (size_t pi = 1; pi < tmpl.pos_body_preds.size(); ++pi) {
+                auto pos_map_it = pred_lit_map.find(tmpl.pos_body_preds[pi]);
+                if (pos_map_it == pred_lit_map.end()) {
+                    all_pos_available = false;
+                    break;
+                }
+
+                auto pit = pos_map_it->second.find(tuple_key);
+                if (pit == pos_map_it->second.end()) {
+                    all_pos_available = false;
+                    break;
+                }
+
+                pos_lits.push_back(pit->second);
+            }
+
+            if (!all_pos_available) continue;
 
             Clingo::literal_t target_lit = 0;
-            if (target_map_it != pred_lit_map.end()) {
-                auto tit = target_map_it->second.find(domain_val);
-                if (tit != target_map_it->second.end()) target_lit = tit->second;
-            }
+            auto tit = target_map_it->second.find(tuple_key);
+            if (tit != target_map_it->second.end()) target_lit = tit->second;
             if (target_lit == 0) continue;
 
             std::vector<Clingo::literal_t> neg_lits;
             for (auto const &neg_pred : tmpl.neg_body_preds) {
                 auto neg_map_it = pred_lit_map.find(neg_pred);
                 if (neg_map_it != pred_lit_map.end()) {
-                    auto nit = neg_map_it->second.find(domain_val);
+                    auto nit = neg_map_it->second.find(tuple_key);
                     if (nit != neg_map_it->second.end()) neg_lits.push_back(nit->second);
                 }
             }
 
             BodyTriggerInfo trigger;
             trigger.rule_idx = ri;
-            trigger.domain_value = domain_val;
             trigger.target_lit = target_lit;
+            trigger.self_value = tuple_key.values.empty() ? 0 : tuple_key.values[0];
+            trigger.tuple_values = tuple_key.values;
+            trigger.pos_body_lits = pos_lits;
             trigger.neg_body_lits = std::move(neg_lits);
 
-            body_triggers_[body_lit].push_back(std::move(trigger));
-            init.add_watch(body_lit);
+            for (auto body_lit : trigger.pos_body_lits) {
+                body_triggers_[body_lit].push_back(trigger);
+                if (watched_body_lits.insert(body_lit).second) {
+                    init.add_watch(body_lit);
+                }
+            }
         }
     }
 
-    // Phase 4: Register watches on aggregate source atoms
+    // Phase 4: Register watches on aggregate source atoms.
+    // Ogni atomo sorgente puo' contribuire a uno o piu' aggregati. Per gli
+    // aggregati filtrati salviamo gia' la chiave runtime concreta, cosi'
+    // propagate/undo fanno solo add/remove.
+    std::unordered_set<Clingo::literal_t> watched_aggregate_lits;
     for (auto const &tmpl : rule_templates_) {
         for (auto const &vb : tmpl.var_bindings) {
             AggregateKey const &agg_key = vb.second;
@@ -416,18 +555,26 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
                 int value = 0;
                 if (!extract_numeric_argument(sym, agg_key.arg_index, value)) continue;
 
+                RuntimeAggregateKey runtime_key;
+                if (!build_runtime_key_from_source_atom(agg_key, sym, runtime_key)) continue;
+
                 Clingo::literal_t const slit = init.solver_literal(it->literal());
                 if (slit == 0) continue;
 
-                init.add_watch(slit);
+                if (watched_aggregate_lits.insert(slit).second) {
+                    init.add_watch(slit);
+                }
 
                 auto &watch_info = watched_atoms_[slit];
                 bool already = false;
                 for (auto const &c : watch_info.contributions) {
-                    if (c.key == agg_key) { already = true; break; }
+                    if (c.runtime_key == runtime_key && c.value == value) {
+                        already = true;
+                        break;
+                    }
                 }
                 if (!already)
-                    watch_info.contributions.push_back(WatchedAtomContribution{agg_key, value});
+                    watch_info.contributions.push_back(WatchedAtomContribution{std::move(runtime_key), value});
             }
         }
     }
@@ -437,15 +584,23 @@ void HeuristicPropagator::propagate(Clingo::PropagateControl &control, Clingo::L
     static_cast<void>(control);
 
     for (auto lit : changes) {
+        // 1. Aggiorna gli aggregati dinamici quando un atomo sorgente diventa vero.
         auto watch_it = watched_atoms_.find(lit);
         if (watch_it != watched_atoms_.end()) {
             for (auto const &contrib : watch_it->second.contributions) {
-                auto state_it = aggregate_states_.find(contrib.key);
-                if (state_it != aggregate_states_.end())
-                    state_it->second->add(contrib.value);
+                auto &state = aggregate_states_[contrib.runtime_key];
+                if (!state) {
+                    state = make_aggregate(contrib.runtime_key.key.op_name);
+                }
+                if (state) {
+                    state->add(contrib.value);
+                }
             }
         }
 
+        // 2. Se il literal e' un body positivo, prepara le istanze candidate.
+        //    La congiunzione completa viene controllata in decide, dove abbiamo
+        //    accesso all'assegnamento corrente.
         auto trigger_it = body_triggers_.find(lit);
         if (trigger_it != body_triggers_.end()) {
             auto &target_vec = lazy_targets_[lit];
@@ -453,7 +608,13 @@ void HeuristicPropagator::propagate(Clingo::PropagateControl &control, Clingo::L
 
             for (size_t ti = 0; ti < trigger_it->second.size(); ++ti) {
                 auto const &trigger = trigger_it->second[ti];
-                target_vec.push_back({trigger.target_lit, trigger.domain_value, trigger.rule_idx, ti});
+                target_vec.push_back({
+                    trigger.target_lit,
+                    trigger.self_value,
+                    trigger.tuple_values,
+                    trigger.rule_idx,
+                    ti
+                });
             }
 
             if (!target_vec.empty()) active_body_lits_.insert(lit);
@@ -466,15 +627,17 @@ void HeuristicPropagator::undo(Clingo::PropagateControl const &control, Clingo::
     static_cast<void>(control);
 
     for (auto lit : changes) {
+        // 1. Ripristina gli aggregati quando clingo fa backtracking.
         auto watch_it = watched_atoms_.find(lit);
         if (watch_it != watched_atoms_.end()) {
             for (auto const &contrib : watch_it->second.contributions) {
-                auto state_it = aggregate_states_.find(contrib.key);
+                auto state_it = aggregate_states_.find(contrib.runtime_key);
                 if (state_it != aggregate_states_.end())
                     state_it->second->remove(contrib.value);
             }
         }
 
+        // 2. Il body positivo non e' piu' attivo a questo livello di search.
         auto lazy_it = lazy_targets_.find(lit);
         if (lazy_it != lazy_targets_.end() && !lazy_it->second.empty()) {
             lazy_it->second.clear();
@@ -494,6 +657,9 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
     int best_weight = INT_MIN;
     bool has_best = false;
 
+    // Scorre solo i body che sono diventati veri durante la ricerca. Ogni
+    // candidato viene rivalidato contro l'assegnamento corrente, cosi' i body
+    // positivi multipli e i negativi restano semanticamente corretti.
     for (auto const &body_lit : active_body_lits_) {
         auto lazy_it = lazy_targets_.find(body_lit);
         if (lazy_it == lazy_targets_.end() || lazy_it->second.empty()) continue;
@@ -501,10 +667,20 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
         auto trigger_it = body_triggers_.find(body_lit);
 
         for (auto const &inst : lazy_it->second) {
+            bool pos_satisfied = true;
             bool neg_satisfied = false;
             if (trigger_it != body_triggers_.end() &&
                 inst.trigger_index < trigger_it->second.size()) {
                 auto const &trigger = trigger_it->second[inst.trigger_index];
+
+                for (auto pos_lit : trigger.pos_body_lits) {
+                    if (pos_lit == 0 ||
+                        assignment.truth_value(pos_lit) != Clingo::TruthValue::True) {
+                        pos_satisfied = false;
+                        break;
+                    }
+                }
+
                 for (auto neg_lit : trigger.neg_body_lits) {
                     if (neg_lit != 0 &&
                         assignment.truth_value(neg_lit) == Clingo::TruthValue::True) {
@@ -513,23 +689,29 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
                     }
                 }
             }
-            if (neg_satisfied) continue;
+            if (!pos_satisfied || neg_satisfied) continue;
 
             if (assignment.truth_value(inst.target_lit) != Clingo::TruthValue::Free) continue;
 
             auto const &tmpl = rule_templates_[inst.rule_idx];
 
+            // Costruisce l'ambiente delle variabili __bind per questa tupla.
+            // Aggregati senza stato presente valgono 0, inclusi __min/__max vuoti.
             std::unordered_map<std::string, int> var_env;
             for (auto const &vb : tmpl.var_bindings) {
                 int val = 0;
-                auto state_it = aggregate_states_.find(vb.second);
+                RuntimeAggregateKey runtime_key;
+                bool const valid_key = build_runtime_key_from_target_tuple(vb.second, inst.tuple_values, runtime_key);
+                auto state_it = valid_key ? aggregate_states_.find(runtime_key) : aggregate_states_.end();
                 if (state_it != aggregate_states_.end()) val = state_it->second->result();
                 var_env[vb.first] = val;
             }
 
-            int current_priority = evaluate_term(tmpl.priority_term, inst.domain_value, var_env);
-            int current_weight = evaluate_term(tmpl.weight_term, inst.domain_value, var_env);
+            int current_priority = evaluate_arithmetic_expression(tmpl.priority_expr, inst.self_value, var_env);
+            int current_weight = evaluate_arithmetic_expression(tmpl.weight_expr, inst.self_value, var_env);
 
+            // Clingo sceglie prima la priorita', poi il peso: manteniamo la
+            // stessa logica per selezionare un unico literal suggerito.
             if (!has_best ||
                 current_priority > max_priority ||
                 (current_priority == max_priority && current_weight > best_weight)) {

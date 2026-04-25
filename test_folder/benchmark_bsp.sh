@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 # benchmark_bsp.sh
 # Benchmark per il problema BSP (Balanced Sum Partition).
-# Testa 3 configurazioni con il binario clingo modificato:
+# Testa 5 configurazioni con il binario clingo modificato:
 #   std      — encoding dichiarativo puro  (__BSP.lp)
+#   std_aux  — #heuristic riscritta con predicato ausiliario (__BSP_aux.lp)
 #   lg       — lazy grounding              (_BSP_lg.lp)
+#   lg_aux   — lazy grounding con predicato ausiliario (_BSP_aux_lg.lp)
 #   colg     — lazy grounding + vincolo ottimizzato (_BSP_colg.lp)
 #
 # Ogni combinazione (N, variant) viene eseguita REPEATS volte con seed diversi.
-# Le varianti lazy usano --heuristic=Domain.
+# Le varianti con euristiche usano --heuristic=Domain.
 # Ogni run è protetta da timeout esterno a 600s e limite memoria 32GiB (se prlimit è disponibile).
 # Salva i risultati in ./test-results/bsp_results.csv
 
@@ -44,7 +46,9 @@ cd "${SCRIPT_DIR}"
 
 # Encoding files
 FILE_STD="__BSP.lp"
+FILE_STD_AUX="__BSP_aux.lp"
 FILE_LG="_BSP_lg.lp"
+FILE_LG_AUX="_BSP_aux_lg.lp"
 FILE_COLG="_BSP_colg.lp"
 
 # Range file (in BSP_instances/)
@@ -61,12 +65,13 @@ TIMINGS_DIR="./test-results"
 CSV_FILE="${TIMINGS_DIR}/bsp_results.csv"
 
 mkdir -p "${TIMINGS_DIR}"
+declare -A GROUND_COUNT_CACHE
 
 # ============================================================================
 # INTESTAZIONE CSV
 # ============================================================================
 
-echo "n,variant,seed,solving_s,total_s,choices,conflicts,restarts,rules,variables,memory_mb" > "${CSV_FILE}"
+echo "n,variant,seed,solving_s,total_s,choices,conflicts,restarts,rules,variables,memory_mb,ground_heuristics,ground_lazy_heuristic_facts,ground_facts" > "${CSV_FILE}"
 
 # Cerchiamo GNU time per la memoria
 TIME_BIN="$(command -v time || true)"
@@ -82,6 +87,29 @@ fi
 # ============================================================================
 # FUNZIONE: esegui un singolo test e parsa le statistiche
 # ============================================================================
+
+collect_ground_counts() {
+    local cmd=("$@")
+    local cache_key="${cmd[*]}"
+
+    if [[ -n "${GROUND_COUNT_CACHE[${cache_key}]:-}" ]]; then
+        printf "%s" "${GROUND_COUNT_CACHE[${cache_key}]}"
+        return
+    fi
+
+    local counts
+    counts="$(timeout "${TIMEOUT_SECONDS}" "${cmd[@]}" --text 2>/dev/null | awk '
+        BEGIN { heur=0; lazy=0; facts=0; }
+        /^#heuristic/ { heur++; next; }
+        /^__heuristic\(/ { lazy++; facts++; next; }
+        /^[[:space:]]*%/ { next; }
+        /\.$/ && $0 !~ /:-/ { facts++; }
+        END { printf "%d,%d,%d", heur, lazy, facts; }
+    ' || printf "NA,NA,NA")"
+
+    GROUND_COUNT_CACHE["${cache_key}"]="${counts}"
+    printf "%s" "${counts}"
+}
 
 run_stats() {
     local n="$1"
@@ -135,15 +163,19 @@ run_stats() {
         memory_mb="$(echo "${rss_kb}" | awk '{printf "%.4f", $1/1024}')"
     fi
 
-    echo "    solving=${solving_s}s total=${total_s}s choices=${choices} conflicts=${conflicts} restarts=${restarts} rules=${rules} vars=${variables} mem=${memory_mb}MB"
-    echo "${n},${variant},${seed},${solving_s},${total_s},${choices},${conflicts},${restarts},${rules},${variables},${memory_mb}" >> "${CSV_FILE}"
+    local ground_counts ground_heuristics ground_lazy_heuristic_facts ground_facts
+    ground_counts="$(collect_ground_counts "${cmd[@]}")"
+    IFS=',' read -r ground_heuristics ground_lazy_heuristic_facts ground_facts <<< "${ground_counts}"
+
+    echo "    solving=${solving_s}s total=${total_s}s choices=${choices} conflicts=${conflicts} restarts=${restarts} rules=${rules} vars=${variables} mem=${memory_mb}MB heur=${ground_heuristics} lazy_facts=${ground_lazy_heuristic_facts} facts=${ground_facts}"
+    echo "${n},${variant},${seed},${solving_s},${total_s},${choices},${conflicts},${restarts},${rules},${variables},${memory_mb},${ground_heuristics},${ground_lazy_heuristic_facts},${ground_facts}" >> "${CSV_FILE}"
 }
 
 # ============================================================================
 # LOOP PRINCIPALE
 # ============================================================================
 
-total_runs=$(( ((N_END - N_START) / N_STEP + 1) * 3 * REPEATS ))
+total_runs=$(( ((N_END - N_START) / N_STEP + 1) * 5 * REPEATS ))
 current_run=0
 
 for n in $(seq "${N_START}" "${N_STEP}" "${N_END}"); do
@@ -156,10 +188,19 @@ for n in $(seq "${N_START}" "${N_STEP}" "${N_END}"); do
         echo "--- std (run ${current_run}/${total_runs}) ---"
         run_stats "${n}" "std" "${seed}" \
             "${CLINGO_MOD}" "${FILE_RANGE}" "${FILE_STD}" "-c" "n=${n}" "-n" "1" \
-            "--time-limit=600"
+            "--heuristic=Domain" "--time-limit=600"
     done
 
-    # 2) Lazy grounding
+    # 2) Encoding standard con predicato ausiliario
+    for seed in $(seq 1 "${REPEATS}"); do
+        current_run=$((current_run + 1))
+        echo "--- std_aux (run ${current_run}/${total_runs}) ---"
+        run_stats "${n}" "std_aux" "${seed}" \
+            "${CLINGO_MOD}" "${FILE_RANGE}" "${FILE_STD_AUX}" "-c" "n=${n}" "-n" "1" \
+            "--time-limit=600" "--heuristic=Domain"
+    done
+
+    # 3) Lazy grounding
     for seed in $(seq 1 "${REPEATS}"); do
         current_run=$((current_run + 1))
         echo "--- lg (run ${current_run}/${total_runs}) ---"
@@ -168,7 +209,16 @@ for n in $(seq "${N_START}" "${N_STEP}" "${N_END}"); do
             "--heuristic=Domain" "--time-limit=600"
     done
 
-    # 3) Lazy grounding + vincolo ottimizzato
+    # 4) Lazy grounding con predicato ausiliario
+    for seed in $(seq 1 "${REPEATS}"); do
+        current_run=$((current_run + 1))
+        echo "--- lg_aux (run ${current_run}/${total_runs}) ---"
+        run_stats "${n}" "lg_aux" "${seed}" \
+            "${CLINGO_MOD}" "${FILE_RANGE}" "${FILE_LG_AUX}" "-n" "1" "-c" "n=${n}" \
+            "--heuristic=Domain" "--time-limit=600"
+    done
+
+    # 5) Lazy grounding + vincolo ottimizzato
     for seed in $(seq 1 "${REPEATS}"); do
         current_run=$((current_run + 1))
         echo "--- colg (run ${current_run}/${total_runs}) ---"

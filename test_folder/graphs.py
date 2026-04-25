@@ -41,8 +41,20 @@ METRIC_FIELDS = [
     "rules",
     "variables",
     "memory_mb",
+    "ground_heuristics",
+    "ground_lazy_heuristic_facts",
+    "ground_facts",
 ]
-INTEGER_METRICS = {"choices", "conflicts", "restarts", "rules", "variables"}
+INTEGER_METRICS = {
+    "choices",
+    "conflicts",
+    "restarts",
+    "rules",
+    "variables",
+    "ground_heuristics",
+    "ground_lazy_heuristic_facts",
+    "ground_facts",
+}
 
 PLOT_CONFIGS = [
     {
@@ -101,6 +113,27 @@ PLOT_CONFIGS = [
         "description": "Peak resident memory usage",
         "filename": "memory_comparison.png",
     },
+    {
+        "metric": "ground_heuristics",
+        "title": "Ground #heuristic Directives",
+        "ylabel": "Ground directives",
+        "description": "Native #heuristic directives after grounding",
+        "filename": "ground_heuristics.png",
+    },
+    {
+        "metric": "ground_lazy_heuristic_facts",
+        "title": "Ground __heuristic Facts",
+        "ylabel": "Ground facts",
+        "description": "Lazy heuristic facts seen by the propagator",
+        "filename": "ground_lazy_heuristic_facts.png",
+    },
+    {
+        "metric": "ground_facts",
+        "title": "Ground Facts",
+        "ylabel": "Ground facts",
+        "description": "Facts in --text output, including __heuristic facts",
+        "filename": "ground_facts.png",
+    },
 ]
 
 # ============================================================================
@@ -110,20 +143,26 @@ PLOT_CONFIGS = [
 BSP_THEME = {
     "variant_labels": {
         "std":  "Standard (__BSP.lp)",
+        "std_aux": "Standard + Aux (__BSP_aux.lp)",
         "lg":   "Lazy Grounding (_BSP_lg.lp)",
+        "lg_aux": "Lazy + Aux (_BSP_aux_lg.lp)",
         "colg": "Lazy + Optimized Constraint (_BSP_colg.lp)",
     },
     "variant_colors": {
         "std":  "#E74C3C",   # red
+        "std_aux": "#C0392B", # dark red
         "lg":   "#2ECC71",   # green
+        "lg_aux": "#16A085",  # teal
         "colg": "#3498DB",   # blue
     },
     "variant_markers": {
         "std":  "o",
+        "std_aux": "X",
         "lg":   "s",
+        "lg_aux": "P",
         "colg": "^",
     },
-    "variant_order": ["std", "lg", "colg"],
+    "variant_order": ["std", "std_aux", "lg", "lg_aux", "colg"],
     "xlabel": "Problem size (N)",
     "suptitle": "BSP Benchmark: Standard vs Lazy Heuristic Grounding",
     "baseline": "std",
@@ -136,22 +175,51 @@ PUP_THEME = {
     "variant_labels": {
         "pup":        "Dichiarativo (__PUP.lp)",
         "pup_heur":   "Euristiche Statiche (__PUP_heur.lp)",
+        "pup_double_std": "PUP Double #heuristic",
+        "pup_double_aux": "PUP Double #heuristic + Aux",
         "pup_double": "Aggregati Dinamici (_PUP_double_lg.lp)",
+        "pup_double_aux_lg": "Aggregati Dinamici + Aux",
+        "pup_doublev_std": "PUP DoubleV #heuristic",
+        "pup_doublev_aux": "PUP DoubleV #heuristic + Aux",
         "pup_doublev":"Aggregati Dinamici Variante (_PUP_double_variant_lg.lp)",
+        "pup_doublev_aux_lg": "Aggregati Dinamici Variante + Aux",
     },
     "variant_colors": {
         "pup":        "#E74C3C",   # red
         "pup_heur":   "#F39C12",   # orange
+        "pup_double_std": "#8E44AD", # purple
+        "pup_double_aux": "#6C3483", # dark purple
         "pup_double": "#2ECC71",   # green
+        "pup_double_aux_lg": "#16A085", # teal
+        "pup_doublev_std": "#8E44AD",
+        "pup_doublev_aux": "#6C3483",
         "pup_doublev":"#9B59B6",   # purple
+        "pup_doublev_aux_lg": "#16A085",
     },
     "variant_markers": {
         "pup":        "o",
         "pup_heur":   "D",
+        "pup_double_std": "X",
+        "pup_double_aux": "P",
         "pup_double": "s",
+        "pup_double_aux_lg": "*",
+        "pup_doublev_std": "X",
+        "pup_doublev_aux": "P",
         "pup_doublev":"^",
+        "pup_doublev_aux_lg": "*",
     },
-    "variant_order": ["pup", "pup_heur", "pup_double", "pup_doublev"],
+    "variant_order": [
+        "pup",
+        "pup_heur",
+        "pup_double_std",
+        "pup_double_aux",
+        "pup_double",
+        "pup_double_aux_lg",
+        "pup_doublev_std",
+        "pup_doublev_aux",
+        "pup_doublev",
+        "pup_doublev_aux_lg",
+    ],
     "xlabel": "Instance size (N)",
     "baseline": "pup",
 }
@@ -350,6 +418,17 @@ def generate_graphs(stats: dict, graphs_dir: str, theme: dict, title_suffix: str
     rel_fname = f"comparison_vs_{baseline}{suffix}.png" if title_suffix else f"comparison_vs_{baseline}.png"
     _generate_relative_vs_baseline_chart(stats, graphs_dir, baseline, theme, rel_fname, xlabel)
 
+    ratio_fname = f"heuristics_vs_facts{suffix}.png" if title_suffix else "heuristics_vs_facts.png"
+    _generate_heuristics_vs_facts_chart(stats, graphs_dir, theme, ratio_fname, xlabel)
+
+    heuristic_baseline = theme.get("heuristic_baseline", baseline)
+    reduction_fname = (
+        f"heuristic_grounding_reduction_vs_{heuristic_baseline}{suffix}.png"
+        if title_suffix else
+        f"heuristic_grounding_reduction_vs_{heuristic_baseline}.png"
+    )
+    _generate_heuristic_reduction_chart(stats, graphs_dir, heuristic_baseline, theme, reduction_fname, xlabel)
+
 
 def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, filename, theme, xlabel):
     """Generate a single chart for one metric."""
@@ -492,6 +571,147 @@ def _generate_relative_vs_baseline_chart(stats, graphs_dir, baseline_variant, th
     print(f"  Chart '{filename}' saved to '{out_path}'.")
 
 
+def _metric_mean_map(stats, variant, metric):
+    """Return {N: mean} for a metric, or an empty map."""
+    if metric not in stats.get(variant, {}):
+        return {}
+    data = stats[variant][metric]
+    return dict(zip(data["n"], data["mean"]))
+
+
+def _effective_heuristic_map(stats, variant):
+    """
+    Return the heuristic grounding size for each N.
+    Native encodings use ground_heuristics; lazy encodings use
+    ground_lazy_heuristic_facts. If both exist, use their sum.
+    """
+    native = _metric_mean_map(stats, variant, "ground_heuristics")
+    lazy = _metric_mean_map(stats, variant, "ground_lazy_heuristic_facts")
+    ns = sorted(set(native.keys()) | set(lazy.keys()))
+    return {n: native.get(n, 0.0) + lazy.get(n, 0.0) for n in ns}
+
+
+def _generate_heuristics_vs_facts_chart(stats, graphs_dir, theme, filename, xlabel):
+    """Plot native #heuristic and lazy __heuristic facts against all other facts."""
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        return
+
+    labels = theme["variant_labels"]
+    colors = theme["variant_colors"]
+    markers_map = theme["variant_markers"]
+
+    fig, ax = plt.subplots(figsize=(9, 5.4))
+    has_data = False
+
+    for variant in _ordered_variants(stats, theme):
+        facts = _metric_mean_map(stats, variant, "ground_facts")
+        native = _metric_mean_map(stats, variant, "ground_heuristics")
+        lazy = _metric_mean_map(stats, variant, "ground_lazy_heuristic_facts")
+        common_n = sorted(set(facts.keys()) & (set(native.keys()) | set(lazy.keys())))
+        if not common_n:
+            continue
+
+        native_ratio = []
+        lazy_ratio = []
+        for n in common_n:
+            other_facts = max(facts.get(n, 0.0) - lazy.get(n, 0.0), 1.0)
+            n_ratio = 100.0 * native.get(n, 0.0) / other_facts
+            l_ratio = 100.0 * lazy.get(n, 0.0) / other_facts
+            native_ratio.append(n_ratio if n_ratio > 0 else float("nan"))
+            lazy_ratio.append(l_ratio if l_ratio > 0 else float("nan"))
+
+        color = colors.get(variant)
+        marker = markers_map.get(variant, "o")
+        pretty = labels.get(variant, variant)
+
+        if any(v == v and v > 0 for v in native_ratio):
+            has_data = True
+            ax.plot(common_n, native_ratio, marker=marker, linewidth=2,
+                    color=color, linestyle="-", label=f"{pretty} - #heuristic/other facts")
+        if any(v == v and v > 0 for v in lazy_ratio):
+            has_data = True
+            ax.plot(common_n, lazy_ratio, marker=marker, linewidth=2,
+                    color=color, linestyle=":", label=f"{pretty} - __heuristic facts/other facts")
+
+    ax.set_title("Heuristic Grounding Weight vs Other Facts", fontsize=13, fontweight="bold")
+    ax.set_xlabel(xlabel, fontsize=11)
+    ax.set_ylabel("Ratio (%)")
+    ax.grid(True, alpha=0.3, linestyle="--")
+    if has_data:
+        ax.set_yscale("log")
+        ax.legend(fontsize=8, ncol=1)
+    else:
+        ax.text(0.5, 0.5, "No heuristic/fact data", transform=ax.transAxes,
+                ha="center", va="center", fontsize=13, color="#AAA")
+
+    plt.tight_layout()
+    out_path = os.path.join(graphs_dir, filename)
+    plt.savefig(out_path, dpi=200, bbox_inches="tight")
+    plt.close()
+    print(f"  Chart '{filename}' saved to '{out_path}'.")
+
+
+def _generate_heuristic_reduction_chart(stats, graphs_dir, baseline_variant, theme, filename, xlabel):
+    """Plot the reduction in heuristic grounding against the baseline variant."""
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        return
+
+    baseline = _effective_heuristic_map(stats, baseline_variant)
+    if not baseline:
+        print(f"  Heuristic reduction chart skipped: baseline '{baseline_variant}' has no heuristic counts.")
+        return
+
+    labels = theme["variant_labels"]
+    colors = theme["variant_colors"]
+    markers_map = theme["variant_markers"]
+
+    fig, ax = plt.subplots(figsize=(8.5, 5))
+    has_data = False
+
+    for variant in [v for v in _ordered_variants(stats, theme) if v != baseline_variant]:
+        current = _effective_heuristic_map(stats, variant)
+        common_n = sorted(set(baseline.keys()) & set(current.keys()))
+        if not common_n:
+            continue
+
+        reduction = [
+            100.0 * (baseline[n] - current[n]) / baseline[n]
+            if baseline[n] > 0 else float("nan")
+            for n in common_n
+        ]
+        if not reduction:
+            continue
+
+        has_data = True
+        ax.plot(common_n, reduction,
+                marker=markers_map.get(variant, "o"),
+                linewidth=2,
+                color=colors.get(variant),
+                label=labels.get(variant, variant))
+
+    ax.axhline(0.0, color="#555", linewidth=1, linestyle="--")
+    ax.set_title(f"Heuristic Grounding Reduction vs {labels.get(baseline_variant, baseline_variant)}",
+                 fontsize=13, fontweight="bold")
+    ax.set_xlabel(xlabel, fontsize=11)
+    ax.set_ylabel("Reduction (%)")
+    ax.grid(True, alpha=0.3, linestyle="--")
+    if has_data:
+        ax.legend(fontsize=9)
+    else:
+        ax.text(0.5, 0.5, "No comparable heuristic counts", transform=ax.transAxes,
+                ha="center", va="center", fontsize=13, color="#AAA")
+
+    plt.tight_layout()
+    out_path = os.path.join(graphs_dir, filename)
+    plt.savefig(out_path, dpi=200, bbox_inches="tight")
+    plt.close()
+    print(f"  Chart '{filename}' saved to '{out_path}'.")
+
+
 def _aligned_metric_pair(stats, baseline_variant, variant, metric):
     """Return aligned (N, baseline_mean, variant_mean) lists for one metric."""
     if metric not in stats.get(baseline_variant, {}) or metric not in stats.get(variant, {}):
@@ -554,7 +774,7 @@ def print_summary_table(stats, theme):
     """Print a summary table with means for key metrics."""
     variants = _ordered_variants(stats, theme)
     labels = theme["variant_labels"]
-    table_width = 8 + len(variants) * 56
+    table_width = 8 + len(variants) * 78
 
     print(f"\n{'='*table_width}")
     print(f"{'N':>5}  ", end="")
@@ -564,7 +784,7 @@ def print_summary_table(stats, theme):
     print()
     print(f"{'':>5}  ", end="")
     for _ in variants:
-        print(f"  {'Solv(s)':>8} {'Tot(s)':>8} {'Choices':>8} {'Conf.':>8} {'Rst.':>6} {'Rules':>7} {'Vars':>7}", end="")
+        print(f"  {'Solv(s)':>8} {'Tot(s)':>8} {'Choices':>8} {'Conf.':>8} {'Rst.':>6} {'Rules':>7} {'Vars':>7} {'Heur':>7} {'LazyH':>7} {'Facts':>7}", end="")
     print()
     print("-" * table_width)
 
@@ -583,6 +803,9 @@ def print_summary_table(stats, theme):
             restarts = _get_mean_at_n(stats[v], "restarts", n)
             rules = _get_mean_at_n(stats[v], "rules", n)
             variables = _get_mean_at_n(stats[v], "variables", n)
+            ground_heuristics = _get_mean_at_n(stats[v], "ground_heuristics", n)
+            ground_lazy = _get_mean_at_n(stats[v], "ground_lazy_heuristic_facts", n)
+            ground_facts = _get_mean_at_n(stats[v], "ground_facts", n)
 
             s_str = f"{solving:.4f}" if solving is not None else "N/A"
             t_str = f"{total:.4f}" if total is not None else "N/A"
@@ -591,8 +814,11 @@ def print_summary_table(stats, theme):
             rs_str = f"{restarts:.0f}" if restarts is not None else "N/A"
             r_str = f"{rules:.0f}" if rules is not None else "N/A"
             v_str = f"{variables:.0f}" if variables is not None else "N/A"
+            h_str = f"{ground_heuristics:.0f}" if ground_heuristics is not None else "N/A"
+            lh_str = f"{ground_lazy:.0f}" if ground_lazy is not None else "N/A"
+            gf_str = f"{ground_facts:.0f}" if ground_facts is not None else "N/A"
 
-            row += f"  {s_str:>8} {t_str:>8} {c_str:>8} {f_str:>8} {rs_str:>6} {r_str:>7} {v_str:>7}"
+            row += f"  {s_str:>8} {t_str:>8} {c_str:>8} {f_str:>8} {rs_str:>6} {r_str:>7} {v_str:>7} {h_str:>7} {lh_str:>7} {gf_str:>7}"
         print(row)
 
     print(f"{'='*table_width}\n")
@@ -678,6 +904,7 @@ def main():
     pup_double_out = os.path.join(base_out, "pup")
     pup_double_theme = PUP_THEME.copy()
     pup_double_theme["suptitle"] = "PUP Benchmark — Double Family"
+    pup_double_theme["heuristic_baseline"] = "pup_double_std"
     if process_csv(pup_double_csv, pup_double_out, pup_double_theme,
                    "PUP Double", title_suffix="Double"):
         processed_any = True
@@ -687,6 +914,7 @@ def main():
     pup_doublev_out = os.path.join(base_out, "pup")
     pup_doublev_theme = PUP_THEME.copy()
     pup_doublev_theme["suptitle"] = "PUP Benchmark — DoubleV Family"
+    pup_doublev_theme["heuristic_baseline"] = "pup_doublev_std"
     if process_csv(pup_doublev_csv, pup_doublev_out, pup_doublev_theme,
                    "PUP DoubleV", title_suffix="DoubleV"):
         processed_any = True

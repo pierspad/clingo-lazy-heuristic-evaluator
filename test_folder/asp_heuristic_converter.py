@@ -13,16 +13,20 @@ Sintassi lazy generata:
 
 Uso:
     python asp_heuristic_converter.py input.lp -o output.lp
+    python asp_heuristic_converter.py input.lp --mode aux -o output_aux.lp
+    python asp_heuristic_converter.py input.lp --mode lazy-aux -o output_aux_lg.lp
     python asp_heuristic_converter.py input.lp --in-place
     python asp_heuristic_converter.py input.lp --dry-run
 
 Limitazioni:
-    - Il propagatore C++ usa solo il PRIMO body positivo come trigger.
-      Se ci sono più body positivi, viene emesso un warning.
-    - Target multi-argomento: solo la prima variabile viene usata come
-      domain variable. Le altre sono ignorate con un warning.
+    - Il propagatore C++ fa matching sulla tupla numerica completa del target;
+      "self" resta il primo argomento della tupla.
+    - I body positivi multipli sono supportati se hanno la stessa tupla del target.
+      I body positivi ausiliari con variabili diverse vengono ignorati nel mode lazy diretto.
     - Euristiche senza body positivo non vengono mai attivate nel modo lazy.
     - Gli aggregati nel body sono della forma VAR = #agg{Y : pred(...,Y,...)} con un singolo predicato.
+    - I filtri aggregati generati sono semplici uguaglianze su variabili target,
+      anche con offset +/- costante (es. U1 = U - 1).
     - Espressioni aritmetiche nel peso/priorità: +, -, * tra variabili e costanti.
     - Non gestisce join tra predicati multi-argomento con variabili distinte.
     - Euristiche con body complessi non convertibili generano un WARNING e vengono
@@ -48,19 +52,33 @@ class AggregateBinding:
     agg_type: str           # Tipo aggregato: sum, count, min, max
     pred_name: str          # Predicato aggregato (es. "c")
     arg_index: Optional[int] = None  # Posizione 0-based della variabile aggregata nel predicato
+    filters: list = field(default_factory=list)  # (source_arg_idx, target_arg_idx, offset)
+
+
+@dataclass
+class BodyPredicate:
+    """Letterale ordinario del body, positivo o negativo."""
+    pred_name: str
+    args: list = field(default_factory=list)
+    negated: bool = False
+    text: str = ""
 
 
 @dataclass
 class HeuristicDirective:
     """Rappresentazione intermedia di una direttiva #heuristic parsata."""
     target_pred: str                                # Predicato target (es. "b")
+    target_text: str = ""                           # Target completo (es. "b(X)")
+    target_args: list = field(default_factory=list)  # Argomenti del target
     target_var: Optional[str] = None                # Variabile del target (es. "X")
     pos_body: list = field(default_factory=list)     # Body positivi: ["x"]
     neg_body: list = field(default_factory=list)     # Body negativi: ["c"]
+    body_predicates: list = field(default_factory=list)  # Letterali ordinari completi
     bindings: list = field(default_factory=list)     # AggregateBinding list
     weight_expr: str = "0"                           # Espressione peso originale
     priority_expr: str = "0"                         # Espressione priorità originale
     sign: str = "true"                               # true/false/sign
+    body_str: str = ""                               # Body originale
     original_line: str = ""                          # Riga originale per riferimento
 
 
@@ -103,14 +121,14 @@ def _strip_comments(line: str) -> str:
 
 
 def _split_top_level(text: str, sep: str = ',') -> list:
-    """Divide una stringa su sep, ignorando separatori annidati in parentesi."""
+    """Divide una stringa su sep, ignorando separatori annidati."""
     parts = []
     start = 0
     depth = 0
     for i, ch in enumerate(text):
-        if ch == '(':
+        if ch in '({[':
             depth += 1
-        elif ch == ')':
+        elif ch in ')}]':
             depth = max(0, depth - 1)
         elif ch == sep and depth == 0:
             parts.append(text[start:i].strip())
@@ -119,16 +137,56 @@ def _split_top_level(text: str, sep: str = ',') -> list:
     return parts
 
 
-def _extract_pred_and_index_from_aggregate_body(agg_body: str) -> tuple:
+def _parse_target_aliases(body_str: str, target_positions: dict) -> dict:
+    """
+    Trova alias aritmetici semplici del target, usati nei PUP:
+        U1 = U - 1, U2 = U + 1
+    Restituisce {alias: (target_arg_idx, offset)}.
+    """
+    aliases = {}
+    for part in _split_top_level(body_str):
+        m = re.match(r'^\s*(\w+)\s*=\s*(\w+)\s*([+-])\s*(\d+)\s*$', part)
+        if m and m.group(2) in target_positions:
+            sign = 1 if m.group(3) == '+' else -1
+            aliases[m.group(1)] = (target_positions[m.group(2)], sign * int(m.group(4)))
+            continue
+
+        m = re.match(r'^\s*(\w+)\s*=\s*(\w+)\s*$', part)
+        if m and m.group(2) in target_positions:
+            aliases[m.group(1)] = (target_positions[m.group(2)], 0)
+
+    return aliases
+
+
+def _term_to_target_filter(term: str, target_positions: dict, aliases: dict) -> Optional[tuple]:
+    """Converte un termine del predicato aggregato in filtro target, se possibile."""
+    term = term.strip()
+    if term in target_positions:
+        return target_positions[term], 0
+    if term in aliases:
+        return aliases[term]
+    return None
+
+
+def _extract_pred_and_index_from_aggregate_body(
+    agg_body: str,
+    target_positions: Optional[dict] = None,
+    aliases: Optional[dict] = None,
+) -> tuple:
     """
     Estrae nome predicato e indice posizionale della variabile aggregata.
     Es: "Y : c(Y)" -> ("c", 0)
          "N : p(S,N)" -> ("p", 1)
          "Y,X : cost(Y,X)" -> ("cost", 0)
+    Produce anche filtri opzionali per legare gli argomenti del predicato
+    aggregato alla tupla target: [(source_arg_idx, target_arg_idx, offset)].
     """
+    target_positions = target_positions or {}
+    aliases = aliases or {}
+
     parts = agg_body.split(':')
     if len(parts) < 2:
-        return None, None
+        return None, None, []
 
     tuple_terms = _split_top_level(parts[0].strip())
     target_term = tuple_terms[0] if tuple_terms else ""
@@ -136,7 +194,7 @@ def _extract_pred_and_index_from_aggregate_body(agg_body: str) -> tuple:
     pred_part = ':'.join(parts[1:]).strip()
     m = re.match(r'(\w+)\s*\((.*)\)\s*$', pred_part)
     if not m:
-        return None, None
+        return None, None, []
 
     pred_name = m.group(1)
     pred_args = _split_top_level(m.group(2))
@@ -146,7 +204,21 @@ def _extract_pred_and_index_from_aggregate_body(agg_body: str) -> tuple:
             arg_index = idx
             break
 
-    return pred_name, arg_index
+    filters = []
+    for idx, arg in enumerate(pred_args):
+        if idx == arg_index:
+            continue
+        if arg.strip() == "_":
+            continue
+
+        filter_target = _term_to_target_filter(arg, target_positions, aliases)
+        if filter_target is None:
+            continue
+
+        target_idx, offset = filter_target
+        filters.append((idx, target_idx, offset))
+
+    return pred_name, arg_index, filters
 
 
 def _is_domain_variable(expr: str, target_var: Optional[str]) -> bool:
@@ -242,17 +314,45 @@ def _convert_arith_expr(
     return expr
 
 
-def _parse_body_literals(body_str: str) -> tuple:
+def _parse_body_predicate(lit: str, negated: bool = False) -> Optional[BodyPredicate]:
+    """Parsa pred(args...) oppure pred proposizionale."""
+    text = lit.strip()
+    if negated:
+        text = re.sub(r'^\s*not\s+', '', text).strip()
+
+    m = re.match(r'^(\w+)\s*\((.*)\)\s*$', text)
+    if m:
+        pred_name = m.group(1)
+        args = _split_top_level(m.group(2))
+        return BodyPredicate(pred_name=pred_name, args=args, negated=negated, text=lit.strip())
+
+    m = re.match(r'^([a-z_]\w*)\s*$', text)
+    if m:
+        return BodyPredicate(pred_name=m.group(1), args=[], negated=negated, text=lit.strip())
+
+    return None
+
+
+def _parse_body_literals(body_str: str, target_args: Optional[list] = None) -> tuple:
     """
     Parsa il body dell'euristica, separando:
     - letterali positivi semplici
     - letterali negativi (not pred(X))
     - aggregati (Var = #agg{...})
 
-    Restituisce: (pos_body, neg_body, bindings)
+    Restituisce: (pos_body, neg_body, bindings, body_predicates)
     """
+    target_args = target_args or []
+    target_positions = {
+        arg: idx
+        for idx, arg in enumerate(target_args)
+        if re.match(r'^[A-Z_]\w*$', arg)
+    }
+    aliases = _parse_target_aliases(body_str, target_positions)
+
     pos_body = []
     neg_body = []
+    body_predicates = []
     bindings = []
 
     # Prima estraiamo gli aggregati (che contengono virgole interne)
@@ -261,14 +361,18 @@ def _parse_body_literals(body_str: str) -> tuple:
         var_name = m.group(1)
         agg_type = m.group(2)
         agg_body = m.group(3)
-        pred, arg_index = _extract_pred_and_index_from_aggregate_body(agg_body)
+        pred, arg_index, filters = _extract_pred_and_index_from_aggregate_body(
+            agg_body,
+            target_positions=target_positions,
+            aliases=aliases,
+        )
         if pred:
-            bindings.append(AggregateBinding(var_name, agg_type, pred, arg_index))
+            bindings.append(AggregateBinding(var_name, agg_type, pred, arg_index, filters))
         # Rimuovi l'aggregato dal remaining per non parsarlo come letterale
         remaining = remaining.replace(m.group(0), '', 1)
 
     # Ora parsiamo i letterali rimanenti separati da virgola
-    for lit in remaining.split(','):
+    for lit in _split_top_level(remaining):
         lit = lit.strip()
         if not lit:
             continue
@@ -276,27 +380,24 @@ def _parse_body_literals(body_str: str) -> tuple:
         # Letterale negativo: not pred(...) oppure not pred (ground)
         neg_match = re.match(r'not\s+(\w+)(?:\s*\(|$)', lit)
         if neg_match:
-            neg_body.append(neg_match.group(1))
+            parsed = _parse_body_predicate(lit, negated=True)
+            if parsed:
+                neg_body.append(parsed)
+                body_predicates.append(parsed)
             continue
 
         # Letterale positivo: pred(...)
-        pos_match = re.match(r'(\w+)\s*\(', lit)
-        if pos_match:
-            pred_name = pos_match.group(1)
-            if pred_name != 'not':
-                pos_body.append(pred_name)
+        parsed = _parse_body_predicate(lit, negated=False)
+        if parsed and parsed.pred_name != 'not':
+            pos_body.append(parsed)
+            body_predicates.append(parsed)
             continue
 
         # Potrebbe essere una variabile residua dall'aggregato, skip
         if re.match(r'^[A-Z_]\w*$', lit):
             continue
 
-        # Letterale ground senza argomenti: atomo proposizionale (es. "ok")
-        if re.match(r'^[a-z_]\w*$', lit):
-            pos_body.append(lit)
-            continue
-
-    return pos_body, neg_body, bindings
+    return pos_body, neg_body, bindings, body_predicates
 
 
 def parse_heuristic_line(line: str) -> Optional[HeuristicDirective]:
@@ -337,10 +438,11 @@ def parse_heuristic_line(line: str) -> Optional[HeuristicDirective]:
 
     target_pred = target_match.group(1)
     target_args = target_match.group(2).strip()
+    target_arg_list = [a.strip() for a in _split_top_level(target_args)]
+    target_text = f"{target_pred}({', '.join(target_arg_list)})"
 
-    # La prima variabile (uppercase) è la variabile di dominio
+    # self è la prima variabile (uppercase) del target; il matching usa tutta la tupla.
     target_var = None
-    target_arg_list = [a.strip() for a in target_args.split(',')]
     for arg in target_arg_list:
         if re.match(r'^[A-Z_]\w*$', arg):
             target_var = arg
@@ -351,23 +453,27 @@ def parse_heuristic_line(line: str) -> Optional[HeuristicDirective]:
     if len(var_args) > 1:
         print(
             f"  ⚠ WARNING: target '{target_pred}({target_args})' ha {len(var_args)} variabili "
-            f"({', '.join(var_args)}). Il propagatore C++ usa solo la prima ('{var_args[0]}') "
-            f"come domain variable.",
+            f"({', '.join(var_args)}). Il propagatore C++ ora fa matching sulla tupla completa; "
+            f"'self' resta la prima variabile ('{var_args[0]}').",
             file=sys.stderr
         )
 
     # Parsa il body
-    pos_body, neg_body, bindings = _parse_body_literals(body_str)
+    pos_body, neg_body, bindings, body_predicates = _parse_body_literals(body_str, target_arg_list)
 
     directive = HeuristicDirective(
         target_pred=target_pred,
+        target_text=target_text,
+        target_args=target_arg_list,
         target_var=target_var,
         pos_body=pos_body,
         neg_body=neg_body,
+        body_predicates=body_predicates,
         bindings=bindings,
         weight_expr=weight_str,
         priority_expr=priority_str,
         sign=sign_str,
+        body_str=body_str,
         original_line=line.strip()
     )
 
@@ -378,27 +484,59 @@ def parse_heuristic_line(line: str) -> Optional[HeuristicDirective]:
 # Generatore della sintassi __heuristic/N
 # =============================================================================
 
+def _matches_target_tuple(pred: BodyPredicate, directive: HeuristicDirective) -> bool:
+    """Il propagatore lazy MVP fa join sulla stessa tupla numerica del target."""
+    return pred.args == directive.target_args
+
+
+def _predicate_names(predicates: list) -> str:
+    return ', '.join(p.pred_name for p in predicates)
+
+
+def _format_filter(filter_tuple: tuple) -> str:
+    source_idx, target_idx, offset = filter_tuple
+    if offset == 0:
+        return f"__filter({source_idx}, {target_idx})"
+    return f"__filter({source_idx}, {target_idx}, {offset})"
+
+
+def _format_binding(b: AggregateBinding, var_lower: str) -> str:
+    filter_suffix = ''.join(f", {_format_filter(f)}" for f in b.filters)
+    if b.arg_index is None:
+        return f"__bind({var_lower}, __{b.agg_type}({b.pred_name}{filter_suffix}))"
+    return f"__bind({var_lower}, __{b.agg_type}({b.pred_name}, {b.arg_index}{filter_suffix}))"
+
+
 def generate_lazy_heuristic(directive: HeuristicDirective) -> list:
     """
     Genera la riga __heuristic/N dalla rappresentazione intermedia.
     Restituisce una lista di stringhe: [warning_lines..., output_line].
     """
     warnings = []
+    lazy_pos_body = [p for p in directive.pos_body if _matches_target_tuple(p, directive)]
+    lazy_neg_body = [p for p in directive.neg_body if _matches_target_tuple(p, directive)]
 
-    # Warning: body positivi multipli — il propagatore C++ usa solo il primo come trigger
-    if len(directive.pos_body) > 1:
+    ignored_pos = [p for p in directive.pos_body if p not in lazy_pos_body]
+    if ignored_pos:
         warnings.append(
-            f"% WARNING: body positivi multipli ({', '.join(directive.pos_body)}). "
-            f"Il propagatore C++ usa solo '{directive.pos_body[0]}' come trigger.\n"
+            f"% WARNING: body positivi non sulla tupla target ignorati nel lazy diretto: "
+            f"{_predicate_names(ignored_pos)}.\n"
+        )
+
+    # Warning: body positivi multipli — ora il propagatore li tratta come congiunzione
+    if len(lazy_pos_body) > 1:
+        warnings.append(
+            f"% INFO: body positivi multipli ({_predicate_names(lazy_pos_body)}) "
+            f"gestiti come congiunzione sulla stessa tupla.\n"
         )
         print(
-            f"  ⚠ WARNING: body positivi multipli ({', '.join(directive.pos_body)}). "
-            f"Solo '{directive.pos_body[0]}' sarà usato come trigger dal propagatore.",
+            f"  INFO: body positivi multipli ({_predicate_names(lazy_pos_body)}) "
+            f"gestiti come congiunzione dal propagatore.",
             file=sys.stderr
         )
 
     # Warning: euristica senza body positivo — non sarà mai attivata in modo lazy
-    if not directive.pos_body:
+    if not lazy_pos_body:
         warnings.append(
             f"% WARNING: euristica senza body positivo. "
             f"Non sarà mai attivata nel modo lazy (nessun trigger).\n"
@@ -412,22 +550,19 @@ def generate_lazy_heuristic(directive: HeuristicDirective) -> list:
     args = [directive.target_pred]
 
     # Body positivi
-    for pred in directive.pos_body:
-        args.append(pred)
+    for pred in lazy_pos_body:
+        args.append(pred.pred_name)
 
     # Body negativi
-    for pred in directive.neg_body:
-        args.append(f"__n_{pred}")
+    for pred in lazy_neg_body:
+        args.append(f"__n_{pred.pred_name}")
 
     # Mappatura variabili di binding
     binding_vars = {}
     for b in directive.bindings:
         var_lower = b.var_name.lower()
         binding_vars[b.var_name] = var_lower
-        if b.arg_index is None:
-            args.append(f"__bind({var_lower}, __{b.agg_type}({b.pred_name}))")
-        else:
-            args.append(f"__bind({var_lower}, __{b.agg_type}({b.pred_name}, {b.arg_index}))")
+        args.append(_format_binding(b, var_lower))
 
     # Peso
     weight_conv = _convert_arith_expr(
@@ -448,11 +583,90 @@ def generate_lazy_heuristic(directive: HeuristicDirective) -> list:
     return warnings, result_line
 
 
+def _aux_name(directive: HeuristicDirective, idx: int, suffix: str = "") -> str:
+    clean_suffix = f"_{suffix}" if suffix else ""
+    return f"__h_{directive.target_pred}_{idx}{clean_suffix}"
+
+
+def _target_args_text(directive: HeuristicDirective) -> str:
+    return ', '.join(directive.target_args)
+
+
+def _aux_rule_body_with_weights(directive: HeuristicDirective) -> str:
+    parts = []
+    if directive.body_str:
+        parts.append(directive.body_str)
+    parts.append(f"AuxWeight = {directive.weight_expr}")
+    parts.append(f"AuxPriority = {directive.priority_expr}")
+    return ", ".join(parts)
+
+
+def generate_aux_heuristic(directive: HeuristicDirective, idx: int) -> list:
+    """Genera la variante #heuristic con predicato ausiliario."""
+    aux = _aux_name(directive, idx)
+    target_args = _target_args_text(directive)
+    aux_args = ", ".join([a for a in directive.target_args] + ["AuxWeight", "AuxPriority"])
+    body = _aux_rule_body_with_weights(directive)
+
+    aux_rule = f"{aux}({aux_args}) :- {body}."
+    heuristic = (
+        f"#heuristic {directive.target_text} : "
+        f"{aux}({target_args}, AuxWeight, AuxPriority). "
+        f"[AuxWeight@AuxPriority, {directive.sign}]"
+    )
+    return [], f"{aux_rule}\n{heuristic}"
+
+
+def _lazy_aux_body(directive: HeuristicDirective) -> str:
+    """Body ausiliario per lazy-aux: solo letterali ordinari, niente aggregati."""
+    parts = [p.text for p in directive.body_predicates]
+    return ", ".join(parts) if parts else "1 = 1"
+
+
+def generate_lazy_aux_heuristic(directive: HeuristicDirective, idx: int) -> list:
+    """
+    Genera una variante dinamica con predicato ausiliario:
+        aux(TargetArgs) :- body_ordinario.
+        __heuristic(target, aux, __bind(...), ...).
+    """
+    aux = _aux_name(directive, idx, "lazy")
+    target_args = _target_args_text(directive)
+    aux_rule = f"{aux}({target_args}) :- {_lazy_aux_body(directive)}."
+
+    aux_directive = HeuristicDirective(
+        target_pred=directive.target_pred,
+        target_text=directive.target_text,
+        target_args=directive.target_args,
+        target_var=directive.target_var,
+        pos_body=[BodyPredicate(pred_name=aux, args=directive.target_args, text=f"{aux}({target_args})")],
+        neg_body=[],
+        body_predicates=[],
+        bindings=directive.bindings,
+        weight_expr=directive.weight_expr,
+        priority_expr=directive.priority_expr,
+        sign=directive.sign,
+        body_str=f"{aux}({target_args})",
+        original_line=directive.original_line,
+    )
+    warnings, lazy_line = generate_lazy_heuristic(aux_directive)
+    return warnings, f"{aux_rule}\n{lazy_line}"
+
+
 # =============================================================================
 # Processamento del file
 # =============================================================================
 
-def process_file(input_path: str, dry_run: bool = False) -> tuple:
+def _generate_directive_output(directive: HeuristicDirective, idx: int, mode: str) -> tuple:
+    if mode == "lazy":
+        return generate_lazy_heuristic(directive)
+    if mode == "aux":
+        return generate_aux_heuristic(directive, idx)
+    if mode == "lazy-aux":
+        return generate_lazy_aux_heuristic(directive, idx)
+    raise ValueError(f"mode non supportato: {mode}")
+
+
+def process_file(input_path: str, dry_run: bool = False, mode: str = "lazy") -> tuple:
     """
     Processa un file ASP, convertendo le direttive #heuristic.
 
@@ -480,14 +694,14 @@ def process_file(input_path: str, dry_run: bool = False) -> tuple:
                 # Direttiva su singola riga
                 directive = parse_heuristic_line(stripped)
                 if directive:
-                    warn_lines, lazy_line = generate_lazy_heuristic(directive)
+                    warn_lines, converted = _generate_directive_output(directive, conversions + 1, mode)
                     output_lines.append(f"% Originale: {directive.original_line}\n")
                     output_lines.extend(warn_lines)
-                    output_lines.append(f"{lazy_line}\n")
+                    output_lines.append(f"{converted}\n")
                     conversions += 1
                     if dry_run:
                         print(f"  Riga {i}: {directive.original_line}")
-                        print(f"        → {lazy_line}")
+                        print(f"        → {converted}")
                 else:
                     warnings.append(
                         f"Riga {i}: impossibile parsare '{stripped}', preservata come commento"
@@ -507,14 +721,14 @@ def process_file(input_path: str, dry_run: bool = False) -> tuple:
                 accumulating = False
                 directive = parse_heuristic_line(accumulated)
                 if directive:
-                    warn_lines, lazy_line = generate_lazy_heuristic(directive)
+                    warn_lines, converted = _generate_directive_output(directive, conversions + 1, mode)
                     output_lines.append(f"% Originale: {directive.original_line}\n")
                     output_lines.extend(warn_lines)
-                    output_lines.append(f"{lazy_line}\n")
+                    output_lines.append(f"{converted}\n")
                     conversions += 1
                     if dry_run:
                         print(f"  Righe {accumulated_start}-{i}: {directive.original_line}")
-                        print(f"        → {lazy_line}")
+                        print(f"        → {converted}")
                 else:
                     warnings.append(
                         f"Righe {accumulated_start}-{i}: impossibile parsare, preservata"
@@ -568,6 +782,12 @@ Sintassi lazy generata:
         help="Mostra le conversioni senza scrivere"
     )
     parser.add_argument(
+        '--mode',
+        choices=['lazy', 'aux', 'lazy-aux'],
+        default='lazy',
+        help="Tipo di riscrittura: lazy __heuristic, #heuristic con ausiliario, oppure lazy con ausiliario"
+    )
+    parser.add_argument(
         '--no-comments',
         action='store_true',
         help="Non aggiungere il commento con l'euristica originale"
@@ -583,9 +803,9 @@ Sintassi lazy generata:
         print("Errore: --in-place e -o sono mutualmente esclusivi.", file=sys.stderr)
         sys.exit(1)
 
-    print(f"Processando: {args.input}", file=sys.stderr)
+    print(f"Processando: {args.input} (mode={args.mode})", file=sys.stderr)
 
-    output_lines, conversions, warnings = process_file(args.input, dry_run=args.dry_run)
+    output_lines, conversions, warnings = process_file(args.input, dry_run=args.dry_run, mode=args.mode)
 
     # Rimuovi i commenti "Originale:" se richiesto
     if args.no_comments:

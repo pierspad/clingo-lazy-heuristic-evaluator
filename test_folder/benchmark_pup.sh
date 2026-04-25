@@ -1,23 +1,26 @@
 #!/usr/bin/env bash
 # benchmark_pup.sh
 # Benchmark per il problema PUP (Paired Unit Placement).
-# Testa 4 encoding con il binario clingo modificato:
+# Testa baseline, euristiche statiche e varianti PUP derivate:
 #
 #   pup          — encoding dichiarativo   (__PUP.lp)
 #   pup_heur     — encoding con euristiche statiche (__PUP_heur.lp)
-#   pup_double   — encoding lazy convertito         (_PUP_double_lg.lp)
-#   pup_doublev  — encoding lazy convertito variante (_PUP_double_variant_lg.lp)
+#   pup_double_std     — #heuristic originale PUP Double (__PUP_double.lp)
+#   pup_double_aux     — #heuristic con predicato ausiliario (__PUP_double_aux.lp)
+#   pup_double         — encoding lazy convertito (_PUP_double_lg.lp)
+#   pup_double_aux_lg  — lazy convertito con predicato ausiliario (_PUP_double_aux_lg.lp)
+#   pup_doublev_*      — equivalenti per la famiglia DoubleVariant
 #
 # Istanze usate (stessa baseline per entrambe le famiglie):
-#   Double/         → pup, pup_heur, pup_double
-#   DoubleVariant/  → pup, pup_heur, pup_doublev
+#   Double/         → pup, pup_heur, pup_double_*
+#   DoubleVariant/  → pup, pup_heur, pup_doublev_*
 #
 # Ogni combinazione (instance, variant) viene eseguita REPEATS volte con seed diversi.
 # Le varianti euristiche usano --heuristic=Domain; baseline pup usa euristica default.
 # Ogni run è protetta da timeout esterno a 600s e limite memoria 32GiB (se prlimit è disponibile).
 # Salva i risultati in:
-#   ./test-results/pup_double_results.csv    (pup, pup_heur, pup_double su Double/)
-#   ./test-results/pup_doublev_results.csv   (pup, pup_heur, pup_doublev su DoubleVariant/)
+#   ./test-results/pup_double_results.csv
+#   ./test-results/pup_doublev_results.csv
 
 set -euo pipefail
 
@@ -48,8 +51,12 @@ FILE_PUP="__PUP.lp"
 FILE_PUP_HEUR="__PUP_heur.lp"
 FILE_PUP_DOUBLE_SRC="__PUP_double.lp"
 FILE_PUP_DOUBLEV_SRC="__PUP_double_variant.lp"
+FILE_PUP_DOUBLE_AUX="__PUP_double_aux.lp"
+FILE_PUP_DOUBLEV_AUX="__PUP_double_variant_aux.lp"
 FILE_PUP_DOUBLE="_PUP_double_lg.lp"
 FILE_PUP_DOUBLEV="_PUP_double_variant_lg.lp"
+FILE_PUP_DOUBLE_AUX_LG="_PUP_double_aux_lg.lp"
+FILE_PUP_DOUBLEV_AUX_LG="_PUP_double_variant_aux_lg.lp"
 
 # Instance directories
 INSTANCES_DOUBLE="PUP_instances/Double"
@@ -75,6 +82,7 @@ fi
 cd "${SCRIPT_DIR}"
 
 mkdir -p "${TIMINGS_DIR}"
+declare -A GROUND_COUNT_CACHE
 
 # Cerchiamo GNU time per la memoria
 TIME_BIN="$(command -v time || true)"
@@ -93,9 +101,13 @@ fi
 
 generate_lazy_encodings() {
     echo ""
-    echo "Genero encoding lazy con ${CONVERTER}..."
-    python3 "${CONVERTER}" "${FILE_PUP_DOUBLE_SRC}" -o "${FILE_PUP_DOUBLE}"
-    python3 "${CONVERTER}" "${FILE_PUP_DOUBLEV_SRC}" -o "${FILE_PUP_DOUBLEV}"
+    echo "Genero encoding derivati con ${CONVERTER}..."
+    python3 "${CONVERTER}" "${FILE_PUP_DOUBLE_SRC}" --mode lazy -o "${FILE_PUP_DOUBLE}"
+    python3 "${CONVERTER}" "${FILE_PUP_DOUBLEV_SRC}" --mode lazy -o "${FILE_PUP_DOUBLEV}"
+    python3 "${CONVERTER}" "${FILE_PUP_DOUBLE_SRC}" --mode aux -o "${FILE_PUP_DOUBLE_AUX}"
+    python3 "${CONVERTER}" "${FILE_PUP_DOUBLEV_SRC}" --mode aux -o "${FILE_PUP_DOUBLEV_AUX}"
+    python3 "${CONVERTER}" "${FILE_PUP_DOUBLE_SRC}" --mode lazy-aux -o "${FILE_PUP_DOUBLE_AUX_LG}"
+    python3 "${CONVERTER}" "${FILE_PUP_DOUBLEV_SRC}" --mode lazy-aux -o "${FILE_PUP_DOUBLEV_AUX_LG}"
 }
 
 # ============================================================================
@@ -110,6 +122,29 @@ extract_instance_size() {
 # ============================================================================
 # FUNZIONE: esegui un singolo test e parsa le statistiche
 # ============================================================================
+
+collect_ground_counts() {
+    local cmd=("$@")
+    local cache_key="${cmd[*]}"
+
+    if [[ -n "${GROUND_COUNT_CACHE[${cache_key}]:-}" ]]; then
+        printf "%s" "${GROUND_COUNT_CACHE[${cache_key}]}"
+        return
+    fi
+
+    local counts
+    counts="$(timeout "${TIMEOUT_SECONDS}" "${cmd[@]}" --text 2>/dev/null | awk '
+        BEGIN { heur=0; lazy=0; facts=0; }
+        /^#heuristic/ { heur++; next; }
+        /^__heuristic\(/ { lazy++; facts++; next; }
+        /^[[:space:]]*%/ { next; }
+        /\.$/ && $0 !~ /:-/ { facts++; }
+        END { printf "%d,%d,%d", heur, lazy, facts; }
+    ' || printf "NA,NA,NA")"
+
+    GROUND_COUNT_CACHE["${cache_key}"]="${counts}"
+    printf "%s" "${counts}"
+}
 
 run_stats() {
     local instance_size="$1"
@@ -164,8 +199,12 @@ run_stats() {
         memory_mb="$(echo "${rss_kb}" | awk '{printf "%.4f", $1/1024}')"
     fi
 
-    echo "    solving=${solving_s}s total=${total_s}s choices=${choices} conflicts=${conflicts} restarts=${restarts} rules=${rules} vars=${variables} mem=${memory_mb}MB"
-    echo "${instance_size},${variant},${seed},${solving_s},${total_s},${choices},${conflicts},${restarts},${rules},${variables},${memory_mb}" >> "${csv_file}"
+    local ground_counts ground_heuristics ground_lazy_heuristic_facts ground_facts
+    ground_counts="$(collect_ground_counts "${cmd[@]}")"
+    IFS=',' read -r ground_heuristics ground_lazy_heuristic_facts ground_facts <<< "${ground_counts}"
+
+    echo "    solving=${solving_s}s total=${total_s}s choices=${choices} conflicts=${conflicts} restarts=${restarts} rules=${rules} vars=${variables} mem=${memory_mb}MB heur=${ground_heuristics} lazy_facts=${ground_lazy_heuristic_facts} facts=${ground_facts}"
+    echo "${instance_size},${variant},${seed},${solving_s},${total_s},${choices},${conflicts},${restarts},${rules},${variables},${memory_mb},${ground_heuristics},${ground_lazy_heuristic_facts},${ground_facts}" >> "${csv_file}"
 }
 
 # ============================================================================
@@ -229,8 +268,8 @@ run_encoding_on_instances() {
 n_double=$(find "${INSTANCES_DOUBLE}" -name "*.lp" | wc -l)
 n_doublev=$(find "${INSTANCES_DOUBLEV}" -name "*.lp" | wc -l)
 
-# 3 encoding su Double, 3 encoding su DoubleVariant
-total_runs=$(( (n_double * 3 + n_doublev * 3) * REPEATS ))
+# 6 encoding su Double, 6 encoding su DoubleVariant
+total_runs=$(( (n_double * 6 + n_doublev * 6) * REPEATS ))
 current_run=0
 
 generate_lazy_encodings
@@ -240,7 +279,7 @@ generate_lazy_encodings
 # ============================================================================
 
 CSV_DOUBLE="${TIMINGS_DIR}/pup_double_results.csv"
-echo "n,variant,seed,solving_s,total_s,choices,conflicts,restarts,rules,variables,memory_mb" > "${CSV_DOUBLE}"
+echo "n,variant,seed,solving_s,total_s,choices,conflicts,restarts,rules,variables,memory_mb,ground_heuristics,ground_lazy_heuristic_facts,ground_facts" > "${CSV_DOUBLE}"
 
 echo ""
 echo "================================================================"
@@ -257,15 +296,27 @@ echo "--- Encoding: ${FILE_PUP_HEUR} ---"
 run_encoding_on_instances "pup_heur"   "${FILE_PUP_HEUR}"   "${INSTANCES_DOUBLE}" "${CSV_DOUBLE}" "${total_runs}" current_run "yes"
 
 echo ""
+echo "--- Encoding: ${FILE_PUP_DOUBLE_SRC} ---"
+run_encoding_on_instances "pup_double_std" "${FILE_PUP_DOUBLE_SRC}" "${INSTANCES_DOUBLE}" "${CSV_DOUBLE}" "${total_runs}" current_run "yes"
+
+echo ""
+echo "--- Encoding: ${FILE_PUP_DOUBLE_AUX} ---"
+run_encoding_on_instances "pup_double_aux" "${FILE_PUP_DOUBLE_AUX}" "${INSTANCES_DOUBLE}" "${CSV_DOUBLE}" "${total_runs}" current_run "yes"
+
+echo ""
 echo "--- Encoding: ${FILE_PUP_DOUBLE} ---"
 run_encoding_on_instances "pup_double" "${FILE_PUP_DOUBLE}" "${INSTANCES_DOUBLE}" "${CSV_DOUBLE}" "${total_runs}" current_run "yes"
+
+echo ""
+echo "--- Encoding: ${FILE_PUP_DOUBLE_AUX_LG} ---"
+run_encoding_on_instances "pup_double_aux_lg" "${FILE_PUP_DOUBLE_AUX_LG}" "${INSTANCES_DOUBLE}" "${CSV_DOUBLE}" "${total_runs}" current_run "yes"
 
 # ============================================================================
 # CSV: istanze DoubleVariant (pup, pup_heur, pup_doublev)
 # ============================================================================
 
 CSV_DOUBLEV="${TIMINGS_DIR}/pup_doublev_results.csv"
-echo "n,variant,seed,solving_s,total_s,choices,conflicts,restarts,rules,variables,memory_mb" > "${CSV_DOUBLEV}"
+echo "n,variant,seed,solving_s,total_s,choices,conflicts,restarts,rules,variables,memory_mb,ground_heuristics,ground_lazy_heuristic_facts,ground_facts" > "${CSV_DOUBLEV}"
 
 echo ""
 echo "================================================================"
@@ -282,8 +333,20 @@ echo "--- Encoding: ${FILE_PUP_HEUR} ---"
 run_encoding_on_instances "pup_heur"    "${FILE_PUP_HEUR}"    "${INSTANCES_DOUBLEV}" "${CSV_DOUBLEV}" "${total_runs}" current_run "yes"
 
 echo ""
+echo "--- Encoding: ${FILE_PUP_DOUBLEV_SRC} ---"
+run_encoding_on_instances "pup_doublev_std" "${FILE_PUP_DOUBLEV_SRC}" "${INSTANCES_DOUBLEV}" "${CSV_DOUBLEV}" "${total_runs}" current_run "yes"
+
+echo ""
+echo "--- Encoding: ${FILE_PUP_DOUBLEV_AUX} ---"
+run_encoding_on_instances "pup_doublev_aux" "${FILE_PUP_DOUBLEV_AUX}" "${INSTANCES_DOUBLEV}" "${CSV_DOUBLEV}" "${total_runs}" current_run "yes"
+
+echo ""
 echo "--- Encoding: ${FILE_PUP_DOUBLEV} ---"
 run_encoding_on_instances "pup_doublev" "${FILE_PUP_DOUBLEV}" "${INSTANCES_DOUBLEV}" "${CSV_DOUBLEV}" "${total_runs}" current_run "yes"
+
+echo ""
+echo "--- Encoding: ${FILE_PUP_DOUBLEV_AUX_LG} ---"
+run_encoding_on_instances "pup_doublev_aux_lg" "${FILE_PUP_DOUBLEV_AUX_LG}" "${INSTANCES_DOUBLEV}" "${CSV_DOUBLEV}" "${total_runs}" current_run "yes"
 
 # ============================================================================
 # FINE

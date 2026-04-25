@@ -7,7 +7,10 @@
 #include <memory>
 #include <map>
 #include <climits>
+#include <utility>
 
+// Stato incrementale di un aggregato dinamico.
+// Il propagatore chiama add/remove seguendo trail e backtracking di clingo.
 struct AggregateState {
     virtual ~AggregateState() = default;
     virtual void add(int value) = 0;
@@ -40,7 +43,7 @@ struct MinState final : AggregateState {
         if (it != active.end() && --(it->second) == 0) active.erase(it);
     }
     int result() const override {
-        return active.empty() ? INT_MAX : active.begin()->first;
+        return active.empty() ? 0 : active.begin()->first;
     }
     void reset() override { active.clear(); }
 };
@@ -53,7 +56,7 @@ struct MaxState final : AggregateState {
         if (it != active.end() && --(it->second) == 0) active.erase(it);
     }
     int result() const override {
-        return active.empty() ? INT_MIN : active.rbegin()->first;
+        return active.empty() ? 0 : active.rbegin()->first;
     }
     void reset() override { active.clear(); }
 };
@@ -66,13 +69,34 @@ inline std::unique_ptr<AggregateState> make_aggregate(std::string const &op) {
     return nullptr;
 }
 
+// Filtro opzionale per aggregati contestuali.
+// Esempio: __filter(1, 0, -1) significa:
+//   argomento 1 dell'atomo sorgente == argomento 0 del target - 1.
+// Se la lista filtri e' vuota, l'aggregato resta globale come nella sintassi
+// iniziale __sum(c, 0).
+struct AggregateFilter {
+    int source_arg_index = -1;
+    int target_arg_index = -1;
+    int target_offset = 0;
+
+    bool operator==(AggregateFilter const &o) const {
+        return source_arg_index == o.source_arg_index &&
+               target_arg_index == o.target_arg_index &&
+               target_offset == o.target_offset;
+    }
+};
+
 struct AggregateKey {
     std::string op_name;
     std::string pred_name;
     int arg_index = -1;
+    std::vector<AggregateFilter> filters;
 
     bool operator==(AggregateKey const &o) const {
-        return op_name == o.op_name && pred_name == o.pred_name && arg_index == o.arg_index;
+        return op_name == o.op_name &&
+               pred_name == o.pred_name &&
+               arg_index == o.arg_index &&
+               filters == o.filters;
     }
 };
 
@@ -82,11 +106,108 @@ struct AggregateKeyHash {
         h = h * 31 + std::hash<std::string>{}(k.op_name);
         h = h * 31 + std::hash<std::string>{}(k.pred_name);
         h = h * 31 + std::hash<int>{}(k.arg_index);
+        for (auto const &filter : k.filters) {
+            h = h * 31 + std::hash<int>{}(filter.source_arg_index);
+            h = h * 31 + std::hash<int>{}(filter.target_arg_index);
+            h = h * 31 + std::hash<int>{}(filter.target_offset);
+        }
+        return h;
+    }
+};
+
+// Chiave completa dello stato aggregato a runtime.
+// AggregateKey descrive "che cosa" aggregare; filter_values dice per quale
+// tupla concreta del target (es. U, U-1, S, ...).
+struct RuntimeAggregateKey {
+    AggregateKey key;
+    std::vector<int> filter_values;
+
+    bool operator==(RuntimeAggregateKey const &o) const {
+        return key == o.key && filter_values == o.filter_values;
+    }
+};
+
+struct RuntimeAggregateKeyHash {
+    std::size_t operator()(RuntimeAggregateKey const &k) const {
+        std::size_t h = AggregateKeyHash{}(k.key);
+        for (int value : k.filter_values) {
+            h = h * 31 + std::hash<int>{}(value);
+        }
+        return h;
+    }
+};
+
+// Tupla numerica usata per far combaciare target, body positivi e body negativi.
+// Per BSP e' [X]; per PUP diventa [S,U] o [Z,U].
+struct AtomKey {
+    std::vector<int> values;
+
+    bool operator==(AtomKey const &o) const {
+        return values == o.values;
+    }
+};
+
+struct AtomKeyHash {
+    std::size_t operator()(AtomKey const &k) const {
+        std::size_t h = 17;
+        for (int value : k.values) {
+            h = h * 31 + std::hash<int>{}(value);
+        }
         return h;
     }
 };
 
 enum class HeuristicSign { True, False, FollowFallback };
+
+// AST minimale per __weight(...) e __priority(...).
+// Dopo init non conserviamo piu' Clingo::Symbol: decide valuta solo questa
+// rappresentazione tipizzata e gia' validata.
+enum class ArithmeticExpressionKind {
+    Number,
+    Self,
+    BoundVariable,
+    Add,
+    Sub,
+    Mul
+};
+
+struct ArithmeticExpression {
+    ArithmeticExpressionKind kind = ArithmeticExpressionKind::Number;
+    int value = 0;
+    std::string variable_name;
+    std::unique_ptr<ArithmeticExpression> left;
+    std::unique_ptr<ArithmeticExpression> right;
+
+    static ArithmeticExpression number(int value) {
+        ArithmeticExpression expr;
+        expr.kind = ArithmeticExpressionKind::Number;
+        expr.value = value;
+        return expr;
+    }
+
+    static ArithmeticExpression self() {
+        ArithmeticExpression expr;
+        expr.kind = ArithmeticExpressionKind::Self;
+        return expr;
+    }
+
+    static ArithmeticExpression bound_variable(std::string name) {
+        ArithmeticExpression expr;
+        expr.kind = ArithmeticExpressionKind::BoundVariable;
+        expr.variable_name = std::move(name);
+        return expr;
+    }
+
+    static ArithmeticExpression binary(ArithmeticExpressionKind kind,
+                                       ArithmeticExpression lhs,
+                                       ArithmeticExpression rhs) {
+        ArithmeticExpression expr;
+        expr.kind = kind;
+        expr.left = std::make_unique<ArithmeticExpression>(std::move(lhs));
+        expr.right = std::make_unique<ArithmeticExpression>(std::move(rhs));
+        return expr;
+    }
+};
 
 struct HeuristicRuleTemplate {
     std::string target_pred;
@@ -94,13 +215,14 @@ struct HeuristicRuleTemplate {
     std::vector<std::string> neg_body_preds;
     HeuristicSign sign = HeuristicSign::True;
     std::unordered_map<std::string, AggregateKey> var_bindings;
-    Clingo::Symbol weight_term;
-    Clingo::Symbol priority_term;
+    ArithmeticExpression weight_expr = ArithmeticExpression::number(0);
+    ArithmeticExpression priority_expr = ArithmeticExpression::number(0);
 };
 
 struct LazyTargetInstance {
     Clingo::literal_t target_lit;
-    int domain_value;
+    int self_value;
+    std::vector<int> tuple_values;
     size_t rule_idx;
     size_t trigger_index;
 };
@@ -109,7 +231,7 @@ class HeuristicPropagator : public Clingo::Heuristic {
 
 private:
     struct WatchedAtomContribution {
-        AggregateKey key;
+        RuntimeAggregateKey runtime_key;
         int value;
     };
 
@@ -119,8 +241,10 @@ private:
 
     struct BodyTriggerInfo {
         size_t rule_idx;
-        int domain_value;
         Clingo::literal_t target_lit;
+        int self_value;
+        std::vector<int> tuple_values;
+        std::vector<Clingo::literal_t> pos_body_lits;
         std::vector<Clingo::literal_t> neg_body_lits;
     };
 
@@ -129,7 +253,7 @@ private:
     std::unordered_map<Clingo::literal_t, std::vector<BodyTriggerInfo>> body_triggers_;
     std::unordered_map<Clingo::literal_t, std::vector<LazyTargetInstance>> lazy_targets_;
     std::unordered_set<Clingo::literal_t> active_body_lits_;
-    std::unordered_map<AggregateKey, std::unique_ptr<AggregateState>, AggregateKeyHash> aggregate_states_;
+    std::unordered_map<RuntimeAggregateKey, std::unique_ptr<AggregateState>, RuntimeAggregateKeyHash> aggregate_states_;
 
     void init_lazy_mode(Clingo::PropagateInit &init);
 
