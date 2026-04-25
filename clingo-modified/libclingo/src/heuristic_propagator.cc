@@ -18,10 +18,6 @@ static std::string strip_neg_prefix(std::string const &name) {
     return name.substr(4);
 }
 
-static bool is_aggregate_op(std::string const &name) {
-    return name == "__sum" || name == "__count" || name == "__min" || name == "__max";
-}
-
 static bool extract_numeric_argument(Clingo::Symbol const &symbol, int arg_index, int &value) {
     if (symbol.type() != Clingo::SymbolType::Function) return false;
     auto const args = symbol.arguments();
@@ -108,6 +104,23 @@ void HeuristicPropagator::init(Clingo::PropagateInit &init) {
     }
 }
 
+enum class AggregateOperator {
+    Sum,
+    Count,
+    Min,
+    Max,
+    Unknown
+};
+
+AggregateOperator parse_aggregate_op(const std::string& op_name) {
+    if (op_name == "__sum") return AggregateOperator::Sum;
+    if (op_name == "__count") return AggregateOperator::Count;
+    if (op_name == "__min") return AggregateOperator::Min;
+    if (op_name == "__max") return AggregateOperator::Max;
+    return AggregateOperator::Unknown;
+}
+
+
 void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
     auto atoms = init.symbolic_atoms();
 
@@ -141,12 +154,10 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
         for (size_t i = 1; i < args.size(); ++i) {
             auto const &arg = args[i];
 
-            // se l'argomento non è una funzione, tipo a(x) allora salta al prossimo argomento del letterale
+            // se l'argomento non è una funzione allora salta al prossimo argomento del letterale
             if (arg.type() != Clingo::SymbolType::Function){
-                //TODO qua vorrei mettere un assertion o qualcosa del genere, vorrei che terminasse l'esecuzione dicendo all'utente o stampando nel terminale che l'euristica è malformata come sintassi e perchè
-                continue;
+                throw std::runtime_error("Sintassi euristica malformata: argomento non valido in __heuristic");
             }
-
             
             std::string const arg_name = arg.name();
             auto const arg_args = arg.arguments();
@@ -164,38 +175,42 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
 
                 // mi prendo i valori
                 std::string const var_name = arg_args[0].name();
-                std::string const agg_op = arg_args[1].name();
+                std::string const agg_op_str = arg_args[1].name();
                 auto const agg_inner = arg_args[1].arguments();
 
-                // controllo che l'aggregato esista... cosa che penso si sarebbe potuta evitare se si fosse fatto prima un controllo con un enumeratore e controlliamo che contenga il predicato dell'enumerazione
-                if (!is_aggregate_op(agg_op) || agg_inner.empty() ||
-                    agg_inner[0].type() != Clingo::SymbolType::Function)
-                    continue;
+                // Conversione da stringa a Enum per l'operatore
+                AggregateOperator agg_op = parse_aggregate_op(agg_op_str);
+
+                if (agg_op == AggregateOperator::Unknown || agg_inner.empty() || agg_inner[0].type() != Clingo::SymbolType::Function) {
+                     throw std::runtime_error("Sintassi euristica malformata: operatore aggregato sconosciuto o predicato interno mancante.");
+                }
 
                 std::string const pred = agg_inner[0].name();
                 int arg_idx = -1;
-                // Optional positional index: __max(p, 1) aggregates over the
-                // second argument of ground atoms p(...).
+                
+                // cattura l'indice dell'argomento su cui aggregare (es: il '1' in sum(costo, 1))
                 if (agg_inner.size() >= 2 && agg_inner[1].type() == Clingo::SymbolType::Number)
                     arg_idx = agg_inner[1].number();
 
                 
-                AggregateKey key{agg_op, pred, arg_idx};
+                AggregateKey key{agg_op_str, pred, arg_idx};
                 tmpl.var_bindings[var_name] = key;
                 all_agg_preds.insert(pred);
 
                 if (aggregate_states_.find(key) == aggregate_states_.end()) {
-                    if (auto state = make_aggregate(agg_op))
+                    if (auto state = make_aggregate(agg_op_str))
                         aggregate_states_.emplace(key, std::move(state));
                 }
                 continue;
             }
 
+            // se l'argomento si chiama weight assegnamo il weight al tmpl
             if (arg_name == "__weight" && arg_args.size() == 1) {
                 tmpl.weight_term = arg_args[0];
                 continue;
             }
 
+            // se l'argomento si chiama priority assegnamo la priority al tmpl
             if (arg_name == "__priority" && arg_args.size() == 1) {
                 tmpl.priority_term = arg_args[0];
                 continue;
