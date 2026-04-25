@@ -120,12 +120,12 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
     // Phase 1: Parse __heuristic/N facts into rule templates
     for (auto it = atoms.begin(); it != atoms.end(); ++it) {
         auto const symbol = it->symbol();
-        // se è un fatto o è una funziona ma non si chiama __heuristic continua
+        // se è un fatto non è una funziona o non si chiama __heuristic salta al prossimo argomento del letterale
         if (symbol.type() != Clingo::SymbolType::Function || symbol.name() != "__heuristic")
             continue;
 
-        // è __heruistic quindi prendiamo gli argomenti e controlliamo se l'arità è minore di 2
-        // se è >= 2 allora controlliamo che il primo argomento non sia una funzione a sua volta ma solo il nome del letterale
+        // è __heuristic quindi prendiamo gli argomenti e controlliamo se l'arità è minore di 2
+        // se è >= 2 allora controlliamo che il primo argomento sia una costante (non una funzione o comunque zero argomenti), altrimenti salta al prossimo argomento del letterale
         auto const args = symbol.arguments();
         if (args.size() < 2) continue;
         if (args[0].type() != Clingo::SymbolType::Function || !args[0].arguments().empty())
@@ -138,39 +138,48 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
         tmpl.weight_term = Clingo::Number(0);
         tmpl.priority_term = Clingo::Number(0);
 
-        // scorro i vari argomenti del 
+        // scorro i vari argomenti del letterale __heuristic
         for (size_t i = 1; i < args.size(); ++i) {
             auto const &arg = args[i];
 
-            // 
-            if (arg.type() == Clingo::SymbolType::Number) {
-                tmpl.weight_term = arg;
+            // se l'argomento non è una funzione, tipo a(x) allora salta al prossimo argomento del letterale
+            if (arg.type() != Clingo::SymbolType::Function){
+                //TODO qua vorrei mettere un assertion o qualcosa del genere, vorrei che terminasse l'esecuzione dicendo all'utente o stampando nel terminale che l'euristica è malformata come sintassi e perchè
                 continue;
             }
-            if (arg.type() != Clingo::SymbolType::Function) continue;
 
+            
             std::string const arg_name = arg.name();
             auto const arg_args = arg.arguments();
 
+            // se l'argomento è __bind ci sta dicendo di associare una variabile al risultato di un aggregato
             if (arg_name == "__bind" && arg_args.size() == 2) {
-                if (arg_args[0].type() != Clingo::SymbolType::Function ||
-                    !arg_args[0].arguments().empty() ||
-                    arg_args[1].type() != Clingo::SymbolType::Function)
+
+                // TODO
+                // non si può riscrivere meglio quest'if kilometrico?
+                // il primo argomento non deve essere vuoto e unafunzione (una variabile)
+                // il secondo un operatore di aggregazione
+                // mi sembra scritto a cazzo, sta solo controllando che il secondo non sia una funzione ma nulla ci garantisce che sia un aggregato, va fatto un po' più tight
+                if (arg_args[0].type() != Clingo::SymbolType::Function || !arg_args[0].arguments().empty() || arg_args[1].type() != Clingo::SymbolType::Function)
                     continue;
 
+                // mi prendo i valori
                 std::string const var_name = arg_args[0].name();
                 std::string const agg_op = arg_args[1].name();
                 auto const agg_inner = arg_args[1].arguments();
 
+                // controllo che l'aggregato esista... cosa che penso si sarebbe potuta evitare se si fosse fatto prima un controllo con un enumeratore e controlliamo che contenga il predicato dell'enumerazione
                 if (!is_aggregate_op(agg_op) || agg_inner.empty() ||
                     agg_inner[0].type() != Clingo::SymbolType::Function)
                     continue;
 
                 std::string const pred = agg_inner[0].name();
                 int arg_idx = -1;
+                // non mi è chiaro cosa faccia questa cosa
                 if (agg_inner.size() >= 2 && agg_inner[1].type() == Clingo::SymbolType::Number)
                     arg_idx = agg_inner[1].number();
 
+                
                 AggregateKey key{agg_op, pred, arg_idx};
                 tmpl.var_bindings[var_name] = key;
                 all_agg_preds.insert(pred);
