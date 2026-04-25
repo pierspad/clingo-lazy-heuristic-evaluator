@@ -1,7 +1,24 @@
 #include "clingo/heuristic_propagator.hh"
 #include <algorithm>
 #include <iostream>
+#include <stdexcept>
 #include <unordered_set>
+
+static bool is_clingo_symbol_function(Clingo::Symbol const &symbol) {
+    return symbol.type() == Clingo::SymbolType::Function;
+}
+
+static bool is_clingo_symbol_number(Clingo::Symbol const &symbol) {
+    return symbol.type() == Clingo::SymbolType::Number;
+}
+
+static bool is_nullary_function(Clingo::Symbol const &symbol) {
+    return is_clingo_symbol_function(symbol) && symbol.arguments().empty();
+}
+
+static bool is_named_function(Clingo::Symbol const &symbol, std::string const &name) {
+    return is_clingo_symbol_function(symbol) && symbol.name() == name;
+}
 
 static bool try_parse_sign(std::string const &name, HeuristicSign &out) {
     if (name == "true")  { out = HeuristicSign::True; return true; }
@@ -19,13 +36,13 @@ static std::string strip_neg_prefix(std::string const &name) {
 }
 
 static bool extract_numeric_argument(Clingo::Symbol const &symbol, int arg_index, int &value) {
-    if (symbol.type() != Clingo::SymbolType::Function) return false;
+    if (!is_clingo_symbol_function(symbol)) return false;
     auto const args = symbol.arguments();
     if (args.empty()) return false;
 
     if (arg_index >= 0) {
         if (static_cast<size_t>(arg_index) >= args.size()) return false;
-        if (args[arg_index].type() != Clingo::SymbolType::Number) return false;
+        if (!is_clingo_symbol_number(args[arg_index])) return false;
         value = args[arg_index].number();
         return true;
     }
@@ -34,9 +51,60 @@ static bool extract_numeric_argument(Clingo::Symbol const &symbol, int arg_index
     // numeric argument when no positional index is available.
     bool found = false;
     for (auto const &arg : args) {
-        if (arg.type() == Clingo::SymbolType::Number) { value = arg.number(); found = true; }
+        if (is_clingo_symbol_number(arg)) { value = arg.number(); found = true; }
     }
     return found;
+}
+
+enum class ArithmeticOperator {
+    Add,
+    Sub,
+    Mul,
+    Unknown
+};
+
+static ArithmeticOperator parse_arithmetic_operator(std::string const &name) {
+    if (name == "__add") return ArithmeticOperator::Add;
+    if (name == "__sub") return ArithmeticOperator::Sub;
+    if (name == "__mul") return ArithmeticOperator::Mul;
+    return ArithmeticOperator::Unknown;
+}
+
+static bool is_bound_variable(Clingo::Symbol const &symbol,
+                              std::unordered_map<std::string, AggregateKey> const &bindings) {
+    return is_nullary_function(symbol) && bindings.find(symbol.name()) != bindings.end();
+}
+
+static void validate_arithmetic_term(Clingo::Symbol const &term,
+                                     std::unordered_map<std::string, AggregateKey> const &bindings,
+                                     std::string const &field_name) {
+    if (is_clingo_symbol_number(term)) return;
+
+    if (!is_clingo_symbol_function(term)) {
+        throw std::runtime_error("Sintassi euristica malformata: " + field_name +
+                                 " accetta solo numeri, self, variabili __bind e __add/__sub/__mul.");
+    }
+
+    std::string const name = term.name();
+    auto const args = term.arguments();
+
+    if (args.empty()) {
+        if (name == "self" || is_bound_variable(term, bindings)) return;
+        throw std::runtime_error("Sintassi euristica malformata: variabile '" + name +
+                                 "' usata in " + field_name + " ma non definita con __bind.");
+    }
+
+    if (parse_arithmetic_operator(name) == ArithmeticOperator::Unknown) {
+        throw std::runtime_error("Sintassi euristica malformata: operatore '" + name +
+                                 "' non valido in " + field_name + ".");
+    }
+    if (args.size() != 2) {
+        throw std::runtime_error("Sintassi euristica malformata: operatore '" + name +
+                                 "' in " + field_name + " richiede esattamente due argomenti.");
+    }
+
+    validate_arithmetic_term(args[0], bindings, field_name);
+    validate_arithmetic_term(args[1], bindings, field_name);
 }
 
 static Clingo::literal_t apply_sign(HeuristicSign sign, Clingo::literal_t target_lit, Clingo::literal_t fallback) {
@@ -50,10 +118,10 @@ static Clingo::literal_t apply_sign(HeuristicSign sign, Clingo::literal_t target
 
 static int evaluate_term(Clingo::Symbol const &term, int domain_value,
                          std::unordered_map<std::string, int> const &var_env) {
-    if (term.type() == Clingo::SymbolType::Number) {
+    if (is_clingo_symbol_number(term)) {
         return term.number();
     }
-    if (term.type() != Clingo::SymbolType::Function) {
+    if (!is_clingo_symbol_function(term)) {
         return 0;
     }
 
@@ -65,17 +133,13 @@ static int evaluate_term(Clingo::Symbol const &term, int domain_value,
     }
 
     if (args.size() == 2) {
-        if (name == "__add") {
-            return evaluate_term(args[0], domain_value, var_env) +
-                   evaluate_term(args[1], domain_value, var_env);
-        }
-        if (name == "__sub") {
-            return evaluate_term(args[0], domain_value, var_env) -
-                   evaluate_term(args[1], domain_value, var_env);
-        }
-        if (name == "__mul") {
-            return evaluate_term(args[0], domain_value, var_env) *
-                   evaluate_term(args[1], domain_value, var_env);
+        int const lhs = evaluate_term(args[0], domain_value, var_env);
+        int const rhs = evaluate_term(args[1], domain_value, var_env);
+        switch (parse_arithmetic_operator(name)) {
+            case ArithmeticOperator::Add: return lhs + rhs;
+            case ArithmeticOperator::Sub: return lhs - rhs;
+            case ArithmeticOperator::Mul: return lhs * rhs;
+            case ArithmeticOperator::Unknown: break;
         }
     }
 
@@ -97,7 +161,7 @@ void HeuristicPropagator::init(Clingo::PropagateInit &init) {
 
     auto atoms = init.symbolic_atoms();
     for (auto it = atoms.begin(); it != atoms.end(); ++it) {
-        if (it->symbol().name() == "__heuristic") {
+        if (is_named_function(it->symbol(), "__heuristic")) {
             init_lazy_mode(init);
             return;
         }
@@ -112,7 +176,7 @@ enum class AggregateOperator {
     Unknown
 };
 
-AggregateOperator parse_aggregate_op(const std::string& op_name) {
+static AggregateOperator parse_aggregate_op(std::string const &op_name) {
     if (op_name == "__sum") return AggregateOperator::Sum;
     if (op_name == "__count") return AggregateOperator::Count;
     if (op_name == "__min") return AggregateOperator::Min;
@@ -129,70 +193,82 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
     std::unordered_set<std::string> all_neg_preds;
     std::unordered_set<std::string> all_agg_preds;
 
-    // Phase 1: Parse __heuristic/N facts into rule templates
+    // Phase 1: Parse __heuristic/N facts into rule templates.
+    // In questa fase non registriamo ancora watch: costruiamo una descrizione
+    // compatta delle euristiche e validiamo subito la sintassi strutturale.
     for (auto it = atoms.begin(); it != atoms.end(); ++it) {
         auto const symbol = it->symbol();
-        // se è un fatto non è una funziona o non si chiama __heuristic salta al prossimo argomento del letterale
-        if (symbol.type() != Clingo::SymbolType::Function || symbol.name() != "__heuristic")
-            continue;
 
-        // è __heuristic quindi prendiamo gli argomenti e controlliamo se l'arità è minore di 2
-        // se è >= 2 allora controlliamo che il primo argomento sia una costante (non una funzione o comunque zero argomenti), altrimenti salta al prossimo argomento del letterale
+        if (!is_named_function(symbol, "__heuristic")) {
+            continue;
+        }
+
+        // Il primo argomento e' il predicato target, gli altri descrivono corpo,
+        // aggregati, peso, priorita' e segno.
         auto const args = symbol.arguments();
-        if (args.size() < 2) continue;
-        if (args[0].type() != Clingo::SymbolType::Function || !args[0].arguments().empty())
+        if (args.size() < 2) {
             continue;
+        }
+        if (!is_nullary_function(args[0])) {
+            continue;
+        }
 
-        // istanziamo la classe HeuristicRuleTemplate come vuota eccetto per il predicato su cui vogliamo applicare l'euristica che invece lo conosciamo già
+        // Il template conserva la forma generale della direttiva euristica;
+        // le istanze concrete verranno create solo quando un body literal e'
+        // assegnato a vero durante il solving.
         HeuristicRuleTemplate tmpl;
         tmpl.target_pred = args[0].name();
         tmpl.sign = HeuristicSign::True;
         tmpl.weight_term = Clingo::Number(0);
         tmpl.priority_term = Clingo::Number(0);
 
-        // scorro i vari argomenti del letterale __heuristic
+        // Classifica gli argomenti flessibili di __heuristic/N.
         for (size_t i = 1; i < args.size(); ++i) {
             auto const &arg = args[i];
 
-            // se l'argomento non è una funzione allora salta al prossimo argomento del letterale
-            if (arg.type() != Clingo::SymbolType::Function){
+            // Ogni argomento strutturale deve essere una funzione Clingo:
+            // costanti come x/self/sign sono funzioni nullarie.
+            if (!is_clingo_symbol_function(arg)) {
                 throw std::runtime_error("Sintassi euristica malformata: argomento non valido in __heuristic");
             }
-            
+
             std::string const arg_name = arg.name();
             auto const arg_args = arg.arguments();
 
-            // se l'argomento è __bind ci sta dicendo di associare una variabile al risultato di un aggregato
-            if (arg_name == "__bind" && arg_args.size() == 2) {
+            // __bind(var, __agg(pred, idx?)) collega una variabile simbolica
+            // a un aggregato mantenuto incrementalmente dal propagatore.
+            if (arg_name == "__bind") {
+                if (arg_args.size() != 2 || !is_nullary_function(arg_args[0]) || !is_clingo_symbol_function(arg_args[1])) {
+                    throw std::runtime_error("Sintassi euristica malformata: __bind richiede __bind(var, __agg(pred, idx?)).");
+                }
 
-                // TODO
-                // non si può riscrivere meglio quest'if kilometrico?
-                // il primo argomento non deve essere vuoto e unafunzione (una variabile)
-                // il secondo un operatore di aggregazione
-                // mi sembra scritto a cazzo, sta solo controllando che il secondo non sia una funzione ma nulla ci garantisce che sia un aggregato, va fatto un po' più tight
-                if (arg_args[0].type() != Clingo::SymbolType::Function || !arg_args[0].arguments().empty() || arg_args[1].type() != Clingo::SymbolType::Function)
-                    continue;
-
-                // mi prendo i valori
                 std::string const var_name = arg_args[0].name();
                 std::string const agg_op_str = arg_args[1].name();
                 auto const agg_inner = arg_args[1].arguments();
 
-                // Conversione da stringa a Enum per l'operatore
+                // L'operatore aggregato viene validato tramite enum, cosi' un
+                // typo come __summ fallisce subito in init_lazy_mode.
                 AggregateOperator agg_op = parse_aggregate_op(agg_op_str);
 
-                if (agg_op == AggregateOperator::Unknown || agg_inner.empty() || agg_inner[0].type() != Clingo::SymbolType::Function) {
-                     throw std::runtime_error("Sintassi euristica malformata: operatore aggregato sconosciuto o predicato interno mancante.");
+                if (agg_op == AggregateOperator::Unknown || agg_inner.empty() ||
+                    !is_nullary_function(agg_inner[0])) {
+                    throw std::runtime_error("Sintassi euristica malformata: operatore aggregato sconosciuto o predicato interno mancante.");
+                }
+                if (agg_inner.size() > 2) {
+                    throw std::runtime_error("Sintassi euristica malformata: aggregato in __bind con troppi argomenti.");
                 }
 
                 std::string const pred = agg_inner[0].name();
                 int arg_idx = -1;
-                
-                // cattura l'indice dell'argomento su cui aggregare (es: il '1' in sum(costo, 1))
-                if (agg_inner.size() >= 2 && agg_inner[1].type() == Clingo::SymbolType::Number)
-                    arg_idx = agg_inner[1].number();
 
-                
+                // Indice dell'argomento da aggregare, es. __sum(cost, 1).
+                // Se manca resta -1 per compatibilita' con la vecchia forma.
+                if (agg_inner.size() >= 2 && is_clingo_symbol_number(agg_inner[1]))
+                    arg_idx = agg_inner[1].number();
+                else if (agg_inner.size() >= 2) {
+                    throw std::runtime_error("Sintassi euristica malformata: indice aggregato non numerico in __bind.");
+                }
+
                 AggregateKey key{agg_op_str, pred, arg_idx};
                 tmpl.var_bindings[var_name] = key;
                 all_agg_preds.insert(pred);
@@ -204,14 +280,21 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
                 continue;
             }
 
-            // se l'argomento si chiama weight assegnamo il weight al tmpl
-            if (arg_name == "__weight" && arg_args.size() == 1) {
+            // __weight(expr) viene salvato come termine Clingo e validato
+            // dopo il ciclo, quando tutti i __bind sono gia' noti.
+            if (arg_name == "__weight") {
+                if (arg_args.size() != 1) {
+                    throw std::runtime_error("Sintassi euristica malformata: __weight richiede esattamente un argomento.");
+                }
                 tmpl.weight_term = arg_args[0];
                 continue;
             }
 
-            // se l'argomento si chiama priority assegnamo la priority al tmpl
-            if (arg_name == "__priority" && arg_args.size() == 1) {
+            // __priority(expr) segue le stesse regole di __weight(expr).
+            if (arg_name == "__priority") {
+                if (arg_args.size() != 1) {
+                    throw std::runtime_error("Sintassi euristica malformata: __priority richiede esattamente un argomento.");
+                }
                 tmpl.priority_term = arg_args[0];
                 continue;
             }
@@ -238,7 +321,13 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
                 }
                 continue;
             }
+
+            throw std::runtime_error("Sintassi euristica malformata: argomento '" + arg_name +
+                                     "' non riconosciuto in __heuristic.");
         }
+
+        validate_arithmetic_term(tmpl.weight_term, tmpl.var_bindings, "__weight");
+        validate_arithmetic_term(tmpl.priority_term, tmpl.var_bindings, "__priority");
 
         all_target_preds.insert(tmpl.target_pred);
         rule_templates_.push_back(std::move(tmpl));
@@ -257,14 +346,17 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
     all_preds.insert(all_agg_preds.begin(), all_agg_preds.end());
 
     for (auto it = atoms.begin(); it != atoms.end(); ++it) {
-        auto const pname = it->symbol().name();
+        auto const symbol = it->symbol();
+        if (!is_clingo_symbol_function(symbol)) continue;
+
+        auto const pname = symbol.name();
         if (all_preds.find(pname) == all_preds.end()) continue;
 
-        auto const sym_args = it->symbol().arguments();
+        auto const sym_args = symbol.arguments();
         if (sym_args.empty()) continue;
 
         int domain_val = 0;
-        if (!extract_numeric_argument(it->symbol(), 0, domain_val)) continue;
+        if (!extract_numeric_argument(symbol, 0, domain_val)) continue;
 
         Clingo::literal_t slit = init.solver_literal(it->literal());
         if (slit != 0) pred_lit_map[pname][domain_val] = slit;
@@ -318,6 +410,7 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
 
             for (auto it = atoms.begin(); it != atoms.end(); ++it) {
                 auto const sym = it->symbol();
+                if (!is_clingo_symbol_function(sym)) continue;
                 if (sym.name() != agg_key.pred_name) continue;
 
                 int value = 0;
