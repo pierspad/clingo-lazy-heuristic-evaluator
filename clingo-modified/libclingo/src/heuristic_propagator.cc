@@ -282,13 +282,10 @@ void HeuristicPropagator::parse_lazy_heuristic_templates(Clingo::SymbolicAtoms c
             continue;
         }
 
-        // Il primo argomento e' il predicato target, gli altri descrivono corpo,
-        // aggregati, peso, priorita' e segno.
+        // Tutti gli argomenti sono strutturali e order-independent:
+        // __target(pred), corpo, aggregati, peso, priorita' e segno.
         auto const args = symbol.arguments();
-        if (args.size() < 2) {
-            continue;
-        }
-        if (!is_nullary_function(args[0])) {
+        if (args.empty()) {
             continue;
         }
 
@@ -296,13 +293,13 @@ void HeuristicPropagator::parse_lazy_heuristic_templates(Clingo::SymbolicAtoms c
         // le istanze concrete verranno create solo quando un body literal e'
         // assegnato a vero durante il solving.
         HeuristicRuleTemplate tmpl;
-        tmpl.target_pred = args[0].name();
         tmpl.sign = HeuristicSign::True;
+        bool has_target = false;
         Clingo::Symbol weight_symbol = Clingo::Number(0);
         Clingo::Symbol priority_symbol = Clingo::Number(0);
 
         // Classifica gli argomenti flessibili di __heuristic/N.
-        for (size_t i = 1; i < args.size(); ++i) {
+        for (size_t i = 0; i < args.size(); ++i) {
             auto const &arg = args[i];
 
             // Ogni argomento strutturale deve essere una funzione Clingo:
@@ -313,6 +310,20 @@ void HeuristicPropagator::parse_lazy_heuristic_templates(Clingo::SymbolicAtoms c
 
             std::string const arg_name = arg.name();
             auto const arg_args = arg.arguments();
+
+            // __target(pred) identifica esplicitamente il predicato target,
+            // evitando dipendenze dall'ordine degli argomenti.
+            if (arg_name == "__target") {
+                if (arg_args.size() != 1 || !is_nullary_function(arg_args[0])) {
+                    throw std::runtime_error("Sintassi euristica malformata: __target richiede __target(pred).");
+                }
+                if (has_target) {
+                    throw std::runtime_error("Sintassi euristica malformata: target duplicato in __heuristic.");
+                }
+                tmpl.target_pred = arg_args[0].name();
+                has_target = true;
+                continue;
+            }
 
             // __bind(var, __agg(pred, idx?, filters...)) collega una variabile
             // simbolica a un aggregato mantenuto incrementalmente.
@@ -414,6 +425,10 @@ void HeuristicPropagator::parse_lazy_heuristic_templates(Clingo::SymbolicAtoms c
             // (es. non è __bind o __weight validi), solleva un errore di compilazione euristica.
             throw std::runtime_error("Sintassi euristica malformata: argomento '" + arg_name +
                                      "' non riconosciuto in __heuristic.");
+        }
+
+        if (!has_target) {
+            throw std::runtime_error("Sintassi euristica malformata: __heuristic richiede un argomento __target(pred).");
         }
 
         // Da qui in poi peso/priorita' sono AST tipizzati, non piu' Symbol.

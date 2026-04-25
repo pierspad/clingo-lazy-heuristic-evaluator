@@ -80,10 +80,11 @@ Per rendere quindi il processo più efficiente l'obiettivo è far si che il calc
 
 Il programma viene passato a Clingo, ma invece di far groundare a Gringo le euristiche secondo il pattern classico, queste vengono codificate come template strutturali, ovvero fatti proposizionali statici della forma:
 
-__heuristic(TargetPred, ...argomenti flessibili...).
+__heuristic(__target(TargetPred), ...argomenti flessibili...).
 
-Il primo argomento è sempre il predicato target. Gli argomenti successivi sono in ordine libero
+Il predicato target viene dichiarato esplicitamente con __target(TargetPred). Tutti gli argomenti sono in ordine libero
 e vengono classificati automaticamente dal parser C++:
+  - __target(pred)                             → predicato target
   - atomo semplice (es. x)                    → body positivo
   - prefisso __n_ (es. __n_c)                → body negativo (not c(X))
   - __bind(var, __agg(pred))                  → binding variabile → aggregato
@@ -101,8 +102,8 @@ Le espressioni (expr) supportate sono:
 
 Questo fa sì che Gringo includa nel programma proposizionale una singola riga per ogni template euristico, senza espandere le variabili di dominio, generando quindi invece soltanto:
 
-__heuristic(b, x, __n_c, __bind(s, __sum(c)), __weight(self), __priority(s), true).
-__heuristic(c, x, __n_b, __bind(s, __sum(b)), __weight(self), __priority(s), true).
+__heuristic(__target(b), x, __n_c, __bind(s, __sum(c)), __weight(self), __priority(s), true).
+__heuristic(__target(c), x, __n_b, __bind(s, __sum(b)), __weight(self), __priority(s), true).
 
 
 
@@ -116,44 +117,44 @@ alcuni esempi:
 % 1. Caso base con costanti fisse per peso e priorità
 #heuristic b(X) : x(X). [1@2, true]                  
 % --------------
-__heuristic(b, x, __weight(1), __priority(2), true).
+__heuristic(__target(b), x, __weight(1), __priority(2), true).
 
 % 2. Caso con peso = valore del dominio (self)
 #heuristic b(X) : x(X), not c(X). [X@1, sign]
 % --------------
-__heuristic(b, x, __n_c, __weight(self), __priority(1), sign).
+__heuristic(__target(b), x, __n_c, __weight(self), __priority(1), sign).
 
 % 3. Caso con letterali multipli nel corpo
 #heuristic c(X) : a(X), b(X), not d(X). [5@2, false]
 % --------------
-__heuristic(c, a, b, __n_d, __weight(5), __priority(2), false).
+__heuristic(__target(c), a, b, __n_d, __weight(5), __priority(2), false).
 
 % 4. Caso con Aggregato Dinamico (priorità da aggregato)
 #heuristic b(X) : x(X), not c(X). [X@S, true] % dove S è la somma corrente di c
 % --------------
-__heuristic(b, x, __n_c, __bind(s, __sum(c)), __weight(self), __priority(s), true).
+__heuristic(__target(b), x, __n_c, __bind(s, __sum(c)), __weight(self), __priority(s), true).
 
-% 5. L'ordine degli argomenti (dopo il primo) è irrilevante:
-__heuristic(b, __n_c, x, __bind(s, __sum(c)), __priority(s), __weight(self), true).
+% 5. L'ordine degli argomenti è irrilevante:
+__heuristic(__target(b), __n_c, x, __bind(s, __sum(c)), __priority(s), __weight(self), true).
 % è equivalente a:
-__heuristic(b, x, __n_c, __bind(s, __sum(c)), __weight(self), __priority(s), true).
+__heuristic(x, __priority(s), true, __target(b), __bind(s, __sum(c)), __n_c, __weight(self)).
 
 % 6. Caso con peso e priorità ENTRAMBI da aggregati diversi
 #heuristic b(X) : x(X), not c(X). [S1@S2, true] % S1=count(c), S2=sum(c)
 % --------------
-__heuristic(b, x, __n_c, __bind(s, __sum(c)), __bind(k, __count(c)), __weight(k), __priority(s), true).
+__heuristic(__target(b), x, __n_c, __bind(s, __sum(c)), __bind(k, __count(c)), __weight(k), __priority(s), true).
 
 % 7. NOVITÀ: Espressioni matematiche complesse
 % Weight = S + 1, Priority = S * 10
-__heuristic(b, x, __n_c, __bind(s, __sum(c)), __weight(__add(s, 1)), __priority(__mul(s, 10)), true).
+__heuristic(__target(b), x, __n_c, __bind(s, __sum(c)), __weight(__add(s, 1)), __priority(__mul(s, 10)), true).
 
 % 8. Combinazione di self con aggregato
 % Weight = self + somma_di_c, Priority = somma_di_c
-__heuristic(b, x, __n_c, __bind(s, __sum(c)), __weight(__add(self, s)), __priority(s), true).
+__heuristic(__target(b), x, __n_c, __bind(s, __sum(c)), __weight(__add(self, s)), __priority(s), true).
 
 % 9. Stessa variabile usata sia in weight che in priority
 % Weight = S, Priority = S + 1
-__heuristic(b, x, __n_c, __bind(s, __sum(c)), __weight(s), __priority(__add(s, 1)), true).
+__heuristic(__target(b), x, __n_c, __bind(s, __sum(c)), __weight(s), __priority(__add(s, 1)), true).
 
 
 
@@ -187,100 +188,8 @@ allo stesso tempo viene chiamato il metodo "undo" passandogli l'indieme dei lett
 
 %% ------------------------------------------------------
 
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 10) Architettura AST (Abstract Syntax Tree) per __weight/__priority
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-La sintassi flessibile di __weight(expr) e __priority(expr) non viene gestita
-come semplice parsing testuale durante la fase di scelta. In init_lazy_mode,
-il propagatore analizza i termini Clingo e costruisce un AST polimorfico
-basato sull'interfaccia Expression. Ogni forma sintattica viene trasformata in
-un nodo tipizzato: costanti numeriche in ConstExpr, self in SelfExpr,
-variabili legate da __bind in VarExpr, e operatori binari (__add/__sub/__mul)
-in BinOpExpr con due sottoalberi. Questa compilazione avviene una sola volta
-in fase di inizializzazione.
-
-Durante decide, per ogni istanza lazy attiva viene riusato un environment flat
-array preallocato (env_buffer_), dove env[0] rappresenta __self__ e gli altri
-slot sono risolti tramite var_bindings pre-calcolati in init_lazy_mode.
-La valutazione di weight_expr e priority_expr avviene quindi per visita
-dell'albero, partendo dai nodi foglia e propagando i risultati verso i nodi
-interni, senza parsing di stringhe a runtime. Inoltre, quando un'espressione
-non dipende da variabili __bind (es. costante o solo self), il valore viene
-pre-valutato in propagate e riusato in decide senza nuova evaluate().
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 11) Gestione del backtracking CDNL (metodo undo)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-La correttezza del propagatore non dipende solo dalla propagazione in avanti,
-ma anche dalla capacita' di ripristinare esattamente lo stato quando Clasp
-esegue backjump/backtracking dopo un conflitto. Questo e' gestito nel metodo
-undo, che riceve i literal rimossi dall'assegnamento e aggiorna in senso
-inverso tutte le strutture incrementali.
-
-Per gli aggregati, SumState e CountState applicano l'inversa aritmetica
-(remove) rispetto all'aggiornamento effettuato in propagate (add):
-somma e conteggio tornano al valore precedente in O(1). Per __min e __max,
-non basta l'inversa aritmetica: MinState e MaxState mantengono un multiset
-implicito (mappa valore->occorrenze) che permette di recuperare l'estremo
-precedente in O(log M) senza ricalcolo totale dell'aggregato. In parallelo,
-undo elimina anche le istanze lazy create dai trigger non piu' veri,
-mantenendo allineate active_body_lits e lazy_targets_ con lo stato effettivo
-del solver.
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 12) Valutazione empirica (benchmark.sh + graphs.py)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-La validazione sperimentale e' stata condotta con benchmark.sh, confrontando la
-codifica standard (#heuristic con aggregati groundati dal front-end) contro la
-variante lazy con template __heuristic/N e valutazione runtime nel propagatore.
-I risultati, salvati in test-results/results.csv e visualizzati da graphs.py,
-coprono N=10..100 su 5 seed per punto.
-
-Lettura sintetica dei grafici:
-1) RAM: la variante standard cresce da circa 10 MB (N=10) a circa 452 MB
-  (media a N=100), mentre la variante lazy resta circa costante attorno a
-  10 MB anche alle istanze massime.
-2) Solving Time: resta molto basso in entrambe le varianti (ordine
-  sub-secondo). A N=100 il solving medio e' 0.078s (standard) contro ~0s
-  (lazy), indicando che il propagatore non introduce overhead significativo
-  nel core CDNL.
-3) Grounding/Tempo totale: a N=100 le regole ground passano da 1,041,498
-  (standard) a 806 (lazy) e il tempo totale medio da 2.3266s a 0.0020s.
-
-Questi dati confermano che il vantaggio principale e' la rimozione del
-grounding bottleneck; la fase di solving rimane invece sostanzialmente
-comparabile e non penalizzata dalla valutazione lazy.
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 13) Contestualizzazione dei grafici solving/conflicts/choices
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-L'osservazione sperimentale "solving time ~ 0" e "conflicts = 0" nella
-modalita' lazy non va interpretata come una disattivazione del motore CDNL.
-Il solver continua a operare con la stessa pipeline decisione-propagazione-
-analisi-conflitto-backjump, ma in queste istanze la sequenza di decisioni
-indotta dall'euristica coincide con un cammino risolutivo privo di scelte
-errate. In altre parole, l'albero di ricerca non viene bypassato: viene
-percorso lungo un unico ramo utile senza generare nodi di conflitto.
-
-Il grafico "Choices" mostra infatti una crescita lineare coerente con il
-numero di assegnamenti necessari per completare la soluzione BSP. L'assenza di
-backtracking riduce a zero i conflitti e rende trascurabile il tempo di
-solving residuo. Il miglioramento osservato e' quindi una evidenza di
-euristica di dominio quasi perfetta, resa praticabile dal fatto che il
-grounding non esplode piu' in memoria.
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 14) Ottimizzazione vincolo in vincolo lineare BSP
+% 10) Ottimizzazione vincolo in vincolo lineare BSP
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Il vincolo 
@@ -432,8 +341,8 @@ sumB(6):-#sum{1:b(1);2:b(2);3:b(3)}=6.
 % output di 
 % gringo --text _2_lg_constraint_optimized.lp __.BSP_range.lp
 
-__heuristic(b,x,__n_c,__bind(s,__sum(c)),__weight(self),__priority(s),true).
-__heuristic(c,x,__n_b,__bind(s,__sum(b)),__weight(self),__priority(s),true).
+__heuristic(__target(b),x,__n_c,__bind(s,__sum(c)),__weight(self),__priority(s),true).
+__heuristic(__target(c),x,__n_b,__bind(s,__sum(b)),__weight(self),__priority(s),true).
 x(1).
 x(2).
 x(3).
@@ -453,11 +362,12 @@ x(3).
 Per rendere la specifica rigorosa, la sintassi accettata dal costrutto
 __heuristic/N puo' essere formalizzata in EBNF come segue.
 
-<heuristic-fact>   ::= "__heuristic(" <target> {"," <h-arg>} ")."
+<heuristic-fact>   ::= "__heuristic(" <h-arg> {"," <h-arg>} ")."
 
-<target>           ::= <pred-id>
+<target>           ::= "__target(" <pred-id> ")"
 
-<h-arg>            ::= <pos-lit>
+<h-arg>            ::= <target>
+              | <pos-lit>
               | <neg-lit>
               | <bind>
               | <weight>
@@ -490,12 +400,12 @@ __heuristic/N puo' essere formalizzata in EBNF come segue.
 <int>              ::= intero con segno in base 10
 
 Vincoli semantici addizionali:
-1) il primo argomento deve essere sempre <target>;
+1) deve essere presente esattamente un argomento <target>;
 2) ogni <var-id> usata in <arith-expr> deve essere introdotta da almeno un
   __bind nello stesso fatto __heuristic/N;
 3) la semantica di "self" coincide con il valore di dominio dell'atomo target
   nell'istanza corrente;
-4) l'ordine degli argomenti dopo il primo e' irrilevante;
+4) l'ordine degli argomenti e' irrilevante;
 5) in presenza di bind multipli sullo stesso <var-id> si applica il vincolo di
   unicita' (errore di parsing/inizializzazione).
 

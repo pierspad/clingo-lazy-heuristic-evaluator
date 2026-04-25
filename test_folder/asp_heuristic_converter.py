@@ -9,7 +9,7 @@ Sintassi nativa supportata:
     #heuristic target(X) : body_lit1(X), ..., not neg_lit(X), S = #agg{Y : pred(...,Y,...)}. [W@P, sign]
 
 Sintassi lazy generata:
-    __heuristic(target, body1, ..., __n_neg, __bind(s, __agg(pred, idx)), __weight(W'), __priority(P'), sign).
+    __heuristic(__target(target), body1, ..., __n_neg, __bind(s, __agg(pred, idx)), __weight(W'), __priority(P'), sign).
 
 Uso:
     python asp_heuristic_converter.py input.lp -o output.lp
@@ -547,7 +547,7 @@ def generate_lazy_heuristic(directive: HeuristicDirective) -> list:
             file=sys.stderr
         )
 
-    args = [directive.target_pred]
+    args = [f"__target({directive.target_pred})"]
 
     # Body positivi
     for pred in lazy_pos_body:
@@ -627,7 +627,7 @@ def generate_lazy_aux_heuristic(directive: HeuristicDirective, idx: int) -> list
     """
     Genera una variante dinamica con predicato ausiliario:
         aux(TargetArgs) :- body_ordinario.
-        __heuristic(target, aux, __bind(...), ...).
+        __heuristic(__target(target), aux, __bind(...), ...).
     """
     aux = _aux_name(directive, idx, "lazy")
     target_args = _target_args_text(directive)
@@ -759,7 +759,7 @@ Sintassi nativa supportata:
   #heuristic b(X) : x(X), not c(X), S = #sum{Y : c(Y)}. [X@S, true]
 
 Sintassi lazy generata:
-  __heuristic(b, x, __n_c, __bind(s, __sum(c, 0)), __weight(self), __priority(s), true).
+  __heuristic(__target(b), x, __n_c, __bind(s, __sum(c, 0)), __weight(self), __priority(s), true).
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
