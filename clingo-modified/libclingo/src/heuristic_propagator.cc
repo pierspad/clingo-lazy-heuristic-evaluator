@@ -28,15 +28,14 @@ static bool extract_numeric_argument(Clingo::Symbol const &symbol, int arg_index
     if (args.empty()) return false;
 
     if (arg_index >= 0) {
-        int numeric_pos = 0;
-        for (auto const &arg : args) {
-            if (arg.type() != Clingo::SymbolType::Number) continue;
-            if (numeric_pos == arg_index) { value = arg.number(); return true; }
-            ++numeric_pos;
-        }
-        return false;
+        if (static_cast<size_t>(arg_index) >= args.size()) return false;
+        if (args[arg_index].type() != Clingo::SymbolType::Number) return false;
+        value = args[arg_index].number();
+        return true;
     }
 
+    // Backward-compatible path for old __agg(pred) encodings: use the last
+    // numeric argument when no positional index is available.
     bool found = false;
     for (auto const &arg : args) {
         if (arg.type() == Clingo::SymbolType::Number) { value = arg.number(); found = true; }
@@ -175,7 +174,8 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
 
                 std::string const pred = agg_inner[0].name();
                 int arg_idx = -1;
-                // non mi è chiaro cosa faccia questa cosa
+                // Optional positional index: __max(p, 1) aggregates over the
+                // second argument of ground atoms p(...).
                 if (agg_inner.size() >= 2 && agg_inner[1].type() == Clingo::SymbolType::Number)
                     arg_idx = agg_inner[1].number();
 

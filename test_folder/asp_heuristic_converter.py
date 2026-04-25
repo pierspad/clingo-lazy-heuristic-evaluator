@@ -6,10 +6,10 @@ Converte le direttive #heuristic native di Clingo nella sintassi __heuristic/N
 per il lazy grounding delle euristiche tramite il HeuristicPropagator.
 
 Sintassi nativa supportata:
-    #heuristic target(X) : body_lit1(X), ..., not neg_lit(X), S = #agg{Y : pred(Y)}. [W@P, sign]
+    #heuristic target(X) : body_lit1(X), ..., not neg_lit(X), S = #agg{Y : pred(...,Y,...)}. [W@P, sign]
 
 Sintassi lazy generata:
-    __heuristic(target, body1, ..., __n_neg, __bind(s, __agg(pred)), __weight(W'), __priority(P'), sign).
+    __heuristic(target, body1, ..., __n_neg, __bind(s, __agg(pred, idx)), __weight(W'), __priority(P'), sign).
 
 Uso:
     python asp_heuristic_converter.py input.lp -o output.lp
@@ -22,7 +22,7 @@ Limitazioni:
     - Target multi-argomento: solo la prima variabile viene usata come
       domain variable. Le altre sono ignorate con un warning.
     - Euristiche senza body positivo non vengono mai attivate nel modo lazy.
-    - Gli aggregati nel body sono della forma VAR = #agg{Y : pred(Y)} con un singolo predicato.
+    - Gli aggregati nel body sono della forma VAR = #agg{Y : pred(...,Y,...)} con un singolo predicato.
     - Espressioni aritmetiche nel peso/priorità: +, -, * tra variabili e costanti.
     - Non gestisce join tra predicati multi-argomento con variabili distinte.
     - Euristiche con body complessi non convertibili generano un WARNING e vengono
@@ -43,10 +43,11 @@ from typing import Optional
 
 @dataclass
 class AggregateBinding:
-    """Rappresenta un binding variabile → aggregato: VAR = #agg{Y : pred(Y)}"""
+    """Rappresenta un binding variabile -> aggregato: VAR = #agg{Y : pred(...,Y,...)}"""
     var_name: str           # Nome variabile locale (es. "S")
     agg_type: str           # Tipo aggregato: sum, count, min, max
     pred_name: str          # Predicato aggregato (es. "c")
+    arg_index: Optional[int] = None  # Posizione 0-based della variabile aggregata nel predicato
 
 
 @dataclass
@@ -101,20 +102,51 @@ def _strip_comments(line: str) -> str:
     return line
 
 
-def _extract_pred_from_aggregate_body(agg_body: str) -> Optional[str]:
+def _split_top_level(text: str, sep: str = ',') -> list:
+    """Divide una stringa su sep, ignorando separatori annidati in parentesi."""
+    parts = []
+    start = 0
+    depth = 0
+    for i, ch in enumerate(text):
+        if ch == '(':
+            depth += 1
+        elif ch == ')':
+            depth = max(0, depth - 1)
+        elif ch == sep and depth == 0:
+            parts.append(text[start:i].strip())
+            start = i + 1
+    parts.append(text[start:].strip())
+    return parts
+
+
+def _extract_pred_and_index_from_aggregate_body(agg_body: str) -> tuple:
     """
-    Estrae il nome del predicato dal body dell'aggregato.
-    Es: "Y : c(Y)" → "c"
-         "Y,X : cost(Y,X)" → "cost"
+    Estrae nome predicato e indice posizionale della variabile aggregata.
+    Es: "Y : c(Y)" -> ("c", 0)
+         "N : p(S,N)" -> ("p", 1)
+         "Y,X : cost(Y,X)" -> ("cost", 0)
     """
     parts = agg_body.split(':')
     if len(parts) < 2:
-        return None
-    pred_part = parts[1].strip()
-    m = re.match(r'(\w+)\s*\(', pred_part)
-    if m:
-        return m.group(1)
-    return None
+        return None, None
+
+    tuple_terms = _split_top_level(parts[0].strip())
+    target_term = tuple_terms[0] if tuple_terms else ""
+
+    pred_part = ':'.join(parts[1:]).strip()
+    m = re.match(r'(\w+)\s*\((.*)\)\s*$', pred_part)
+    if not m:
+        return None, None
+
+    pred_name = m.group(1)
+    pred_args = _split_top_level(m.group(2))
+    arg_index = None
+    for idx, arg in enumerate(pred_args):
+        if arg == target_term:
+            arg_index = idx
+            break
+
+    return pred_name, arg_index
 
 
 def _is_domain_variable(expr: str, target_var: Optional[str]) -> bool:
@@ -229,9 +261,9 @@ def _parse_body_literals(body_str: str) -> tuple:
         var_name = m.group(1)
         agg_type = m.group(2)
         agg_body = m.group(3)
-        pred = _extract_pred_from_aggregate_body(agg_body)
+        pred, arg_index = _extract_pred_and_index_from_aggregate_body(agg_body)
         if pred:
-            bindings.append(AggregateBinding(var_name, agg_type, pred))
+            bindings.append(AggregateBinding(var_name, agg_type, pred, arg_index))
         # Rimuovi l'aggregato dal remaining per non parsarlo come letterale
         remaining = remaining.replace(m.group(0), '', 1)
 
@@ -392,7 +424,10 @@ def generate_lazy_heuristic(directive: HeuristicDirective) -> list:
     for b in directive.bindings:
         var_lower = b.var_name.lower()
         binding_vars[b.var_name] = var_lower
-        args.append(f"__bind({var_lower}, __{b.agg_type}({b.pred_name}))")
+        if b.arg_index is None:
+            args.append(f"__bind({var_lower}, __{b.agg_type}({b.pred_name}))")
+        else:
+            args.append(f"__bind({var_lower}, __{b.agg_type}({b.pred_name}, {b.arg_index}))")
 
     # Peso
     weight_conv = _convert_arith_expr(
@@ -510,7 +545,7 @@ Sintassi nativa supportata:
   #heuristic b(X) : x(X), not c(X), S = #sum{Y : c(Y)}. [X@S, true]
 
 Sintassi lazy generata:
-  __heuristic(b, x, __n_c, __bind(s, __sum(c)), __weight(self), __priority(s), true).
+  __heuristic(b, x, __n_c, __bind(s, __sum(c, 0)), __weight(self), __priority(s), true).
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
