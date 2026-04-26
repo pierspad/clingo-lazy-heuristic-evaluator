@@ -1,5 +1,4 @@
 """
-graphs.py
 Generates benchmark charts for both BSP and PUP problems.
 
 Reads CSV result files from ./test-results/ and generates charts

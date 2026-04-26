@@ -51,6 +51,13 @@ FILE_LG="_BSP_lg.lp"
 FILE_LG_AUX="_BSP_aux_lg.lp"
 FILE_COLG="_BSP_colg.lp"
 
+# Varianti da eseguire.
+# Per riattivare colg, aggiungi "colg" alla lista sotto.
+# Puoi anche sovrascrivere da shell, ad esempio:
+#   BSP_VARIANTS="std std_aux lg lg_aux colg" ./benchmark_bsp.sh
+DEFAULT_VARIANTS=(std std_aux lg lg_aux)
+read -r -a ACTIVE_VARIANTS <<< "${BSP_VARIANTS:-${DEFAULT_VARIANTS[*]}}"
+
 # Range file (in BSP_instances/)
 FILE_RANGE="BSP_instances/__.BSP_range.lp"
 
@@ -66,6 +73,59 @@ CSV_FILE="${TIMINGS_DIR}/bsp_results.csv"
 
 mkdir -p "${TIMINGS_DIR}"
 declare -A GROUND_COUNT_CACHE
+
+variant_file() {
+    case "$1" in
+        std) echo "${FILE_STD}" ;;
+        std_aux) echo "${FILE_STD_AUX}" ;;
+        lg) echo "${FILE_LG}" ;;
+        lg_aux) echo "${FILE_LG_AUX}" ;;
+        colg) echo "${FILE_COLG}" ;;
+        *)
+            echo "Errore: variante BSP sconosciuta '$1'." >&2
+            echo "Varianti valide: std std_aux lg lg_aux colg" >&2
+            exit 1
+            ;;
+    esac
+}
+
+run_variant_for_seed() {
+    local n="$1"
+    local variant="$2"
+    local seed="$3"
+    local file
+    file="$(variant_file "${variant}")"
+
+    case "${variant}" in
+        std|std_aux)
+            run_stats "${n}" "${variant}" "${seed}" \
+                "${CLINGO_MOD}" "${FILE_RANGE}" "${file}" "-c" "n=${n}" "-n" "1" \
+                "--heuristic=Domain" "--time-limit=${TIMEOUT_SECONDS}"
+            ;;
+        lg|lg_aux|colg)
+            run_stats "${n}" "${variant}" "${seed}" \
+                "${CLINGO_MOD}" "${FILE_RANGE}" "${file}" "-n" "1" "-c" "n=${n}" \
+                "--heuristic=Domain" "--time-limit=${TIMEOUT_SECONDS}"
+            ;;
+    esac
+}
+
+ENABLED_VARIANTS=()
+for variant in "${ACTIVE_VARIANTS[@]}"; do
+    file="$(variant_file "${variant}")"
+    if [ -f "${file}" ]; then
+        ENABLED_VARIANTS+=("${variant}")
+    else
+        echo "Avviso: salto variante '${variant}' perché il file '${file}' non esiste."
+    fi
+done
+
+if [ "${#ENABLED_VARIANTS[@]}" -eq 0 ]; then
+    echo "Errore: nessuna variante BSP attiva con file esistente."
+    exit 1
+fi
+
+echo "Varianti BSP attive: ${ENABLED_VARIANTS[*]}"
 
 # ============================================================================
 # INTESTAZIONE CSV
@@ -175,56 +235,19 @@ run_stats() {
 # LOOP PRINCIPALE
 # ============================================================================
 
-total_runs=$(( ((N_END - N_START) / N_STEP + 1) * 5 * REPEATS ))
+total_runs=$(( ((N_END - N_START) / N_STEP + 1) * ${#ENABLED_VARIANTS[@]} * REPEATS ))
 current_run=0
 
 for n in $(seq "${N_START}" "${N_STEP}" "${N_END}"); do
     echo ""
     echo "=== N=${n} ==="
 
-    # 1) Encoding standard dichiarativo
-    for seed in $(seq 1 "${REPEATS}"); do
-        current_run=$((current_run + 1))
-        echo "--- std (run ${current_run}/${total_runs}) ---"
-        run_stats "${n}" "std" "${seed}" \
-            "${CLINGO_MOD}" "${FILE_RANGE}" "${FILE_STD}" "-c" "n=${n}" "-n" "1" \
-            "--heuristic=Domain" "--time-limit=600"
-    done
-
-    # 2) Encoding standard con predicato ausiliario
-    for seed in $(seq 1 "${REPEATS}"); do
-        current_run=$((current_run + 1))
-        echo "--- std_aux (run ${current_run}/${total_runs}) ---"
-        run_stats "${n}" "std_aux" "${seed}" \
-            "${CLINGO_MOD}" "${FILE_RANGE}" "${FILE_STD_AUX}" "-c" "n=${n}" "-n" "1" \
-            "--time-limit=600" "--heuristic=Domain"
-    done
-
-    # 3) Lazy grounding
-    for seed in $(seq 1 "${REPEATS}"); do
-        current_run=$((current_run + 1))
-        echo "--- lg (run ${current_run}/${total_runs}) ---"
-        run_stats "${n}" "lg" "${seed}" \
-            "${CLINGO_MOD}" "${FILE_RANGE}" "${FILE_LG}" "-n" "1" "-c" "n=${n}" \
-            "--heuristic=Domain" "--time-limit=600"
-    done
-
-    # 4) Lazy grounding con predicato ausiliario
-    for seed in $(seq 1 "${REPEATS}"); do
-        current_run=$((current_run + 1))
-        echo "--- lg_aux (run ${current_run}/${total_runs}) ---"
-        run_stats "${n}" "lg_aux" "${seed}" \
-            "${CLINGO_MOD}" "${FILE_RANGE}" "${FILE_LG_AUX}" "-n" "1" "-c" "n=${n}" \
-            "--heuristic=Domain" "--time-limit=600"
-    done
-
-    # 5) Lazy grounding + vincolo ottimizzato
-    for seed in $(seq 1 "${REPEATS}"); do
-        current_run=$((current_run + 1))
-        echo "--- colg (run ${current_run}/${total_runs}) ---"
-        run_stats "${n}" "colg" "${seed}" \
-            "${CLINGO_MOD}" "${FILE_RANGE}" "${FILE_COLG}" "-n" "1" "-c" "n=${n}" \
-            "--heuristic=Domain" "--time-limit=600"
+    for variant in "${ENABLED_VARIANTS[@]}"; do
+        for seed in $(seq 1 "${REPEATS}"); do
+            current_run=$((current_run + 1))
+            echo "--- ${variant} (run ${current_run}/${total_runs}) ---"
+            run_variant_for_seed "${n}" "${variant}" "${seed}"
+        done
     done
 done
 
