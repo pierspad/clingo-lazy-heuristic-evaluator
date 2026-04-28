@@ -21,6 +21,7 @@ Each point is averaged across N seeds; the shaded band shows ±1σ.
 import argparse
 import csv
 import os
+import shutil
 import sys
 from collections import defaultdict
 
@@ -52,7 +53,19 @@ INTEGER_METRICS = {
     "variables",
     "ground_heuristics",
     "ground_lazy_heuristic_facts",
+    "combined_heuristics",
     "ground_facts",
+}
+LOWER_IS_BETTER_METRICS = {
+    "solving_s",
+    "total_s",
+    "choices",
+    "conflicts",
+    "restarts",
+    "rules",
+    "variables",
+    "memory_mb",
+    "combined_heuristics",
 }
 
 PLOT_CONFIGS = [
@@ -113,18 +126,11 @@ PLOT_CONFIGS = [
         "filename": "memory_comparison.png",
     },
     {
-        "metric": "ground_heuristics",
-        "title": "Ground #heuristic Directives",
-        "ylabel": "Ground directives",
-        "description": "Native #heuristic directives after grounding",
-        "filename": "ground_heuristics.png",
-    },
-    {
-        "metric": "ground_lazy_heuristic_facts",
-        "title": "Ground __heuristic Facts",
-        "ylabel": "Ground facts",
-        "description": "Lazy heuristic facts seen by the propagator",
-        "filename": "ground_lazy_heuristic_facts.png",
+        "metric": "combined_heuristics",
+        "title": "Combined Heuristics Grounding",
+        "ylabel": "Ground heuristic entries",
+        "description": "Standard: native #heuristic directives\nLazy: __heuristic facts passed to the propagator",
+        "filename": "combined_heuristics.png",
     },
     {
         "metric": "ground_facts",
@@ -241,14 +247,25 @@ def load_csv(csv_path: str):
         for row in reader:
             variant = row["variant"].strip()
             n = int(row["n"])
+            row_values = {}
 
             for metric in METRIC_FIELDS:
                 val_str = row.get(metric, "").strip()
                 if val_str not in ("NA", ""):
                     try:
-                        raw[variant][n][metric].append(float(val_str))
+                        value = float(val_str)
+                        raw[variant][n][metric].append(value)
+                        row_values[metric] = value
                     except ValueError:
                         pass
+
+            heuristic_values = [
+                row_values[m]
+                for m in ("ground_heuristics", "ground_lazy_heuristic_facts")
+                if m in row_values
+            ]
+            if heuristic_values:
+                raw[variant][n]["combined_heuristics"].append(sum(heuristic_values))
 
     return raw
 
@@ -282,6 +299,13 @@ def compute_stats(raw):
 # ============================================================================
 
 VARIANT_FILL_ALPHA = 0.15
+
+
+def _format_title(metric: str, title: str) -> str:
+    """Append an interpretation hint only to metrics where lower values are better."""
+    if metric in LOWER_IS_BETTER_METRICS:
+        return f"{title}\n(Lower is better)"
+    return title
 
 
 def _ordered_variants(stats: dict, theme: dict):
@@ -364,7 +388,7 @@ def generate_graphs(stats: dict, graphs_dir: str, theme: dict, title_suffix: str
             ax.fill_between(n, mean - std, mean + std,
                             alpha=VARIANT_FILL_ALPHA, color=color, zorder=2)
 
-        ax.set_title(config["title"])
+        ax.set_title(_format_title(metric, config["title"]))
         ax.set_xlabel(xlabel)
         ax.set_ylabel(config["ylabel"])
         if has_data:
@@ -406,7 +430,7 @@ def generate_graphs(stats: dict, graphs_dir: str, theme: dict, title_suffix: str
             stats=stats,
             graphs_dir=graphs_dir,
             metric=cfg["metric"],
-            title=cfg["title"],
+            title=_format_title(cfg["metric"], cfg["title"]),
             ylabel=cfg["ylabel"],
             filename=fname,
             theme=theme,
@@ -838,6 +862,29 @@ def _get_mean_at_n(variant_stats, metric, n):
 # Processing pipeline
 # ============================================================================
 
+def reset_graphs_dir(graphs_dir):
+    """Remove previous generated charts before rebuilding them from CSV data."""
+    graphs_dir = os.path.abspath(graphs_dir)
+    cwd = os.path.abspath(os.getcwd())
+    unsafe_paths = {os.path.abspath(os.sep), cwd, os.path.expanduser("~")}
+    if graphs_dir in unsafe_paths:
+        raise ValueError(f"Refusing to clean unsafe output directory: '{graphs_dir}'")
+
+    if not os.path.isdir(graphs_dir):
+        os.makedirs(graphs_dir, exist_ok=True)
+        print(f"\nOutput grafici inizializzato: '{graphs_dir}'")
+        return
+
+    for entry in os.listdir(graphs_dir):
+        path = os.path.join(graphs_dir, entry)
+        if os.path.isdir(path) and not os.path.islink(path):
+            shutil.rmtree(path)
+        else:
+            os.remove(path)
+
+    print(f"\nOutput grafici svuotato: '{graphs_dir}'")
+
+
 def process_csv(csv_path, graphs_dir, theme, problem_name, title_suffix=""):
     """Process a single CSV file: load, compute stats, print table, generate graphs."""
     if not os.path.isfile(csv_path):
@@ -889,6 +936,15 @@ def main():
     base_out = args.out
 
     processed_any = False
+
+    expected_csvs = [
+        os.path.join(results_dir, "bsp_results.csv"),
+        os.path.join(results_dir, "pup_double_results.csv"),
+        os.path.join(results_dir, "pup_doublev_results.csv"),
+        os.path.join(results_dir, "results.csv"),
+    ]
+    if any(os.path.isfile(path) for path in expected_csvs):
+        reset_graphs_dir(base_out)
 
     # ---- BSP ----
     bsp_csv = os.path.join(results_dir, "bsp_results.csv")
