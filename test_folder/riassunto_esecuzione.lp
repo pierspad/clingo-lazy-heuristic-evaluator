@@ -9,14 +9,15 @@ https://github.com/tilmanni/Alpha/tree/domspec_heuristics_extended_prolog/Evalua
 Answer Set Programming (ASP) è un framework di rappresentazione della conoscenza e ragionamento dichiarativo basato sulla logica del primo ordine. Il paradigma di calcolo dei moderni sistemi ASP, come Clingo, si articola in due fasi principali. Inizialmente, il grounder (Gringo) trasforma le descrizioni del primo ordine in logica proposizionale, costruendo l'universo di Herbrand ed eliminando le variabili. Successivamente, il programma proposizionale equivalente viene risolto dal solver (Clasp), il quale opera sullo spazio di ricerca tramite tecniche avanzate come il CDNL (Conflict-Driven Clause Learning) per generare le soluzioni .
 
 Un problema critico di questo processo è che istanze di grandi dimensioni non possono essere groundate in tempi e spazi di memoria accettabili. Questa esplosione combinatoria, nota come grounding bottleneck, si può notare persino quando si utilizzano euristiche domain-specific che incorporano aggregati.  
-La semantica degli aggregati in ASP prevede che essi siano valutati esclusivamente rispetto a un assegnamento di verità completo. Poiché Gringo non può conoscere a priori quali atomi risulteranno veri durante la ricerca, è costretto a generare preventivamente tutte le possibili combinazioni di valori per le variabili presenti nel corpo dell'euristica.
+
+In Clingo, i pesi e le priorità ([W@P]) di un'euristica devono essere risolti dal grounder come costanti intere statiche prima che il solving inizi. Se W o P dipendono dal risultato di un aggregato (come S), Gringo non ha un valore costante da inserire nell'istruzione per il solver. Di conseguenza, l'unico modo per preservare la logica è istanziare una direttiva euristica separata per ogni singolo valore intero che l'aggregato può generare.
 L'euristica che viene aggiunta con lo scopo di velocizzare il tempo di solving finisce per saturare la RAM e rendere il processo di grounding impraticabile o il processo di solving inefficiente a causa dell'enorme spazio di ricerca generato.
 
 Nel balanced sum problem, come definito nel paper di Comploi-Taupe, l'obiettivo è che la differenza in valore assoluto della somma degli elementi contenuti in due insiemi sia uguale a 1.
 Immaginando di dover distribuire equamente i numeri da 1 a 3 tra due insiemi, b e c, con la condizione che ogni numero può essere assegnato solo a uno dei due insiemi. Per indirizzare il solver, è utile massimizzare l'assegnazione a un insieme valutando dinamicamente la somma dell'altro. Usando la sintassi nativa, scriveremmo:
 
-#heuristic b(X): x(X), not c(X), S = #sum{Y : c(Y)}. [X@S]
-#heuristic c(X): x(X), not b(X), S = #sum{Y : b(Y)}. [X@S]
+#heuristic b(X): x(X), not c(X), S = #sum{Y : c(Y)}. [X@S, true]
+#heuristic c(X): x(X), not b(X), S = #sum{Y : b(Y)}. [X@S, true]
 
 è importante specificare che non è l'aggregato in se a generare un esplosione combinatoria.
 Se venisse usato in un normale vincolo logico, gringo lo tradurrebbe in un weight constraint.
@@ -76,25 +77,25 @@ Di conseguenza, non potendo calcolare un valore univoco per S, il grounder è co
 #heuristic c(3):not b(3),#sum{1:b(1);2:b(2);3:b(3)}=6.[3@6,true]
 
 
-Per rendere quindi il processo più efficiente l'obiettivo è far si che il calcolo dell'aggregato venga effettuato a runtime valutando esclusivamente l'assegnazione parziale corrente, evitando così di dover pre-calcolare tutte le possibili combinazioni di valori per le variabili presenti nel corpo dell'euristica.
+Per rendere quindi il processo più efficiente l'obiettivo è far si che l'euristica venga valutata e groundata da gringo come un fatto semplice, delegando ad un propagatore in c++ a runtime la valutazione e il calcolo dell'euristica.
 
-Il programma viene passato a Clingo, ma invece di far groundare a Gringo le euristiche secondo il pattern classico, queste vengono codificate come template strutturali, ovvero fatti proposizionali statici della forma:
+Per realizzare ciò il programma viene passato a Clingo, ma invece di far groundare a Gringo le euristiche secondo il pattern classico #heuristic, esse vengono tradotte in un fatto proposizionale (aiutandosi anche con il file asp_heuristic_converter.py), queste vengono codificate come template strutturali, ovvero fatti proposizionali statici della forma:
 
 __heuristic(__target(TargetPred), ...argomenti flessibili...).
 
-Il predicato target viene dichiarato esplicitamente con __target(TargetPred). Tutti gli argomenti sono in ordine libero
-e vengono classificati automaticamente dal parser C++:
+Il predicato target viene dichiarato esplicitamente con __target(TargetPred). 
+L'ordine degli argomenti non è rilevante e vengono classificati automaticamente dal parser C++:
   - __target(pred)                             → predicato target
   - atomo semplice (es. x)                    → body positivo
   - prefisso __n_ (es. __n_c)                → body negativo (not c(X))
-  - __bind(var, __agg(pred))                  → binding variabile → aggregato
+  - __bind(var, __agg(pred, idx?, filters...)) → binding variabile → aggregato
   - __weight(expr)                             → espressione per il peso
   - __priority(expr)                           → espressione per la priorità
   - "true" / "false" / "sign"                  → segno dell'euristica
 
 Le espressioni (expr) supportate sono:
   - numero intero                              → costante (es. 5)
-  - self                                       → valore del dominio (es. X in b(X))
+  - self                                       → valore del dominio MVP: primo argomento numerico del target (es. X in b(X))
   - variabile (nome da __bind)                 → valore corrente dell'aggregato legato
   - __add(a, b)                                → somma di due espressioni
   - __sub(a, b)                                → sottrazione
@@ -104,6 +105,15 @@ Questo fa sì che Gringo includa nel programma proposizionale una singola riga p
 
 __heuristic(__target(b), x, __n_c, __bind(s, __sum(c)), __weight(self), __priority(s), true).
 __heuristic(__target(c), x, __n_b, __bind(s, __sum(b)), __weight(self), __priority(s), true).
+
+Nota di perimetro MVP: `self` non e' stato eliminato nel propagatore corrente.
+E' supportato dentro `__weight(...)` e `__priority(...)`, anche in espressioni
+aritmetiche, ma con una semantica volutamente stretta: coincide con il primo
+argomento numerico della tupla target. Quindi copre direttamente casi come
+`b(X)` e `c(X)` nel BSP, dove `[X@S]` diventa `__weight(self)`,
+ma non introduce ancora nomi separati per tutti gli argomenti di un target
+multi-argomento. Per PUP gli altri valori contestuali vanno espressi tramite
+`__bind(...)` e filtri `__filter(...)`.
 
 
 
@@ -378,10 +388,11 @@ __heuristic/N puo' essere formalizzata in EBNF come segue.
 <neg-lit>          ::= "__n_" <pred-id>
 
 <bind>             ::= "__bind(" <var-id> "," <agg-expr> ")"
-<agg-expr>         ::= "__sum(" <pred-id> ")"
-              | "__count(" <pred-id> ")"
-              | "__min(" <pred-id> ")"
-              | "__max(" <pred-id> ")"
+<agg-expr>         ::= "__sum(" <pred-id> ["," <arg-index>] {"," <filter>} ")"
+              | "__count(" <pred-id> ["," <arg-index>] {"," <filter>} ")"
+              | "__min(" <pred-id> ["," <arg-index>] {"," <filter>} ")"
+              | "__max(" <pred-id> ["," <arg-index>] {"," <filter>} ")"
+<filter>           ::= "__filter(" <source-index> "," <target-index> ["," <offset>] ")"
 
 <weight>           ::= "__weight(" <arith-expr> ")"
 <priority>         ::= "__priority(" <arith-expr> ")"
@@ -397,14 +408,18 @@ __heuristic/N puo' essere formalizzata in EBNF come segue.
 
 <pred-id>          ::= identificatore predicato ASP valido
 <var-id>           ::= identificatore variabile locale valida
+<arg-index>        ::= indice numerico 0-based dell'argomento aggregato
+<source-index>     ::= indice numerico 0-based dell'argomento del predicato aggregato
+<target-index>     ::= indice numerico 0-based dell'argomento del target
+<offset>           ::= intero con segno applicato al valore target
 <int>              ::= intero con segno in base 10
 
 Vincoli semantici addizionali:
 1) deve essere presente esattamente un argomento <target>;
 2) ogni <var-id> usata in <arith-expr> deve essere introdotta da almeno un
   __bind nello stesso fatto __heuristic/N;
-3) la semantica di "self" coincide con il valore di dominio dell'atomo target
-  nell'istanza corrente;
+3) la semantica MVP di "self" coincide con il primo argomento numerico
+  dell'atomo target nell'istanza corrente;
 4) l'ordine degli argomenti e' irrilevante;
 5) in presenza di bind multipli sullo stesso <var-id> si applica il vincolo di
   unicita' (errore di parsing/inizializzazione).
