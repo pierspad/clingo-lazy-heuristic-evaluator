@@ -2,11 +2,11 @@
 # benchmark_bsp.sh
 # Benchmark per il problema BSP (Balanced Sum Partition).
 # Testa 5 configurazioni con il binario clingo modificato:
-#   std      — encoding dichiarativo puro  (__BSP.lp)
-#   std_aux  — #heuristic riscritta con predicato ausiliario (__BSP_aux.lp)
-#   lg       — lazy grounding              (_BSP_lg.lp)
-#   lg_aux   — lazy grounding con predicato ausiliario (_BSP_aux_lg.lp)
-#   colg     — lazy grounding + vincolo ottimizzato (_BSP_colg.lp)
+#   std      — encoding dichiarativo puro  (BSP/__BSP.lp)
+#   std_aux  — #heuristic riscritta con predicato ausiliario (BSP/__BSP_aux.lp)
+#   lg       — lazy grounding              (BSP/_BSP_lg.lp)
+#   lg_aux   — lazy grounding con predicato ausiliario (BSP/_BSP_aux_lg.lp)
+#   colg     — lazy grounding + vincolo ottimizzato (BSP/_BSP_colg.lp)
 #
 # Ogni combinazione (N, variant) viene eseguita REPEATS volte con seed diversi.
 # Le varianti con euristiche usano --heuristic=Domain.
@@ -45,11 +45,11 @@ fi
 cd "${SCRIPT_DIR}"
 
 # Encoding files
-FILE_STD="__BSP.lp"
-FILE_STD_AUX="__BSP_aux.lp"
-FILE_LG="_BSP_lg.lp"
-FILE_LG_AUX="_BSP_aux_lg.lp"
-FILE_COLG="_BSP_colg.lp"
+FILE_STD="BSP/__BSP.lp"
+FILE_STD_AUX="BSP/__BSP_aux.lp"
+FILE_LG="BSP/_BSP_lg.lp"
+FILE_LG_AUX="BSP/_BSP_aux_lg.lp"
+FILE_COLG="BSP/_BSP_colg.lp"
 
 # Varianti da eseguire.
 # Per riattivare colg, aggiungi "colg" alla lista sotto.
