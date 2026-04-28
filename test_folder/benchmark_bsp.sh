@@ -157,15 +157,31 @@ collect_ground_counts() {
         return
     fi
 
-    local counts
-    counts="$(timeout "${TIMEOUT_SECONDS}" "${cmd[@]}" --text 2>/dev/null | awk '
-        BEGIN { heur=0; lazy=0; facts=0; }
-        /^#heuristic/ { heur++; next; }
-        /^__heuristic\(/ { lazy++; facts++; next; }
-        /^[[:space:]]*%/ { next; }
-        /\.$/ && $0 !~ /:-/ { facts++; }
-        END { printf "%d,%d,%d", heur, lazy, facts; }
-    ' || printf "NA,NA,NA")"
+    local counts ground_text
+    if ground_text="$(timeout "${TIMEOUT_SECONDS}" "${cmd[@]}" --text 2>/dev/null)"; then
+        local heur lazy facts
+        heur="$(printf "%s\n" "${ground_text}" | { grep '^#heuristic' || true; } | wc -l | tr -d '[:space:]')"
+        lazy="$(printf "%s\n" "${ground_text}" | { grep '^__heuristic(' || true; } | wc -l | tr -d '[:space:]')"
+        facts="$(printf "%s\n" "${ground_text}" \
+            | { grep '\.$' || true; } \
+            | { grep -v ':-' || true; } \
+            | { grep -v '^[[:space:]]*%' || true; } \
+            | { grep -v '^#heuristic' || true; } \
+            | wc -l | tr -d '[:space:]')"
+        counts="${heur},${lazy},${facts}"
+    else
+        counts="NA,NA,NA"
+    fi
+
+    # Versione precedente con awk, lasciata qui per ripristino rapido:
+    # counts="$(timeout "${TIMEOUT_SECONDS}" "${cmd[@]}" --text 2>/dev/null | awk '
+    #     BEGIN { heur=0; lazy=0; facts=0; }
+    #     /^#heuristic/ { heur++; next; }
+    #     /^__heuristic\(/ { lazy++; facts++; next; }
+    #     /^[[:space:]]*%/ { next; }
+    #     /\.$/ && $0 !~ /:-/ { facts++; }
+    #     END { printf "%d,%d,%d", heur, lazy, facts; }
+    # ' || printf "NA,NA,NA")"
 
     GROUND_COUNT_CACHE["${cache_key}"]="${counts}"
     printf "%s" "${counts}"

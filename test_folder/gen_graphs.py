@@ -23,6 +23,7 @@ import csv
 import os
 import shutil
 import sys
+import textwrap
 from collections import defaultdict
 
 # ============================================================================
@@ -299,6 +300,84 @@ def compute_stats(raw):
 # ============================================================================
 
 VARIANT_FILL_ALPHA = 0.15
+CAPTION_COLOR = "#5F6368"
+SEPARATOR_COLOR = "#D6D6D6"
+
+
+def _add_axis_caption(ax, description: str, *, y: float, width: int, fontsize: int):
+    """Place the metric description below the plot area as a caption."""
+    caption = " ".join(description.split())
+    wrapped = textwrap.fill(caption, width=width)
+    ax.text(
+        0.5, y, wrapped,
+        transform=ax.transAxes,
+        fontsize=fontsize,
+        color=CAPTION_COLOR,
+        ha="center",
+        va="top",
+        fontstyle="italic",
+        clip_on=False,
+    )
+
+
+def _add_subplot_separators(fig, axes, n_plots: int):
+    """Draw thin separators between subplot cells in the combined chart."""
+    from matplotlib.lines import Line2D
+
+    active_axes = axes.flatten()[:n_plots]
+    if not active_axes.size:
+        return
+
+    fig.canvas.draw()
+    positions = [ax.get_position() for ax in active_axes]
+    y0 = min(pos.y0 for pos in positions)
+    y1 = max(pos.y1 for pos in positions)
+    x0 = min(pos.x0 for pos in positions)
+    x1 = max(pos.x1 for pos in positions)
+
+    n_rows, n_cols = axes.shape
+
+    for col in range(1, n_cols):
+        left_positions = [
+            axes[row, col - 1].get_position()
+            for row in range(n_rows)
+            if row * n_cols + (col - 1) < n_plots
+        ]
+        right_positions = [
+            axes[row, col].get_position()
+            for row in range(n_rows)
+            if row * n_cols + col < n_plots
+        ]
+        if not left_positions or not right_positions:
+            continue
+
+        x = (
+            max(pos.x1 for pos in left_positions) +
+            min(pos.x0 for pos in right_positions)
+        ) / 2.0
+        fig.add_artist(Line2D([x, x], [y0, y1], transform=fig.transFigure,
+                              color=SEPARATOR_COLOR, linewidth=0.8))
+
+    for row in range(1, n_rows):
+        upper_positions = [
+            axes[row - 1, col].get_position()
+            for col in range(n_cols)
+            if (row - 1) * n_cols + col < n_plots
+        ]
+        lower_positions = [
+            axes[row, col].get_position()
+            for col in range(n_cols)
+            if row * n_cols + col < n_plots
+        ]
+        if not upper_positions or not lower_positions:
+            continue
+
+        y = (
+            min(pos.y0 for pos in upper_positions) +
+            max(pos.y1 for pos in lower_positions)
+        ) / 2.0
+        fig.add_artist(Line2D([x0, x1], [y, y], transform=fig.transFigure,
+                              color=SEPARATOR_COLOR, linewidth=0.8))
 
 
 def _format_title(metric: str, title: str) -> str:
@@ -356,7 +435,7 @@ def generate_graphs(stats: dict, graphs_dir: str, theme: dict, title_suffix: str
     n_cols = 2
     n_rows = (n_plots + n_cols - 1) // n_cols
 
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(14, 4.4 * n_rows))
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(14, 4.8 * n_rows))
     axes_flat = axes.flatten()
 
     variants = _ordered_variants(stats, theme)
@@ -397,9 +476,7 @@ def generate_graphs(stats: dict, graphs_dir: str, theme: dict, title_suffix: str
         if metric in INTEGER_METRICS:
             ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
-        ax.text(0.98, 0.02, config["description"],
-                transform=ax.transAxes, fontsize=7, color="#666",
-                ha="right", va="bottom", fontstyle="italic")
+        _add_axis_caption(ax, config["description"], y=-0.27, width=64, fontsize=7)
 
         if not has_data:
             ax.text(0.5, 0.5, "No data", transform=ax.transAxes,
@@ -414,7 +491,8 @@ def generate_graphs(stats: dict, graphs_dir: str, theme: dict, title_suffix: str
     suptitle += f"\n(mean ± σ over {_detect_seeds(stats)} seeds per point)"
 
     fig.suptitle(suptitle, fontsize=14, fontweight="bold", y=0.98)
-    plt.tight_layout(rect=[0, 0, 1, 0.96])
+    plt.tight_layout(rect=[0, 0.01, 1, 0.955], h_pad=3.4, w_pad=3.0)
+    _add_subplot_separators(fig, axes, n_plots)
 
     suffix = f"_{title_suffix.lower().replace(' ', '_')}" if title_suffix else ""
     out_path = os.path.join(graphs_dir, f"benchmark_results{suffix}.png")
@@ -432,6 +510,7 @@ def generate_graphs(stats: dict, graphs_dir: str, theme: dict, title_suffix: str
             metric=cfg["metric"],
             title=_format_title(cfg["metric"], cfg["title"]),
             ylabel=cfg["ylabel"],
+            description=cfg["description"],
             filename=fname,
             theme=theme,
             xlabel=xlabel,
@@ -453,7 +532,7 @@ def generate_graphs(stats: dict, graphs_dir: str, theme: dict, title_suffix: str
     _generate_heuristic_reduction_chart(stats, graphs_dir, heuristic_baseline, theme, reduction_fname, xlabel)
 
 
-def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, filename, theme, xlabel):
+def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, description, filename, theme, xlabel):
     """Generate a single chart for one metric."""
     try:
         import matplotlib.pyplot as plt
@@ -468,6 +547,7 @@ def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, filename, t
 
     fig, ax = plt.subplots(figsize=(8, 5))
     variants = _ordered_variants(stats, theme)
+    has_data = False
 
     for variant in variants:
         if metric not in stats[variant]:
@@ -476,6 +556,7 @@ def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, filename, t
         if not data["n"]:
             continue
 
+        has_data = True
         n = np.array(data["n"])
         mean = np.array(data["mean"])
         std = np.array(data["std"])
@@ -492,12 +573,18 @@ def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, filename, t
     ax.set_title(title, fontsize=13, fontweight="bold")
     ax.set_xlabel(xlabel, fontsize=11)
     ax.set_ylabel(ylabel, fontsize=11)
-    ax.legend(fontsize=10)
+    if has_data:
+        ax.legend(fontsize=10)
+    else:
+        ax.text(0.5, 0.5, "No data", transform=ax.transAxes,
+                ha="center", va="center", fontsize=13, color="#AAA")
     ax.grid(True, alpha=0.3, linestyle="--")
     if metric in INTEGER_METRICS:
         ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
-    plt.tight_layout()
+    _add_axis_caption(ax, description, y=-0.20, width=88, fontsize=8)
+
+    plt.tight_layout(rect=[0, 0.05, 1, 1])
     out_path = os.path.join(graphs_dir, filename)
     plt.savefig(out_path, dpi=200, bbox_inches="tight")
     plt.close()
