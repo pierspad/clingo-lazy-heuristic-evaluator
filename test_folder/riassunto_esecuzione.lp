@@ -170,17 +170,36 @@ __heuristic(__target(b), x, __n_c, __bind(s, __sum(c)), __weight(s), __priority(
 
 %% ------------------------------------------------------
 
-Di solito il funzionamento di un propagatore (nello specifico della classe CLingo::Heuristic che eredita da Clingo::Propagator) si articola in 4 fasi:
+Di solito il funzionamento di un propagatore (nello specifico della classe
+CLingo::Heuristic che eredita da Clingo::Propagator) si articola nelle fasi
+seguenti:
 
-1) prima di fare qualunque cosa c'è il metodo init, in init il propagatore euristico analizza i fatti e va a registrare sui fatti che gli interessano dei watch con il metodo add_watch.
-Per essere notificati quando un letterale viene assegnato a falso bisogna registrare il watch sul letterale negativo
+1) Prima di fare qualunque cosa c'e' il metodo init. In init il propagatore
+euristico analizza i fatti ground, costruisce le strutture dati interne e
+registra, tramite add_watch, i letterali solver di cui vuole osservare i
+cambiamenti di stato. Il watch non viene registrato su un fatto astratto, ma
+sul literal solver corrispondente alla condizione che interessa il
+propagatore. Se un'euristica dipende dal fatto che c(X) sia falso, cioe' da
+`not c(X)` nel body, il propagatore deve registrare il watch sul literal solver
+negativo corrispondente a c(X), cosi' da essere notificato quando quella
+condizione diventa vera nell'assegnamento corrente.
 
-2) prima fase di unit propagation, il solver cerca di trarre conclusioni deduttivamente in base alla conoscenza che possiede.
-Durante questa fase, ogni volta che un letterale sotto watch viene assegnato a vero il solver si ferma momentaneamente dal processo di unit propagation e invoca il metodo propagate su quel letterale.
+2) Segue la fase di unit propagation, piu' precisamente Boolean Constraint
+Propagation (BCP). Il solver applica la propagazione booleana sui vincoli e
+sulle nogood gia' presenti. Durante questa fase, ogni volta che un letterale
+osservato tramite watch cambia stato in modo rilevante, il solver invoca il
+metodo propagate del propagatore su quel letterale.
 
-In questo moemnto il propagatore aggiorna le strutture dati e se nota inconsistenze può generare direttamente un nogood tramite add_clause()
+In generale un propagatore puo' aggiungere nuove nogood tramite add_clause()
+quando rileva un'inconsistenza. Nel caso specifico dello HeuristicPropagator,
+pero', la funzione primaria di propagate non e' produrre nuova deduzione
+logica: e' aggiornare incrementalmente le strutture dati interne, in
+particolare gli AggregateState, e mantenere coerente la lista dei trigger
+euristici attivi rispetto all'assegnamento parziale corrente.
 
-questa tiritera si ripete fino a quando non si raggiunge un fixpoint, ovvero un punto in cui ne la unit propagation ne il metodo propagate possono dedurre nuovi valori
+Questo ciclo si ripete fino a quando non si raggiunge un fixpoint, ovvero un
+punto in cui ne' la BCP ne' i propagatori registrati producono ulteriori
+aggiornamenti.
 
 3) raggiunto il fixpoint il solver è costretto a esplorare una diramazione dell'albero di ricerca e qui chiama il metodo decide.
 
@@ -189,10 +208,17 @@ fino a quando non si è dimostrato che non si possono trovare più nuovi AS
 
 4) Raggiunto un assegnamento totale, o un fixpoint intermedio a seconda della configurazione, il solver invoca il metodo check. In questa fase il propagatore effettua una validazione globale sul modello candidato, potendo generare "lazy no-good" per scartare soluzioni che soddisfano le regole ASP ma violano logiche complesse del dominio esterno valutabili solo a modello completo.
 
-5) passaggio "extra", se durante la unit propagation il solver si rende conto di una clausola logica falsificata es: il decide mette a vero un valore che in una regola era presente come falso; allora viene generato esplicitamente un conflitto.
-Viene analizzato il conflitto per sapere che nogood costruire e a quale first unique implication point fare backjumping
+5) Passaggio "extra": se durante la propagazione il solver falsifica una
+nogood, viene rilevato un conflitto. Il conflitto viene analizzato per
+costruire una nogood appresa e determinare il livello di backjumping, spesso
+rispetto al first unique implication point.
 
-allo stesso tempo viene chiamato il metodo "undo" passandogli l'indieme dei letterali che stanno per essere de-assegnati così che il propagatore euristico possa fare un "revert" delle operazioni che aveva fatto sulle strutture dati durante il processo di propagate ritornando allo stato corretto
+Il metodo undo non viene chiamato solo in presenza di un conflitto, ma in
+generale durante il backtracking, incluso il backjumping guidato dai conflitti.
+Clasp gli passa i letterali che stanno per essere de-assegnati, permettendo al
+propagatore euristico di disfare le modifiche di stato esattamente nell'ordine
+inverso rispetto a propagate e di riportare AggregateState e trigger attivi
+allo stato coerente con il nuovo assegnamento parziale.
 
 
 
@@ -212,10 +238,13 @@ Nel problema originale, l'obiettivo e' suddividere i numeri da 1 a n in due insi
 Dimostrazione formale del check.
 
 Sia tot la somma totale dei numeri da 1 a n, calcolabile tramite la formula di
-Gauss: $tot = \frac{n(n+1)}{2}$. Poiche' il costrutto di scelta
-`1 { b(X); c(X) } 1 :- x(X).` impone che ogni numero appartenga esattamente a
-uno dei due insiemi, vale necessariamente: $Sum(b) + Sum(c) = tot$.
-Da questa equivalenza segue: $Sum(c) = tot - Sum(b)$.
+Gauss:
+$$tot = \frac{n(n+1)}{2}$$
+
+Poiche' il costrutto di scelta `1 { b(X); c(X) } 1 :- x(X).` impone che ogni
+numero appartenga esattamente a uno dei due insiemi, vale necessariamente:
+$$Sum(b) + Sum(c) = tot$$
+$$Sum(c) = tot - Sum(b)$$
 
 Il requisito del problema e': $|Sum(b) - Sum(c)| <= 1$.
 Sostituendo $Sum(c)$:
@@ -236,15 +265,12 @@ max_val definite in testa al programma. L'aggregato `#sum{ Y : b(Y) }`
 calcola la somma degli elementi assegnati a b; il vincolo di integrita'
 scarta tutti i modelli in cui tale somma non ricade nell'intervallo valido.
 
-Questa formulazione e' detta lineare in contrapposizione al controllo
-commentato `(SB-SC)**2 > 1`. Il quadrato introduce una non-linearita'
-aritmetica che, in ASP, costringe il grounder a istanziare variabili per
-tutte le possibili combinazioni di somme e a valutarne la differenza
-quadratica. La forma ottimizzata riduce invece la verifica a un singolo
-aggregato lineare con due bound costanti precalcolati in grounding. Per Clasp
-questo si traduce in un singolo weight constraint, con meno aggregati da
-tracciare a runtime e meno operazioni aritmetiche costose, riducendo in modo
-netto i conflitti durante la ricerca.
+Questa forma chiusa permette al grounder di precalcolare i bound statici,
+convertendo il controllo non lineare commentato `(SB-SC)**2 > 1` in un
+semplice weight constraint lineare. In questo modo Clasp deve tracciare un
+solo aggregato con due estremi costanti, invece di esplorare combinazioni di
+somme e differenze quadratiche; il risultato e' una riduzione drastica del
+numero di conflitti generati durante la ricerca.
 
 
 
@@ -419,7 +445,9 @@ Vincoli semantici addizionali:
 2) ogni <var-id> usata in <arith-expr> deve essere introdotta da almeno un
   __bind nello stesso fatto __heuristic/N;
 3) la semantica MVP di "self" coincide con il primo argomento numerico
-  dell'atomo target nell'istanza corrente;
+  dell'atomo target nell'istanza corrente; in presenza di tuple target
+  multi-argomento, "self" valuta specificamente il primo argomento numerico
+  della tupla, conformemente al comportamento implementato nel parser C++;
 4) l'ordine degli argomenti e' irrilevante;
 5) in presenza di bind multipli sullo stesso <var-id> si applica il vincolo di
   unicita' (errore di parsing/inizializzazione).
@@ -464,7 +492,9 @@ Complessita' del percorso caldo (decide):
 
 Complessita' di propagate:
 - per ciascun trigger attivato: aggiornamento stato body in O(1);
-- aggiornamento aggregati incrementali sum/count in O(A);
+- aggiornamento aggregati incrementali sum/count in O(1) per singola chiamata
+  di aggiornamento, quindi O(A) sul totale degli aggiornamenti attivati dal
+  literal;
 - per min/max con multiset implicito: inserimento/rimozione in O(log M), dove
   M e' il numero di valori distinti correnti nell'aggregato;
 - costo complessivo su un passo di propagazione: O(A) (sum/count) oppure
@@ -531,6 +561,12 @@ Confronto critico da esplicitare nel capitolo stato dell'arte:
 3) Contributo originale della tesi: introduzione di una pipeline ibrida in cui
   la semantica euristica viene "compilata" in template statici e poi valutata
   incrementalmente nel solver CDNL, preservando correttezza e scalabilita'.
+
+Il posizionamento rispetto a WASP e Alpha e' quindi volutamente intermedio:
+l'obiettivo non e' sostituire il grounding lazy dell'intero programma, ma
+ottenere parte dei suoi benefici nell'hot path delle euristiche decisionali,
+mantenendo intatta la potenza del CDNL nativo di Clasp per il resto
+dell'encoding.
 
 Questa sezione deve includere anche una discussione dei limiti attuali:
 copertura parziale degli aggregati supportati, costo logaritmico per min/max,
