@@ -18,10 +18,8 @@ sumC(Sum) :- Sum = #sum{Y : c(Y)}.
 
 % heuristics
 % Originale: #heuristic b(X) : x(X), not c(X), S = #sum{Y : c(Y)}. [X@S, true]
-__h_b_1_lazy(X) :- x(X), not c(X).
-__heuristic(__target(b), __h_b_1_lazy, __bind(s, __sum(c, 0)), __weight(self), __priority(s), true).
+__heuristic(__target(b), x, __n_c, __bind(s, __sum(c, 0)), __weight(self), __priority(s), true, __semantics(clingo)).
 % Originale: #heuristic c(X) : x(X), not b(X), S = #sum{Y : b(Y)}. [X@S, true]
-__h_c_2_lazy(X) :- x(X), not b(X).
-__heuristic(__target(c), __h_c_2_lazy, __bind(s, __sum(b, 0)), __weight(self), __priority(s), true).
+__heuristic(__target(c), x, __n_b, __bind(s, __sum(b, 0)), __weight(self), __priority(s), true, __semantics(clingo)).
 
 

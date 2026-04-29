@@ -158,6 +158,24 @@ struct AtomKeyHash {
 };
 
 enum class HeuristicSign { True, False, FollowFallback };
+enum class HeuristicSemantics { Alpha, Clingo };
+
+struct BodyMatch {
+    int source_arg_index = -1;
+    int target_arg_index = -1;
+};
+
+struct BodyArgBinding {
+    std::string variable_name;
+    int source_arg_index = -1;
+};
+
+struct BodyPredicateSpec {
+    std::string pred_name;
+    std::vector<BodyMatch> matches;
+    std::vector<BodyArgBinding> arg_bindings;
+    bool explicit_mapping = false;
+};
 
 // AST minimale per __weight(...) e __priority(...).
 // Dopo init non conserviamo piu' Clingo::Symbol: decide valuta solo questa
@@ -211,10 +229,12 @@ struct ArithmeticExpression {
 
 struct HeuristicRuleTemplate {
     std::string target_pred;
-    std::vector<std::string> pos_body_preds;
+    std::vector<BodyPredicateSpec> pos_body_preds;
     std::vector<std::string> neg_body_preds;
     HeuristicSign sign = HeuristicSign::True;
+    HeuristicSemantics semantics = HeuristicSemantics::Alpha;
     std::unordered_map<std::string, AggregateKey> var_bindings;
+    std::unordered_set<std::string> body_var_names;
     ArithmeticExpression weight_expr = ArithmeticExpression::number(0);
     ArithmeticExpression priority_expr = ArithmeticExpression::number(0);
 };
@@ -223,6 +243,7 @@ struct LazyTargetInstance {
     Clingo::literal_t target_lit;
     int self_value;
     std::vector<int> tuple_values;
+    std::unordered_map<std::string, int> body_var_values;
     size_t rule_idx;
     size_t trigger_index;
 };
@@ -244,6 +265,7 @@ private:
         Clingo::literal_t target_lit;
         int self_value;
         std::vector<int> tuple_values;
+        std::unordered_map<std::string, int> body_var_values;
         std::vector<Clingo::literal_t> pos_body_lits;
         std::vector<Clingo::literal_t> neg_body_lits;
     };

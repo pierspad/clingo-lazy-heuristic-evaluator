@@ -27,6 +27,12 @@ static bool try_parse_sign(std::string const &name, HeuristicSign &out) {
     return false;
 }
 
+static bool try_parse_semantics(std::string const &name, HeuristicSemantics &out) {
+    if (name == "alpha")  { out = HeuristicSemantics::Alpha; return true; }
+    if (name == "clingo") { out = HeuristicSemantics::Clingo; return true; }
+    return false;
+}
+
 static bool is_neg_body(std::string const &name) {
     return name.size() > 4 && name.compare(0, 4, "__n_") == 0;
 }
@@ -103,6 +109,7 @@ static ArithmeticExpressionKind expression_kind_for_operator(ArithmeticOperator 
 static ArithmeticExpression parse_arithmetic_expression(
     Clingo::Symbol const &term,
     std::unordered_map<std::string, AggregateKey> const &bindings,
+    std::unordered_set<std::string> const &body_vars,
     std::string const &field_name
 ) {
     if (is_clingo_symbol_number(term)) {
@@ -125,8 +132,11 @@ static ArithmeticExpression parse_arithmetic_expression(
         if (bindings.find(name) != bindings.end()) {
             return ArithmeticExpression::bound_variable(name);
         }
+        if (body_vars.find(name) != body_vars.end()) {
+            return ArithmeticExpression::bound_variable(name);
+        }
         throw std::runtime_error("Sintassi euristica malformata: variabile '" + name +
-                                 "' usata in " + field_name + " ma non definita con __bind.");
+                                 "' usata in " + field_name + " ma non definita con __bind o __bind_arg.");
     }
 
     ArithmeticOperator const op = parse_arithmetic_operator(name);
@@ -139,8 +149,8 @@ static ArithmeticExpression parse_arithmetic_expression(
                                  "' in " + field_name + " richiede esattamente due argomenti.");
     }
 
-    auto lhs = parse_arithmetic_expression(args[0], bindings, field_name);
-    auto rhs = parse_arithmetic_expression(args[1], bindings, field_name);
+    auto lhs = parse_arithmetic_expression(args[0], bindings, body_vars, field_name);
+    auto rhs = parse_arithmetic_expression(args[1], bindings, body_vars, field_name);
     return ArithmeticExpression::binary(expression_kind_for_operator(op), std::move(lhs), std::move(rhs));
 }
 
@@ -198,6 +208,111 @@ static AggregateFilter parse_aggregate_filter(Clingo::Symbol const &filter_symbo
     filter.target_arg_index = args[1].number();
     filter.target_offset = args.size() == 3 ? args[2].number() : 0;
     return filter;
+}
+
+static BodyMatch parse_body_match(Clingo::Symbol const &match_symbol) {
+    if (!is_named_function(match_symbol, "__match")) {
+        throw std::runtime_error("Sintassi euristica malformata: mapping body non valido; usa __match(source_idx, target_idx).");
+    }
+
+    auto const args = match_symbol.arguments();
+    if (args.size() != 2 ||
+        !is_clingo_symbol_number(args[0]) ||
+        !is_clingo_symbol_number(args[1])) {
+        throw std::runtime_error("Sintassi euristica malformata: __match richiede due indici numerici.");
+    }
+
+    BodyMatch match;
+    match.source_arg_index = args[0].number();
+    match.target_arg_index = args[1].number();
+    return match;
+}
+
+static BodyArgBinding parse_body_arg_binding(Clingo::Symbol const &binding_symbol) {
+    if (!is_named_function(binding_symbol, "__bind_arg")) {
+        throw std::runtime_error("Sintassi euristica malformata: binding body non valido; usa __bind_arg(var, source_idx).");
+    }
+
+    auto const args = binding_symbol.arguments();
+    if (args.size() != 2 ||
+        !is_nullary_function(args[0]) ||
+        !is_clingo_symbol_number(args[1])) {
+        throw std::runtime_error("Sintassi euristica malformata: __bind_arg richiede una variabile e un indice numerico.");
+    }
+
+    BodyArgBinding binding;
+    binding.variable_name = args[0].name();
+    binding.source_arg_index = args[1].number();
+    return binding;
+}
+
+static BodyPredicateSpec parse_body_predicate_spec(Clingo::Symbol const &body_symbol) {
+    if (!is_named_function(body_symbol, "__body")) {
+        throw std::runtime_error("Sintassi euristica malformata: body esplicito non valido; usa __body(pred, ...).");
+    }
+
+    auto const args = body_symbol.arguments();
+    if (args.empty() || !is_nullary_function(args[0])) {
+        throw std::runtime_error("Sintassi euristica malformata: __body richiede __body(pred, ...).");
+    }
+
+    BodyPredicateSpec spec;
+    spec.pred_name = args[0].name();
+    spec.explicit_mapping = true;
+
+    for (size_t i = 1; i < args.size(); ++i) {
+        if (!is_clingo_symbol_function(args[i])) {
+            throw std::runtime_error("Sintassi euristica malformata: argomento non valido in __body.");
+        }
+        std::string const nested_name = args[i].name();
+        if (nested_name == "__match") {
+            spec.matches.push_back(parse_body_match(args[i]));
+        }
+        else if (nested_name == "__bind_arg") {
+            spec.arg_bindings.push_back(parse_body_arg_binding(args[i]));
+        }
+        else {
+            throw std::runtime_error("Sintassi euristica malformata: argomento '" +
+                                     nested_name + "' non valido in __body.");
+        }
+    }
+
+    return spec;
+}
+
+static bool body_matches_target(BodyPredicateSpec const &spec,
+                                AtomKey const &body_key,
+                                AtomKey const &target_key) {
+    if (!spec.explicit_mapping) {
+        return body_key == target_key;
+    }
+
+    for (auto const &match : spec.matches) {
+        if (match.source_arg_index < 0 ||
+            match.target_arg_index < 0 ||
+            static_cast<size_t>(match.source_arg_index) >= body_key.values.size() ||
+            static_cast<size_t>(match.target_arg_index) >= target_key.values.size()) {
+            return false;
+        }
+        if (body_key.values[match.source_arg_index] != target_key.values[match.target_arg_index]) {
+            return false;
+        }
+    }
+
+    return !spec.matches.empty();
+}
+
+static bool collect_body_arg_values(BodyPredicateSpec const &spec,
+                                    AtomKey const &body_key,
+                                    std::unordered_map<std::string, int> &values) {
+    for (auto const &binding : spec.arg_bindings) {
+        if (binding.source_arg_index < 0 ||
+            static_cast<size_t>(binding.source_arg_index) >= body_key.values.size()) {
+            return false;
+        }
+        values[binding.variable_name] = body_key.values[binding.source_arg_index];
+    }
+    return true;
 }
 
 static bool build_runtime_key_from_source_atom(AggregateKey const &agg_key,
@@ -391,6 +506,33 @@ void HeuristicPropagator::parse_lazy_heuristic_templates(Clingo::SymbolicAtoms c
                 continue;
             }
 
+            // __semantics(clingo) richiede che i body negativi siano
+            // assegnati esplicitamente a falso. Senza questo marcatore resta
+            // la semantica alpha storica: basta che non siano veri.
+            if (arg_name == "__semantics") {
+                if (arg_args.size() != 1 || !is_nullary_function(arg_args[0])) {
+                    throw std::runtime_error("Sintassi euristica malformata: __semantics richiede __semantics(alpha|clingo).");
+                }
+                HeuristicSemantics parsed_semantics;
+                if (!try_parse_semantics(arg_args[0].name(), parsed_semantics)) {
+                    throw std::runtime_error("Sintassi euristica malformata: semantica euristica sconosciuta.");
+                }
+                tmpl.semantics = parsed_semantics;
+                continue;
+            }
+
+            // __body(pred, __match(...), __bind_arg(...)) permette di usare un
+            // predicato ausiliario con una tupla diversa dal target, ad esempio
+            // h_b(X,S) per pilotare b(X) e usare S in __priority(s).
+            if (arg_name == "__body") {
+                BodyPredicateSpec spec = parse_body_predicate_spec(arg);
+                for (auto const &binding : spec.arg_bindings) {
+                    tmpl.body_var_names.insert(binding.variable_name);
+                }
+                tmpl.pos_body_preds.push_back(std::move(spec));
+                continue;
+            }
+
             // Gestisce gli argomenti di arità zero (costanti o identificatori semplici)
             if (arg_args.empty()) {
                 HeuristicSign parsed_sign;
@@ -417,7 +559,9 @@ void HeuristicPropagator::parse_lazy_heuristic_templates(Clingo::SymbolicAtoms c
                 // 4. Registra tutti i body positivi. La fase trigger fara'
                 //    l'intersezione sulla stessa tupla, quindi a(X), b(X)
                 //    deve essere vero in entrambi i predicati.
-                tmpl.pos_body_preds.push_back(arg_name);
+                BodyPredicateSpec spec;
+                spec.pred_name = arg_name;
+                tmpl.pos_body_preds.push_back(std::move(spec));
                 continue;
             }
 
@@ -432,8 +576,8 @@ void HeuristicPropagator::parse_lazy_heuristic_templates(Clingo::SymbolicAtoms c
         }
 
         // Da qui in poi peso/priorita' sono AST tipizzati, non piu' Symbol.
-        tmpl.weight_expr = parse_arithmetic_expression(weight_symbol, tmpl.var_bindings, "__weight");
-        tmpl.priority_expr = parse_arithmetic_expression(priority_symbol, tmpl.var_bindings, "__priority");
+        tmpl.weight_expr = parse_arithmetic_expression(weight_symbol, tmpl.var_bindings, tmpl.body_var_names, "__weight");
+        tmpl.priority_expr = parse_arithmetic_expression(priority_symbol, tmpl.var_bindings, tmpl.body_var_names, "__priority");
 
         rule_templates_.push_back(std::move(tmpl));
     }
@@ -446,7 +590,7 @@ HeuristicPropagator::RulePredicateSets HeuristicPropagator::extract_lazy_predica
         predicates.target_preds.insert(tmpl.target_pred);
 
         for (auto const &pos_pred : tmpl.pos_body_preds) {
-            predicates.body_preds.insert(pos_pred);
+            predicates.body_preds.insert(pos_pred.pred_name);
         }
 
         for (auto const &neg_pred : tmpl.neg_body_preds) {
@@ -502,72 +646,90 @@ void HeuristicPropagator::register_lazy_body_triggers(Clingo::PropagateInit &ini
         auto const &tmpl = rule_templates_[ri];
         if (tmpl.pos_body_preds.empty()) continue;
 
-        auto body_it = pred_lit_map.find(tmpl.pos_body_preds[0]);
+        auto body_it = pred_lit_map.find(tmpl.pos_body_preds[0].pred_name);
         if (body_it == pred_lit_map.end()) continue;
 
         auto target_map_it = pred_lit_map.find(tmpl.target_pred);
         if (target_map_it == pred_lit_map.end()) continue;
 
         for (auto const &entry : body_it->second) {
-            AtomKey const &tuple_key = entry.first;
-            std::vector<Clingo::literal_t> pos_lits{entry.second};
+            AtomKey const &body_key = entry.first;
+            auto const &first_spec = tmpl.pos_body_preds[0];
 
-            bool all_pos_available = true;
-            for (size_t pi = 1; pi < tmpl.pos_body_preds.size(); ++pi) {
-                auto pos_map_it = pred_lit_map.find(tmpl.pos_body_preds[pi]);
-                if (pos_map_it == pred_lit_map.end()) {
-                    all_pos_available = false;
-                    break;
+            for (auto const &target_entry : target_map_it->second) {
+                AtomKey const &target_key = target_entry.first;
+                if (!body_matches_target(first_spec, body_key, target_key)) continue;
+
+                std::vector<Clingo::literal_t> pos_lits{entry.second};
+                std::unordered_map<std::string, int> body_var_values;
+                if (!collect_body_arg_values(first_spec, body_key, body_var_values)) continue;
+
+                bool all_pos_available = true;
+                for (size_t pi = 1; pi < tmpl.pos_body_preds.size(); ++pi) {
+                    auto const &spec = tmpl.pos_body_preds[pi];
+                    auto pos_map_it = pred_lit_map.find(spec.pred_name);
+                    if (pos_map_it == pred_lit_map.end()) {
+                        all_pos_available = false;
+                        break;
+                    }
+
+                    bool found_matching_body = false;
+                    for (auto const &candidate : pos_map_it->second) {
+                        if (!body_matches_target(spec, candidate.first, target_key)) continue;
+                        std::unordered_map<std::string, int> candidate_values = body_var_values;
+                        if (!collect_body_arg_values(spec, candidate.first, candidate_values)) continue;
+                        body_var_values = std::move(candidate_values);
+                        pos_lits.push_back(candidate.second);
+                        found_matching_body = true;
+                        break;
+                    }
+
+                    if (!found_matching_body) {
+                        all_pos_available = false;
+                        break;
+                    }
                 }
 
-                auto pit = pos_map_it->second.find(tuple_key);
-                if (pit == pos_map_it->second.end()) {
-                    all_pos_available = false;
-                    break;
+                if (!all_pos_available) continue;
+
+                Clingo::literal_t target_lit = target_entry.second;
+                if (target_lit == 0) continue;
+
+                std::vector<Clingo::literal_t> neg_lits;
+                for (auto const &neg_pred : tmpl.neg_body_preds) {
+                    auto neg_map_it = pred_lit_map.find(neg_pred);
+                    if (neg_map_it != pred_lit_map.end()) {
+                        auto nit = neg_map_it->second.find(target_key);
+                        if (nit != neg_map_it->second.end()) neg_lits.push_back(nit->second);
+                    }
                 }
 
-                pos_lits.push_back(pit->second);
-            }
+                BodyTriggerInfo trigger;
+                trigger.rule_idx = ri;
+                trigger.target_lit = target_lit;
+                trigger.self_value = target_key.values.empty() ? 0 : target_key.values[0];
+                trigger.tuple_values = target_key.values;
+                trigger.body_var_values = std::move(body_var_values);
+                trigger.pos_body_lits = pos_lits;
+                trigger.neg_body_lits = std::move(neg_lits);
 
-            if (!all_pos_available) continue;
-
-            Clingo::literal_t target_lit = 0;
-            auto tit = target_map_it->second.find(tuple_key);
-            if (tit != target_map_it->second.end()) target_lit = tit->second;
-            if (target_lit == 0) continue;
-
-            std::vector<Clingo::literal_t> neg_lits;
-            for (auto const &neg_pred : tmpl.neg_body_preds) {
-                auto neg_map_it = pred_lit_map.find(neg_pred);
-                if (neg_map_it != pred_lit_map.end()) {
-                    auto nit = neg_map_it->second.find(tuple_key);
-                    if (nit != neg_map_it->second.end()) neg_lits.push_back(nit->second);
-                }
-            }
-
-            BodyTriggerInfo trigger;
-            trigger.rule_idx = ri;
-            trigger.target_lit = target_lit;
-            trigger.self_value = tuple_key.values.empty() ? 0 : tuple_key.values[0];
-            trigger.tuple_values = tuple_key.values;
-            trigger.pos_body_lits = pos_lits;
-            trigger.neg_body_lits = std::move(neg_lits);
-
-            for (auto body_lit : trigger.pos_body_lits) {
-                body_triggers_[body_lit].push_back(trigger);
-                if (assignment.is_true(body_lit)) {
-                    auto &target_vec = lazy_targets_[body_lit];
-                    target_vec.push_back({
-                        trigger.target_lit,
-                        trigger.self_value,
-                        trigger.tuple_values,
-                        trigger.rule_idx,
-                        body_triggers_[body_lit].size() - 1
-                    });
-                    active_body_lits_.insert(body_lit);
-                }
-                else if (watched_body_lits.insert(body_lit).second) {
-                    init.add_watch(body_lit);
+                for (auto body_lit : trigger.pos_body_lits) {
+                    body_triggers_[body_lit].push_back(trigger);
+                    if (assignment.is_true(body_lit)) {
+                        auto &target_vec = lazy_targets_[body_lit];
+                        target_vec.push_back({
+                            trigger.target_lit,
+                            trigger.self_value,
+                            trigger.tuple_values,
+                            trigger.body_var_values,
+                            trigger.rule_idx,
+                            body_triggers_[body_lit].size() - 1
+                        });
+                        active_body_lits_.insert(body_lit);
+                    }
+                    else if (watched_body_lits.insert(body_lit).second) {
+                        init.add_watch(body_lit);
+                    }
                 }
             }
         }
@@ -676,6 +838,7 @@ void HeuristicPropagator::propagate(Clingo::PropagateControl &control, Clingo::L
                     trigger.target_lit,
                     trigger.self_value,
                     trigger.tuple_values,
+                    trigger.body_var_values,
                     trigger.rule_idx,
                     ti
                 });
@@ -732,10 +895,11 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
 
         for (auto const &inst : lazy_it->second) {
             bool pos_satisfied = true;
-            bool neg_satisfied = false;
+            bool neg_satisfied = true;
             if (trigger_it != body_triggers_.end() &&
                 inst.trigger_index < trigger_it->second.size()) {
                 auto const &trigger = trigger_it->second[inst.trigger_index];
+                auto const &tmpl = rule_templates_[inst.rule_idx];
 
                 for (auto pos_lit : trigger.pos_body_lits) {
                     if (pos_lit == 0 ||
@@ -746,14 +910,21 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
                 }
 
                 for (auto neg_lit : trigger.neg_body_lits) {
-                    if (neg_lit != 0 &&
-                        assignment.truth_value(neg_lit) == Clingo::TruthValue::True) {
-                        neg_satisfied = true;
+                    if (neg_lit == 0) continue;
+                    auto const value = assignment.truth_value(neg_lit);
+                    if (tmpl.semantics == HeuristicSemantics::Clingo) {
+                        if (value != Clingo::TruthValue::False) {
+                            neg_satisfied = false;
+                            break;
+                        }
+                    }
+                    else if (value == Clingo::TruthValue::True) {
+                        neg_satisfied = false;
                         break;
                     }
                 }
             }
-            if (!pos_satisfied || neg_satisfied) continue;
+            if (!pos_satisfied || !neg_satisfied) continue;
 
             if (assignment.truth_value(inst.target_lit) != Clingo::TruthValue::Free) continue;
 
@@ -761,7 +932,7 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
 
             // Costruisce l'ambiente delle variabili __bind per questa tupla.
             // Aggregati senza stato presente valgono 0, inclusi __min/__max vuoti.
-            std::unordered_map<std::string, int> var_env;
+            std::unordered_map<std::string, int> var_env = inst.body_var_values;
             for (auto const &vb : tmpl.var_bindings) {
                 int val = 0;
                 RuntimeAggregateKey runtime_key;

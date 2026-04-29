@@ -156,24 +156,27 @@ BSP_THEME = {
         "std":  "Standard (BSP.lp)",
         "std_aux": "Standard + Aux (BSP_aux.lp)",
         "lg":   "Lazy Grounding (BSP_lg.lp)",
-        "lg_aux": "Lazy + Aux (BSP_aux_lg.lp)",
+        "cslg": "Lazy + Clingo Semantics (BSP_cslg.lp)",
+        "auxlg": "Lazy + Aux (BSP_auxlg.lp)",
         "colg": "Lazy + Optimized Constraint (BSP_colg.lp)",
     },
     "variant_colors": {
         "std":  "#E74C3C",   # red
         "std_aux": "#C0392B", # dark red
         "lg":   "#2ECC71",   # green
-        "lg_aux": "#16A085",  # teal
+        "cslg": "#9B59B6",   # purple
+        "auxlg": "#16A085",  # teal
         "colg": "#3498DB",   # blue
     },
     "variant_markers": {
         "std":  "o",
         "std_aux": "X",
         "lg":   "s",
-        "lg_aux": "P",
+        "cslg": "D",
+        "auxlg": "P",
         "colg": "^",
     },
-    "variant_order": ["std", "std_aux", "lg", "lg_aux", "colg"],
+    "variant_order": ["std", "std_aux", "lg", "cslg", "auxlg", "colg"],
     "xlabel": "Problem size (N)",
     "suptitle": "BSP Benchmark: Standard vs Lazy Heuristic Grounding",
     "baseline": "std",

@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # benchmark_bsp.sh
 # Benchmark per il problema BSP (Balanced Sum Partition).
-# Testa 5 configurazioni con il binario clingo modificato:
+# Testa le configurazioni con il binario clingo modificato:
 #   std      — encoding dichiarativo puro  (BSP/BSP.lp)
 #   std_aux  — #heuristic riscritta con predicato ausiliario (BSP/BSP_aux.lp)
 #   lg       — lazy grounding              (BSP/BSP_lg.lp)
-#   lg_aux   — lazy grounding con predicato ausiliario (BSP/BSP_aux_lg.lp)
+#   cslg     — lazy grounding con semantica Clingo (BSP/BSP_cslg.lp)
+#   auxlg    — lazy grounding con predicato ausiliario (BSP/BSP_auxlg.lp)
 #   colg     — lazy grounding + vincolo ottimizzato (BSP/BSP_colg.lp)
 #
 # Ogni combinazione (N, variant) viene eseguita REPEATS volte con seed diversi.
@@ -48,14 +49,15 @@ cd "${SCRIPT_DIR}"
 FILE_STD="BSP/BSP.lp"
 FILE_STD_AUX="BSP/BSP_aux.lp"
 FILE_LG="BSP/BSP_lg.lp"
-FILE_LG_AUX="BSP/BSP_aux_lg.lp"
+FILE_CSLG="BSP/BSP_cslg.lp"
+FILE_AUXLG="BSP/BSP_auxlg.lp"
 FILE_COLG="BSP/BSP_colg.lp"
 
 # Varianti da eseguire.
 # Per riattivare colg, aggiungi "colg" alla lista sotto.
 # Puoi anche sovrascrivere da shell, ad esempio:
-#   BSP_VARIANTS="std std_aux lg lg_aux colg" ./benchmark_bsp.sh
-DEFAULT_VARIANTS=(std std_aux lg lg_aux)
+#   BSP_VARIANTS="std std_aux lg cslg auxlg colg" ./benchmark_bsp.sh
+DEFAULT_VARIANTS=(std std_aux lg cslg auxlg)
 read -r -a ACTIVE_VARIANTS <<< "${BSP_VARIANTS:-${DEFAULT_VARIANTS[*]}}"
 
 # Range file (in BSP_instances/)
@@ -79,11 +81,12 @@ variant_file() {
         std) echo "${FILE_STD}" ;;
         std_aux) echo "${FILE_STD_AUX}" ;;
         lg) echo "${FILE_LG}" ;;
-        lg_aux) echo "${FILE_LG_AUX}" ;;
+        cslg) echo "${FILE_CSLG}" ;;
+        auxlg|lg_aux) echo "${FILE_AUXLG}" ;;
         colg) echo "${FILE_COLG}" ;;
         *)
             echo "Errore: variante BSP sconosciuta '$1'." >&2
-            echo "Varianti valide: std std_aux lg lg_aux colg" >&2
+            echo "Varianti valide: std std_aux lg cslg auxlg colg" >&2
             exit 1
             ;;
     esac
@@ -102,7 +105,7 @@ run_variant_for_seed() {
                 "${CLINGO_MOD}" "${FILE_RANGE}" "${file}" "-c" "n=${n}" "-n" "1" \
                 "--heuristic=Domain" "--time-limit=${TIMEOUT_SECONDS}"
             ;;
-        lg|lg_aux|colg)
+        lg|cslg|auxlg|lg_aux|colg)
             run_stats "${n}" "${variant}" "${seed}" \
                 "${CLINGO_MOD}" "${FILE_RANGE}" "${file}" "-n" "1" "-c" "n=${n}" \
                 "--heuristic=Domain" "--time-limit=${TIMEOUT_SECONDS}"

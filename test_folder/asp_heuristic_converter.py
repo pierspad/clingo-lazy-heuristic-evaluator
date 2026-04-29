@@ -15,6 +15,7 @@ Uso:
     python asp_heuristic_converter.py input.lp -o output.lp
     python asp_heuristic_converter.py input.lp --mode aux -o output_aux.lp
     python asp_heuristic_converter.py input.lp --mode lazy-aux -o output_aux_lg.lp
+    python asp_heuristic_converter.py input.lp --mode cslg -o output_cslg.lp
     python asp_heuristic_converter.py input.lp --in-place
     python asp_heuristic_converter.py input.lp --dry-run
 
@@ -80,6 +81,13 @@ class HeuristicDirective:
     sign: str = "true"                               # true/false/sign
     body_str: str = ""                               # Body originale
     original_line: str = ""                          # Riga originale per riferimento
+
+
+@dataclass
+class LazyBodyVar:
+    """Variabile letta da un argomento di un predicato body esplicito."""
+    var_name: str
+    source_arg_index: int
 
 
 # =============================================================================
@@ -229,7 +237,8 @@ def _is_domain_variable(expr: str, target_var: Optional[str]) -> bool:
 def _convert_arith_expr(
     expr: str,
     target_var: Optional[str],
-    binding_vars: dict
+    binding_vars: dict,
+    body_vars: Optional[dict] = None
 ) -> str:
     """
     Converte un'espressione aritmetica nella sintassi lazy.
@@ -287,13 +296,13 @@ def _convert_arith_expr(
             return expr
 
         op_name = {'+': '__add', '-': '__sub', '*': '__mul'}[op_char]
-        left_conv = _convert_arith_expr(left, target_var, binding_vars)
-        right_conv = _convert_arith_expr(right, target_var, binding_vars)
+        left_conv = _convert_arith_expr(left, target_var, binding_vars, body_vars)
+        right_conv = _convert_arith_expr(right, target_var, binding_vars, body_vars)
         return f"{op_name}({left_conv}, {right_conv})"
 
     # Rimuovi parentesi esterne
     if expr.startswith('(') and expr.endswith(')'):
-        return _convert_arith_expr(expr[1:-1], target_var, binding_vars)
+        return _convert_arith_expr(expr[1:-1], target_var, binding_vars, body_vars)
 
     # Variabile di dominio → self
     if _is_domain_variable(expr, target_var):
@@ -302,6 +311,11 @@ def _convert_arith_expr(
     # Variabile di binding → lowercase
     if expr in binding_vars:
         return binding_vars[expr].lower()
+
+    # Variabile letta da un argomento di __body(..., __bind_arg(...))
+    body_vars = body_vars or {}
+    if expr in body_vars:
+        return body_vars[expr].var_name.lower()
 
     # Costante numerica (incluso negativo)
     try:
@@ -507,36 +521,86 @@ def _format_binding(b: AggregateBinding, var_lower: str) -> str:
     return f"__bind({var_lower}, __{b.agg_type}({b.pred_name}, {b.arg_index}{filter_suffix}))"
 
 
-def generate_lazy_heuristic(directive: HeuristicDirective) -> list:
+def _format_positive_body(pred: BodyPredicate, directive: HeuristicDirective) -> tuple:
+    """
+    Restituisce (argomento_lazy, body_vars, warnings).
+
+    Se il body ha la stessa tupla del target usiamo la forma compatta legacy:
+        x
+    Altrimenti usiamo la forma esplicita:
+        __body(h_b, __match(0, 0), __bind_arg(s, 1))
+    """
+    warnings = []
+    body_vars = {}
+
+    if _matches_target_tuple(pred, directive):
+        return pred.pred_name, body_vars, warnings
+
+    target_arg_positions = {
+        arg: idx
+        for idx, arg in enumerate(directive.target_args)
+        if re.match(r'^[A-Z_]\w*$', arg)
+    }
+
+    matches = []
+    matched_targets = set()
+    for source_idx, arg in enumerate(pred.args):
+        if arg in target_arg_positions:
+            target_idx = target_arg_positions[arg]
+            matches.append(f"__match({source_idx}, {target_idx})")
+            matched_targets.add(target_idx)
+            continue
+
+        if re.match(r'^[A-Z_]\w*$', arg):
+            body_vars[arg] = LazyBodyVar(arg, source_idx)
+
+    if len(matched_targets) != len(target_arg_positions):
+        warnings.append(
+            f"% WARNING: body positivo '{pred.text}' non lega tutta la tupla target; "
+            f"conversione lazy saltata.\n"
+        )
+        return "", body_vars, warnings
+
+    bind_args = [
+        f"__bind_arg({var.var_name.lower()}, {var.source_arg_index})"
+        for var in body_vars.values()
+    ]
+    body_args = [pred.pred_name] + matches + bind_args
+    return f"__body({', '.join(body_args)})", body_vars, warnings
+
+
+def generate_lazy_heuristic(directive: HeuristicDirective, semantics: str = "alpha") -> list:
     """
     Genera la riga __heuristic/N dalla rappresentazione intermedia.
     Restituisce una lista di stringhe: [warning_lines..., output_line].
     """
     warnings = []
-    lazy_pos_body = [p for p in directive.pos_body if _matches_target_tuple(p, directive)]
     lazy_neg_body = [p for p in directive.neg_body if _matches_target_tuple(p, directive)]
+    lazy_pos_args = []
+    body_vars = {}
 
-    ignored_pos = [p for p in directive.pos_body if p not in lazy_pos_body]
-    if ignored_pos:
-        warnings.append(
-            f"% WARNING: body positivi non sulla tupla target ignorati nel lazy diretto: "
-            f"{_predicate_names(ignored_pos)}.\n"
-        )
+    for pred in directive.pos_body:
+        body_arg, pred_body_vars, pred_warnings = _format_positive_body(pred, directive)
+        warnings.extend(pred_warnings)
+        if body_arg:
+            lazy_pos_args.append(body_arg)
+            for name, var in pred_body_vars.items():
+                body_vars[name] = var
 
     # Warning: body positivi multipli — ora il propagatore li tratta come congiunzione
-    if len(lazy_pos_body) > 1:
+    if len(lazy_pos_args) > 1:
         warnings.append(
-            f"% INFO: body positivi multipli ({_predicate_names(lazy_pos_body)}) "
+            f"% INFO: body positivi multipli ({_predicate_names(directive.pos_body)}) "
             f"gestiti come congiunzione sulla stessa tupla.\n"
         )
         print(
-            f"  INFO: body positivi multipli ({_predicate_names(lazy_pos_body)}) "
+            f"  INFO: body positivi multipli ({_predicate_names(directive.pos_body)}) "
             f"gestiti come congiunzione dal propagatore.",
             file=sys.stderr
         )
 
     # Warning: euristica senza body positivo — non sarà mai attivata in modo lazy
-    if not lazy_pos_body:
+    if not lazy_pos_args:
         warnings.append(
             f"% WARNING: euristica senza body positivo. "
             f"Non sarà mai attivata nel modo lazy (nessun trigger).\n"
@@ -550,8 +614,7 @@ def generate_lazy_heuristic(directive: HeuristicDirective) -> list:
     args = [f"__target({directive.target_pred})"]
 
     # Body positivi
-    for pred in lazy_pos_body:
-        args.append(pred.pred_name)
+    args.extend(lazy_pos_args)
 
     # Body negativi
     for pred in lazy_neg_body:
@@ -566,18 +629,21 @@ def generate_lazy_heuristic(directive: HeuristicDirective) -> list:
 
     # Peso
     weight_conv = _convert_arith_expr(
-        directive.weight_expr, directive.target_var, binding_vars
+        directive.weight_expr, directive.target_var, binding_vars, body_vars
     )
     args.append(f"__weight({weight_conv})")
 
     # Priorità
     priority_conv = _convert_arith_expr(
-        directive.priority_expr, directive.target_var, binding_vars
+        directive.priority_expr, directive.target_var, binding_vars, body_vars
     )
     args.append(f"__priority({priority_conv})")
 
     # Segno
     args.append(directive.sign)
+
+    if semantics == "clingo":
+        args.append("__semantics(clingo)")
 
     result_line = f"__heuristic({', '.join(args)})."
     return warnings, result_line
@@ -618,34 +684,36 @@ def generate_aux_heuristic(directive: HeuristicDirective, idx: int) -> list:
 
 
 def _lazy_aux_body(directive: HeuristicDirective) -> str:
-    """Body ausiliario per lazy-aux: solo letterali ordinari, niente aggregati."""
-    parts = [p.text for p in directive.body_predicates]
-    return ", ".join(parts) if parts else "1 = 1"
+    """Body ausiliario per lazy-aux: preserva il body nativo, inclusi aggregati."""
+    return directive.body_str if directive.body_str else "1 = 1"
 
 
 def generate_lazy_aux_heuristic(directive: HeuristicDirective, idx: int) -> list:
     """
     Genera una variante dinamica con predicato ausiliario:
-        aux(TargetArgs) :- body_ordinario.
-        __heuristic(__target(target), aux, __bind(...), ...).
+        aux(TargetArgs, BindingVars...) :- body_originale.
+        __heuristic(__target(target), __body(aux, ...), ...).
     """
     aux = _aux_name(directive, idx, "lazy")
-    target_args = _target_args_text(directive)
-    aux_rule = f"{aux}({target_args}) :- {_lazy_aux_body(directive)}."
+    target_arg_list = list(directive.target_args)
+    binding_arg_list = [b.var_name for b in directive.bindings]
+    aux_arg_list = target_arg_list + binding_arg_list
+    aux_args = ", ".join(aux_arg_list)
+    aux_rule = f"{aux}({aux_args}) :- {_lazy_aux_body(directive)}."
 
     aux_directive = HeuristicDirective(
         target_pred=directive.target_pred,
         target_text=directive.target_text,
         target_args=directive.target_args,
         target_var=directive.target_var,
-        pos_body=[BodyPredicate(pred_name=aux, args=directive.target_args, text=f"{aux}({target_args})")],
+        pos_body=[BodyPredicate(pred_name=aux, args=aux_arg_list, text=f"{aux}({aux_args})")],
         neg_body=[],
         body_predicates=[],
-        bindings=directive.bindings,
+        bindings=[],
         weight_expr=directive.weight_expr,
         priority_expr=directive.priority_expr,
         sign=directive.sign,
-        body_str=f"{aux}({target_args})",
+        body_str=f"{aux}({aux_args})",
         original_line=directive.original_line,
     )
     warnings, lazy_line = generate_lazy_heuristic(aux_directive)
@@ -659,6 +727,8 @@ def generate_lazy_aux_heuristic(directive: HeuristicDirective, idx: int) -> list
 def _generate_directive_output(directive: HeuristicDirective, idx: int, mode: str) -> tuple:
     if mode == "lazy":
         return generate_lazy_heuristic(directive)
+    if mode in ("cslg", "clingo-lazy"):
+        return generate_lazy_heuristic(directive, semantics="clingo")
     if mode == "aux":
         return generate_aux_heuristic(directive, idx)
     if mode == "lazy-aux":
@@ -760,6 +830,9 @@ Sintassi nativa supportata:
 
 Sintassi lazy generata:
   __heuristic(__target(b), x, __n_c, __bind(s, __sum(c, 0)), __weight(self), __priority(s), true).
+
+Con semantica Clingo per i letterali negativi:
+  __heuristic(__target(b), x, __n_c, __bind(s, __sum(c, 0)), __weight(self), __priority(s), true, __semantics(clingo)).
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -783,9 +856,9 @@ Sintassi lazy generata:
     )
     parser.add_argument(
         '--mode',
-        choices=['lazy', 'aux', 'lazy-aux'],
+        choices=['lazy', 'aux', 'lazy-aux', 'cslg', 'clingo-lazy'],
         default='lazy',
-        help="Tipo di riscrittura: lazy __heuristic, #heuristic con ausiliario, oppure lazy con ausiliario"
+        help="Tipo di riscrittura: lazy alpha, #heuristic con ausiliario, lazy con ausiliario, oppure lazy con semantica Clingo"
     )
     parser.add_argument(
         '--no-comments',
