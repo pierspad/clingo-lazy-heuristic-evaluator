@@ -132,19 +132,17 @@ collect_ground_counts() {
         return
     fi
 
-    local counts ground_text
-    if ground_text="$(timeout "${TIMEOUT_SECONDS}" "${cmd[@]}" --text 2>/dev/null)"; then
-        local heur lazy facts lines
-        lines="$(printf "%s\n" "${ground_text}" | wc -l | tr -d '[:space:]')"
-        heur="$(printf "%s\n" "${ground_text}" | { grep '^#heuristic' || true; } | wc -l | tr -d '[:space:]')"
-        lazy="$(printf "%s\n" "${ground_text}" | { grep '^__heuristic(' || true; } | wc -l | tr -d '[:space:]')"
-        facts="$(printf "%s\n" "${ground_text}" \
-            | { grep '\.$' || true; } \
-            | { grep -v ':-' || true; } \
-            | { grep -v '^[[:space:]]*%' || true; } \
-            | { grep -v '^#heuristic' || true; } \
-            | wc -l | tr -d '[:space:]')"
-        counts="${heur},${lazy},${facts},${lines}"
+    local counts
+    if counts="$(timeout "${TIMEOUT_SECONDS}" "${cmd[@]}" --text 2>/dev/null | awk '
+        BEGIN { heur=0; lazy=0; facts=0; lines=0; }
+        { lines++; }
+        /^#heuristic/ { heur++; next; }
+        /^__heuristic\(/ { lazy++; facts++; next; }
+        /^[[:space:]]*%/ { next; }
+        /\.$/ && $0 !~ /:-/ { facts++; }
+        END { printf "%d,%d,%d,%d", heur, lazy, facts, lines; }
+    ')"; then
+        :
     else
         counts="NA,NA,NA,NA"
     fi
@@ -161,6 +159,13 @@ collect_ground_counts() {
 
     GROUND_COUNT_CACHE["${cache_key}"]="${counts}"
     printf "%s" "${counts}"
+}
+
+is_clingo_success_status() {
+    case "$1" in
+        0|10|20|30) return 0 ;;
+        *) return 1 ;;
+    esac
 }
 
 run_stats() {
@@ -189,7 +194,7 @@ run_stats() {
     fi
 
     local run_ok=1
-    if [ "${status}" -ne 0 ] || echo "${output}" | grep -qE '^\*\*\* ERROR|^UNKNOWN'; then
+    if ! is_clingo_success_status "${status}" || echo "${output}" | grep -qE '^\*\*\* ERROR|^UNKNOWN'; then
         run_ok=0
     fi
 
@@ -255,7 +260,12 @@ run_stats() {
     ground_counts="$(collect_ground_counts "${cmd[@]}")"
     IFS=',' read -r ground_heuristics ground_lazy_heuristic_facts ground_facts ground_lines <<< "${ground_counts}"
 
-    echo "    grounding=${grounding_s}s solving=${solving_s}s total=${total_s}s choices=${choices} conflicts=${conflicts} restarts=${restarts} rules=${rules} vars=${variables} mem=${memory_mb}MB heur=${ground_heuristics} lazy_facts=${ground_lazy_heuristic_facts} facts=${ground_facts} ground_lines=${ground_lines}"
+    local memory_display="${memory_mb}MB"
+    if [ "${memory_mb}" = "NA" ]; then
+        memory_display="NA"
+    fi
+
+    echo "    grounding=${grounding_s}s solving=${solving_s}s total=${total_s}s choices=${choices} conflicts=${conflicts} restarts=${restarts} rules=${rules} vars=${variables} mem=${memory_display} heur=${ground_heuristics} lazy_facts=${ground_lazy_heuristic_facts} facts=${ground_facts} ground_lines=${ground_lines}"
     echo "${instance_size},${variant},${seed},${solving_s},${total_s},${grounding_s},${choices},${conflicts},${restarts},${rules},${variables},${memory_mb},${ground_heuristics},${ground_lazy_heuristic_facts},${ground_facts},${ground_lines}" >> "${csv_file}"
 }
 

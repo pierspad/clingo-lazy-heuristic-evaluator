@@ -496,6 +496,8 @@ HeuristicPropagator::PredLitMap HeuristicPropagator::build_lazy_predicate_litera
 void HeuristicPropagator::register_lazy_body_triggers(Clingo::PropagateInit &init,
                                                       PredLitMap const &pred_lit_map) {
     std::unordered_set<Clingo::literal_t> watched_body_lits;
+    auto assignment = init.assignment();
+
     for (size_t ri = 0; ri < rule_templates_.size(); ++ri) {
         auto const &tmpl = rule_templates_[ri];
         if (tmpl.pos_body_preds.empty()) continue;
@@ -553,7 +555,18 @@ void HeuristicPropagator::register_lazy_body_triggers(Clingo::PropagateInit &ini
 
             for (auto body_lit : trigger.pos_body_lits) {
                 body_triggers_[body_lit].push_back(trigger);
-                if (watched_body_lits.insert(body_lit).second) {
+                if (assignment.is_true(body_lit)) {
+                    auto &target_vec = lazy_targets_[body_lit];
+                    target_vec.push_back({
+                        trigger.target_lit,
+                        trigger.self_value,
+                        trigger.tuple_values,
+                        trigger.rule_idx,
+                        body_triggers_[body_lit].size() - 1
+                    });
+                    active_body_lits_.insert(body_lit);
+                }
+                else if (watched_body_lits.insert(body_lit).second) {
                     init.add_watch(body_lit);
                 }
             }
