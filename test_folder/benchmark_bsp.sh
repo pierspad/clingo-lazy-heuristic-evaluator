@@ -64,7 +64,7 @@ read -r -a ACTIVE_VARIANTS <<< "${BSP_VARIANTS:-${DEFAULT_VARIANTS[*]}}"
 FILE_RANGE="BSP_instances/BSP_range.lp"
 
 N_START=10
-N_END=100
+N_END=70
 N_STEP=10
 
 # Numero di ripetizioni per ogni (N, variant) con seed diversi
