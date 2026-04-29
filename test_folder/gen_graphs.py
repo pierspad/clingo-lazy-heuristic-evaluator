@@ -302,6 +302,11 @@ def compute_stats(raw):
 VARIANT_FILL_ALPHA = 0.15
 CAPTION_COLOR = "#5F6368"
 SEPARATOR_COLOR = "#D6D6D6"
+VERTICAL_SEPARATOR_GAP_FRACTION = 0.42
+MILLION_FORMAT_METRICS = {
+    "variables",
+    "combined_heuristics",
+}
 
 
 def _add_axis_caption(ax, description: str, *, y: float, width: int, fontsize: int):
@@ -342,15 +347,48 @@ def _format_compact_number(value, _pos=None):
     return f"{value:g}"
 
 
+def _format_millions(value, _pos=None):
+    """Format grounding-size ticks in millions, keeping sub-million values as decimals."""
+    abs_value = abs(value)
+    if abs_value >= 100_000:
+        scaled = value / 1_000_000
+        return f"{scaled:.1f}".rstrip("0").rstrip(".") + "M"
+    if abs_value >= 1:
+        return f"{value:.0f}"
+    if value == 0:
+        return "0"
+    return f"{value:g}"
+
+
+def _format_memory_mb(value, _pos=None):
+    """Format MB ticks compactly while keeping the axis unit in the label."""
+    abs_value = abs(value)
+    if abs_value >= 1_000:
+        scaled = value / 1_000
+        return f"{scaled:.1f}".rstrip("0").rstrip(".") + "k"
+    if abs_value >= 1:
+        return f"{value:.0f}"
+    if value == 0:
+        return "0"
+    return f"{value:g}"
+
+
 def _apply_y_axis_format(ax, metric: str):
     """Keep count-like axes readable and consistent across charts."""
-    if metric not in INTEGER_METRICS:
-        return
-
     from matplotlib.ticker import FuncFormatter, MaxNLocator
 
-    ax.yaxis.set_major_locator(MaxNLocator(nbins=6, integer=True))
-    ax.yaxis.set_major_formatter(FuncFormatter(_format_compact_number))
+    if metric == "memory_mb":
+        ax.yaxis.set_major_locator(MaxNLocator(nbins=6))
+        ax.yaxis.set_major_formatter(FuncFormatter(_format_memory_mb))
+    elif metric in MILLION_FORMAT_METRICS:
+        ax.yaxis.set_major_locator(MaxNLocator(nbins=6, integer=True))
+        ax.yaxis.set_major_formatter(FuncFormatter(_format_millions))
+    elif metric in INTEGER_METRICS:
+        ax.yaxis.set_major_locator(MaxNLocator(nbins=6, integer=True))
+        ax.yaxis.set_major_formatter(FuncFormatter(_format_compact_number))
+    else:
+        return
+
     ax.yaxis.offsetText.set_visible(False)
 
 
@@ -385,10 +423,9 @@ def _add_subplot_separators(fig, axes, n_plots: int):
         if not left_positions or not right_positions:
             continue
 
-        x = (
-            max(pos.x1 for pos in left_positions) +
-            min(pos.x0 for pos in right_positions)
-        ) / 2.0
+        left_edge = max(pos.x1 for pos in left_positions)
+        right_edge = min(pos.x0 for pos in right_positions)
+        x = left_edge + (right_edge - left_edge) * VERTICAL_SEPARATOR_GAP_FRACTION
         fig.add_artist(Line2D([x, x], [y0, y1], transform=fig.transFigure,
                               color=SEPARATOR_COLOR, linewidth=0.8))
 
@@ -523,7 +560,7 @@ def generate_graphs(stats: dict, graphs_dir: str, theme: dict, title_suffix: str
     suptitle += f"\n(mean ± σ over {_detect_seeds(stats)} seeds per point)"
 
     fig.suptitle(suptitle, fontsize=14, fontweight="bold", y=0.98)
-    plt.tight_layout(rect=[0, 0.01, 1, 0.955], h_pad=3.4, w_pad=3.0)
+    plt.tight_layout(rect=[0, 0.01, 1, 0.955], h_pad=3.4, w_pad=3.8)
     _add_subplot_separators(fig, axes, n_plots)
 
     suffix = f"_{title_suffix.lower().replace(' ', '_')}" if title_suffix else ""
