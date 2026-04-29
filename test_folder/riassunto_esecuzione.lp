@@ -590,3 +590,94 @@ Le variabili intermedie definite nel corpo dell'euristica per scomporre il calco
 L'intera logica aritmetica viene collassata direttamente all'interno dei modificatori della direttiva finale. Questa espansione è architetturalmente obbligatoria affinché l'Abstract Syntax Tree (AST) precompilato nella fase di init_lazy_mode  possa mappare direttamente le variabili di aggregazione sull'ambiente di valutazione (environment array) . 
 Ciò elimina la necessità di eseguire il parsing di dipendenze annidate a runtime o di effettuare allocazioni dinamiche sulla memoria heap. 
 Queste modifiche mantengono intatta la semantica logica del problema originale e assicurano che il propagatore non introduca overhead durante la propagazione e l'undo.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 20) I quattro approcci BSP usati nei benchmark
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Nel benchmark BSP ora conviene distinguere quattro famiglie concettuali.
+
+1) Standard Clingo ground-and-solve (`std`, file BSP/BSP.lp).
+Usa direttamente le direttive native:
+
+#heuristic b(X): x(X), not c(X), S = #sum{Y : c(Y)}. [X@S,true]
+#heuristic c(X): x(X), not b(X), S = #sum{Y : b(Y)}. [X@S,true]
+
+Qui Gringo deve produrre euristiche ground native. Il vantaggio e' che questa
+e' la semantica standard di Clingo; lo svantaggio e' il grounding bottleneck
+quando peso o priorita' dipendono da aggregati.
+
+2) Alpha semantics ground-and-solve (`asgs`, file BSP/BSP_asgs.lp).
+Questa variante non usa il propagatore lazy. Emula l'idea Alpha con direttive
+native gia' groundabili:
+
+sum_value(0..tot).
+#heuristic b(X): x(X), sum_value(S), S <= #sum{Y : c(Y)}. [X@S,true]
+#heuristic c(X): x(X), sum_value(S), S <= #sum{Y : b(Y)}. [X@S,true]
+
+La condizione `S <= #sum{...}` e' monotona rispetto agli atomi gia' veri.
+Dato che in BSP i valori sono positivi, tra tutte le regole attive vince la
+priorita' massima S, cioe' la somma corrente degli atomi assegnati a vero.
+Questo e' utile per testing perche' resta "ground and solve", ma produce molte
+euristiche ground e quindi puo' essere molto piu' pesante della variante lazy.
+
+3) Alpha semantics lazy (`lg`, file BSP/BSP_lg.lp).
+Le euristiche sono template statici:
+
+__heuristic(__target(b),x,__n_c,__bind(s,__sum(c,0)),__weight(self),__priority(s),true).
+__heuristic(__target(c),x,__n_b,__bind(s,__sum(b,0)),__weight(self),__priority(s),true).
+
+Il propagatore valuta tutto durante il solving. In semantica Alpha, `not c(X)`
+significa "c(X) non e' vero": quindi l'euristica puo' attivarsi anche se c(X)
+e' ancora libero. Gli aggregati sono incrementali: sommano/contano gli atomi
+attualmente veri e non aspettano che tutti gli atomi del dominio siano decisi.
+
+4) Clingo semantics lazy (`cslg`, file BSP/BSP_cslg.lp).
+E' identica alla variante lazy, ma aggiunge:
+
+__semantics(clingo)
+
+Questa modalita' serve a confrontare il propagatore lazy con la semantica piu'
+prudente di Clingo. In particolare:
+- `not a(X)` e' soddisfatto solo quando `a(X)` e' assegnato esplicitamente a
+  falso, non quando e' semplicemente libero;
+- un binding aggregato come `S = #sum{Y : a(Y)}` viene usato solo quando tutti
+  gli atomi sorgente rilevanti `a(Y)` sono assegnati, veri o falsi.
+
+Il secondo controllo si puo' implementare come un conteggio interno degli
+atomi non liberi: il valore dell'aggregato viene letto solo quando
+`assigned_sources == total_sources`. Non e' un `#count` del programma ASP, ma
+un controllo runtime sullo stato dell'assegnamento del solver.
+
+Le varianti `std_aux` e `auxlg` non sono una quinta semantica: sono riscritture
+tecniche con predicati ausiliari. Servono a misurare quanto cambia il grounding
+quando il corpo complesso dell'euristica viene materializzato in un predicato
+intermedio.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 21) Nota sul suggerimento del professore: __h(...)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+La forma annotata dal professore:
+
+__h(b(x), x(x), not_a(x), s=a(y)).
+
+va letta come notazione compatta, non necessariamente come sintassi finale del
+nostro implementativo. L'idea e' rappresentare una direttiva euristica come un
+fatto strutturale invece che come `#heuristic` nativa:
+- `b(x)` e' il target dell'euristica;
+- `x(x)` e' un trigger positivo del body;
+- `not_a(x)` rappresenta il body negativo `not a(X)`;
+- `s=a(y)` rappresenta il binding di una variabile locale `s` a un aggregato
+  calcolato sugli atomi `a(Y)`.
+
+Nel nostro codice la stessa idea e' espressa con la sintassi piu' esplicita:
+
+__heuristic(__target(b), x, __n_a, __bind(s, __sum(a,0)), __weight(...), __priority(s), true).
+
+Quindi il punto del professore non e' "dimostrare" un nuovo vincolo logico, ma
+separare la descrizione dell'euristica dalla sua istanziazione. In questo modo
+Gringo grounda un fatto piccolo e il propagatore decide a runtime quando
+applicarlo e con quali valori di peso/priorita'.

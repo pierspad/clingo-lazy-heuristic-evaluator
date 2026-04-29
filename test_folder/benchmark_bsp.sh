@@ -4,6 +4,7 @@
 # Testa le configurazioni con il binario clingo modificato:
 #   std      — encoding dichiarativo puro  (BSP/BSP.lp)
 #   std_aux  — #heuristic riscritta con predicato ausiliario (BSP/BSP_aux.lp)
+#   asgs     — alpha semantics ground-and-solve (BSP/BSP_asgs.lp)
 #   lg       — lazy grounding              (BSP/BSP_lg.lp)
 #   cslg     — lazy grounding con semantica Clingo (BSP/BSP_cslg.lp)
 #   auxlg    — lazy grounding con predicato ausiliario (BSP/BSP_auxlg.lp)
@@ -48,6 +49,7 @@ cd "${SCRIPT_DIR}"
 # Encoding files
 FILE_STD="BSP/BSP.lp"
 FILE_STD_AUX="BSP/BSP_aux.lp"
+FILE_ASGS="BSP/BSP_asgs.lp"
 FILE_LG="BSP/BSP_lg.lp"
 FILE_CSLG="BSP/BSP_cslg.lp"
 FILE_AUXLG="BSP/BSP_auxlg.lp"
@@ -56,8 +58,8 @@ FILE_COLG="BSP/BSP_colg.lp"
 # Varianti da eseguire.
 # Per riattivare colg, aggiungi "colg" alla lista sotto.
 # Puoi anche sovrascrivere da shell, ad esempio:
-#   BSP_VARIANTS="std std_aux lg cslg auxlg colg" ./benchmark_bsp.sh
-DEFAULT_VARIANTS=(std std_aux lg cslg auxlg)
+#   BSP_VARIANTS="std std_aux asgs lg cslg auxlg colg" ./benchmark_bsp.sh
+DEFAULT_VARIANTS=(std std_aux asgs lg cslg auxlg)
 read -r -a ACTIVE_VARIANTS <<< "${BSP_VARIANTS:-${DEFAULT_VARIANTS[*]}}"
 
 # Range file (in BSP_instances/)
@@ -80,13 +82,14 @@ variant_file() {
     case "$1" in
         std) echo "${FILE_STD}" ;;
         std_aux) echo "${FILE_STD_AUX}" ;;
+        asgs) echo "${FILE_ASGS}" ;;
         lg) echo "${FILE_LG}" ;;
         cslg) echo "${FILE_CSLG}" ;;
         auxlg|lg_aux) echo "${FILE_AUXLG}" ;;
         colg) echo "${FILE_COLG}" ;;
         *)
             echo "Errore: variante BSP sconosciuta '$1'." >&2
-            echo "Varianti valide: std std_aux lg cslg auxlg colg" >&2
+            echo "Varianti valide: std std_aux asgs lg cslg auxlg colg" >&2
             exit 1
             ;;
     esac
@@ -100,7 +103,7 @@ run_variant_for_seed() {
     file="$(variant_file "${variant}")"
 
     case "${variant}" in
-        std|std_aux)
+        std|std_aux|asgs)
             run_stats "${n}" "${variant}" "${seed}" \
                 "${CLINGO_MOD}" "${FILE_RANGE}" "${file}" "-c" "n=${n}" "-n" "1" \
                 "--heuristic=Domain" "--time-limit=${TIMEOUT_SECONDS}"
