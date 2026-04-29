@@ -9,9 +9,9 @@ x(1..n).
 #const min_val = tot / 2.
 #const max_val = (tot + 1) / 2.
 
-
 % Guess
-1 { b(X); c(X) } 1 :- x(X).
+b(X) :- x(X), not c(X).
+c(X) :- x(X), not b(X).
 
 % Check lineare equivalente al vincolo sulla differenza tra le somme.
 :- not min_val <= #sum{ Y : b(Y) } <= max_val.

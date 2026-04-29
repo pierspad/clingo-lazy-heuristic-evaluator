@@ -2,8 +2,6 @@
 % Definizione del dominio come definito nel paper di alpha
 % il range è definito in :
 % BSP_instances/BSP_range.lp
-%
-% Variante: #heuristic riscritte con predicato ausiliario.
 
 x(1..n).
 

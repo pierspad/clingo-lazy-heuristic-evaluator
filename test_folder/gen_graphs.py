@@ -34,6 +34,7 @@ DEFAULT_RESULTS_DIR = "test-results"
 DEFAULT_GRAPHS_DIR = "graphs"
 
 METRIC_FIELDS = [
+    "grounding_s",
     "solving_s",
     "total_s",
     "choices",
@@ -45,6 +46,7 @@ METRIC_FIELDS = [
     "ground_heuristics",
     "ground_lazy_heuristic_facts",
     "ground_facts",
+    "ground_lines",
 ]
 INTEGER_METRICS = {
     "choices",
@@ -56,8 +58,10 @@ INTEGER_METRICS = {
     "ground_lazy_heuristic_facts",
     "combined_heuristics",
     "ground_facts",
+    "ground_lines",
 }
 LOWER_IS_BETTER_METRICS = {
+    "grounding_s",
     "solving_s",
     "total_s",
     "choices",
@@ -67,22 +71,23 @@ LOWER_IS_BETTER_METRICS = {
     "variables",
     "memory_mb",
     "combined_heuristics",
+    "ground_lines",
 }
 
 PLOT_CONFIGS = [
+    {
+        "metric": "grounding_s",
+        "title": "Grounding Time",
+        "ylabel": "Time (seconds)",
+        "description": "Time before CDNL search. For old CSV files this is derived as total time minus solving time.",
+        "filename": "grounding_time.png",
+    },
     {
         "metric": "solving_s",
         "title": "Solving Time (CDNL)",
         "ylabel": "Time (seconds)",
         "description": "Net time spent in CDNL search\n(grounding excluded)",
         "filename": "solving_time.png",
-    },
-    {
-        "metric": "total_s",
-        "title": "Total Time",
-        "ylabel": "Time (seconds)",
-        "description": "Grounding + Solving",
-        "filename": "total_time.png",
     },
     {
         "metric": "choices",
@@ -106,11 +111,11 @@ PLOT_CONFIGS = [
         "filename": "restarts_comparison.png",
     },
     {
-        "metric": "rules",
-        "title": "Ground Rules",
-        "ylabel": "Number of rules",
-        "description": "Solver Rules statistic.\nLazy templates appear as facts/atoms, see Ground Facts and Variables.",
-        "filename": "rules_comparison.png",
+        "metric": "ground_lines",
+        "title": "Ground Program Lines",
+        "ylabel": "Lines in --text output",
+        "description": "Line count of the textual ground program, comparable to clingo/gringo --text | wc -l.",
+        "filename": "ground_program_lines.png",
     },
     {
         "metric": "variables",
@@ -128,7 +133,7 @@ PLOT_CONFIGS = [
     },
     {
         "metric": "combined_heuristics",
-        "title": "Combined Heuristics Grounding",
+        "title": "Heuristics Grounding",
         "ylabel": "Ground heuristic entries",
         "description": "Standard: native #heuristic directives\nLazy: __heuristic facts passed to the propagator",
         "filename": "combined_heuristics.png",
@@ -255,10 +260,27 @@ def load_csv(csv_path: str):
                 if val_str not in ("NA", ""):
                     try:
                         value = float(val_str)
-                        raw[variant][n][metric].append(value)
                         row_values[metric] = value
                     except ValueError:
                         pass
+
+            legacy_failed_run = _looks_like_legacy_failed_lazy_run(row_values)
+            invalid_on_failure = {
+                "grounding_s",
+                "solving_s",
+                "total_s",
+                "choices",
+                "conflicts",
+                "restarts",
+                "rules",
+                "variables",
+                "memory_mb",
+            }
+
+            for metric, value in row_values.items():
+                if legacy_failed_run and metric in invalid_on_failure:
+                    continue
+                raw[variant][n][metric].append(value)
 
             heuristic_values = [
                 row_values[m]
@@ -268,7 +290,29 @@ def load_csv(csv_path: str):
             if heuristic_values:
                 raw[variant][n]["combined_heuristics"].append(sum(heuristic_values))
 
+            if not legacy_failed_run and "grounding_s" not in row_values:
+                total = row_values.get("total_s")
+                solving = row_values.get("solving_s")
+                if total is not None and solving is not None:
+                    raw[variant][n]["grounding_s"].append(max(total - solving, 0.0))
+
     return raw
+
+
+def _looks_like_legacy_failed_lazy_run(row_values: dict) -> bool:
+    """
+    Older benchmark scripts ignored clingo's non-zero exit status.
+    Lazy runs that failed in propagator initialization were consequently stored
+    as zero-rule/zero-choice data points; treat that signature as missing data.
+    """
+    return (
+        row_values.get("ground_lazy_heuristic_facts", 0.0) > 0.0 and
+        row_values.get("rules") == 0.0 and
+        row_values.get("choices") == 0.0 and
+        row_values.get("conflicts") == 0.0 and
+        row_values.get("solving_s") == 0.0 and
+        row_values.get("variables", 0.0) > 0.0
+    )
 
 
 def compute_stats(raw):
@@ -306,6 +350,7 @@ VERTICAL_SEPARATOR_GAP_FRACTION = 0.42
 MILLION_FORMAT_METRICS = {
     "variables",
     "combined_heuristics",
+    "ground_lines",
 }
 
 
@@ -720,12 +765,14 @@ def _generate_relative_vs_baseline_chart(stats, graphs_dir, baseline_variant, th
         marker = markers_map.get(variant, "o")
         pretty = labels.get(variant, variant)
 
-        n_rules, base_rules, var_rules = _aligned_metric_pair(stats, baseline_variant, variant, "rules")
-        if n_rules:
-            red_rules = [100.0 * (b - v) / b if b != 0 else float("nan")
-                         for b, v in zip(base_rules, var_rules)]
-            ax_reduction.plot(n_rules, red_rules, marker=marker, linewidth=2,
-                              color=color, linestyle="-", label=f"{pretty} - rules")
+        size_metric = _preferred_ground_size_metric(stats, baseline_variant, variant)
+        n_size, base_size, var_size = _aligned_metric_pair(stats, baseline_variant, variant, size_metric)
+        if n_size:
+            red_size = [100.0 * (b - v) / b if b != 0 else float("nan")
+                        for b, v in zip(base_size, var_size)]
+            size_label = "ground lines" if size_metric == "ground_lines" else "solver rules"
+            ax_reduction.plot(n_size, red_size, marker=marker, linewidth=2,
+                              color=color, linestyle="-", label=f"{pretty} - {size_label}")
 
         n_vars, base_vars, var_vars = _aligned_metric_pair(stats, baseline_variant, variant, "variables")
         if n_vars:
@@ -735,7 +782,7 @@ def _generate_relative_vs_baseline_chart(stats, graphs_dir, baseline_variant, th
                               color=color, linestyle=":", label=f"{pretty} - variables")
 
     ax_reduction.axhline(0.0, color="#555", linewidth=1, linestyle="--")
-    ax_reduction.set_title("Grounding Size Reduction vs Baseline")
+    ax_reduction.set_title("Ground Program Size Reduction vs Baseline")
     ax_reduction.set_xlabel(xlabel)
     ax_reduction.set_ylabel("Reduction (%)")
     ax_reduction.grid(True, alpha=0.3, linestyle="--")
@@ -904,6 +951,16 @@ def _aligned_metric_pair(stats, baseline_variant, variant, metric):
     return common_n, [base_map[n] for n in common_n], [var_map[n] for n in common_n]
 
 
+def _preferred_ground_size_metric(stats, baseline_variant, variant):
+    """Use textual ground-program lines when available; otherwise fall back to clingo's Rules statistic."""
+    if (
+        "ground_lines" in stats.get(baseline_variant, {}) and
+        "ground_lines" in stats.get(variant, {})
+    ):
+        return "ground_lines"
+    return "rules"
+
+
 def _detect_seeds(stats):
     """Detect seed count from aggregated metric counts."""
     counts = set()
@@ -961,7 +1018,7 @@ def print_summary_table(stats, theme):
     print()
     print(f"{'':>5}  ", end="")
     for _ in variants:
-        print(f"  {'Solv(s)':>8} {'Tot(s)':>8} {'Choices':>8} {'Conf.':>8} {'Rst.':>6} {'Rules':>7} {'Vars':>7} {'Heur':>7} {'LazyH':>7} {'Facts':>7}", end="")
+        print(f"  {'Grnd(s)':>8} {'Solv(s)':>8} {'Tot(s)':>8} {'Choices':>8} {'Conf.':>8} {'Rst.':>6} {'Lines':>7} {'Rules':>7} {'Vars':>7} {'Heur':>7} {'LazyH':>7} {'Facts':>7}", end="")
     print()
     print("-" * table_width)
 
@@ -973,29 +1030,33 @@ def print_summary_table(stats, theme):
     for n in sorted(all_ns):
         row = f"{n:>5}  "
         for v in variants:
+            grounding = _get_mean_at_n(stats[v], "grounding_s", n)
             solving = _get_mean_at_n(stats[v], "solving_s", n)
             total = _get_mean_at_n(stats[v], "total_s", n)
             choices = _get_mean_at_n(stats[v], "choices", n)
             conflicts = _get_mean_at_n(stats[v], "conflicts", n)
             restarts = _get_mean_at_n(stats[v], "restarts", n)
+            ground_lines = _get_mean_at_n(stats[v], "ground_lines", n)
             rules = _get_mean_at_n(stats[v], "rules", n)
             variables = _get_mean_at_n(stats[v], "variables", n)
             ground_heuristics = _get_mean_at_n(stats[v], "ground_heuristics", n)
             ground_lazy = _get_mean_at_n(stats[v], "ground_lazy_heuristic_facts", n)
             ground_facts = _get_mean_at_n(stats[v], "ground_facts", n)
 
+            g_str = f"{grounding:.4f}" if grounding is not None else "N/A"
             s_str = f"{solving:.4f}" if solving is not None else "N/A"
             t_str = f"{total:.4f}" if total is not None else "N/A"
             c_str = f"{choices:.0f}" if choices is not None else "N/A"
             f_str = f"{conflicts:.0f}" if conflicts is not None else "N/A"
             rs_str = f"{restarts:.0f}" if restarts is not None else "N/A"
+            gl_str = f"{ground_lines:.0f}" if ground_lines is not None else "N/A"
             r_str = f"{rules:.0f}" if rules is not None else "N/A"
             v_str = f"{variables:.0f}" if variables is not None else "N/A"
             h_str = f"{ground_heuristics:.0f}" if ground_heuristics is not None else "N/A"
             lh_str = f"{ground_lazy:.0f}" if ground_lazy is not None else "N/A"
             gf_str = f"{ground_facts:.0f}" if ground_facts is not None else "N/A"
 
-            row += f"  {s_str:>8} {t_str:>8} {c_str:>8} {f_str:>8} {rs_str:>6} {r_str:>7} {v_str:>7} {h_str:>7} {lh_str:>7} {gf_str:>7}"
+            row += f"  {g_str:>8} {s_str:>8} {t_str:>8} {c_str:>8} {f_str:>8} {rs_str:>6} {gl_str:>7} {r_str:>7} {v_str:>7} {h_str:>7} {lh_str:>7} {gf_str:>7}"
         print(row)
 
     print(f"{'='*table_width}\n")
@@ -1037,6 +1098,20 @@ def reset_graphs_dir(graphs_dir):
             os.remove(path)
 
     print(f"\nOutput grafici svuotato: '{graphs_dir}'")
+
+
+def ensure_plot_dependencies():
+    """Fail before touching graph outputs if plotting dependencies are missing."""
+    try:
+        import matplotlib  # noqa: F401
+        import numpy  # noqa: F401
+    except ImportError:
+        print("Matplotlib/Numpy non sono installati.")
+        print("Crea un virtualenv e installa le dipendenze, ad esempio:")
+        print("  python3 -m venv /tmp/clingo-graphs-venv")
+        print("  /tmp/clingo-graphs-venv/bin/python -m pip install -r test_folder/requirements.txt")
+        print("  cd test_folder && /tmp/clingo-graphs-venv/bin/python gen_graphs.py")
+        sys.exit(1)
 
 
 def process_csv(csv_path, graphs_dir, theme, problem_name, title_suffix=""):
@@ -1098,6 +1173,7 @@ def main():
         os.path.join(results_dir, "results.csv"),
     ]
     if any(os.path.isfile(path) for path in expected_csvs):
+        ensure_plot_dependencies()
         reset_graphs_dir(base_out)
 
     # ---- BSP ----

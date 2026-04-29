@@ -5,9 +5,9 @@
 
 x(1..n).
 
-% Guess con la choice rule
-1 { b(X); c(X) } 1 :- x(X).
-
+% guessing
+b(X) :- x(X), not c(X).
+c(X) :- x(X), not b(X).
 
 % check solution
 sumB(Sum) :- Sum = #sum{Y : b(Y)}.

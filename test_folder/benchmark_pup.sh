@@ -134,7 +134,8 @@ collect_ground_counts() {
 
     local counts ground_text
     if ground_text="$(timeout "${TIMEOUT_SECONDS}" "${cmd[@]}" --text 2>/dev/null)"; then
-        local heur lazy facts
+        local heur lazy facts lines
+        lines="$(printf "%s\n" "${ground_text}" | wc -l | tr -d '[:space:]')"
         heur="$(printf "%s\n" "${ground_text}" | { grep '^#heuristic' || true; } | wc -l | tr -d '[:space:]')"
         lazy="$(printf "%s\n" "${ground_text}" | { grep '^__heuristic(' || true; } | wc -l | tr -d '[:space:]')"
         facts="$(printf "%s\n" "${ground_text}" \
@@ -143,9 +144,9 @@ collect_ground_counts() {
             | { grep -v '^[[:space:]]*%' || true; } \
             | { grep -v '^#heuristic' || true; } \
             | wc -l | tr -d '[:space:]')"
-        counts="${heur},${lazy},${facts}"
+        counts="${heur},${lazy},${facts},${lines}"
     else
-        counts="NA,NA,NA"
+        counts="NA,NA,NA,NA"
     fi
 
     # Versione precedente con awk, lasciata qui per ripristino rapido:
@@ -172,11 +173,24 @@ run_stats() {
 
     echo "  [seed=${seed}] ${cmd[*]}"
 
-    local output
+    local output status
     if command -v prlimit >/dev/null 2>&1; then
-        output="$( { "${TIME_BIN}" -v prlimit --as="${MEM_LIMIT_BYTES}" -- timeout "${TIMEOUT_SECONDS}" "${cmd[@]}" --stats=2 --seed="${seed}" ; } 2>&1 )" || true
+        if output="$( { "${TIME_BIN}" -v prlimit --as="${MEM_LIMIT_BYTES}" -- timeout "${TIMEOUT_SECONDS}" "${cmd[@]}" --stats=2 --seed="${seed}" ; } 2>&1 )"; then
+            status=0
+        else
+            status=$?
+        fi
     else
-        output="$( { "${TIME_BIN}" -v timeout "${TIMEOUT_SECONDS}" "${cmd[@]}" --stats=2 --seed="${seed}" ; } 2>&1 )" || true
+        if output="$( { "${TIME_BIN}" -v timeout "${TIMEOUT_SECONDS}" "${cmd[@]}" --stats=2 --seed="${seed}" ; } 2>&1 )"; then
+            status=0
+        else
+            status=$?
+        fi
+    fi
+
+    local run_ok=1
+    if [ "${status}" -ne 0 ] || echo "${output}" | grep -qE '^\*\*\* ERROR|^UNKNOWN'; then
+        run_ok=0
     fi
 
     local solving_s
@@ -186,6 +200,13 @@ run_stats() {
     local total_s
     total_s="$(echo "${output}" | grep -P '^Time\s+:' | grep -oP '[0-9.]+(?=s)' | head -1 || echo "NA")"
     if [ -z "${total_s}" ]; then total_s="NA"; fi
+
+    local grounding_s
+    if [[ "${total_s}" =~ ^[0-9.]+$ && "${solving_s}" =~ ^[0-9.]+$ ]]; then
+        grounding_s="$(awk -v total="${total_s}" -v solving="${solving_s}" 'BEGIN { v=total-solving; if (v < 0) v=0; printf "%.6f", v }')"
+    else
+        grounding_s="NA"
+    fi
 
     local choices
     choices="$(echo "${output}" | grep -P '^Choices\s+:' | grep -oP '\d+' | head -1 || echo "NA")"
@@ -207,6 +228,18 @@ run_stats() {
     variables="$(echo "${output}" | grep -P '^Variables\s+:' | grep -oP '\d+' | head -1 || echo "NA")"
     if [ -z "${variables}" ]; then variables="NA"; fi
 
+    if [ "${run_ok}" -eq 0 ]; then
+        echo "    warning: clingo exited with status ${status}; solver metrics marked as NA"
+        solving_s="NA"
+        total_s="NA"
+        grounding_s="NA"
+        choices="NA"
+        conflicts="NA"
+        restarts="NA"
+        rules="NA"
+        variables="NA"
+    fi
+
     local rss_kb memory_mb
     rss_kb="$(echo "${output}" | grep -oP '(?<=Maximum resident set size \(kbytes\): )\d+' || echo "")"
     if [ -z "${rss_kb}" ]; then
@@ -214,13 +247,16 @@ run_stats() {
     else
         memory_mb="$(echo "${rss_kb}" | awk '{printf "%.4f", $1/1024}')"
     fi
+    if [ "${run_ok}" -eq 0 ]; then
+        memory_mb="NA"
+    fi
 
-    local ground_counts ground_heuristics ground_lazy_heuristic_facts ground_facts
+    local ground_counts ground_heuristics ground_lazy_heuristic_facts ground_facts ground_lines
     ground_counts="$(collect_ground_counts "${cmd[@]}")"
-    IFS=',' read -r ground_heuristics ground_lazy_heuristic_facts ground_facts <<< "${ground_counts}"
+    IFS=',' read -r ground_heuristics ground_lazy_heuristic_facts ground_facts ground_lines <<< "${ground_counts}"
 
-    echo "    solving=${solving_s}s total=${total_s}s choices=${choices} conflicts=${conflicts} restarts=${restarts} rules=${rules} vars=${variables} mem=${memory_mb}MB heur=${ground_heuristics} lazy_facts=${ground_lazy_heuristic_facts} facts=${ground_facts}"
-    echo "${instance_size},${variant},${seed},${solving_s},${total_s},${choices},${conflicts},${restarts},${rules},${variables},${memory_mb},${ground_heuristics},${ground_lazy_heuristic_facts},${ground_facts}" >> "${csv_file}"
+    echo "    grounding=${grounding_s}s solving=${solving_s}s total=${total_s}s choices=${choices} conflicts=${conflicts} restarts=${restarts} rules=${rules} vars=${variables} mem=${memory_mb}MB heur=${ground_heuristics} lazy_facts=${ground_lazy_heuristic_facts} facts=${ground_facts} ground_lines=${ground_lines}"
+    echo "${instance_size},${variant},${seed},${solving_s},${total_s},${grounding_s},${choices},${conflicts},${restarts},${rules},${variables},${memory_mb},${ground_heuristics},${ground_lazy_heuristic_facts},${ground_facts},${ground_lines}" >> "${csv_file}"
 }
 
 # ============================================================================
@@ -295,7 +331,7 @@ generate_lazy_encodings
 # ============================================================================
 
 CSV_DOUBLE="${TIMINGS_DIR}/pup_double_results.csv"
-echo "n,variant,seed,solving_s,total_s,choices,conflicts,restarts,rules,variables,memory_mb,ground_heuristics,ground_lazy_heuristic_facts,ground_facts" > "${CSV_DOUBLE}"
+echo "n,variant,seed,solving_s,total_s,grounding_s,choices,conflicts,restarts,rules,variables,memory_mb,ground_heuristics,ground_lazy_heuristic_facts,ground_facts,ground_lines" > "${CSV_DOUBLE}"
 
 echo ""
 echo "================================================================"
@@ -332,7 +368,7 @@ run_encoding_on_instances "pup_double_aux_lg" "${FILE_PUP_DOUBLE_AUX_LG}" "${INS
 # ============================================================================
 
 CSV_DOUBLEV="${TIMINGS_DIR}/pup_doublev_results.csv"
-echo "n,variant,seed,solving_s,total_s,choices,conflicts,restarts,rules,variables,memory_mb,ground_heuristics,ground_lazy_heuristic_facts,ground_facts" > "${CSV_DOUBLEV}"
+echo "n,variant,seed,solving_s,total_s,grounding_s,choices,conflicts,restarts,rules,variables,memory_mb,ground_heuristics,ground_lazy_heuristic_facts,ground_facts,ground_lines" > "${CSV_DOUBLEV}"
 
 echo ""
 echo "================================================================"
