@@ -148,11 +148,11 @@ PLOT_CONFIGS = [
 
 BSP_THEME = {
     "variant_labels": {
-        "std":  "Standard (__BSP.lp)",
-        "std_aux": "Standard + Aux (__BSP_aux.lp)",
-        "lg":   "Lazy Grounding (_BSP_lg.lp)",
-        "lg_aux": "Lazy + Aux (_BSP_aux_lg.lp)",
-        "colg": "Lazy + Optimized Constraint (_BSP_colg.lp)",
+        "std":  "Standard (BSP.lp)",
+        "std_aux": "Standard + Aux (BSP_aux.lp)",
+        "lg":   "Lazy Grounding (BSP_lg.lp)",
+        "lg_aux": "Lazy + Aux (BSP_aux_lg.lp)",
+        "colg": "Lazy + Optimized Constraint (BSP_colg.lp)",
     },
     "variant_colors": {
         "std":  "#E74C3C",   # red
@@ -179,15 +179,15 @@ BSP_THEME = {
 # DoubleVariant/ → pup, pup_heur, pup_doublev
 PUP_THEME = {
     "variant_labels": {
-        "pup":        "Dichiarativo (__PUP.lp)",
-        "pup_heur":   "Euristiche Statiche (__PUP_heur.lp)",
+        "pup":        "Dichiarativo (PUP.lp)",
+        "pup_heur":   "Euristiche Statiche (PUP_heur.lp)",
         "pup_double_std": "PUP Double #heuristic",
         "pup_double_aux": "PUP Double #heuristic + Aux",
-        "pup_double": "Aggregati Dinamici (_PUP_double_lg.lp)",
+        "pup_double": "Aggregati Dinamici (PUP_double_lg.lp)",
         "pup_double_aux_lg": "Aggregati Dinamici + Aux",
         "pup_doublev_std": "PUP DoubleV #heuristic",
         "pup_doublev_aux": "PUP DoubleV #heuristic + Aux",
-        "pup_doublev":"Aggregati Dinamici Variante (_PUP_double_variant_lg.lp)",
+        "pup_doublev":"Aggregati Dinamici Variante (PUP_double_variant_lg.lp)",
         "pup_doublev_aux_lg": "Aggregati Dinamici Variante + Aux",
     },
     "variant_colors": {

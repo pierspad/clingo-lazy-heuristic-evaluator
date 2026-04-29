@@ -3,12 +3,12 @@
 # Benchmark per il problema PUP (Paired Unit Placement).
 # Testa baseline, euristiche statiche e varianti PUP derivate:
 #
-#   pup          — encoding dichiarativo   (PUP/__PUP.lp)
-#   pup_heur     — encoding con euristiche statiche (PUP/__PUP_heur.lp)
-#   pup_double_std     — #heuristic originale PUP Double (PUP/__PUP_double.lp)
-#   pup_double_aux     — #heuristic con predicato ausiliario (PUP/__PUP_double_aux.lp)
-#   pup_double         — encoding lazy convertito (PUP/_PUP_double_lg.lp)
-#   pup_double_aux_lg  — lazy convertito con predicato ausiliario (PUP/_PUP_double_aux_lg.lp)
+#   pup          — encoding dichiarativo   (PUP/PUP.lp)
+#   pup_heur     — encoding con euristiche statiche (PUP/PUP_heur.lp)
+#   pup_double_std     — #heuristic originale PUP Double (PUP/PUP_double.lp)
+#   pup_double_aux     — #heuristic con predicato ausiliario (PUP/PUP_double_aux.lp)
+#   pup_double         — encoding lazy convertito (PUP/PUP_double_lg.lp)
+#   pup_double_aux_lg  — lazy convertito con predicato ausiliario (PUP/PUP_double_aux_lg.lp)
 #   pup_doublev_*      — equivalenti per la famiglia DoubleVariant
 #
 # Istanze usate (stessa baseline per entrambe le famiglie):
@@ -47,16 +47,16 @@ MEM_LIMIT_BYTES=$((32 * 1024 * 1024 * 1024))
 CONVERTER="${SCRIPT_DIR}/asp_heuristic_converter.py"
 
 # Encoding files
-FILE_PUP="PUP/__PUP.lp"
-FILE_PUP_HEUR="PUP/__PUP_heur.lp"
-FILE_PUP_DOUBLE_SRC="PUP/__PUP_double.lp"
-FILE_PUP_DOUBLEV_SRC="PUP/__PUP_double_variant.lp"
-FILE_PUP_DOUBLE_AUX="PUP/__PUP_double_aux.lp"
-FILE_PUP_DOUBLEV_AUX="PUP/__PUP_double_variant_aux.lp"
-FILE_PUP_DOUBLE="PUP/_PUP_double_lg.lp"
-FILE_PUP_DOUBLEV="PUP/_PUP_double_variant_lg.lp"
-FILE_PUP_DOUBLE_AUX_LG="PUP/_PUP_double_aux_lg.lp"
-FILE_PUP_DOUBLEV_AUX_LG="PUP/_PUP_double_variant_aux_lg.lp"
+FILE_PUP="PUP/PUP.lp"
+FILE_PUP_HEUR="PUP/PUP_heur.lp"
+FILE_PUP_DOUBLE_SRC="PUP/PUP_double.lp"
+FILE_PUP_DOUBLEV_SRC="PUP/PUP_double_variant.lp"
+FILE_PUP_DOUBLE_AUX="PUP/PUP_double_aux.lp"
+FILE_PUP_DOUBLEV_AUX="PUP/PUP_double_variant_aux.lp"
+FILE_PUP_DOUBLE="PUP/PUP_double_lg.lp"
+FILE_PUP_DOUBLEV="PUP/PUP_double_variant_lg.lp"
+FILE_PUP_DOUBLE_AUX_LG="PUP/PUP_double_aux_lg.lp"
+FILE_PUP_DOUBLEV_AUX_LG="PUP/PUP_double_variant_aux_lg.lp"
 
 # Instance directories
 INSTANCES_DOUBLE="PUP_instances/Double"

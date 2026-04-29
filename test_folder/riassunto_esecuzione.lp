@@ -276,7 +276,7 @@ numero di conflitti generati durante la ricerca.
 
 
 % output di 
-% gringo --text BSP/__BSP.lp BSP_instances/__.BSP_range.lp
+% gringo --text BSP/BSP.lp BSP_instances/BSP_range.lp
 
 x(1).
 x(2).
@@ -375,7 +375,7 @@ sumB(6):-#sum{1:b(1);2:b(2);3:b(3)}=6.
 #delayed(3) <=> 1<=#count{0,b(3):b(3);0,c(3):c(3)}<=1
 
 % output di 
-% gringo --text BSP/_BSP_colg.lp BSP_instances/__.BSP_range.lp
+% gringo --text BSP/BSP_colg.lp BSP_instances/BSP_range.lp
 
 __heuristic(__target(b),x,__n_c,__bind(s,__sum(c)),__weight(self),__priority(s),true).
 __heuristic(__target(c),x,__n_b,__bind(s,__sum(b)),__weight(self),__priority(s),true).
