@@ -109,7 +109,7 @@ PLOT_CONFIGS = [
         "metric": "rules",
         "title": "Ground Rules",
         "ylabel": "Number of rules",
-        "description": "Size of the grounded program.\nLazy grounding should generate fewer rules",
+        "description": "Solver Rules statistic.\nLazy templates appear as facts/atoms, see Ground Facts and Variables.",
         "filename": "rules_comparison.png",
     },
     {
@@ -306,8 +306,12 @@ SEPARATOR_COLOR = "#D6D6D6"
 
 def _add_axis_caption(ax, description: str, *, y: float, width: int, fontsize: int):
     """Place the metric description below the plot area as a caption."""
-    caption = " ".join(description.split())
-    wrapped = textwrap.fill(caption, width=width)
+    lines = []
+    for line in description.splitlines():
+        line = " ".join(line.split())
+        if line:
+            lines.append(textwrap.fill(line, width=width))
+    wrapped = "\n".join(lines)
     ax.text(
         0.5, y, wrapped,
         transform=ax.transAxes,
@@ -318,6 +322,36 @@ def _add_axis_caption(ax, description: str, *, y: float, width: int, fontsize: i
         fontstyle="italic",
         clip_on=False,
     )
+
+
+def _format_compact_number(value, _pos=None):
+    """Format large axis ticks without scientific-offset notation."""
+    abs_value = abs(value)
+    for suffix, scale in (("B", 1_000_000_000), ("M", 1_000_000), ("K", 1_000)):
+        if abs_value >= scale:
+            scaled = value / scale
+            if abs(scaled) >= 100 or scaled.is_integer():
+                return f"{scaled:.0f}{suffix}"
+            if abs(scaled) >= 10:
+                return f"{scaled:.1f}{suffix}"
+            return f"{scaled:.2f}".rstrip("0").rstrip(".") + suffix
+    if abs_value >= 1:
+        return f"{value:.0f}"
+    if value == 0:
+        return "0"
+    return f"{value:g}"
+
+
+def _apply_y_axis_format(ax, metric: str):
+    """Keep count-like axes readable and consistent across charts."""
+    if metric not in INTEGER_METRICS:
+        return
+
+    from matplotlib.ticker import FuncFormatter, MaxNLocator
+
+    ax.yaxis.set_major_locator(MaxNLocator(nbins=6, integer=True))
+    ax.yaxis.set_major_formatter(FuncFormatter(_format_compact_number))
+    ax.yaxis.offsetText.set_visible(False)
 
 
 def _add_subplot_separators(fig, axes, n_plots: int):
@@ -403,7 +437,6 @@ def generate_graphs(stats: dict, graphs_dir: str, theme: dict, title_suffix: str
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         import numpy as np
-        from matplotlib.ticker import MaxNLocator
     except ImportError:
         print("Matplotlib is not installed. To enable plotting: pip install matplotlib numpy")
         sys.exit(1)
@@ -473,8 +506,7 @@ def generate_graphs(stats: dict, graphs_dir: str, theme: dict, title_suffix: str
         if has_data:
             ax.legend(loc="upper left")
 
-        if metric in INTEGER_METRICS:
-            ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+        _apply_y_axis_format(ax, metric)
 
         _add_axis_caption(ax, config["description"], y=-0.27, width=64, fontsize=7)
 
@@ -537,7 +569,6 @@ def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, description
     try:
         import matplotlib.pyplot as plt
         import numpy as np
-        from matplotlib.ticker import MaxNLocator
     except ImportError:
         return
 
@@ -579,8 +610,7 @@ def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, description
         ax.text(0.5, 0.5, "No data", transform=ax.transAxes,
                 ha="center", va="center", fontsize=13, color="#AAA")
     ax.grid(True, alpha=0.3, linestyle="--")
-    if metric in INTEGER_METRICS:
-        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+    _apply_y_axis_format(ax, metric)
 
     _add_axis_caption(ax, description, y=-0.20, width=88, fontsize=8)
 
