@@ -157,39 +157,59 @@ BSP_THEME = {
         "std": "G&S + Clingo sem",
         "std_aux": "G&S + Clingo sem + Aux",
         "asgs": "G&S + Alpha sem",
+        "gsas": "G&S + Alpha sem",
         "lg": "Lazy + Alpha sem",
         "cslg": "Lazy + Clingo sem",
+        "lgcs": "Lazy + Clingo sem",
         "auxlg": "Lazy + Alpha sem + Aux",
-        "colg": "Lazy + Optimized Constraint (BSP_colg.lp)",
+        "colg": "Lazy + Optimized Constraint (BSP_lgas_co.lp)",
+        "lgas_co": "Lazy + Optimized Constraint (BSP_lgas_co.lp)",
     },
     "variant_files": {
         "std": "BSP/BSP_gscs.lp",
         "std_aux": "BSP/BSP_gscs_aux.lp",
-        "asgs": "BSP/BSP_asgs.lp",
+        "asgs": "BSP/BSP_gsas.lp",
+        "gsas": "BSP/BSP_gsas.lp",
         "lg": "BSP/BSP_lgas.lp",
-        "cslg": "BSP/BSP_cslg.lp",
+        "cslg": "BSP/BSP_lgcs.lp",
+        "lgcs": "BSP/BSP_lgcs.lp",
         "auxlg": "BSP/BSP_lgas_aux.lp",
-        "colg": "BSP/BSP_colg.lp",
+        "colg": "BSP/BSP_lgas_co.lp",
+        "lgas_co": "BSP/BSP_lgas_co.lp",
+    },
+    "variant_aliases": {
+        "asgs": ["gsas", "bsp_gsas", "bsp_no_gsas"],
+        "gsas": ["asgs", "bsp_asgs", "bsp_no_asgs"],
+        "cslg": ["lgcs", "bsp_lgcs", "bsp_no_lgcs"],
+        "lgcs": ["cslg", "bsp_cslg", "bsp_no_cslg"],
+        "colg": ["lgas_co", "bsp_lgas_co", "bsp_no_lgas_co"],
+        "lgas_co": ["colg", "bsp_colg", "bsp_no_colg"],
     },
     "variant_colors": {
         "std":  "#E74C3C",   # red
         "std_aux": "#C0392B", # dark red
         "asgs": "#F39C12",   # orange
+        "gsas": "#F39C12",   # orange
         "lg":   "#2ECC71",   # green
         "cslg": "#9B59B6",   # purple
+        "lgcs": "#9B59B6",   # purple
         "auxlg": "#16A085",  # teal
         "colg": "#3498DB",   # blue
+        "lgas_co": "#3498DB",   # blue
     },
     "variant_markers": {
         "std":  "o",
         "std_aux": "x",
         "asgs": "v",
+        "gsas": "v",
         "lg":   "s",
         "cslg": "D",
+        "lgcs": "D",
         "auxlg": "P",
         "colg": "^",
+        "lgas_co": "^",
     },
-    "variant_order": ["std", "std_aux", "asgs", "lg", "cslg", "auxlg", "colg"],
+    "variant_order": ["std", "std_aux", "asgs", "gsas", "lg", "cslg", "lgcs", "auxlg", "colg", "lgas_co"],
     "xlabel": "Problem size (N)",
     "suptitle": "BSP Benchmark: Standard vs Lazy Heuristic Grounding",
     "baseline": "std",
@@ -583,6 +603,11 @@ def _selector_aliases_for_variant(theme: dict, variant: str) -> set:
     if label:
         aliases.add(label.lower())
 
+    aliases.update(
+        alias.lower()
+        for alias in theme.get("variant_aliases", {}).get(variant, [])
+    )
+
     filename = theme.get("variant_files", {}).get(variant)
     if filename:
         normalized = filename.replace("\\", "/").lower()
@@ -598,7 +623,7 @@ def resolve_excluded_variant_list(theme: dict, selectors: list, *, context: str)
     Resolve user-facing exclude selectors to variant ids, preserving CLI order.
 
     Supported selectors include the variant id (e.g. asgs), file basename
-    (BSP_asgs.lp), file stem (BSP_asgs), or the full relative path.
+    (BSP_gsas.lp), file stem (BSP_gsas), or the full relative path.
     """
     excluded = []
     seen = set()
@@ -606,15 +631,21 @@ def resolve_excluded_variant_list(theme: dict, selectors: list, *, context: str)
 
     for selector in selectors:
         key = selector.replace("\\", "/").lower()
+        basename = os.path.basename(key)
+        stem, ext = os.path.splitext(basename)
+        if stem.startswith("bsp_no_"):
+            key = stem[len("bsp_no_"):]
+        elif stem.startswith("no_"):
+            key = stem[len("no_"):]
         matches = [
             variant for variant in theme.get("variant_order", [])
             if key in _selector_aliases_for_variant(theme, variant)
         ]
         if matches:
-            for variant in matches:
-                if variant not in seen:
-                    excluded.append(variant)
-                    seen.add(variant)
+            variant = matches[0]
+            if variant not in seen:
+                excluded.append(variant)
+                seen.add(variant)
         else:
             unknown.append(selector)
 
@@ -658,10 +689,29 @@ def exclusion_dir_name(theme: dict, excluded_variants: set, ordered_variants=Non
             if variant in excluded_variants
         ]
         ordered.extend(sorted(excluded_variants - set(ordered)))
+    identifiers = []
+    seen_identifiers = set()
+    for variant in ordered:
+        identifier = _variant_dir_identifier(theme, variant)
+        if identifier not in seen_identifiers:
+            identifiers.append(identifier)
+            seen_identifiers.add(identifier)
     return "-".join(
-        f"no_{_variant_dir_identifier(theme, variant)}"
-        for variant in ordered
+        f"no_{identifier}"
+        for identifier in identifiers
     )
+
+
+def exclusion_display_names(theme: dict, excluded_variants: list) -> list:
+    """Return de-duplicated display names for an ordered exclusion list."""
+    names = []
+    seen_names = set()
+    for variant in excluded_variants:
+        name = _variant_dir_identifier(theme, variant)
+        if name not in seen_names:
+            names.append(name)
+            seen_names.add(name)
+    return names
 
 
 def _filtered_theme(theme: dict, excluded_variants: set):
@@ -1343,7 +1393,8 @@ def process_csv(csv_path, graphs_dir, theme, problem_name, title_suffix="", excl
     if excluded_variants:
         stats = _filtered_stats(stats, excluded_variants)
         theme = _filtered_theme(theme, excluded_variants)
-        print(f"  Varianti escluse dai grafici: {', '.join(sorted(excluded_variants))}")
+        excluded_names = sorted(set(exclusion_display_names(theme, sorted(excluded_variants))))
+        print(f"  Varianti escluse dai grafici: {', '.join(excluded_names)}")
 
     if not stats:
         print("  [SKIP] Nessuna variante rimasta dopo gli exclude.")
@@ -1373,7 +1424,7 @@ def parse_args():
         default=[],
         help=(
             "Exclude variants/files from generated charts. Repeat the option or "
-            "use commas/spaces. Examples: --exclude BSP_asgs.lp --exclude lg cslg"
+            "use commas/spaces. Examples: --exclude BSP_gsas.lp --exclude lg lgcs"
         ),
     )
     parser.add_argument(
@@ -1394,7 +1445,10 @@ def main():
     results_dir = args.results_dir
     base_out = args.out
     global_exclude_selectors = _split_exclude_selectors(args.exclude)
-    bsp_exclude_selectors = global_exclude_selectors + _split_exclude_selectors(args.bsp_exclude)
+    bsp_only_exclude_selectors = _split_exclude_selectors(args.bsp_exclude)
+    bsp_exclude_selectors = global_exclude_selectors + bsp_only_exclude_selectors
+    has_filters = bool(global_exclude_selectors or bsp_only_exclude_selectors)
+    bsp_only_filtered_run = bool(bsp_only_exclude_selectors and not global_exclude_selectors)
 
     processed_any = False
 
@@ -1406,7 +1460,10 @@ def main():
     ]
     if any(os.path.isfile(path) for path in expected_csvs):
         ensure_plot_dependencies()
-        reset_graphs_dir(base_out)
+        if has_filters:
+            os.makedirs(base_out, exist_ok=True)
+        else:
+            reset_graphs_dir(base_out)
 
     # ---- BSP ----
     bsp_csv = os.path.join(results_dir, "bsp_results.csv")
@@ -1422,10 +1479,7 @@ def main():
     ]
     if bsp_user_excluded_order:
         focused_excluded = set(bsp_user_excluded_order)
-        focused_names = ", ".join(
-            _variant_dir_identifier(bsp_theme, variant)
-            for variant in bsp_user_excluded_order
-        )
+        focused_names = ", ".join(exclusion_display_names(bsp_theme, bsp_user_excluded_order))
         bsp_graph_sets.append(
             (
                 focused_excluded,
@@ -1448,37 +1502,38 @@ def main():
         if process_csv(bsp_csv, bsp_out, theme_for_set, label, excluded_variants=excluded):
             processed_any = True
 
-    # ---- PUP Double ----
-    pup_double_csv = os.path.join(results_dir, "pup_double_results.csv")
-    pup_double_out = os.path.join(base_out, "pup")
-    pup_double_theme = PUP_THEME.copy()
-    pup_double_theme["suptitle"] = "PUP Benchmark — Double Family"
-    pup_double_theme["heuristic_baseline"] = "pup_double_std"
-    pup_double_excluded = resolve_excluded_variants(
-        pup_double_theme,
-        global_exclude_selectors,
-        context="PUP Double",
-    )
-    if process_csv(pup_double_csv, pup_double_out, pup_double_theme,
-                   "PUP Double", title_suffix="Double",
-                   excluded_variants=pup_double_excluded):
-        processed_any = True
+    if not bsp_only_filtered_run:
+        # ---- PUP Double ----
+        pup_double_csv = os.path.join(results_dir, "pup_double_results.csv")
+        pup_double_out = os.path.join(base_out, "pup")
+        pup_double_theme = PUP_THEME.copy()
+        pup_double_theme["suptitle"] = "PUP Benchmark — Double Family"
+        pup_double_theme["heuristic_baseline"] = "pup_double_std"
+        pup_double_excluded = resolve_excluded_variants(
+            pup_double_theme,
+            global_exclude_selectors,
+            context="PUP Double",
+        )
+        if process_csv(pup_double_csv, pup_double_out, pup_double_theme,
+                       "PUP Double", title_suffix="Double",
+                       excluded_variants=pup_double_excluded):
+            processed_any = True
 
-    # ---- PUP DoubleV ----
-    pup_doublev_csv = os.path.join(results_dir, "pup_doublev_results.csv")
-    pup_doublev_out = os.path.join(base_out, "pup")
-    pup_doublev_theme = PUP_THEME.copy()
-    pup_doublev_theme["suptitle"] = "PUP Benchmark — DoubleV Family"
-    pup_doublev_theme["heuristic_baseline"] = "pup_doublev_std"
-    pup_doublev_excluded = resolve_excluded_variants(
-        pup_doublev_theme,
-        global_exclude_selectors,
-        context="PUP DoubleV",
-    )
-    if process_csv(pup_doublev_csv, pup_doublev_out, pup_doublev_theme,
-                   "PUP DoubleV", title_suffix="DoubleV",
-                   excluded_variants=pup_doublev_excluded):
-        processed_any = True
+        # ---- PUP DoubleV ----
+        pup_doublev_csv = os.path.join(results_dir, "pup_doublev_results.csv")
+        pup_doublev_out = os.path.join(base_out, "pup")
+        pup_doublev_theme = PUP_THEME.copy()
+        pup_doublev_theme["suptitle"] = "PUP Benchmark — DoubleV Family"
+        pup_doublev_theme["heuristic_baseline"] = "pup_doublev_std"
+        pup_doublev_excluded = resolve_excluded_variants(
+            pup_doublev_theme,
+            global_exclude_selectors,
+            context="PUP DoubleV",
+        )
+        if process_csv(pup_doublev_csv, pup_doublev_out, pup_doublev_theme,
+                       "PUP DoubleV", title_suffix="DoubleV",
+                       excluded_variants=pup_doublev_excluded):
+            processed_any = True
 
     # ---- Legacy BSP CSV (backward compat) ----
     legacy_csv = os.path.join(results_dir, "results.csv")

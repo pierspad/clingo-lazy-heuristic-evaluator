@@ -382,7 +382,7 @@ sumB(6):-#sum{1:b(1);2:b(2);3:b(3)}=6.
 #delayed(3) <=> 1<=#count{0,b(3):b(3);0,c(3):c(3)}<=1
 
 % output di 
-% gringo --text BSP/BSP_colg.lp BSP_instances/BSP_range.lp
+% gringo --text BSP/BSP_lgas_co.lp BSP_instances/BSP_range.lp
 
 __heuristic(__target(b),x,__n_c,__bind(s,__sum(c)),__weight(self),__priority(s),true).
 __heuristic(__target(c),x,__n_b,__bind(s,__sum(b)),__weight(self),__priority(s),true).
@@ -615,7 +615,7 @@ Qui Gringo deve produrre euristiche ground native. Il vantaggio e' che questa
 e' la semantica standard di Clingo; lo svantaggio e' il grounding bottleneck
 quando peso o priorita' dipendono da aggregati.
 
-2) Alpha semantics ground-and-solve (`asgs`, file BSP/BSP_asgs.lp).
+2) Alpha semantics ground-and-solve (`gsas`, file BSP/BSP_gsas.lp).
 Questa variante non usa il propagatore lazy. Emula l'idea Alpha con direttive
 native gia' groundabili:
 
@@ -640,7 +640,7 @@ significa "c(X) non e' vero": quindi l'euristica puo' attivarsi anche se c(X)
 e' ancora libero. Gli aggregati sono incrementali: sommano/contano gli atomi
 attualmente veri e non aspettano che tutti gli atomi del dominio siano decisi.
 
-4) Clingo semantics lazy (`cslg`, file BSP/BSP_cslg.lp).
+4) Clingo semantics lazy (`lgcs`, file BSP/BSP_lgcs.lp).
 E' identica alla variante lazy, ma aggiunge:
 
 __semantics(clingo)

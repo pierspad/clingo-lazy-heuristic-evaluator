@@ -4,11 +4,11 @@
 # Testa le configurazioni con il binario clingo modificato:
 #   std      — ground & solve con semantica Clingo (BSP/BSP_gscs.lp)
 #   std_aux  — ground & solve con semantica Clingo + ausiliari (BSP/BSP_gscs_aux.lp)
-#   asgs     — alpha semantics ground-and-solve (BSP/BSP_asgs.lp)
+#   gsas     — alpha semantics ground-and-solve (BSP/BSP_gsas.lp)
 #   lg       — lazy grounding con semantica Alpha (BSP/BSP_lgas.lp)
-#   cslg     — lazy grounding con semantica Clingo (BSP/BSP_cslg.lp)
+#   lgcs     — lazy grounding con semantica Clingo (BSP/BSP_lgcs.lp)
 #   auxlg    — lazy grounding con semantica Alpha + ausiliari (BSP/BSP_lgas_aux.lp)
-#   colg     — lazy grounding + vincolo ottimizzato (BSP/BSP_colg.lp)
+#   lgas_co  — lazy grounding + vincolo ottimizzato (BSP/BSP_lgas_co.lp)
 #
 # Ogni combinazione (N, variant) viene eseguita REPEATS volte con seed diversi.
 # Le varianti con euristiche usano --heuristic=Domain.
@@ -49,17 +49,17 @@ cd "${SCRIPT_DIR}"
 # Encoding files
 FILE_STD="BSP/BSP_gscs.lp"
 FILE_STD_AUX="BSP/BSP_gscs_aux.lp"
-FILE_ASGS="BSP/BSP_asgs.lp"
+FILE_ASGS="BSP/BSP_gsas.lp"
 FILE_LG="BSP/BSP_lgas.lp"
-FILE_CSLG="BSP/BSP_cslg.lp"
+FILE_CSLG="BSP/BSP_lgcs.lp"
 FILE_AUXLG="BSP/BSP_lgas_aux.lp"
-FILE_COLG="BSP/BSP_colg.lp"
+FILE_COLG="BSP/BSP_lgas_co.lp"
 
 # Varianti da eseguire.
-# Per riattivare colg, aggiungi "colg" alla lista sotto.
+# Per riattivare lgas_co, aggiungi "lgas_co" alla lista sotto.
 # Puoi anche sovrascrivere da shell, ad esempio:
-#   BSP_VARIANTS="std std_aux asgs lg cslg auxlg colg" ./benchmark_bsp.sh
-DEFAULT_VARIANTS=(std std_aux asgs lg cslg auxlg)
+#   BSP_VARIANTS="std std_aux gsas lg lgcs auxlg lgas_co" ./benchmark_bsp.sh
+DEFAULT_VARIANTS=(std std_aux gsas lg lgcs auxlg)
 read -r -a ACTIVE_VARIANTS <<< "${BSP_VARIANTS:-${DEFAULT_VARIANTS[*]}}"
 
 # Range file (in BSP_instances/)
@@ -82,14 +82,14 @@ variant_file() {
     case "$1" in
         std) echo "${FILE_STD}" ;;
         std_aux) echo "${FILE_STD_AUX}" ;;
-        asgs) echo "${FILE_ASGS}" ;;
+        asgs|gsas) echo "${FILE_ASGS}" ;;
         lg) echo "${FILE_LG}" ;;
-        cslg) echo "${FILE_CSLG}" ;;
+        cslg|lgcs) echo "${FILE_CSLG}" ;;
         auxlg|lg_aux) echo "${FILE_AUXLG}" ;;
-        colg) echo "${FILE_COLG}" ;;
+        colg|lgas_co) echo "${FILE_COLG}" ;;
         *)
             echo "Errore: variante BSP sconosciuta '$1'." >&2
-            echo "Varianti valide: std std_aux asgs lg cslg auxlg colg" >&2
+            echo "Varianti valide: std std_aux gsas/asgs lg lgcs/cslg auxlg lgas_co/colg" >&2
             exit 1
             ;;
     esac
@@ -103,12 +103,12 @@ run_variant_for_seed() {
     file="$(variant_file "${variant}")"
 
     case "${variant}" in
-        std|std_aux|asgs)
+        std|std_aux|asgs|gsas)
             run_stats "${n}" "${variant}" "${seed}" \
                 "${CLINGO_MOD}" "${FILE_RANGE}" "${file}" "-c" "n=${n}" "-n" "1" \
                 "--heuristic=Domain" "--time-limit=${TIMEOUT_SECONDS}"
             ;;
-        lg|cslg|auxlg|lg_aux|colg)
+        lg|cslg|lgcs|auxlg|lg_aux|colg|lgas_co)
             run_stats "${n}" "${variant}" "${seed}" \
                 "${CLINGO_MOD}" "${FILE_RANGE}" "${file}" "-n" "1" "-c" "n=${n}" \
                 "--heuristic=Domain" "--time-limit=${TIMEOUT_SECONDS}"
