@@ -6,6 +6,7 @@
 #include <string>
 #include <memory>
 #include <map>
+#include <set>
 #include <climits>
 #include <utility>
 
@@ -239,15 +240,6 @@ struct HeuristicRuleTemplate {
     ArithmeticExpression priority_expr = ArithmeticExpression::number(0);
 };
 
-struct LazyTargetInstance {
-    Clingo::literal_t target_lit;
-    int self_value;
-    std::vector<int> tuple_values;
-    std::unordered_map<std::string, int> body_var_values;
-    size_t rule_idx;
-    size_t trigger_index;
-};
-
 class HeuristicPropagator : public Clingo::Heuristic {
 
 private:
@@ -262,12 +254,55 @@ private:
 
     struct BodyTriggerInfo {
         size_t rule_idx;
+        size_t candidate_id;
         Clingo::literal_t target_lit;
         int self_value;
         std::vector<int> tuple_values;
         std::unordered_map<std::string, int> body_var_values;
         std::vector<Clingo::literal_t> pos_body_lits;
         std::vector<Clingo::literal_t> neg_body_lits;
+    };
+
+    struct CandidateAggregateBinding {
+        std::string variable_name;
+        RuntimeAggregateKey runtime_key;
+        bool valid_key = false;
+    };
+
+    struct CandidateQueueEntry {
+        int priority = 0;
+        int weight = 0;
+        Clingo::literal_t target_lit = 0;
+        size_t candidate_id = 0;
+
+        bool operator==(CandidateQueueEntry const &o) const {
+            return priority == o.priority &&
+                   weight == o.weight &&
+                   target_lit == o.target_lit &&
+                   candidate_id == o.candidate_id;
+        }
+    };
+
+    struct CandidateQueueEntryLess {
+        bool operator()(CandidateQueueEntry const &a, CandidateQueueEntry const &b) const {
+            if (a.priority != b.priority) return a.priority > b.priority;
+            if (a.weight != b.weight) return a.weight > b.weight;
+            if (a.target_lit != b.target_lit) return a.target_lit < b.target_lit;
+            return a.candidate_id < b.candidate_id;
+        }
+    };
+
+    struct CandidateState {
+        size_t rule_idx = 0;
+        Clingo::literal_t target_lit = 0;
+        int self_value = 0;
+        std::vector<int> tuple_values;
+        std::unordered_map<std::string, int> body_var_values;
+        std::vector<Clingo::literal_t> pos_body_lits;
+        std::vector<Clingo::literal_t> neg_body_lits;
+        std::vector<CandidateAggregateBinding> aggregate_bindings;
+        bool queued = false;
+        CandidateQueueEntry queue_entry;
     };
 
     struct RulePredicateSets {
@@ -283,10 +318,13 @@ private:
     std::unordered_map<Clingo::literal_t, WatchedAtomInfo> watched_atoms_;
     std::vector<HeuristicRuleTemplate> rule_templates_;
     std::unordered_map<Clingo::literal_t, std::vector<BodyTriggerInfo>> body_triggers_;
-    std::unordered_map<Clingo::literal_t, std::vector<LazyTargetInstance>> lazy_targets_;
-    std::unordered_set<Clingo::literal_t> active_body_lits_;
+    std::vector<CandidateState> candidates_;
+    std::set<CandidateQueueEntry, CandidateQueueEntryLess> candidate_queue_;
+    std::unordered_map<Clingo::literal_t, std::vector<size_t>> candidate_refresh_lits_;
+    std::unordered_map<RuntimeAggregateKey, std::vector<size_t>, RuntimeAggregateKeyHash> aggregate_candidates_;
     std::unordered_map<RuntimeAggregateKey, std::unique_ptr<AggregateState>, RuntimeAggregateKeyHash> aggregate_states_;
     std::unordered_map<RuntimeAggregateKey, std::vector<Clingo::literal_t>, RuntimeAggregateKeyHash> aggregate_source_lits_;
+    std::unordered_set<Clingo::literal_t> registered_watches_;
 
     void init_lazy_mode(Clingo::PropagateInit &init);
     void parse_lazy_heuristic_templates(Clingo::SymbolicAtoms const &atoms);
@@ -296,6 +334,19 @@ private:
                                                 RulePredicateSets const &predicates) const;
     void register_lazy_body_triggers(Clingo::PropagateInit &init, PredLitMap const &pred_lit_map);
     void register_lazy_aggregate_watches(Clingo::PropagateInit &init, Clingo::SymbolicAtoms const &atoms);
+    void add_solver_watch(Clingo::PropagateInit &init, Clingo::literal_t lit);
+    void register_candidate_refresh_watch(Clingo::PropagateInit &init, Clingo::literal_t lit, size_t candidate_id);
+    void erase_candidate_from_queue(size_t candidate_id) noexcept;
+    bool compute_candidate_entry(size_t candidate_id, Clingo::Assignment const &assignment,
+                                 CandidateQueueEntry &entry) const;
+    void refresh_candidate(size_t candidate_id, Clingo::Assignment const &assignment);
+    void refresh_candidate_noexcept(size_t candidate_id, Clingo::Assignment const &assignment) noexcept;
+    void refresh_candidates_for_literal(Clingo::literal_t lit, Clingo::Assignment const &assignment);
+    void refresh_candidates_for_literal_noexcept(Clingo::literal_t lit, Clingo::Assignment const &assignment) noexcept;
+    void refresh_candidates_for_aggregate(RuntimeAggregateKey const &runtime_key, Clingo::Assignment const &assignment);
+    void refresh_candidates_for_aggregate_noexcept(RuntimeAggregateKey const &runtime_key,
+                                                   Clingo::Assignment const &assignment) noexcept;
+    void refresh_all_candidates(Clingo::Assignment const &assignment);
 
 public:
     ~HeuristicPropagator() override = default;

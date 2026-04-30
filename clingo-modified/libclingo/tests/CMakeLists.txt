@@ -3,6 +3,7 @@ set(ide_source_group "Source Files")
 set(source-group
     "${CMAKE_CURRENT_SOURCE_DIR}/astv2.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/clingo.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/heuristic_propagator.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/propagator.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/symbol.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/tests.hh"
@@ -10,6 +11,9 @@ set(source-group
 source_group("${ide_source_group}" FILES ${source-group})
 set(source
     ${source-group})
+if(CLINGO_BUILD_SHARED)
+    list(APPEND source "${CMAKE_CURRENT_SOURCE_DIR}/../src/heuristic_propagator.cc")
+endif()
 # ]]]
 
 add_executable(test_clingo ${source})

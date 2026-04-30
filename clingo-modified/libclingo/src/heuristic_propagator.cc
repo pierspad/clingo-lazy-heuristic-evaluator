@@ -360,9 +360,12 @@ void HeuristicPropagator::init(Clingo::PropagateInit &init) {
     watched_atoms_.clear();
     rule_templates_.clear();
     body_triggers_.clear();
-    lazy_targets_.clear();
-    active_body_lits_.clear();
+    candidates_.clear();
+    candidate_queue_.clear();
+    candidate_refresh_lits_.clear();
+    aggregate_candidates_.clear();
     aggregate_source_lits_.clear();
+    registered_watches_.clear();
 
     auto atoms = init.symbolic_atoms();
     for (auto it = atoms.begin(); it != atoms.end(); ++it) {
@@ -638,11 +641,173 @@ HeuristicPropagator::PredLitMap HeuristicPropagator::build_lazy_predicate_litera
     return pred_lit_map;
 }
 
+void HeuristicPropagator::add_solver_watch(Clingo::PropagateInit &init, Clingo::literal_t lit) {
+    if (lit == 0) return;
+    if (registered_watches_.insert(lit).second) {
+        init.add_watch(lit);
+    }
+}
+
+void HeuristicPropagator::register_candidate_refresh_watch(Clingo::PropagateInit &init,
+                                                           Clingo::literal_t lit,
+                                                           size_t candidate_id) {
+    if (lit == 0) return;
+
+    auto &ids = candidate_refresh_lits_[lit];
+    if (std::find(ids.begin(), ids.end(), candidate_id) == ids.end()) {
+        ids.push_back(candidate_id);
+    }
+    add_solver_watch(init, lit);
+}
+
+void HeuristicPropagator::erase_candidate_from_queue(size_t candidate_id) noexcept {
+    if (candidate_id >= candidates_.size()) return;
+
+    auto &candidate = candidates_[candidate_id];
+    if (candidate.queued) {
+        candidate_queue_.erase(candidate.queue_entry);
+        candidate.queued = false;
+    }
+}
+
+bool HeuristicPropagator::compute_candidate_entry(size_t candidate_id,
+                                                  Clingo::Assignment const &assignment,
+                                                  CandidateQueueEntry &entry) const {
+    if (candidate_id >= candidates_.size()) return false;
+
+    auto const &candidate = candidates_[candidate_id];
+    auto const &tmpl = rule_templates_[candidate.rule_idx];
+
+    if (candidate.target_lit == 0 ||
+        assignment.truth_value(candidate.target_lit) != Clingo::TruthValue::Free) {
+        return false;
+    }
+
+    for (auto pos_lit : candidate.pos_body_lits) {
+        if (pos_lit == 0 ||
+            assignment.truth_value(pos_lit) != Clingo::TruthValue::True) {
+            return false;
+        }
+    }
+
+    for (auto neg_lit : candidate.neg_body_lits) {
+        if (neg_lit == 0) continue;
+        auto const value = assignment.truth_value(neg_lit);
+        if (tmpl.semantics == HeuristicSemantics::Clingo) {
+            if (value != Clingo::TruthValue::False) return false;
+        }
+        else if (value == Clingo::TruthValue::True) {
+            return false;
+        }
+    }
+
+    std::unordered_map<std::string, int> var_env = candidate.body_var_values;
+    for (auto const &binding : candidate.aggregate_bindings) {
+        if (!binding.valid_key) {
+            if (tmpl.semantics == HeuristicSemantics::Clingo) return false;
+            var_env[binding.variable_name] = 0;
+            continue;
+        }
+
+        if (tmpl.semantics == HeuristicSemantics::Clingo) {
+            auto source_it = aggregate_source_lits_.find(binding.runtime_key);
+            if (source_it != aggregate_source_lits_.end()) {
+                for (auto source_lit : source_it->second) {
+                    if (assignment.truth_value(source_lit) == Clingo::TruthValue::Free) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        int val = 0;
+        auto state_it = aggregate_states_.find(binding.runtime_key);
+        if (state_it != aggregate_states_.end() && state_it->second) {
+            val = state_it->second->result();
+        }
+        var_env[binding.variable_name] = val;
+    }
+
+    entry.priority = evaluate_arithmetic_expression(tmpl.priority_expr, candidate.self_value, var_env);
+    entry.weight = evaluate_arithmetic_expression(tmpl.weight_expr, candidate.self_value, var_env);
+    entry.target_lit = candidate.target_lit;
+    entry.candidate_id = candidate_id;
+    return true;
+}
+
+void HeuristicPropagator::refresh_candidate(size_t candidate_id, Clingo::Assignment const &assignment) {
+    if (candidate_id >= candidates_.size()) return;
+
+    erase_candidate_from_queue(candidate_id);
+
+    CandidateQueueEntry entry;
+    if (compute_candidate_entry(candidate_id, assignment, entry)) {
+        candidate_queue_.insert(entry);
+        candidates_[candidate_id].queue_entry = entry;
+        candidates_[candidate_id].queued = true;
+    }
+}
+
+void HeuristicPropagator::refresh_candidate_noexcept(size_t candidate_id,
+                                                     Clingo::Assignment const &assignment) noexcept {
+    try {
+        refresh_candidate(candidate_id, assignment);
+    }
+    catch (...) {
+        erase_candidate_from_queue(candidate_id);
+    }
+}
+
+void HeuristicPropagator::refresh_candidates_for_literal(Clingo::literal_t lit,
+                                                         Clingo::Assignment const &assignment) {
+    auto refresh_it = candidate_refresh_lits_.find(lit);
+    if (refresh_it == candidate_refresh_lits_.end()) return;
+
+    for (size_t candidate_id : refresh_it->second) {
+        refresh_candidate(candidate_id, assignment);
+    }
+}
+
+void HeuristicPropagator::refresh_candidates_for_literal_noexcept(Clingo::literal_t lit,
+                                                                  Clingo::Assignment const &assignment) noexcept {
+    auto refresh_it = candidate_refresh_lits_.find(lit);
+    if (refresh_it == candidate_refresh_lits_.end()) return;
+
+    for (size_t candidate_id : refresh_it->second) {
+        refresh_candidate_noexcept(candidate_id, assignment);
+    }
+}
+
+void HeuristicPropagator::refresh_candidates_for_aggregate(RuntimeAggregateKey const &runtime_key,
+                                                           Clingo::Assignment const &assignment) {
+    auto candidate_it = aggregate_candidates_.find(runtime_key);
+    if (candidate_it == aggregate_candidates_.end()) return;
+
+    for (size_t candidate_id : candidate_it->second) {
+        refresh_candidate(candidate_id, assignment);
+    }
+}
+
+void HeuristicPropagator::refresh_candidates_for_aggregate_noexcept(
+    RuntimeAggregateKey const &runtime_key,
+    Clingo::Assignment const &assignment
+) noexcept {
+    auto candidate_it = aggregate_candidates_.find(runtime_key);
+    if (candidate_it == aggregate_candidates_.end()) return;
+
+    for (size_t candidate_id : candidate_it->second) {
+        refresh_candidate_noexcept(candidate_id, assignment);
+    }
+}
+
+void HeuristicPropagator::refresh_all_candidates(Clingo::Assignment const &assignment) {
+    for (size_t candidate_id = 0; candidate_id < candidates_.size(); ++candidate_id) {
+        refresh_candidate(candidate_id, assignment);
+    }
+}
+
 void HeuristicPropagator::register_lazy_body_triggers(Clingo::PropagateInit &init,
                                                       PredLitMap const &pred_lit_map) {
-    std::unordered_set<Clingo::literal_t> watched_body_lits;
-    auto assignment = init.assignment();
-
     for (size_t ri = 0; ri < rule_templates_.size(); ++ri) {
         auto const &tmpl = rule_templates_[ri];
         if (tmpl.pos_body_preds.empty()) continue;
@@ -707,6 +872,7 @@ void HeuristicPropagator::register_lazy_body_triggers(Clingo::PropagateInit &ini
 
                 BodyTriggerInfo trigger;
                 trigger.rule_idx = ri;
+                trigger.candidate_id = candidates_.size();
                 trigger.target_lit = target_lit;
                 trigger.self_value = target_key.values.empty() ? 0 : target_key.values[0];
                 trigger.tuple_values = target_key.values;
@@ -714,23 +880,45 @@ void HeuristicPropagator::register_lazy_body_triggers(Clingo::PropagateInit &ini
                 trigger.pos_body_lits = pos_lits;
                 trigger.neg_body_lits = std::move(neg_lits);
 
+                CandidateState candidate;
+                candidate.rule_idx = trigger.rule_idx;
+                candidate.target_lit = trigger.target_lit;
+                candidate.self_value = trigger.self_value;
+                candidate.tuple_values = trigger.tuple_values;
+                candidate.body_var_values = trigger.body_var_values;
+                candidate.pos_body_lits = trigger.pos_body_lits;
+                candidate.neg_body_lits = trigger.neg_body_lits;
+
+                for (auto const &vb : tmpl.var_bindings) {
+                    CandidateAggregateBinding aggregate_binding;
+                    aggregate_binding.variable_name = vb.first;
+                    aggregate_binding.valid_key = build_runtime_key_from_target_tuple(
+                        vb.second,
+                        candidate.tuple_values,
+                        aggregate_binding.runtime_key
+                    );
+                    if (aggregate_binding.valid_key) {
+                        auto &ids = aggregate_candidates_[aggregate_binding.runtime_key];
+                        if (std::find(ids.begin(), ids.end(), trigger.candidate_id) == ids.end()) {
+                            ids.push_back(trigger.candidate_id);
+                        }
+                    }
+                    candidate.aggregate_bindings.push_back(std::move(aggregate_binding));
+                }
+
+                candidates_.push_back(std::move(candidate));
+
+                register_candidate_refresh_watch(init, trigger.target_lit, trigger.candidate_id);
+                register_candidate_refresh_watch(init, -trigger.target_lit, trigger.candidate_id);
+
+                for (auto neg_lit : trigger.neg_body_lits) {
+                    register_candidate_refresh_watch(init, neg_lit, trigger.candidate_id);
+                    register_candidate_refresh_watch(init, -neg_lit, trigger.candidate_id);
+                }
+
                 for (auto body_lit : trigger.pos_body_lits) {
                     body_triggers_[body_lit].push_back(trigger);
-                    if (assignment.is_true(body_lit)) {
-                        auto &target_vec = lazy_targets_[body_lit];
-                        target_vec.push_back({
-                            trigger.target_lit,
-                            trigger.self_value,
-                            trigger.tuple_values,
-                            trigger.body_var_values,
-                            trigger.rule_idx,
-                            body_triggers_[body_lit].size() - 1
-                        });
-                        active_body_lits_.insert(body_lit);
-                    }
-                    else if (watched_body_lits.insert(body_lit).second) {
-                        init.add_watch(body_lit);
-                    }
+                    register_candidate_refresh_watch(init, body_lit, trigger.candidate_id);
                 }
             }
         }
@@ -739,7 +927,6 @@ void HeuristicPropagator::register_lazy_body_triggers(Clingo::PropagateInit &ini
 
 void HeuristicPropagator::register_lazy_aggregate_watches(Clingo::PropagateInit &init,
                                                           Clingo::SymbolicAtoms const &atoms) {
-    std::unordered_set<Clingo::literal_t> watched_aggregate_lits;
     auto assignment = init.assignment();
 
     for (auto const &tmpl : rule_templates_) {
@@ -765,8 +952,13 @@ void HeuristicPropagator::register_lazy_aggregate_watches(Clingo::PropagateInit 
                     source_lits.push_back(slit);
                 }
 
-                if (watched_aggregate_lits.insert(slit).second) {
-                    init.add_watch(slit);
+                add_solver_watch(init, slit);
+
+                auto aggregate_candidate_it = aggregate_candidates_.find(runtime_key);
+                if (aggregate_candidate_it != aggregate_candidates_.end()) {
+                    for (size_t candidate_id : aggregate_candidate_it->second) {
+                        register_candidate_refresh_watch(init, -slit, candidate_id);
+                    }
                 }
 
                 auto &watch_info = watched_atoms_[slit];
@@ -778,7 +970,7 @@ void HeuristicPropagator::register_lazy_aggregate_watches(Clingo::PropagateInit 
                     }
                 }
                 if (!already) {
-                    WatchedAtomContribution contribution{std::move(runtime_key), value};
+                    WatchedAtomContribution contribution{runtime_key, value};
                     auto &state = aggregate_states_[contribution.runtime_key];
                     if (!state) {
                         state = make_aggregate(contribution.runtime_key.key.op_name);
@@ -821,10 +1013,14 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
     // aggregati filtrati salviamo gia' la chiave runtime concreta, cosi'
     // propagate/undo fanno solo add/remove.
     register_lazy_aggregate_watches(init, atoms);
+
+    // Phase 6: Populate the decision queue for facts already true at level 0.
+    // Da qui in poi decide consulta solo questa coda ordinata e rivalida il top.
+    refresh_all_candidates(init.assignment());
 }
 
 void HeuristicPropagator::propagate(Clingo::PropagateControl &control, Clingo::LiteralSpan changes) {
-    static_cast<void>(control);
+    auto assignment = control.assignment();
 
     for (auto lit : changes) {
         // 1. Aggiorna gli aggregati dinamici quando un atomo sorgente diventa vero.
@@ -838,37 +1034,18 @@ void HeuristicPropagator::propagate(Clingo::PropagateControl &control, Clingo::L
                 if (state) {
                     state->add(contrib.value);
                 }
+                refresh_candidates_for_aggregate(contrib.runtime_key, assignment);
             }
         }
 
-        // 2. Se il literal e' un body positivo, prepara le istanze candidate.
-        //    La congiunzione completa viene controllata in decide, dove abbiamo
-        //    accesso all'assegnamento corrente.
-        auto trigger_it = body_triggers_.find(lit);
-        if (trigger_it != body_triggers_.end()) {
-            auto &target_vec = lazy_targets_[lit];
-            target_vec.clear();
-
-            for (size_t ti = 0; ti < trigger_it->second.size(); ++ti) {
-                auto const &trigger = trigger_it->second[ti];
-                target_vec.push_back({
-                    trigger.target_lit,
-                    trigger.self_value,
-                    trigger.tuple_values,
-                    trigger.body_var_values,
-                    trigger.rule_idx,
-                    ti
-                });
-            }
-
-            if (!target_vec.empty()) active_body_lits_.insert(lit);
-            else active_body_lits_.erase(lit);
-        }
+        // 2. Ogni literal osservato puo' abilitare/disabilitare un candidato:
+        //    body positivo, target assegnato, negativo o sorgente aggregata falsa.
+        refresh_candidates_for_literal(lit, assignment);
     }
 }
 
 void HeuristicPropagator::undo(Clingo::PropagateControl const &control, Clingo::LiteralSpan changes) noexcept {
-    static_cast<void>(control);
+    auto assignment = control.assignment();
 
     for (auto lit : changes) {
         // 1. Ripristina gli aggregati quando clingo fa backtracking.
@@ -878,15 +1055,12 @@ void HeuristicPropagator::undo(Clingo::PropagateControl const &control, Clingo::
                 auto state_it = aggregate_states_.find(contrib.runtime_key);
                 if (state_it != aggregate_states_.end())
                     state_it->second->remove(contrib.value);
+                refresh_candidates_for_aggregate_noexcept(contrib.runtime_key, assignment);
             }
         }
 
-        // 2. Il body positivo non e' piu' attivo a questo livello di search.
-        auto lazy_it = lazy_targets_.find(lit);
-        if (lazy_it != lazy_targets_.end() && !lazy_it->second.empty()) {
-            lazy_it->second.clear();
-            active_body_lits_.erase(lit);
-        }
+        // 2. Backtracking su body/target/negativi/sorgenti false: rivalida i candidati.
+        refresh_candidates_for_literal_noexcept(lit, assignment);
     }
 }
 
@@ -895,108 +1069,39 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
                                                Clingo::literal_t fallback) noexcept {
     static_cast<void>(thread_id);
 
-    Clingo::literal_t best_target = 0;
-    HeuristicSign best_sign = HeuristicSign::True;
-    int max_priority = INT_MIN;
-    int best_weight = INT_MIN;
-    bool has_best = false;
+    while (!candidate_queue_.empty()) {
+        CandidateQueueEntry const entry = *candidate_queue_.begin();
+        size_t const candidate_id = entry.candidate_id;
 
-    // Scorre solo i body che sono diventati veri durante la ricerca. Ogni
-    // candidato viene rivalidato contro l'assegnamento corrente, cosi' i body
-    // positivi multipli e i negativi restano semanticamente corretti.
-    for (auto const &body_lit : active_body_lits_) {
-        auto lazy_it = lazy_targets_.find(body_lit);
-        if (lazy_it == lazy_targets_.end() || lazy_it->second.empty()) continue;
-
-        auto trigger_it = body_triggers_.find(body_lit);
-
-        for (auto const &inst : lazy_it->second) {
-            bool pos_satisfied = true;
-            bool neg_satisfied = true;
-            if (trigger_it != body_triggers_.end() &&
-                inst.trigger_index < trigger_it->second.size()) {
-                auto const &trigger = trigger_it->second[inst.trigger_index];
-                auto const &tmpl = rule_templates_[inst.rule_idx];
-
-                for (auto pos_lit : trigger.pos_body_lits) {
-                    if (pos_lit == 0 ||
-                        assignment.truth_value(pos_lit) != Clingo::TruthValue::True) {
-                        pos_satisfied = false;
-                        break;
-                    }
-                }
-
-                for (auto neg_lit : trigger.neg_body_lits) {
-                    if (neg_lit == 0) continue;
-                    auto const value = assignment.truth_value(neg_lit);
-                    if (tmpl.semantics == HeuristicSemantics::Clingo) {
-                        if (value != Clingo::TruthValue::False) {
-                            neg_satisfied = false;
-                            break;
-                        }
-                    }
-                    else if (value == Clingo::TruthValue::True) {
-                        neg_satisfied = false;
-                        break;
-                    }
-                }
-            }
-            if (!pos_satisfied || !neg_satisfied) continue;
-
-            if (assignment.truth_value(inst.target_lit) != Clingo::TruthValue::Free) continue;
-
-            auto const &tmpl = rule_templates_[inst.rule_idx];
-
-            // Costruisce l'ambiente delle variabili __bind per questa tupla.
-            // Aggregati senza stato presente valgono 0, inclusi __min/__max vuoti.
-            std::unordered_map<std::string, int> var_env = inst.body_var_values;
-            bool aggregates_ready = true;
-            for (auto const &vb : tmpl.var_bindings) {
-                int val = 0;
-                RuntimeAggregateKey runtime_key;
-                bool const valid_key = build_runtime_key_from_target_tuple(vb.second, inst.tuple_values, runtime_key);
-
-                if (tmpl.semantics == HeuristicSemantics::Clingo) {
-                    if (!valid_key) {
-                        aggregates_ready = false;
-                        break;
-                    }
-
-                    auto source_it = aggregate_source_lits_.find(runtime_key);
-                    if (source_it != aggregate_source_lits_.end()) {
-                        for (auto source_lit : source_it->second) {
-                            if (assignment.truth_value(source_lit) == Clingo::TruthValue::Free) {
-                                aggregates_ready = false;
-                                break;
-                            }
-                        }
-                    }
-                    if (!aggregates_ready) break;
-                }
-
-                auto state_it = valid_key ? aggregate_states_.find(runtime_key) : aggregate_states_.end();
-                if (state_it != aggregate_states_.end()) val = state_it->second->result();
-                var_env[vb.first] = val;
-            }
-            if (!aggregates_ready) continue;
-
-            int current_priority = evaluate_arithmetic_expression(tmpl.priority_expr, inst.self_value, var_env);
-            int current_weight = evaluate_arithmetic_expression(tmpl.weight_expr, inst.self_value, var_env);
-
-            // Clingo sceglie prima la priorita', poi il peso: manteniamo la
-            // stessa logica per selezionare un unico literal suggerito.
-            if (!has_best ||
-                current_priority > max_priority ||
-                (current_priority == max_priority && current_weight > best_weight)) {
-                has_best = true;
-                max_priority = current_priority;
-                best_weight = current_weight;
-                best_target = inst.target_lit;
-                best_sign = tmpl.sign;
-            }
+        if (candidate_id >= candidates_.size() ||
+            !candidates_[candidate_id].queued ||
+            !(candidates_[candidate_id].queue_entry == entry)) {
+            candidate_queue_.erase(candidate_queue_.begin());
+            continue;
         }
+
+        CandidateQueueEntry refreshed;
+        if (!compute_candidate_entry(candidate_id, assignment, refreshed)) {
+            erase_candidate_from_queue(candidate_id);
+            continue;
+        }
+
+        if (!(refreshed == entry)) {
+            try {
+                erase_candidate_from_queue(candidate_id);
+                candidate_queue_.insert(refreshed);
+                candidates_[candidate_id].queue_entry = refreshed;
+                candidates_[candidate_id].queued = true;
+            }
+            catch (...) {
+                erase_candidate_from_queue(candidate_id);
+            }
+            continue;
+        }
+
+        auto const &tmpl = rule_templates_[candidates_[candidate_id].rule_idx];
+        return apply_sign(tmpl.sign, entry.target_lit, fallback);
     }
 
-    if (!has_best || best_target == 0) return 0;
-    return apply_sign(best_sign, best_target, fallback);
+    return 0;
 }

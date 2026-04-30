@@ -8,6 +8,11 @@ import os
 from dataclasses import dataclass, field
 from typing import Optional
 
+try:
+    import clingo.ast as clingo_ast
+except ImportError:
+    clingo_ast = None
+
 
 @dataclass
 class AggregateBinding:
@@ -670,7 +675,320 @@ def _generate_directive_output(directive: HeuristicDirective, idx: int, mode: st
     raise ValueError(f"mode non supportato: {mode}")
 
 
-def process_file(input_path: str, dry_run: bool = False, mode: str = "la") -> tuple:
+def _ast_function(term):
+    if clingo_ast is None or term.ast_type != clingo_ast.ASTType.Function:
+        return None
+    return term
+
+
+def _ast_symbolic_function(atom):
+    if clingo_ast is None or atom.ast_type != clingo_ast.ASTType.SymbolicAtom:
+        return None
+    return _ast_function(atom.symbol)
+
+
+def _ast_variable_name(term) -> Optional[str]:
+    if clingo_ast is not None and term.ast_type == clingo_ast.ASTType.Variable:
+        return term.name
+    return None
+
+
+def _ast_number(term) -> Optional[int]:
+    if clingo_ast is None or term.ast_type != clingo_ast.ASTType.SymbolicTerm:
+        return None
+    symbol = term.symbol
+    if symbol.type.name == "Number":
+        return symbol.number
+    return None
+
+
+def _ast_term_filter(term, target_positions: dict, aliases: dict) -> Optional[tuple]:
+    var_name = _ast_variable_name(term)
+    if var_name in target_positions:
+        return target_positions[var_name], 0
+    if var_name in aliases:
+        return aliases[var_name]
+
+    if clingo_ast is None or term.ast_type != clingo_ast.ASTType.BinaryOperation:
+        return None
+    if term.operator_type not in (clingo_ast.BinaryOperator.Plus, clingo_ast.BinaryOperator.Minus):
+        return None
+
+    left_filter = _ast_term_filter(term.left, target_positions, aliases)
+    right_number = _ast_number(term.right)
+    if left_filter is None or right_number is None:
+        return None
+
+    target_idx, offset = left_filter
+    if term.operator_type == clingo_ast.BinaryOperator.Minus:
+        right_number = -right_number
+    return target_idx, offset + right_number
+
+
+def _ast_target_aliases(body, target_positions: dict) -> dict:
+    aliases = {}
+    if clingo_ast is None:
+        return aliases
+
+    for lit in body:
+        if lit.sign != clingo_ast.Sign.NoSign:
+            continue
+        if lit.atom.ast_type != clingo_ast.ASTType.Comparison:
+            continue
+
+        left_name = _ast_variable_name(lit.atom.term)
+        if not left_name:
+            continue
+
+        for guard in lit.atom.guards:
+            if guard.comparison != clingo_ast.ComparisonOperator.Equal:
+                continue
+            filter_target = _ast_term_filter(guard.term, target_positions, aliases)
+            if filter_target is not None:
+                aliases[left_name] = filter_target
+    return aliases
+
+
+def _ast_aggregate_name(function_id: int) -> Optional[str]:
+    if clingo_ast is None:
+        return None
+    mapping = {
+        clingo_ast.AggregateFunction.Sum: "sum",
+        clingo_ast.AggregateFunction.SumPlus: "sum",
+        clingo_ast.AggregateFunction.Count: "count",
+        clingo_ast.AggregateFunction.Min: "min",
+        clingo_ast.AggregateFunction.Max: "max",
+    }
+    return mapping.get(function_id)
+
+
+def _ast_predicate_from_literal(lit, negated: bool) -> Optional[BodyPredicate]:
+    fn = _ast_symbolic_function(lit.atom)
+    if fn is None:
+        return None
+    return BodyPredicate(
+        pred_name=fn.name,
+        args=[str(arg) for arg in fn.arguments],
+        negated=negated,
+        text=str(lit),
+    )
+
+
+def _ast_binding_from_aggregate(lit, target_positions: dict, aliases: dict) -> Optional[AggregateBinding]:
+    if clingo_ast is None or lit.sign != clingo_ast.Sign.NoSign:
+        return None
+    if lit.atom.ast_type != clingo_ast.ASTType.BodyAggregate:
+        return None
+
+    aggregate = lit.atom
+    if aggregate.left_guard is None:
+        return None
+    if aggregate.left_guard.comparison != clingo_ast.ComparisonOperator.Equal:
+        return None
+
+    var_name = _ast_variable_name(aggregate.left_guard.term)
+    agg_type = _ast_aggregate_name(aggregate.function)
+    if var_name is None or agg_type is None or not aggregate.elements:
+        return None
+
+    element = aggregate.elements[0]
+    if not element.terms:
+        return None
+    target_term = str(element.terms[0])
+
+    source_fn = None
+    for cond_lit in element.condition:
+        if cond_lit.sign != clingo_ast.Sign.NoSign:
+            continue
+        source_fn = _ast_symbolic_function(cond_lit.atom)
+        if source_fn is not None:
+            break
+    if source_fn is None:
+        return None
+
+    pred_args = list(source_fn.arguments)
+    arg_index = None
+    for idx, arg in enumerate(pred_args):
+        if str(arg) == target_term:
+            arg_index = idx
+            break
+
+    filters = []
+    for idx, arg in enumerate(pred_args):
+        if idx == arg_index or str(arg).strip() == "_":
+            continue
+        filter_target = _ast_term_filter(arg, target_positions, aliases)
+        if filter_target is not None:
+            target_idx, offset = filter_target
+            filters.append((idx, target_idx, offset))
+
+    return AggregateBinding(var_name, agg_type, source_fn.name, arg_index, filters)
+
+
+def _directive_from_heuristic_ast(ast_node) -> Optional[HeuristicDirective]:
+    if clingo_ast is None or ast_node.ast_type != clingo_ast.ASTType.Heuristic:
+        return None
+
+    target_fn = _ast_symbolic_function(ast_node.atom)
+    if target_fn is None:
+        return None
+
+    target_arg_list = [str(arg) for arg in target_fn.arguments]
+    target_text = (
+        f"{target_fn.name}({', '.join(target_arg_list)})"
+        if target_arg_list else target_fn.name
+    )
+    target_var = None
+    for arg in target_fn.arguments:
+        name = _ast_variable_name(arg)
+        if name is not None:
+            target_var = name
+            break
+
+    target_positions = {
+        arg: idx
+        for idx, arg in enumerate(target_arg_list)
+        if re.match(r'^[A-Z_]\w*$', arg)
+    }
+    aliases = _ast_target_aliases(ast_node.body, target_positions)
+
+    pos_body = []
+    neg_body = []
+    body_predicates = []
+    bindings = []
+
+    for lit in ast_node.body:
+        if lit.atom.ast_type == clingo_ast.ASTType.BodyAggregate:
+            binding = _ast_binding_from_aggregate(lit, target_positions, aliases)
+            if binding is not None:
+                bindings.append(binding)
+            continue
+
+        if lit.sign == clingo_ast.Sign.Negation:
+            parsed = _ast_predicate_from_literal(lit, negated=True)
+            if parsed is not None:
+                neg_body.append(parsed)
+                body_predicates.append(parsed)
+            continue
+
+        if lit.sign == clingo_ast.Sign.NoSign:
+            parsed = _ast_predicate_from_literal(lit, negated=False)
+            if parsed is not None:
+                pos_body.append(parsed)
+                body_predicates.append(parsed)
+
+    sign = str(ast_node.modifier)
+    if sign not in {"true", "false", "sign"}:
+        sign = "true"
+
+    return HeuristicDirective(
+        target_pred=target_fn.name,
+        target_text=target_text,
+        target_args=target_arg_list,
+        target_var=target_var,
+        pos_body=pos_body,
+        neg_body=neg_body,
+        body_predicates=body_predicates,
+        bindings=bindings,
+        weight_expr=str(ast_node.bias),
+        priority_expr=str(ast_node.priority),
+        sign=sign,
+        body_str=", ".join(str(lit) for lit in ast_node.body),
+        original_line=str(ast_node),
+    )
+
+
+def _line_offsets(content: str) -> list:
+    offsets = [0]
+    for line in content.splitlines(keepends=True):
+        offsets.append(offsets[-1] + len(line))
+    return offsets
+
+
+def _offset_from_position(offsets: list, position) -> int:
+    return offsets[position.line - 1] + position.column - 1
+
+
+def _process_file_ast(input_path: str, dry_run: bool = False, mode: str = "la") -> Optional[tuple]:
+    if clingo_ast is None:
+        return None
+
+    with open(input_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    offsets = _line_offsets(content)
+    replacements = []
+    warnings = []
+    conversions = 0
+    normalized_input = os.path.normpath(input_path)
+
+    def on_ast(ast_node):
+        nonlocal conversions
+        if ast_node.ast_type != clingo_ast.ASTType.Heuristic:
+            return
+        if os.path.normpath(ast_node.location.begin.filename) != normalized_input:
+            return
+
+        start = _offset_from_position(offsets, ast_node.location.begin)
+        end = _offset_from_position(offsets, ast_node.location.end)
+        original_text = content[start:end]
+        original_one_line = " ".join(original_text.split())
+
+        directive = _directive_from_heuristic_ast(ast_node)
+        if directive is None:
+            directive = parse_heuristic_line(original_one_line)
+
+        if directive is None:
+            warnings.append(
+                f"Righe {ast_node.location.begin.line}-{ast_node.location.end.line}: "
+                "impossibile convertire la direttiva #heuristic via AST"
+            )
+            replacement = (
+                "% WARNING: euristica non convertibile\n"
+                f"% {original_one_line}\n"
+                f"{original_text}"
+            )
+        else:
+            directive.original_line = original_one_line
+            warn_lines, converted = _generate_directive_output(directive, conversions + 1, mode)
+            replacement = f"% Originale: {directive.original_line}\n"
+            replacement += "".join(warn_lines)
+            replacement += f"{converted}\n"
+            conversions += 1
+            if dry_run:
+                print(
+                    f"  Righe {ast_node.location.begin.line}-{ast_node.location.end.line}: "
+                    f"{directive.original_line}",
+                    file=sys.stderr
+                )
+                print(f"        → {converted}", file=sys.stderr)
+
+        replacements.append((start, end, replacement))
+
+    try:
+        clingo_ast.parse_files([input_path], on_ast)
+    except Exception as exc:
+        print(
+            f"WARNING: parsing AST fallito ({exc}); uso il parser legacy.",
+            file=sys.stderr
+        )
+        return None
+
+    if not replacements:
+        return content.splitlines(keepends=True), conversions, warnings
+
+    output = []
+    cursor = 0
+    for start, end, replacement in sorted(replacements, key=lambda item: item[0]):
+        output.append(content[cursor:start])
+        output.append(replacement)
+        cursor = end
+    output.append(content[cursor:])
+
+    return "".join(output).splitlines(keepends=True), conversions, warnings
+
+
+def _process_file_legacy(input_path: str, dry_run: bool = False, mode: str = "la") -> tuple:
 
 
     with open(input_path, 'r', encoding='utf-8') as f:
@@ -741,6 +1059,13 @@ def process_file(input_path: str, dry_run: bool = False, mode: str = "la") -> tu
             output_lines.append(line)
 
     return output_lines, conversions, warnings
+
+
+def process_file(input_path: str, dry_run: bool = False, mode: str = "la") -> tuple:
+    ast_result = _process_file_ast(input_path, dry_run=dry_run, mode=mode)
+    if ast_result is not None:
+        return ast_result
+    return _process_file_legacy(input_path, dry_run=dry_run, mode=mode)
 
 
 def _color(text: str, code: str) -> str:
