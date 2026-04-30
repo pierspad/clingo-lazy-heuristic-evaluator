@@ -7,8 +7,8 @@
 #   pup_heur     — encoding con euristiche statiche (PUP/PUP_heur.lp)
 #   pup_double_std     — #heuristic originale PUP Double (PUP/PUP_double.lp)
 #   pup_double_aux     — #heuristic con predicato ausiliario (PUP/PUP_double_aux.lp)
-#   pup_double         — encoding lazy convertito (PUP/PUP_double_lg.lp)
-#   pup_double_aux_lg  — lazy convertito con predicato ausiliario (PUP/PUP_double_aux_lg.lp)
+#   pup_double         — encoding lazy convertito (PUP/PUP_double_l.lp)
+#   pup_double_aux_l  — lazy convertito con predicato ausiliario (PUP/PUP_double_aux_l.lp)
 #   pup_doublev_*      — equivalenti per la famiglia DoubleVariant
 #
 # Istanze usate (stessa baseline per entrambe le famiglie):
@@ -53,10 +53,10 @@ FILE_PUP_DOUBLE_SRC="PUP/PUP_double.lp"
 FILE_PUP_DOUBLEV_SRC="PUP/PUP_double_variant.lp"
 FILE_PUP_DOUBLE_AUX="PUP/PUP_double_aux.lp"
 FILE_PUP_DOUBLEV_AUX="PUP/PUP_double_variant_aux.lp"
-FILE_PUP_DOUBLE="PUP/PUP_double_lg.lp"
-FILE_PUP_DOUBLEV="PUP/PUP_double_variant_lg.lp"
-FILE_PUP_DOUBLE_AUX_LG="PUP/PUP_double_aux_lg.lp"
-FILE_PUP_DOUBLEV_AUX_LG="PUP/PUP_double_variant_aux_lg.lp"
+FILE_PUP_DOUBLE="PUP/PUP_double_l.lp"
+FILE_PUP_DOUBLEV="PUP/PUP_double_variant_l.lp"
+FILE_PUP_DOUBLE_AUX_L="PUP/PUP_double_aux_l.lp"
+FILE_PUP_DOUBLEV_AUX_L="PUP/PUP_double_variant_aux_l.lp"
 
 # Instance directories
 INSTANCES_DOUBLE="PUP_instances/Double"
@@ -106,8 +106,8 @@ generate_lazy_encodings() {
     python3 "${CONVERTER}" "${FILE_PUP_DOUBLEV_SRC}" --mode lazy -o "${FILE_PUP_DOUBLEV}"
     python3 "${CONVERTER}" "${FILE_PUP_DOUBLE_SRC}" --mode aux -o "${FILE_PUP_DOUBLE_AUX}"
     python3 "${CONVERTER}" "${FILE_PUP_DOUBLEV_SRC}" --mode aux -o "${FILE_PUP_DOUBLEV_AUX}"
-    python3 "${CONVERTER}" "${FILE_PUP_DOUBLE_SRC}" --mode lazy-aux -o "${FILE_PUP_DOUBLE_AUX_LG}"
-    python3 "${CONVERTER}" "${FILE_PUP_DOUBLEV_SRC}" --mode lazy-aux -o "${FILE_PUP_DOUBLEV_AUX_LG}"
+    python3 "${CONVERTER}" "${FILE_PUP_DOUBLE_SRC}" --mode lazy-aux -o "${FILE_PUP_DOUBLE_AUX_L}"
+    python3 "${CONVERTER}" "${FILE_PUP_DOUBLEV_SRC}" --mode lazy-aux -o "${FILE_PUP_DOUBLEV_AUX_L}"
 }
 
 # ============================================================================
@@ -370,8 +370,8 @@ echo "--- Encoding: ${FILE_PUP_DOUBLE} ---"
 run_encoding_on_instances "pup_double" "${FILE_PUP_DOUBLE}" "${INSTANCES_DOUBLE}" "${CSV_DOUBLE}" "${total_runs}" current_run "yes"
 
 echo ""
-echo "--- Encoding: ${FILE_PUP_DOUBLE_AUX_LG} ---"
-run_encoding_on_instances "pup_double_aux_lg" "${FILE_PUP_DOUBLE_AUX_LG}" "${INSTANCES_DOUBLE}" "${CSV_DOUBLE}" "${total_runs}" current_run "yes"
+echo "--- Encoding: ${FILE_PUP_DOUBLE_AUX_L} ---"
+run_encoding_on_instances "pup_double_aux_l" "${FILE_PUP_DOUBLE_AUX_L}" "${INSTANCES_DOUBLE}" "${CSV_DOUBLE}" "${total_runs}" current_run "yes"
 
 # ============================================================================
 # CSV: istanze DoubleVariant (pup, pup_heur, pup_doublev)
@@ -407,8 +407,8 @@ echo "--- Encoding: ${FILE_PUP_DOUBLEV} ---"
 run_encoding_on_instances "pup_doublev" "${FILE_PUP_DOUBLEV}" "${INSTANCES_DOUBLEV}" "${CSV_DOUBLEV}" "${total_runs}" current_run "yes"
 
 echo ""
-echo "--- Encoding: ${FILE_PUP_DOUBLEV_AUX_LG} ---"
-run_encoding_on_instances "pup_doublev_aux_lg" "${FILE_PUP_DOUBLEV_AUX_LG}" "${INSTANCES_DOUBLEV}" "${CSV_DOUBLEV}" "${total_runs}" current_run "yes"
+echo "--- Encoding: ${FILE_PUP_DOUBLEV_AUX_L} ---"
+run_encoding_on_instances "pup_doublev_aux_l" "${FILE_PUP_DOUBLEV_AUX_L}" "${INSTANCES_DOUBLEV}" "${CSV_DOUBLEV}" "${total_runs}" current_run "yes"
 
 # ============================================================================
 # FINE

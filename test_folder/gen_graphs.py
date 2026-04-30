@@ -154,65 +154,54 @@ PLOT_CONFIGS = [
 
 BSP_THEME = {
     "variant_labels": {
-        "std": "G&S + Clingo sem",
-        "std_aux": "G&S + Clingo sem + Aux",
-        "asgs": "G&S + Alpha sem",
-        "gsas": "G&S + Alpha sem",
-        "lg": "Lazy + Alpha sem",
-        "cslg": "Lazy + Clingo sem",
-        "lgcs": "Lazy + Clingo sem",
-        "auxlg": "Lazy + Alpha sem + Aux",
-        "colg": "Lazy + Optimized Constraint (BSP_lgas_co.lp)",
-        "lgas_co": "Lazy + Optimized Constraint (BSP_lgas_co.lp)",
+        "gc": "G&S + Clingo sem",
+        "gc_aux": "G&S + Clingo sem + Aux",
+        "ga": "G&S + Alpha sem",
+        "la": "Lazy + Alpha sem",
+        "lc": "Lazy + Clingo sem",
+        "la_aux": "Lazy + Alpha sem + Aux",
+        "la_co": "Lazy + Optimized Constraint (BSP_la_co.lp)",
     },
     "variant_files": {
-        "std": "BSP/BSP_gscs.lp",
-        "std_aux": "BSP/BSP_gscs_aux.lp",
-        "asgs": "BSP/BSP_gsas.lp",
-        "gsas": "BSP/BSP_gsas.lp",
-        "lg": "BSP/BSP_lgas.lp",
-        "cslg": "BSP/BSP_lgcs.lp",
-        "lgcs": "BSP/BSP_lgcs.lp",
-        "auxlg": "BSP/BSP_lgas_aux.lp",
-        "colg": "BSP/BSP_lgas_co.lp",
-        "lgas_co": "BSP/BSP_lgas_co.lp",
+        "gc": "BSP/BSP_gc.lp",
+        "gc_aux": "BSP/BSP_gc_aux.lp",
+        "ga": "BSP/BSP_ga.lp",
+        "la": "BSP/BSP_la.lp",
+        "lc": "BSP/BSP_lc.lp",
+        "la_aux": "BSP/BSP_la_aux.lp",
+        "la_co": "BSP/BSP_la_co.lp",
     },
     "variant_aliases": {
-        "asgs": ["gsas", "bsp_gsas", "bsp_no_gsas"],
-        "gsas": ["asgs", "bsp_asgs", "bsp_no_asgs"],
-        "cslg": ["lgcs", "bsp_lgcs", "bsp_no_lgcs"],
-        "lgcs": ["cslg", "bsp_cslg", "bsp_no_cslg"],
-        "colg": ["lgas_co", "bsp_lgas_co", "bsp_no_lgas_co"],
-        "lgas_co": ["colg", "bsp_colg", "bsp_no_colg"],
+        "gc": ["bsp_gc", "bsp_no_gc"],
+        "gc_aux": ["bsp_gc_aux"],
+        "ga": ["bsp_ga", "bsp_no_ga"],
+        "la": ["bsp_la", "bsp_no_la"],
+        "lc": ["bsp_lc", "bsp_no_lc"],
+        "la_aux": ["bsp_la_aux"],
+        "la_co": ["bsp_la_co", "bsp_no_la_co"],
     },
     "variant_colors": {
-        "std":  "#E74C3C",   # red
-        "std_aux": "#C0392B", # dark red
-        "asgs": "#F39C12",   # orange
-        "gsas": "#F39C12",   # orange
-        "lg":   "#2ECC71",   # green
-        "cslg": "#9B59B6",   # purple
-        "lgcs": "#9B59B6",   # purple
-        "auxlg": "#16A085",  # teal
-        "colg": "#3498DB",   # blue
-        "lgas_co": "#3498DB",   # blue
+        "gc":  "#E74C3C",   # red
+        "gc_aux": "#C0392B", # dark red
+        "ga": "#F39C12",   # orange
+        "la":   "#2ECC71",   # green
+        "lc": "#9B59B6",   # purple
+        "la_aux": "#16A085",  # teal
+        "la_co": "#3498DB",   # blue
     },
     "variant_markers": {
-        "std":  "o",
-        "std_aux": "x",
-        "asgs": "v",
-        "gsas": "v",
-        "lg":   "s",
-        "cslg": "D",
-        "lgcs": "D",
-        "auxlg": "P",
-        "colg": "^",
-        "lgas_co": "^",
+        "gc":  "o",
+        "gc_aux": "x",
+        "ga": "v",
+        "la":   "s",
+        "lc": "D",
+        "la_aux": "P",
+        "la_co": "^",
     },
-    "variant_order": ["std", "std_aux", "asgs", "gsas", "lg", "cslg", "lgcs", "auxlg", "colg", "lgas_co"],
+    "variant_order": ["gc", "gc_aux", "ga", "la", "lc", "la_aux", "la_co"],
     "xlabel": "Problem size (N)",
     "suptitle": "BSP Benchmark: Standard vs Lazy Heuristic Grounding",
-    "baseline": "std",
+    "baseline": "gc",
 }
 
 # PUP: benchmark con binario clingo modificato.
@@ -224,12 +213,12 @@ PUP_THEME = {
         "pup_heur":   "Euristiche Statiche (PUP_heur.lp)",
         "pup_double_std": "PUP Double #heuristic",
         "pup_double_aux": "PUP Double #heuristic + Aux",
-        "pup_double": "Aggregati Dinamici (PUP_double_lg.lp)",
-        "pup_double_aux_lg": "Aggregati Dinamici + Aux",
+        "pup_double": "Aggregati Dinamici (PUP_double_l.lp)",
+        "pup_double_aux_l": "Aggregati Dinamici + Aux",
         "pup_doublev_std": "PUP DoubleV #heuristic",
         "pup_doublev_aux": "PUP DoubleV #heuristic + Aux",
-        "pup_doublev":"Aggregati Dinamici Variante (PUP_double_variant_lg.lp)",
-        "pup_doublev_aux_lg": "Aggregati Dinamici Variante + Aux",
+        "pup_doublev":"Aggregati Dinamici Variante (PUP_double_variant_l.lp)",
+        "pup_doublev_aux_l": "Aggregati Dinamici Variante + Aux",
     },
     "variant_colors": {
         "pup":        "#E74C3C",   # red
@@ -237,11 +226,11 @@ PUP_THEME = {
         "pup_double_std": "#8E44AD", # purple
         "pup_double_aux": "#6C3483", # dark purple
         "pup_double": "#2ECC71",   # green
-        "pup_double_aux_lg": "#16A085", # teal
+        "pup_double_aux_l": "#16A085", # teal
         "pup_doublev_std": "#8E44AD",
         "pup_doublev_aux": "#6C3483",
         "pup_doublev":"#9B59B6",   # purple
-        "pup_doublev_aux_lg": "#16A085",
+        "pup_doublev_aux_l": "#16A085",
     },
     "variant_markers": {
         "pup":        "o",
@@ -249,11 +238,11 @@ PUP_THEME = {
         "pup_double_std": "X",
         "pup_double_aux": "P",
         "pup_double": "s",
-        "pup_double_aux_lg": "*",
+        "pup_double_aux_l": "*",
         "pup_doublev_std": "X",
         "pup_doublev_aux": "P",
         "pup_doublev":"^",
-        "pup_doublev_aux_lg": "*",
+        "pup_doublev_aux_l": "*",
     },
     "variant_order": [
         "pup",
@@ -261,11 +250,11 @@ PUP_THEME = {
         "pup_double_std",
         "pup_double_aux",
         "pup_double",
-        "pup_double_aux_lg",
+        "pup_double_aux_l",
         "pup_doublev_std",
         "pup_doublev_aux",
         "pup_doublev",
-        "pup_doublev_aux_lg",
+        "pup_doublev_aux_l",
     ],
     "xlabel": "Instance size (N)",
     "baseline": "pup",
@@ -355,13 +344,13 @@ def compute_stats(raw):
     """
     Compute mean and standard deviation for each (variant, n, metric).
     Returns:
-        {variant: {metric: {"n": [...], "mean": [...], "std": [...], "count": [...]}}}
+        {variant: {metric: {"n": [...], "mean": [...], "gc": [...], "count": [...]}}}
     """
     import statistics
 
     result = {}
     for variant, n_data in raw.items():
-        result[variant] = defaultdict(lambda: {"n": [], "mean": [], "std": [], "count": []})
+        result[variant] = defaultdict(lambda: {"n": [], "mean": [], "gc": [], "count": []})
         for n in sorted(n_data.keys()):
             for metric, values in n_data[n].items():
                 if len(values) > 0:
@@ -369,7 +358,7 @@ def compute_stats(raw):
                     std_val = statistics.pstdev(values) if len(values) > 1 else 0.0
                     result[variant][metric]["n"].append(n)
                     result[variant][metric]["mean"].append(mean_val)
-                    result[variant][metric]["std"].append(std_val)
+                    result[variant][metric]["gc"].append(std_val)
                     result[variant][metric]["count"].append(len(values))
 
     return result
@@ -622,8 +611,8 @@ def resolve_excluded_variant_list(theme: dict, selectors: list, *, context: str)
     """
     Resolve user-facing exclude selectors to variant ids, preserving CLI order.
 
-    Supported selectors include the variant id (e.g. asgs), file basename
-    (BSP_gsas.lp), file stem (BSP_gsas), or the full relative path.
+    Supported selectors include the variant id (e.g. ga), file basename
+    (BSP_ga.lp), file stem (BSP_ga), or the full relative path.
     """
     excluded = []
     seen = set()
@@ -801,7 +790,7 @@ def generate_graphs(
             has_data = True
             n = np.array(data["n"])
             mean = np.array(data["mean"])
-            std = np.array(data["std"])
+            gc = np.array(data["gc"])
 
             color = colors.get(variant, None)
             label = labels.get(variant, variant)
@@ -809,7 +798,7 @@ def generate_graphs(
 
             ax.plot(n, mean, marker=marker, label=label, color=color,
                     linewidth=1.8, markersize=5, zorder=3)
-            ax.fill_between(n, mean - std, mean + std,
+            ax.fill_between(n, mean - gc, mean + gc,
                             alpha=VARIANT_FILL_ALPHA, color=color, zorder=2)
 
         ax.set_title(_format_title(metric, config["title"]))
@@ -922,7 +911,7 @@ def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, description
         has_data = True
         n = np.array(data["n"])
         mean = np.array(data["mean"])
-        std = np.array(data["std"])
+        gc = np.array(data["gc"])
 
         color = colors.get(variant, None)
         label = labels.get(variant, variant)
@@ -930,7 +919,7 @@ def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, description
 
         ax.plot(n, mean, marker=marker, label=label, color=color,
                 linewidth=2, markersize=6, zorder=3)
-        ax.fill_between(n, mean - std, mean + std,
+        ax.fill_between(n, mean - gc, mean + gc,
                         alpha=VARIANT_FILL_ALPHA, color=color, zorder=2)
 
     ax.set_title(title, fontsize=13, fontweight="bold")
@@ -1409,22 +1398,112 @@ def process_csv(csv_path, graphs_dir, theme, problem_name, title_suffix="", excl
 # Main
 # ============================================================================
 
+def _color(text: str, code: str) -> str:
+    """Color help text when stdout is an interactive terminal."""
+    if not sys.stdout.isatty() or os.environ.get("NO_COLOR") or os.environ.get("TERM") == "dumb":
+        return text
+    return f"\033[{code}m{text}\033[0m"
+
+
 def parse_args():
+    heading = lambda text: _color(text, "1;36")
+    cmd = lambda text: _color(text, "1;32")
+    opt = lambda text: _color(text, "1;33")
+    value = lambda text: _color(text, "35")
+
     parser = argparse.ArgumentParser(
-        description="Generate charts from BSP and PUP benchmark results."
+        prog="gen_graphs.py",
+        description="Generate BSP/PUP benchmark charts from CSV result files.",
+        epilog=f"""
+{heading("Commands")}
+  {cmd("%(prog)s")}
+      Read CSV files from test-results/ and write charts to graphs/.
+
+  {cmd("%(prog)s --results-dir DIR --out DIR")}
+      Read result CSV files from a custom directory and write charts elsewhere.
+
+  {cmd("%(prog)s --exclude SELECTOR")}
+      Generate charts while excluding one or more matching variants.
+
+  {cmd("%(prog)s --bsp-exclude SELECTOR")}
+      Generate an additional BSP-only comparison without the selected BSP variant.
+
+{heading("Expected CSV files")}
+  {value("bsp_results.csv")}          BSP benchmark results.
+  {value("pup_double_results.csv")}   PUP Double-family benchmark results.
+  {value("pup_doublev_results.csv")}  PUP DoubleV-family benchmark results.
+  {value("results.csv")}              legacy BSP fallback.
+
+{heading("Output directories")}
+  {value("graphs/bsp/standard/")}      BSP charts with all variants.
+  {value("graphs/bsp/no_<variant>/")}  BSP charts with selected variants removed.
+  {value("graphs/pup/")}               PUP Double and DoubleV charts.
+
+{heading("Options")}
+  {opt("--results-dir DIR")}
+      Directory containing benchmark CSV files. Default: test-results.
+
+  {opt("--out DIR")}
+      Base output directory for generated PNG charts. Default: graphs.
+
+  {opt("--exclude SELECTOR")}
+      Exclude matching variants globally. Accepts ids, aliases, filenames,
+      stems, and relative paths. Can be repeated or comma-separated.
+
+  {opt("--bsp-exclude SELECTOR")}
+      Exclude matching variants only for BSP charts. When used without
+      --exclude, PUP charts are not regenerated.
+
+{heading("Selector examples")}
+  {value("la")}               variant id.
+  {value("lc")}               variant id.
+  {value("BSP_ga.lp")}        filename.
+  {value("BSP_la_co")}        file stem.
+  {value("BSP/BSP_la.lp")}    relative path.
+
+{heading("Examples")}
+  {cmd("%(prog)s")}
+      Generate every chart with default paths.
+
+  {cmd("%(prog)s --results-dir test-results --out graphs")}
+      Same as the default, written explicitly.
+
+  {cmd("%(prog)s --exclude lc")}
+      Exclude the lc variant wherever it is recognized.
+
+  {cmd("%(prog)s --exclude la,lc --exclude BSP_la_co.lp")}
+      Exclude several variants in one run.
+
+  {cmd("%(prog)s --bsp-exclude BSP_ga.lp")}
+      Produce a BSP comparison without BSP_ga.lp.
+        """.strip(),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--results-dir", default=DEFAULT_RESULTS_DIR,
-                        help=f"Directory with result CSV files (default: {DEFAULT_RESULTS_DIR})")
-    parser.add_argument("--out", default=DEFAULT_GRAPHS_DIR,
-                        help=f"Base output directory for charts (default: {DEFAULT_GRAPHS_DIR})")
+    parser.add_argument(
+        "--results-dir",
+        default=DEFAULT_RESULTS_DIR,
+        metavar="DIR",
+        help=(
+            f"Directory containing benchmark CSV files. Default: {DEFAULT_RESULTS_DIR}."
+        ),
+    )
+    parser.add_argument(
+        "--out",
+        default=DEFAULT_GRAPHS_DIR,
+        metavar="DIR",
+        help=(
+            f"Base directory for generated PNG charts. Default: {DEFAULT_GRAPHS_DIR}."
+        ),
+    )
     parser.add_argument(
         "--exclude",
         action="append",
         nargs="+",
         default=[],
+        metavar="SELECTOR",
         help=(
-            "Exclude variants/files from generated charts. Repeat the option or "
-            "use commas/spaces. Examples: --exclude BSP_gsas.lp --exclude lg lgcs"
+            "Exclude variants globally. Accepts ids, aliases, filenames, stems, "
+            "and paths. Repeat it or use comma-separated values."
         ),
     )
     parser.add_argument(
@@ -1432,9 +1511,9 @@ def parse_args():
         action="append",
         nargs="+",
         default=[],
+        metavar="SELECTOR",
         help=(
-            "Like --exclude, but only for BSP charts. Accepts variant ids "
-            "or filenames such as BSP_lgas.lp."
+            "Exclude variants only from BSP charts. Same selector forms as --exclude."
         ),
     )
     return parser.parse_args()

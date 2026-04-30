@@ -2,13 +2,13 @@
 # benchmark_bsp.sh
 # Benchmark per il problema BSP (Balanced Sum Partition).
 # Testa le configurazioni con il binario clingo modificato:
-#   std      — ground & solve con semantica Clingo (BSP/BSP_gscs.lp)
-#   std_aux  — ground & solve con semantica Clingo + ausiliari (BSP/BSP_gscs_aux.lp)
-#   gsas     — alpha semantics ground-and-solve (BSP/BSP_gsas.lp)
-#   lg       — lazy grounding con semantica Alpha (BSP/BSP_lgas.lp)
-#   lgcs     — lazy grounding con semantica Clingo (BSP/BSP_lgcs.lp)
-#   auxlg    — lazy grounding con semantica Alpha + ausiliari (BSP/BSP_lgas_aux.lp)
-#   lgas_co  — lazy grounding + vincolo ottimizzato (BSP/BSP_lgas_co.lp)
+#   gc      — ground & solve con semantica Clingo (BSP/BSP_gc.lp)
+#   gc_aux  — ground & solve con semantica Clingo + ausiliari (BSP/BSP_gc_aux.lp)
+#   ga     — alpha semantics ground-and-solve (BSP/BSP_ga.lp)
+#   la       — lazy grounding con semantica Alpha (BSP/BSP_la.lp)
+#   lc     — lazy grounding con semantica Clingo (BSP/BSP_lc.lp)
+#   la_aux    — lazy grounding con semantica Alpha + ausiliari (BSP/BSP_la_aux.lp)
+#   la_co  — lazy grounding + vincolo ottimizzato (BSP/BSP_la_co.lp)
 #
 # Ogni combinazione (N, variant) viene eseguita REPEATS volte con seed diversi.
 # Le varianti con euristiche usano --heuristic=Domain.
@@ -47,19 +47,19 @@ fi
 cd "${SCRIPT_DIR}"
 
 # Encoding files
-FILE_STD="BSP/BSP_gscs.lp"
-FILE_STD_AUX="BSP/BSP_gscs_aux.lp"
-FILE_ASGS="BSP/BSP_gsas.lp"
-FILE_LG="BSP/BSP_lgas.lp"
-FILE_CSLG="BSP/BSP_lgcs.lp"
-FILE_AUXLG="BSP/BSP_lgas_aux.lp"
-FILE_COLG="BSP/BSP_lgas_co.lp"
+FILE_GC="BSP/BSP_gc.lp"
+FILE_GC_AUX="BSP/BSP_gc_aux.lp"
+FILE_GA="BSP/BSP_ga.lp"
+FILE_LA="BSP/BSP_la.lp"
+FILE_LC="BSP/BSP_lc.lp"
+FILE_LA_AUX="BSP/BSP_la_aux.lp"
+FILE_LA_CO="BSP/BSP_la_co.lp"
 
 # Varianti da eseguire.
-# Per riattivare lgas_co, aggiungi "lgas_co" alla lista sotto.
+# Per riattivare la_co, aggiungi "la_co" alla lista sotto.
 # Puoi anche sovrascrivere da shell, ad esempio:
-#   BSP_VARIANTS="std std_aux gsas lg lgcs auxlg lgas_co" ./benchmark_bsp.sh
-DEFAULT_VARIANTS=(std std_aux gsas lg lgcs auxlg)
+#   BSP_VARIANTS="gc gc_aux ga la lc la_aux la_co" ./benchmark_bsp.sh
+DEFAULT_VARIANTS=(gc gc_aux ga la lc la_aux)
 read -r -a ACTIVE_VARIANTS <<< "${BSP_VARIANTS:-${DEFAULT_VARIANTS[*]}}"
 
 # Range file (in BSP_instances/)
@@ -80,16 +80,16 @@ declare -A GROUND_COUNT_CACHE
 
 variant_file() {
     case "$1" in
-        std) echo "${FILE_STD}" ;;
-        std_aux) echo "${FILE_STD_AUX}" ;;
-        asgs|gsas) echo "${FILE_ASGS}" ;;
-        lg) echo "${FILE_LG}" ;;
-        cslg|lgcs) echo "${FILE_CSLG}" ;;
-        auxlg|lg_aux) echo "${FILE_AUXLG}" ;;
-        colg|lgas_co) echo "${FILE_COLG}" ;;
+        gc) echo "${FILE_GC}" ;;
+        gc_aux) echo "${FILE_GC_AUX}" ;;
+        ga) echo "${FILE_GA}" ;;
+        la) echo "${FILE_LA}" ;;
+        lc) echo "${FILE_LC}" ;;
+        la_aux) echo "${FILE_LA_AUX}" ;;
+        la_co) echo "${FILE_LA_CO}" ;;
         *)
             echo "Errore: variante BSP sconosciuta '$1'." >&2
-            echo "Varianti valide: std std_aux gsas/asgs lg lgcs/cslg auxlg lgas_co/colg" >&2
+            echo "Varianti valide: gc gc_aux ga la lc la_aux la_co" >&2
             exit 1
             ;;
     esac
@@ -103,12 +103,12 @@ run_variant_for_seed() {
     file="$(variant_file "${variant}")"
 
     case "${variant}" in
-        std|std_aux|asgs|gsas)
+        gc|gc_aux|ga)
             run_stats "${n}" "${variant}" "${seed}" \
                 "${CLINGO_MOD}" "${FILE_RANGE}" "${file}" "-c" "n=${n}" "-n" "1" \
                 "--heuristic=Domain" "--time-limit=${TIMEOUT_SECONDS}"
             ;;
-        lg|cslg|lgcs|auxlg|lg_aux|colg|lgas_co)
+        la|lc|la_aux|la_co)
             run_stats "${n}" "${variant}" "${seed}" \
                 "${CLINGO_MOD}" "${FILE_RANGE}" "${file}" "-n" "1" "-c" "n=${n}" \
                 "--heuristic=Domain" "--time-limit=${TIMEOUT_SECONDS}"

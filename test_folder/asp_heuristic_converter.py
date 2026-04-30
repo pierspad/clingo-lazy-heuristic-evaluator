@@ -14,8 +14,8 @@ Sintassi lazy generata:
 Uso:
     python asp_heuristic_converter.py input.lp -o output.lp
     python asp_heuristic_converter.py input.lp --mode aux -o output_aux.lp
-    python asp_heuristic_converter.py input.lp --mode lazy-aux -o output_aux_lg.lp
-    python asp_heuristic_converter.py input.lp --mode cslg -o output_cslg.lp
+    python asp_heuristic_converter.py input.lp --mode lazy-aux -o output_aux_l.lp
+    python asp_heuristic_converter.py input.lp --mode lc -o output_lc.lp
     python asp_heuristic_converter.py input.lp --in-place
     python asp_heuristic_converter.py input.lp --dry-run
 
@@ -727,7 +727,7 @@ def generate_lazy_aux_heuristic(directive: HeuristicDirective, idx: int) -> list
 def _generate_directive_output(directive: HeuristicDirective, idx: int, mode: str) -> tuple:
     if mode == "lazy":
         return generate_lazy_heuristic(directive)
-    if mode in ("cslg", "clingo-lazy"):
+    if mode in ("lc", "clingo-lazy"):
         return generate_lazy_heuristic(directive, semantics="clingo")
     if mode == "aux":
         return generate_aux_heuristic(directive, idx)
@@ -816,54 +816,106 @@ def process_file(input_path: str, dry_run: bool = False, mode: str = "lazy") -> 
 # CLI
 # =============================================================================
 
+def _color(text: str, code: str) -> str:
+    """Color help text when stdout is an interactive terminal."""
+    if not sys.stdout.isatty() or os.environ.get("NO_COLOR") or os.environ.get("TERM") == "dumb":
+        return text
+    return f"\033[{code}m{text}\033[0m"
+
+
 def main():
+    heading = lambda text: _color(text, "1;36")
+    cmd = lambda text: _color(text, "1;32")
+    opt = lambda text: _color(text, "1;33")
+    value = lambda text: _color(text, "35")
+
     parser = argparse.ArgumentParser(
-        description="Converte le direttive #heuristic ASP nella sintassi lazy __heuristic/N.",
-        epilog="""
-Esempi:
-  %(prog)s input.lp -o output.lp
-  %(prog)s input.lp --in-place
-  %(prog)s input.lp --dry-run
+        prog="asp_heuristic_converter.py",
+        description="Convert ASP #heuristic directives to the encodings used in this project.",
+        epilog=f"""
+{heading("Commands")}
+  {cmd("%(prog)s INPUT.lp")}
+      Print the converted ASP program to stdout.
 
-Sintassi nativa supportata:
-  #heuristic b(X) : x(X), not c(X), S = #sum{Y : c(Y)}. [X@S, true]
+  {cmd("%(prog)s INPUT.lp -o OUTPUT.lp")}
+      Write the converted ASP program to OUTPUT.lp.
 
-Sintassi lazy generata:
-  __heuristic(__target(b), x, __n_c, __bind(s, __sum(c, 0)), __weight(self), __priority(s), true).
+  {cmd("%(prog)s INPUT.lp --in-place")}
+      Replace INPUT.lp and create INPUT.lp.bak.
 
-Con semantica Clingo per i letterali negativi:
-  __heuristic(__target(b), x, __n_c, __bind(s, __sum(c, 0)), __weight(self), __priority(s), true, __semantics(clingo)).
-        """,
+  {cmd("%(prog)s INPUT.lp --dry-run")}
+      Show the conversions that would be performed, without writing files.
+
+{heading("Rewrite modes")}
+  {value("lazy")}          default; emit direct lazy __heuristic/N directives.
+  {value("aux")}           keep native #heuristic, using an auxiliary predicate for weight/priority.
+  {value("lazy-aux")}      emit lazy __heuristic/N through an auxiliary body predicate.
+  {value("lc")}          emit lazy __heuristic/N with Clingo negative-literal semantics.
+  {value("clingo-lazy")}   alias of lc.
+
+{heading("Options")}
+  {opt("-o, --output PATH")}
+      Output file. Without this option, output goes to stdout.
+
+  {opt("--mode MODE")}
+      Select the rewrite mode: lazy, aux, lazy-aux, lc, or clingo-lazy.
+
+  {opt("--in-place")}
+      Edit the input file directly. Cannot be combined with -o/--output.
+
+  {opt("--dry-run")}
+      Preview conversions and warnings only.
+
+  {opt("--no-comments")}
+      Omit the comment that records the original #heuristic directive.
+
+{heading("Examples")}
+  {cmd("%(prog)s BSP/BSP_ga.lp -o BSP/BSP_la.lp")}
+      Convert to the default direct lazy encoding.
+
+  {cmd("%(prog)s BSP/BSP_ga.lp --mode lazy-aux -o BSP/BSP_la_aux.lp")}
+      Convert through an auxiliary lazy body predicate.
+
+  {cmd("%(prog)s BSP/BSP_ga.lp --mode lc -o BSP/BSP_lc.lp")}
+      Convert to lazy syntax with Clingo semantics for negative literals.
+
+  {cmd("%(prog)s BSP/BSP_ga.lp --dry-run")}
+      Check what would change before writing anything.
+        """.strip(),
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument(
         'input',
-        help="File ASP di input contenente direttive #heuristic"
+        help="Input ASP file containing Clingo #heuristic directives."
     )
     parser.add_argument(
         '-o', '--output',
-        help="File di output (default: stdout)"
+        metavar="PATH",
+        help="Write the converted ASP program to PATH. Default: print to stdout."
     )
     parser.add_argument(
         '--in-place',
         action='store_true',
-        help="Modifica il file di input in-place (crea un backup .bak)"
+        help="Rewrite the input file in place and create a '<input>.bak' backup."
     )
     parser.add_argument(
         '--dry-run',
         action='store_true',
-        help="Mostra le conversioni senza scrivere"
+        help="Preview conversions and warnings without writing files."
     )
     parser.add_argument(
         '--mode',
-        choices=['lazy', 'aux', 'lazy-aux', 'cslg', 'clingo-lazy'],
+        choices=['lazy', 'aux', 'lazy-aux', 'lc', 'clingo-lazy'],
         default='lazy',
-        help="Tipo di riscrittura: lazy alpha, #heuristic con ausiliario, lazy con ausiliario, oppure lazy con semantica Clingo"
+        help=(
+            "Rewrite mode: lazy, aux, lazy-aux, lc, or clingo-lazy. "
+            "Default: lazy."
+        )
     )
     parser.add_argument(
         '--no-comments',
         action='store_true',
-        help="Non aggiungere il commento con l'euristica originale"
+        help="Do not include the '%% Originale: ...' comment before converted directives."
     )
 
     args = parser.parse_args()

@@ -5,7 +5,7 @@ https://github.com/tilmanni/Alpha/tree/domspec_heuristics_extended_prolog/Evalua
 
 per generare i grafici escludendo alcuni risultati
 
-python gen_graphs.py --bsp-exclude BSP_lgas_aux.lp,BSP_gscs.lp
+python gen_graphs.py --bsp-exclude BSP_la_aux.lp,BSP_gc.lp
 
 Esempio
 
@@ -283,7 +283,7 @@ numero di conflitti generati durante la ricerca.
 
 
 % output di 
-% gringo --text BSP/BSP_gscs.lp BSP_instances/BSP_range.lp
+% gringo --text BSP/BSP_gc.lp BSP_instances/BSP_range.lp
 
 x(1).
 x(2).
@@ -382,7 +382,7 @@ sumB(6):-#sum{1:b(1);2:b(2);3:b(3)}=6.
 #delayed(3) <=> 1<=#count{0,b(3):b(3);0,c(3):c(3)}<=1
 
 % output di 
-% gringo --text BSP/BSP_lgas_co.lp BSP_instances/BSP_range.lp
+% gringo --text BSP/BSP_la_co.lp BSP_instances/BSP_range.lp
 
 __heuristic(__target(b),x,__n_c,__bind(s,__sum(c)),__weight(self),__priority(s),true).
 __heuristic(__target(c),x,__n_b,__bind(s,__sum(b)),__weight(self),__priority(s),true).
@@ -605,7 +605,7 @@ Queste modifiche mantengono intatta la semantica logica del problema originale e
 
 Nel benchmark BSP ora conviene distinguere quattro famiglie concettuali.
 
-1) Standard Clingo ground-and-solve (`std`, file BSP/BSP_gscs.lp).
+1) Standard Clingo ground-and-solve (`gc`, file BSP/BSP_gc.lp).
 Usa direttamente le direttive native:
 
 #heuristic b(X): x(X), not c(X), S = #sum{Y : c(Y)}. [X@S,true]
@@ -615,7 +615,7 @@ Qui Gringo deve produrre euristiche ground native. Il vantaggio e' che questa
 e' la semantica standard di Clingo; lo svantaggio e' il grounding bottleneck
 quando peso o priorita' dipendono da aggregati.
 
-2) Alpha semantics ground-and-solve (`gsas`, file BSP/BSP_gsas.lp).
+2) Alpha semantics ground-and-solve (`ga`, file BSP/BSP_ga.lp).
 Questa variante non usa il propagatore lazy. Emula l'idea Alpha con direttive
 native gia' groundabili:
 
@@ -629,7 +629,7 @@ priorita' massima S, cioe' la somma corrente degli atomi assegnati a vero.
 Questo e' utile per testing perche' resta "ground and solve", ma produce molte
 euristiche ground e quindi puo' essere molto piu' pesante della variante lazy.
 
-3) Alpha semantics lazy (`lg`, file BSP/BSP_lgas.lp).
+3) Alpha semantics lazy (`la`, file BSP/BSP_la.lp).
 Le euristiche sono template statici:
 
 __heuristic(__target(b),x,__n_c,__bind(s,__sum(c,0)),__weight(self),__priority(s),true).
@@ -640,7 +640,7 @@ significa "c(X) non e' vero": quindi l'euristica puo' attivarsi anche se c(X)
 e' ancora libero. Gli aggregati sono incrementali: sommano/contano gli atomi
 attualmente veri e non aspettano che tutti gli atomi del dominio siano decisi.
 
-4) Clingo semantics lazy (`lgcs`, file BSP/BSP_lgcs.lp).
+4) Clingo semantics lazy (`lc`, file BSP/BSP_lc.lp).
 E' identica alla variante lazy, ma aggiunge:
 
 __semantics(clingo)
@@ -657,7 +657,7 @@ atomi non liberi: il valore dell'aggregato viene letto solo quando
 `assigned_sources == total_sources`. Non e' un `#count` del programma ASP, ma
 un controllo runtime sullo stato dell'assegnamento del solver.
 
-Le varianti `std_aux` e `auxlg` non sono una quinta semantica: sono riscritture
+Le varianti `gc_aux` e `la_aux` non sono una quinta semantica: sono riscritture
 tecniche con predicati ausiliari. Servono a misurare quanto cambia il grounding
 quando il corpo complesso dell'euristica viene materializzato in un predicato
 intermedio.
