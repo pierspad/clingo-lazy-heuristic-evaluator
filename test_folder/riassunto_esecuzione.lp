@@ -2,6 +2,13 @@
 # Link to the pup instances and encodings
 https://github.com/tilmanni/Alpha/tree/domspec_heuristics_extended_prolog/Evaluation/PUP
 
+
+per generare i grafici escludendo alcuni risultati
+
+python gen_graphs.py --bsp-exclude BSP_lgas_aux.lp,BSP_gscs.lp
+
+Esempio
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 1) Introduzione al problema del grounding bottleneck con euristiche e aggregati
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -276,7 +283,7 @@ numero di conflitti generati durante la ricerca.
 
 
 % output di 
-% gringo --text BSP/BSP.lp BSP_instances/BSP_range.lp
+% gringo --text BSP/BSP_gscs.lp BSP_instances/BSP_range.lp
 
 x(1).
 x(2).
@@ -598,7 +605,7 @@ Queste modifiche mantengono intatta la semantica logica del problema originale e
 
 Nel benchmark BSP ora conviene distinguere quattro famiglie concettuali.
 
-1) Standard Clingo ground-and-solve (`std`, file BSP/BSP.lp).
+1) Standard Clingo ground-and-solve (`std`, file BSP/BSP_gscs.lp).
 Usa direttamente le direttive native:
 
 #heuristic b(X): x(X), not c(X), S = #sum{Y : c(Y)}. [X@S,true]
@@ -622,7 +629,7 @@ priorita' massima S, cioe' la somma corrente degli atomi assegnati a vero.
 Questo e' utile per testing perche' resta "ground and solve", ma produce molte
 euristiche ground e quindi puo' essere molto piu' pesante della variante lazy.
 
-3) Alpha semantics lazy (`lg`, file BSP/BSP_lg.lp).
+3) Alpha semantics lazy (`lg`, file BSP/BSP_lgas.lp).
 Le euristiche sono template statici:
 
 __heuristic(__target(b),x,__n_c,__bind(s,__sum(c,0)),__weight(self),__priority(s),true).

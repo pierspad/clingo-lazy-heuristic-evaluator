@@ -362,6 +362,7 @@ void HeuristicPropagator::init(Clingo::PropagateInit &init) {
     body_triggers_.clear();
     lazy_targets_.clear();
     active_body_lits_.clear();
+    aggregate_source_lits_.clear();
 
     auto atoms = init.symbolic_atoms();
     for (auto it = atoms.begin(); it != atoms.end(); ++it) {
@@ -739,6 +740,8 @@ void HeuristicPropagator::register_lazy_body_triggers(Clingo::PropagateInit &ini
 void HeuristicPropagator::register_lazy_aggregate_watches(Clingo::PropagateInit &init,
                                                           Clingo::SymbolicAtoms const &atoms) {
     std::unordered_set<Clingo::literal_t> watched_aggregate_lits;
+    auto assignment = init.assignment();
+
     for (auto const &tmpl : rule_templates_) {
         for (auto const &vb : tmpl.var_bindings) {
             AggregateKey const &agg_key = vb.second;
@@ -757,6 +760,11 @@ void HeuristicPropagator::register_lazy_aggregate_watches(Clingo::PropagateInit 
                 Clingo::literal_t const slit = init.solver_literal(it->literal());
                 if (slit == 0) continue;
 
+                auto &source_lits = aggregate_source_lits_[runtime_key];
+                if (std::find(source_lits.begin(), source_lits.end(), slit) == source_lits.end()) {
+                    source_lits.push_back(slit);
+                }
+
                 if (watched_aggregate_lits.insert(slit).second) {
                     init.add_watch(slit);
                 }
@@ -769,8 +777,17 @@ void HeuristicPropagator::register_lazy_aggregate_watches(Clingo::PropagateInit 
                         break;
                     }
                 }
-                if (!already)
-                    watch_info.contributions.push_back(WatchedAtomContribution{std::move(runtime_key), value});
+                if (!already) {
+                    WatchedAtomContribution contribution{std::move(runtime_key), value};
+                    auto &state = aggregate_states_[contribution.runtime_key];
+                    if (!state) {
+                        state = make_aggregate(contribution.runtime_key.key.op_name);
+                    }
+                    if (assignment.is_true(slit) && state) {
+                        state->add(contribution.value);
+                    }
+                    watch_info.contributions.push_back(std::move(contribution));
+                }
             }
         }
     }
@@ -933,14 +950,35 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
             // Costruisce l'ambiente delle variabili __bind per questa tupla.
             // Aggregati senza stato presente valgono 0, inclusi __min/__max vuoti.
             std::unordered_map<std::string, int> var_env = inst.body_var_values;
+            bool aggregates_ready = true;
             for (auto const &vb : tmpl.var_bindings) {
                 int val = 0;
                 RuntimeAggregateKey runtime_key;
                 bool const valid_key = build_runtime_key_from_target_tuple(vb.second, inst.tuple_values, runtime_key);
+
+                if (tmpl.semantics == HeuristicSemantics::Clingo) {
+                    if (!valid_key) {
+                        aggregates_ready = false;
+                        break;
+                    }
+
+                    auto source_it = aggregate_source_lits_.find(runtime_key);
+                    if (source_it != aggregate_source_lits_.end()) {
+                        for (auto source_lit : source_it->second) {
+                            if (assignment.truth_value(source_lit) == Clingo::TruthValue::Free) {
+                                aggregates_ready = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (!aggregates_ready) break;
+                }
+
                 auto state_it = valid_key ? aggregate_states_.find(runtime_key) : aggregate_states_.end();
                 if (state_it != aggregate_states_.end()) val = state_it->second->result();
                 var_env[vb.first] = val;
             }
+            if (!aggregates_ready) continue;
 
             int current_priority = evaluate_arithmetic_expression(tmpl.priority_expr, inst.self_value, var_env);
             int current_weight = evaluate_arithmetic_expression(tmpl.weight_expr, inst.self_value, var_env);

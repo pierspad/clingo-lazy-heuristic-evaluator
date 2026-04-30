@@ -286,6 +286,7 @@ private:
     std::unordered_map<Clingo::literal_t, std::vector<LazyTargetInstance>> lazy_targets_;
     std::unordered_set<Clingo::literal_t> active_body_lits_;
     std::unordered_map<RuntimeAggregateKey, std::unique_ptr<AggregateState>, RuntimeAggregateKeyHash> aggregate_states_;
+    std::unordered_map<RuntimeAggregateKey, std::vector<Clingo::literal_t>, RuntimeAggregateKeyHash> aggregate_source_lits_;
 
     void init_lazy_mode(Clingo::PropagateInit &init);
     void parse_lazy_heuristic_templates(Clingo::SymbolicAtoms const &atoms);

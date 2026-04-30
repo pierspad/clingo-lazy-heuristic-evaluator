@@ -2,12 +2,12 @@
 # benchmark_bsp.sh
 # Benchmark per il problema BSP (Balanced Sum Partition).
 # Testa le configurazioni con il binario clingo modificato:
-#   std      — encoding dichiarativo puro  (BSP/BSP.lp)
-#   std_aux  — #heuristic riscritta con predicato ausiliario (BSP/BSP_aux.lp)
+#   std      — ground & solve con semantica Clingo (BSP/BSP_gscs.lp)
+#   std_aux  — ground & solve con semantica Clingo + ausiliari (BSP/BSP_gscs_aux.lp)
 #   asgs     — alpha semantics ground-and-solve (BSP/BSP_asgs.lp)
-#   lg       — lazy grounding              (BSP/BSP_lg.lp)
+#   lg       — lazy grounding con semantica Alpha (BSP/BSP_lgas.lp)
 #   cslg     — lazy grounding con semantica Clingo (BSP/BSP_cslg.lp)
-#   auxlg    — lazy grounding con predicato ausiliario (BSP/BSP_auxlg.lp)
+#   auxlg    — lazy grounding con semantica Alpha + ausiliari (BSP/BSP_lgas_aux.lp)
 #   colg     — lazy grounding + vincolo ottimizzato (BSP/BSP_colg.lp)
 #
 # Ogni combinazione (N, variant) viene eseguita REPEATS volte con seed diversi.
@@ -47,12 +47,12 @@ fi
 cd "${SCRIPT_DIR}"
 
 # Encoding files
-FILE_STD="BSP/BSP.lp"
-FILE_STD_AUX="BSP/BSP_aux.lp"
+FILE_STD="BSP/BSP_gscs.lp"
+FILE_STD_AUX="BSP/BSP_gscs_aux.lp"
 FILE_ASGS="BSP/BSP_asgs.lp"
-FILE_LG="BSP/BSP_lg.lp"
+FILE_LG="BSP/BSP_lgas.lp"
 FILE_CSLG="BSP/BSP_cslg.lp"
-FILE_AUXLG="BSP/BSP_auxlg.lp"
+FILE_AUXLG="BSP/BSP_lgas_aux.lp"
 FILE_COLG="BSP/BSP_colg.lp"
 
 # Varianti da eseguire.

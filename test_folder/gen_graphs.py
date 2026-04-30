@@ -4,7 +4,8 @@ Generates benchmark charts for both BSP and PUP problems.
 Reads CSV result files from ./test-results/ and generates charts
 with mean ± standard deviation for each CDNL metric.
 
-BSP results:  ./test-results/bsp_results.csv    → ./graphs/bsp/
+BSP results:  ./test-results/bsp_results.csv    → ./graphs/bsp/standard/
+                                                  ./graphs/bsp/no_asgs/
 PUP results:  ./test-results/pup_double_results.csv   → ./graphs/pup/
               ./test-results/pup_doublev_results.csv  → ./graphs/pup/
 
@@ -153,13 +154,22 @@ PLOT_CONFIGS = [
 
 BSP_THEME = {
     "variant_labels": {
-        "std":  "Standard (BSP.lp)",
-        "std_aux": "Standard + Aux (BSP_aux.lp)",
-        "asgs": "Alpha Ground+Solve (BSP_asgs.lp)",
-        "lg":   "Lazy Grounding (BSP_lg.lp)",
-        "cslg": "Lazy + Clingo Semantics (BSP_cslg.lp)",
-        "auxlg": "Lazy + Aux (BSP_auxlg.lp)",
+        "std": "ground & solve + Clingo sem",
+        "std_aux": "ground & solve + Clingo sem + aux",
+        "asgs": "Alpha ground & solve",
+        "lg": "Lazy + Alpha sem",
+        "cslg": "Lazy + Clingo semantics",
+        "auxlg": "Lazy ground + Alpha sem + aux",
         "colg": "Lazy + Optimized Constraint (BSP_colg.lp)",
+    },
+    "variant_files": {
+        "std": "BSP/BSP_gscs.lp",
+        "std_aux": "BSP/BSP_gscs_aux.lp",
+        "asgs": "BSP/BSP_asgs.lp",
+        "lg": "BSP/BSP_lgas.lp",
+        "cslg": "BSP/BSP_cslg.lp",
+        "auxlg": "BSP/BSP_lgas_aux.lp",
+        "colg": "BSP/BSP_colg.lp",
     },
     "variant_colors": {
         "std":  "#E74C3C",   # red
@@ -172,7 +182,7 @@ BSP_THEME = {
     },
     "variant_markers": {
         "std":  "o",
-        "std_aux": "X",
+        "std_aux": "x",
         "asgs": "v",
         "lg":   "s",
         "cslg": "D",
@@ -353,9 +363,11 @@ VARIANT_FILL_ALPHA = 0.15
 CAPTION_COLOR = "#5F6368"
 SEPARATOR_COLOR = "#D6D6D6"
 VERTICAL_SEPARATOR_GAP_FRACTION = 0.42
-MILLION_FORMAT_METRICS = {
+THOUSAND_FORMAT_METRICS = {
     "variables",
     "combined_heuristics",
+}
+MILLION_FORMAT_METRICS = {
     "ground_lines",
 }
 
@@ -411,6 +423,23 @@ def _format_millions(value, _pos=None):
     return f"{value:g}"
 
 
+def _format_thousands(value, _pos=None):
+    """Format selected grounding/search-space ticks in thousands."""
+    abs_value = abs(value)
+    if abs_value >= 1_000:
+        scaled = value / 1_000
+        if abs(scaled) >= 100 or scaled.is_integer():
+            return f"{scaled:.0f}K"
+        if abs(scaled) >= 10:
+            return f"{scaled:.1f}".rstrip("0").rstrip(".") + "K"
+        return f"{scaled:.2f}".rstrip("0").rstrip(".") + "K"
+    if abs_value >= 1:
+        return f"{value:.0f}"
+    if value == 0:
+        return "0"
+    return f"{value:g}"
+
+
 def _format_memory_mb(value, _pos=None):
     """Format MB ticks compactly while keeping the axis unit in the label."""
     abs_value = abs(value)
@@ -431,6 +460,9 @@ def _apply_y_axis_format(ax, metric: str):
     if metric == "memory_mb":
         ax.yaxis.set_major_locator(MaxNLocator(nbins=6))
         ax.yaxis.set_major_formatter(FuncFormatter(_format_memory_mb))
+    elif metric in THOUSAND_FORMAT_METRICS:
+        ax.yaxis.set_major_locator(MaxNLocator(nbins=6, integer=True))
+        ax.yaxis.set_major_formatter(FuncFormatter(_format_thousands))
     elif metric in MILLION_FORMAT_METRICS:
         ax.yaxis.set_major_locator(MaxNLocator(nbins=6, integer=True))
         ax.yaxis.set_major_formatter(FuncFormatter(_format_millions))
@@ -518,7 +550,146 @@ def _ordered_variants(stats: dict, theme: dict):
     return ordered
 
 
-def generate_graphs(stats: dict, graphs_dir: str, theme: dict, title_suffix: str = ""):
+def _filename_suffix(title_suffix: str) -> str:
+    """Convert a chart title suffix into a stable filename suffix."""
+    import re
+
+    if not title_suffix:
+        return ""
+    normalized = title_suffix.lower().replace("+", " ")
+    normalized = re.sub(r"[^a-z0-9]+", "_", normalized).strip("_")
+    return f"_{normalized}" if normalized else ""
+
+
+def _split_exclude_selectors(values) -> list:
+    """Expand repeated/comma-separated exclude selectors from the CLI."""
+    selectors = []
+    for value in values or []:
+        for item in value.split(","):
+            item = item.strip()
+            if item:
+                selectors.append(item)
+    return selectors
+
+
+def _selector_aliases_for_variant(theme: dict, variant: str) -> set:
+    """Return names users can pass to --exclude/--bsp-exclude for a variant."""
+    aliases = {variant.lower()}
+
+    label = theme.get("variant_labels", {}).get(variant)
+    if label:
+        aliases.add(label.lower())
+
+    filename = theme.get("variant_files", {}).get(variant)
+    if filename:
+        normalized = filename.replace("\\", "/").lower()
+        basename = os.path.basename(normalized)
+        stem, _ = os.path.splitext(basename)
+        aliases.update({normalized, basename, stem})
+
+    return aliases
+
+
+def resolve_excluded_variant_list(theme: dict, selectors: list, *, context: str) -> list:
+    """
+    Resolve user-facing exclude selectors to variant ids, preserving CLI order.
+
+    Supported selectors include the variant id (e.g. asgs), file basename
+    (BSP_asgs.lp), file stem (BSP_asgs), or the full relative path.
+    """
+    excluded = []
+    seen = set()
+    unknown = []
+
+    for selector in selectors:
+        key = selector.replace("\\", "/").lower()
+        matches = [
+            variant for variant in theme.get("variant_order", [])
+            if key in _selector_aliases_for_variant(theme, variant)
+        ]
+        if matches:
+            for variant in matches:
+                if variant not in seen:
+                    excluded.append(variant)
+                    seen.add(variant)
+        else:
+            unknown.append(selector)
+
+    if unknown:
+        print(
+            f"[WARN] {context}: exclude selector non riconosciuti: "
+            f"{', '.join(unknown)}"
+        )
+
+    return excluded
+
+
+def resolve_excluded_variants(theme: dict, selectors: list, *, context: str) -> set:
+    """Resolve user-facing exclude selectors to a set of variant ids."""
+    return set(resolve_excluded_variant_list(theme, selectors, context=context))
+
+
+def _variant_dir_identifier(theme: dict, variant: str) -> str:
+    """Return a short stable identifier for exclusion-set directory names."""
+    filename = theme.get("variant_files", {}).get(variant)
+    if filename:
+        basename = os.path.basename(filename.replace("\\", "/"))
+        stem, _ = os.path.splitext(basename)
+        if stem.startswith("BSP_"):
+            stem = stem[len("BSP_"):]
+        return stem.lower()
+    return variant.lower()
+
+
+def exclusion_dir_name(theme: dict, excluded_variants: set, ordered_variants=None) -> str:
+    """Name BSP output dirs as standard or no_<file-id>-no_<file-id>."""
+    if not excluded_variants:
+        return "standard"
+
+    if ordered_variants:
+        ordered = [variant for variant in ordered_variants if variant in excluded_variants]
+        ordered.extend(sorted(excluded_variants - set(ordered)))
+    else:
+        ordered = [
+            variant for variant in theme.get("variant_order", [])
+            if variant in excluded_variants
+        ]
+        ordered.extend(sorted(excluded_variants - set(ordered)))
+    return "-".join(
+        f"no_{_variant_dir_identifier(theme, variant)}"
+        for variant in ordered
+    )
+
+
+def _filtered_theme(theme: dict, excluded_variants: set):
+    """Return a shallow theme copy with selected variants removed from ordering."""
+    filtered = theme.copy()
+    filtered["variant_order"] = [
+        variant for variant in theme["variant_order"]
+        if variant not in excluded_variants
+    ]
+    filtered.pop("focused_exclude_variants", None)
+    filtered.pop("focused_title_suffix", None)
+    return filtered
+
+
+def _filtered_stats(stats: dict, excluded_variants: set):
+    """Return stats without selected variants."""
+    return {
+        variant: data
+        for variant, data in stats.items()
+        if variant not in excluded_variants
+    }
+
+
+def generate_graphs(
+    stats: dict,
+    graphs_dir: str,
+    theme: dict,
+    title_suffix: str = "",
+    *,
+    include_focused: bool = True,
+):
     """Generate all charts for a given problem/theme."""
     try:
         import matplotlib
@@ -614,7 +785,7 @@ def generate_graphs(stats: dict, graphs_dir: str, theme: dict, title_suffix: str
     plt.tight_layout(rect=[0, 0.01, 1, 0.955], h_pad=3.4, w_pad=3.8)
     _add_subplot_separators(fig, axes, n_plots)
 
-    suffix = f"_{title_suffix.lower().replace(' ', '_')}" if title_suffix else ""
+    suffix = _filename_suffix(title_suffix)
     out_path = os.path.join(graphs_dir, f"benchmark_results{suffix}.png")
     plt.savefig(out_path, dpi=200, bbox_inches="tight")
     plt.close()
@@ -650,6 +821,26 @@ def generate_graphs(stats: dict, graphs_dir: str, theme: dict, title_suffix: str
         f"heuristic_grounding_reduction_vs_{heuristic_baseline}.png"
     )
     _generate_heuristic_reduction_chart(stats, graphs_dir, heuristic_baseline, theme, reduction_fname, xlabel)
+
+    if include_focused and theme.get("focused_exclude_variants"):
+        excluded = set(theme["focused_exclude_variants"])
+        focused_stats = _filtered_stats(stats, excluded)
+        if focused_stats:
+            focused_theme = _filtered_theme(theme, excluded)
+            focused_suffix = theme.get("focused_title_suffix", "focused")
+            if title_suffix:
+                focused_suffix = f"{title_suffix} {focused_suffix}"
+            print(
+                "  Generating focused charts without "
+                f"{', '.join(sorted(excluded))}..."
+            )
+            generate_graphs(
+                focused_stats,
+                graphs_dir,
+                focused_theme,
+                title_suffix=focused_suffix,
+                include_focused=False,
+            )
 
 
 def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, description, filename, theme, xlabel):
@@ -1120,7 +1311,7 @@ def ensure_plot_dependencies():
         sys.exit(1)
 
 
-def process_csv(csv_path, graphs_dir, theme, problem_name, title_suffix=""):
+def process_csv(csv_path, graphs_dir, theme, problem_name, title_suffix="", excluded_variants=None):
     """Process a single CSV file: load, compute stats, print table, generate graphs."""
     if not os.path.isfile(csv_path):
         print(f"\n[SKIP] {problem_name}: CSV non trovato: '{csv_path}'")
@@ -1145,6 +1336,16 @@ def process_csv(csv_path, graphs_dir, theme, problem_name, title_suffix=""):
         print(f"    {variant}: {len(ns)} N values, ~{seeds} seeds per point")
 
     stats = compute_stats(raw)
+    excluded_variants = set(excluded_variants or [])
+    if excluded_variants:
+        stats = _filtered_stats(stats, excluded_variants)
+        theme = _filtered_theme(theme, excluded_variants)
+        print(f"  Varianti escluse dai grafici: {', '.join(sorted(excluded_variants))}")
+
+    if not stats:
+        print("  [SKIP] Nessuna variante rimasta dopo gli exclude.")
+        return False
+
     print_summary_table(stats, theme)
     generate_graphs(stats, graphs_dir, theme, title_suffix=title_suffix)
     return True
@@ -1162,6 +1363,24 @@ def parse_args():
                         help=f"Directory with result CSV files (default: {DEFAULT_RESULTS_DIR})")
     parser.add_argument("--out", default=DEFAULT_GRAPHS_DIR,
                         help=f"Base output directory for charts (default: {DEFAULT_GRAPHS_DIR})")
+    parser.add_argument(
+        "--exclude",
+        action="append",
+        default=[],
+        help=(
+            "Exclude variants/files from generated charts. Repeat the option or "
+            "use commas. Examples: --exclude BSP_asgs.lp --exclude lg,cslg"
+        ),
+    )
+    parser.add_argument(
+        "--bsp-exclude",
+        action="append",
+        default=[],
+        help=(
+            "Like --exclude, but only for BSP charts. Accepts variant ids "
+            "or filenames such as BSP_lgas.lp."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -1169,6 +1388,8 @@ def main():
     args = parse_args()
     results_dir = args.results_dir
     base_out = args.out
+    global_exclude_selectors = _split_exclude_selectors(args.exclude)
+    bsp_exclude_selectors = global_exclude_selectors + _split_exclude_selectors(args.bsp_exclude)
 
     processed_any = False
 
@@ -1184,11 +1405,41 @@ def main():
 
     # ---- BSP ----
     bsp_csv = os.path.join(results_dir, "bsp_results.csv")
-    bsp_out = os.path.join(base_out, "bsp")
     bsp_theme = BSP_THEME.copy()
     bsp_theme["suptitle"] = "BSP Benchmark: Standard vs Lazy Heuristic Grounding"
-    if process_csv(bsp_csv, bsp_out, bsp_theme, "BSP (Balanced Sum Partition)"):
-        processed_any = True
+    bsp_user_excluded_order = resolve_excluded_variant_list(
+        bsp_theme,
+        bsp_exclude_selectors,
+        context="BSP",
+    )
+    bsp_user_excluded = set(bsp_user_excluded_order)
+    focused_order = bsp_user_excluded_order or ["asgs"]
+    focused_excluded = set(focused_order)
+    focused_names = ", ".join(
+        _variant_dir_identifier(bsp_theme, variant) for variant in focused_order
+    )
+    bsp_graph_sets = [
+        (set(), "BSP (Balanced Sum Partition)", ""),
+        (
+            focused_excluded,
+            f"BSP (Balanced Sum Partition, without {focused_names})",
+            f" (without {focused_names})",
+        ),
+    ]
+
+    seen_bsp_dirs = set()
+    for graph_excluded, label, title_suffix_text in bsp_graph_sets:
+        excluded = graph_excluded if graph_excluded else set()
+        ordered_excluded = focused_order if excluded else []
+        dirname = exclusion_dir_name(bsp_theme, excluded, ordered_excluded)
+        if dirname in seen_bsp_dirs:
+            continue
+        seen_bsp_dirs.add(dirname)
+        bsp_out = os.path.join(base_out, "bsp", dirname)
+        theme_for_set = bsp_theme.copy()
+        theme_for_set["suptitle"] = bsp_theme["suptitle"] + title_suffix_text
+        if process_csv(bsp_csv, bsp_out, theme_for_set, label, excluded_variants=excluded):
+            processed_any = True
 
     # ---- PUP Double ----
     pup_double_csv = os.path.join(results_dir, "pup_double_results.csv")
@@ -1196,8 +1447,14 @@ def main():
     pup_double_theme = PUP_THEME.copy()
     pup_double_theme["suptitle"] = "PUP Benchmark — Double Family"
     pup_double_theme["heuristic_baseline"] = "pup_double_std"
+    pup_double_excluded = resolve_excluded_variants(
+        pup_double_theme,
+        global_exclude_selectors,
+        context="PUP Double",
+    )
     if process_csv(pup_double_csv, pup_double_out, pup_double_theme,
-                   "PUP Double", title_suffix="Double"):
+                   "PUP Double", title_suffix="Double",
+                   excluded_variants=pup_double_excluded):
         processed_any = True
 
     # ---- PUP DoubleV ----
@@ -1206,17 +1463,24 @@ def main():
     pup_doublev_theme = PUP_THEME.copy()
     pup_doublev_theme["suptitle"] = "PUP Benchmark — DoubleV Family"
     pup_doublev_theme["heuristic_baseline"] = "pup_doublev_std"
+    pup_doublev_excluded = resolve_excluded_variants(
+        pup_doublev_theme,
+        global_exclude_selectors,
+        context="PUP DoubleV",
+    )
     if process_csv(pup_doublev_csv, pup_doublev_out, pup_doublev_theme,
-                   "PUP DoubleV", title_suffix="DoubleV"):
+                   "PUP DoubleV", title_suffix="DoubleV",
+                   excluded_variants=pup_doublev_excluded):
         processed_any = True
 
     # ---- Legacy BSP CSV (backward compat) ----
     legacy_csv = os.path.join(results_dir, "results.csv")
     if not processed_any and os.path.isfile(legacy_csv):
         print(f"\n[FALLBACK] Trovato file legacy '{legacy_csv}', lo processo come BSP...")
-        legacy_out = os.path.join(base_out, "bsp")
+        legacy_out = os.path.join(base_out, "bsp", "standard")
         process_csv(legacy_csv, legacy_out, BSP_THEME,
-                    "BSP (Legacy)", title_suffix="legacy")
+                    "BSP (Legacy)", title_suffix="legacy",
+                    excluded_variants=bsp_user_excluded)
         processed_any = True
 
     if not processed_any:
