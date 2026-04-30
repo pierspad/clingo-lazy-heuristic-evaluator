@@ -102,12 +102,12 @@ fi
 generate_lazy_encodings() {
     echo ""
     echo "Genero encoding derivati con ${CONVERTER}..."
-    python3 "${CONVERTER}" "${FILE_PUP_DOUBLE_SRC}" --mode lazy -o "${FILE_PUP_DOUBLE}"
-    python3 "${CONVERTER}" "${FILE_PUP_DOUBLEV_SRC}" --mode lazy -o "${FILE_PUP_DOUBLEV}"
+    python3 "${CONVERTER}" "${FILE_PUP_DOUBLE_SRC}" --mode la -o "${FILE_PUP_DOUBLE}"
+    python3 "${CONVERTER}" "${FILE_PUP_DOUBLEV_SRC}" --mode la -o "${FILE_PUP_DOUBLEV}"
     python3 "${CONVERTER}" "${FILE_PUP_DOUBLE_SRC}" --mode aux -o "${FILE_PUP_DOUBLE_AUX}"
     python3 "${CONVERTER}" "${FILE_PUP_DOUBLEV_SRC}" --mode aux -o "${FILE_PUP_DOUBLEV_AUX}"
-    python3 "${CONVERTER}" "${FILE_PUP_DOUBLE_SRC}" --mode lazy-aux -o "${FILE_PUP_DOUBLE_AUX_L}"
-    python3 "${CONVERTER}" "${FILE_PUP_DOUBLEV_SRC}" --mode lazy-aux -o "${FILE_PUP_DOUBLEV_AUX_L}"
+    python3 "${CONVERTER}" "${FILE_PUP_DOUBLE_SRC}" --mode la-aux -o "${FILE_PUP_DOUBLE_AUX_L}"
+    python3 "${CONVERTER}" "${FILE_PUP_DOUBLEV_SRC}" --mode la-aux -o "${FILE_PUP_DOUBLEV_AUX_L}"
 }
 
 # ============================================================================

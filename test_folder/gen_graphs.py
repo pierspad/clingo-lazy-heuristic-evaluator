@@ -1,23 +1,5 @@
-"""
-Generates benchmark charts for both BSP and PUP problems.
 
-Reads CSV result files from ./test-results/ and generates charts
-with mean ± standard deviation for each CDNL metric.
 
-BSP results:  ./test-results/bsp_results.csv    → ./graphs/bsp/standard/
-                                                  ./graphs/bsp/no_<excluded>/
-PUP results:  ./test-results/pup_double_results.csv   → ./graphs/pup/
-              ./test-results/pup_doublev_results.csv  → ./graphs/pup/
-
-If a CSV file is missing, it is silently skipped.
-
-Generated charts per problem:
-    1. Main panel with all collected metrics (4x2)
-    2. Single chart per metric
-    3. Relative chart vs baseline variant
-
-Each point is averaged across N seeds; the shaded band shows ±1σ.
-"""
 
 import argparse
 import csv
@@ -27,9 +9,6 @@ import sys
 import textwrap
 from collections import defaultdict
 
-# ============================================================================
-# Configuration
-# ============================================================================
 
 DEFAULT_RESULTS_DIR = "test-results"
 DEFAULT_GRAPHS_DIR = "graphs"
@@ -148,9 +127,6 @@ PLOT_CONFIGS = [
     },
 ]
 
-# ============================================================================
-# Visual themes per problem type
-# ============================================================================
 
 BSP_THEME = {
     "variant_labels": {
@@ -181,13 +157,13 @@ BSP_THEME = {
         "la_co": ["bsp_la_co", "bsp_no_la_co"],
     },
     "variant_colors": {
-        "gc":  "#E74C3C",   # red
-        "gc_aux": "#C0392B", # dark red
-        "ga": "#F39C12",   # orange
-        "la":   "#2ECC71",   # green
-        "lc": "#9B59B6",   # purple
-        "la_aux": "#16A085",  # teal
-        "la_co": "#3498DB",   # blue
+        "gc":  "#E74C3C",
+        "gc_aux": "#C0392B",
+        "ga": "#F39C12",
+        "la":   "#2ECC71",
+        "lc": "#9B59B6",
+        "la_aux": "#16A085",
+        "la_co": "#3498DB",
     },
     "variant_markers": {
         "gc":  "o",
@@ -204,9 +180,7 @@ BSP_THEME = {
     "baseline": "gc",
 }
 
-# PUP: benchmark con binario clingo modificato.
-# Double/  → pup, pup_heur, pup_double
-# DoubleVariant/ → pup, pup_heur, pup_doublev
+
 PUP_THEME = {
     "variant_labels": {
         "pup":        "Dichiarativo (PUP.lp)",
@@ -221,15 +195,15 @@ PUP_THEME = {
         "pup_doublev_aux_l": "Aggregati Dinamici Variante + Aux",
     },
     "variant_colors": {
-        "pup":        "#E74C3C",   # red
-        "pup_heur":   "#F39C12",   # orange
-        "pup_double_std": "#8E44AD", # purple
-        "pup_double_aux": "#6C3483", # dark purple
-        "pup_double": "#2ECC71",   # green
-        "pup_double_aux_l": "#16A085", # teal
+        "pup":        "#E74C3C",
+        "pup_heur":   "#F39C12",
+        "pup_double_std": "#8E44AD",
+        "pup_double_aux": "#6C3483",
+        "pup_double": "#2ECC71",
+        "pup_double_aux_l": "#16A085",
         "pup_doublev_std": "#8E44AD",
         "pup_doublev_aux": "#6C3483",
-        "pup_doublev":"#9B59B6",   # purple
+        "pup_doublev":"#9B59B6",
         "pup_doublev_aux_l": "#16A085",
     },
     "variant_markers": {
@@ -261,16 +235,9 @@ PUP_THEME = {
 }
 
 
-# ============================================================================
-# CSV loading with multi-seed support
-# ============================================================================
-
 def load_csv(csv_path: str):
-    """
-    Load CSV data and group values by (variant, n).
-    Returns:
-        {variant: {n: {metric: [values_per_seed]}}}
-    """
+
+
     raw = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
 
     with open(csv_path, newline="", encoding="utf-8") as f:
@@ -325,11 +292,8 @@ def load_csv(csv_path: str):
 
 
 def _looks_like_legacy_failed_lazy_run(row_values: dict) -> bool:
-    """
-    Older benchmark scripts ignored clingo's non-zero exit status.
-    Lazy runs that failed in propagator initialization were consequently stored
-    as zero-rule/zero-choice data points; treat that signature as missing data.
-    """
+
+
     return (
         row_values.get("ground_lazy_heuristic_facts", 0.0) > 0.0 and
         row_values.get("rules") == 0.0 and
@@ -341,11 +305,8 @@ def _looks_like_legacy_failed_lazy_run(row_values: dict) -> bool:
 
 
 def compute_stats(raw):
-    """
-    Compute mean and standard deviation for each (variant, n, metric).
-    Returns:
-        {variant: {metric: {"n": [...], "mean": [...], "gc": [...], "count": [...]}}}
-    """
+
+
     import statistics
 
     result = {}
@@ -364,10 +325,6 @@ def compute_stats(raw):
     return result
 
 
-# ============================================================================
-# Chart generation (parameterized by theme)
-# ============================================================================
-
 VARIANT_FILL_ALPHA = 0.15
 CAPTION_COLOR = "#5F6368"
 SEPARATOR_COLOR = "#D6D6D6"
@@ -382,7 +339,7 @@ MILLION_FORMAT_METRICS = {
 
 
 def _add_axis_caption(ax, description: str, *, y: float, width: int, fontsize: int):
-    """Place the metric description below the plot area as a caption."""
+
     lines = []
     for line in description.splitlines():
         line = " ".join(line.split())
@@ -402,7 +359,7 @@ def _add_axis_caption(ax, description: str, *, y: float, width: int, fontsize: i
 
 
 def _format_compact_number(value, _pos=None):
-    """Format large axis ticks without scientific-offset notation."""
+
     abs_value = abs(value)
     for suffix, scale in (("B", 1_000_000_000), ("M", 1_000_000), ("K", 1_000)):
         if abs_value >= scale:
@@ -420,7 +377,7 @@ def _format_compact_number(value, _pos=None):
 
 
 def _format_millions(value, _pos=None):
-    """Format grounding-size ticks in millions, keeping sub-million values as decimals."""
+
     abs_value = abs(value)
     if abs_value >= 100_000:
         scaled = value / 1_000_000
@@ -433,7 +390,7 @@ def _format_millions(value, _pos=None):
 
 
 def _format_thousands(value, _pos=None):
-    """Format selected grounding/search-space ticks in thousands."""
+
     abs_value = abs(value)
     if abs_value >= 1_000:
         scaled = value / 1_000
@@ -450,7 +407,7 @@ def _format_thousands(value, _pos=None):
 
 
 def _format_memory_mb(value, _pos=None):
-    """Format MB ticks compactly while keeping the axis unit in the label."""
+
     abs_value = abs(value)
     if abs_value >= 1_000:
         scaled = value / 1_000
@@ -463,7 +420,7 @@ def _format_memory_mb(value, _pos=None):
 
 
 def _apply_y_axis_format(ax, metric: str):
-    """Keep count-like axes readable and consistent across charts."""
+
     from matplotlib.ticker import FuncFormatter, MaxNLocator
 
     if metric == "memory_mb":
@@ -485,7 +442,7 @@ def _apply_y_axis_format(ax, metric: str):
 
 
 def _add_subplot_separators(fig, axes, n_plots: int):
-    """Draw thin separators between subplot cells in the combined chart."""
+
     from matplotlib.lines import Line2D
 
     active_axes = axes.flatten()[:n_plots]
@@ -544,14 +501,14 @@ def _add_subplot_separators(fig, axes, n_plots: int):
 
 
 def _format_title(metric: str, title: str) -> str:
-    """Append an interpretation hint only to metrics where lower values are better."""
+
     if metric in LOWER_IS_BETTER_METRICS:
         return f"{title}\n(Lower is better)"
     return title
 
 
 def _ordered_variants(stats: dict, theme: dict):
-    """Sort variants stably, keeping extra variants at the end."""
+
     order = theme["variant_order"]
     present = set(stats.keys())
     ordered = [v for v in order if v in present]
@@ -560,7 +517,7 @@ def _ordered_variants(stats: dict, theme: dict):
 
 
 def _filename_suffix(title_suffix: str) -> str:
-    """Convert a chart title suffix into a stable filename suffix."""
+
     import re
 
     if not title_suffix:
@@ -571,7 +528,7 @@ def _filename_suffix(title_suffix: str) -> str:
 
 
 def _split_exclude_selectors(values) -> list:
-    """Expand repeated/comma-separated exclude selectors from the CLI."""
+
     selectors = []
     for value in values or []:
         if isinstance(value, (list, tuple)):
@@ -585,7 +542,7 @@ def _split_exclude_selectors(values) -> list:
 
 
 def _selector_aliases_for_variant(theme: dict, variant: str) -> set:
-    """Return names users can pass to --exclude/--bsp-exclude for a variant."""
+
     aliases = {variant.lower()}
 
     label = theme.get("variant_labels", {}).get(variant)
@@ -608,12 +565,8 @@ def _selector_aliases_for_variant(theme: dict, variant: str) -> set:
 
 
 def resolve_excluded_variant_list(theme: dict, selectors: list, *, context: str) -> list:
-    """
-    Resolve user-facing exclude selectors to variant ids, preserving CLI order.
 
-    Supported selectors include the variant id (e.g. ga), file basename
-    (BSP_ga.lp), file stem (BSP_ga), or the full relative path.
-    """
+
     excluded = []
     seen = set()
     unknown = []
@@ -648,12 +601,12 @@ def resolve_excluded_variant_list(theme: dict, selectors: list, *, context: str)
 
 
 def resolve_excluded_variants(theme: dict, selectors: list, *, context: str) -> set:
-    """Resolve user-facing exclude selectors to a set of variant ids."""
+
     return set(resolve_excluded_variant_list(theme, selectors, context=context))
 
 
 def _variant_dir_identifier(theme: dict, variant: str) -> str:
-    """Return a short stable identifier for exclusion-set directory names."""
+
     filename = theme.get("variant_files", {}).get(variant)
     if filename:
         basename = os.path.basename(filename.replace("\\", "/"))
@@ -665,7 +618,7 @@ def _variant_dir_identifier(theme: dict, variant: str) -> str:
 
 
 def exclusion_dir_name(theme: dict, excluded_variants: set, ordered_variants=None) -> str:
-    """Name BSP output dirs as standard or no_<file-id>-no_<file-id>."""
+
     if not excluded_variants:
         return "standard"
 
@@ -692,7 +645,7 @@ def exclusion_dir_name(theme: dict, excluded_variants: set, ordered_variants=Non
 
 
 def exclusion_display_names(theme: dict, excluded_variants: list) -> list:
-    """Return de-duplicated display names for an ordered exclusion list."""
+
     names = []
     seen_names = set()
     for variant in excluded_variants:
@@ -704,7 +657,7 @@ def exclusion_display_names(theme: dict, excluded_variants: list) -> list:
 
 
 def _filtered_theme(theme: dict, excluded_variants: set):
-    """Return a shallow theme copy with selected variants removed from ordering."""
+
     filtered = theme.copy()
     filtered["variant_order"] = [
         variant for variant in theme["variant_order"]
@@ -716,7 +669,7 @@ def _filtered_theme(theme: dict, excluded_variants: set):
 
 
 def _filtered_stats(stats: dict, excluded_variants: set):
-    """Return stats without selected variants."""
+
     return {
         variant: data
         for variant, data in stats.items()
@@ -732,7 +685,7 @@ def generate_graphs(
     *,
     include_focused: bool = True,
 ):
-    """Generate all charts for a given problem/theme."""
+
     try:
         import matplotlib
         matplotlib.use("Agg")
@@ -750,7 +703,7 @@ def generate_graphs(
     xlabel = theme["xlabel"]
     baseline = theme["baseline"]
 
-    # Professional typography
+
     plt.rcParams.update({
         "font.family": "sans-serif",
         "font.size": 10,
@@ -833,7 +786,7 @@ def generate_graphs(
     plt.close()
     print(f"  Main chart saved to '{out_path}'.")
 
-    # Export individual charts
+
     for cfg in PLOT_CONFIGS:
         name, ext = os.path.splitext(cfg["filename"])
         fname = f"{name}{suffix}{ext}" if title_suffix else cfg["filename"]
@@ -849,7 +802,7 @@ def generate_graphs(
             xlabel=xlabel,
         )
 
-    # Relative comparison chart
+
     rel_fname = f"comparison_vs_{baseline}{suffix}.png" if title_suffix else f"comparison_vs_{baseline}.png"
     _generate_relative_vs_baseline_chart(stats, graphs_dir, baseline, theme, rel_fname, xlabel)
 
@@ -886,7 +839,7 @@ def generate_graphs(
 
 
 def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, description, filename, theme, xlabel):
-    """Generate a single chart for one metric."""
+
     try:
         import matplotlib.pyplot as plt
         import numpy as np
@@ -943,7 +896,7 @@ def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, description
 
 
 def _generate_relative_vs_baseline_chart(stats, graphs_dir, baseline_variant, theme, filename, xlabel):
-    """Generate a compact comparison chart relative to the baseline variant."""
+
     try:
         import matplotlib.pyplot as plt
     except ImportError:
@@ -966,7 +919,7 @@ def _generate_relative_vs_baseline_chart(stats, graphs_dir, baseline_variant, th
     ax_speedup, ax_reduction = axes
     has_positive_speedup = False
 
-    # 1) Speedup in total time
+
     for variant in variants:
         n_vals, base_total, var_total = _aligned_metric_pair(stats, baseline_variant, variant, "total_s")
         if not n_vals:
@@ -998,7 +951,7 @@ def _generate_relative_vs_baseline_chart(stats, graphs_dir, baseline_variant, th
     ax_speedup.grid(True, alpha=0.3, linestyle="--")
     ax_speedup.legend(fontsize=9)
 
-    # 2) Grounding reduction
+
     for variant in variants:
         color = colors.get(variant)
         marker = markers_map.get(variant, "o")
@@ -1035,7 +988,7 @@ def _generate_relative_vs_baseline_chart(stats, graphs_dir, baseline_variant, th
 
 
 def _metric_mean_map(stats, variant, metric):
-    """Return {N: mean} for a metric, or an empty map."""
+
     if metric not in stats.get(variant, {}):
         return {}
     data = stats[variant][metric]
@@ -1043,11 +996,8 @@ def _metric_mean_map(stats, variant, metric):
 
 
 def _effective_heuristic_map(stats, variant):
-    """
-    Return the heuristic grounding size for each N.
-    Native encodings use ground_heuristics; lazy encodings use
-    ground_lazy_heuristic_facts. If both exist, use their sum.
-    """
+
+
     native = _metric_mean_map(stats, variant, "ground_heuristics")
     lazy = _metric_mean_map(stats, variant, "ground_lazy_heuristic_facts")
     ns = sorted(set(native.keys()) | set(lazy.keys()))
@@ -1055,7 +1005,7 @@ def _effective_heuristic_map(stats, variant):
 
 
 def _generate_heuristics_vs_facts_chart(stats, graphs_dir, theme, filename, xlabel):
-    """Plot native #heuristic and lazy __heuristic facts against all other facts."""
+
     try:
         import matplotlib.pyplot as plt
     except ImportError:
@@ -1117,7 +1067,7 @@ def _generate_heuristics_vs_facts_chart(stats, graphs_dir, theme, filename, xlab
 
 
 def _generate_heuristic_reduction_chart(stats, graphs_dir, baseline_variant, theme, filename, xlabel):
-    """Plot the reduction in heuristic grounding against the baseline variant."""
+
     try:
         import matplotlib.pyplot as plt
     except ImportError:
@@ -1176,7 +1126,7 @@ def _generate_heuristic_reduction_chart(stats, graphs_dir, baseline_variant, the
 
 
 def _aligned_metric_pair(stats, baseline_variant, variant, metric):
-    """Return aligned (N, baseline_mean, variant_mean) lists for one metric."""
+
     if metric not in stats.get(baseline_variant, {}) or metric not in stats.get(variant, {}):
         return [], [], []
 
@@ -1191,7 +1141,7 @@ def _aligned_metric_pair(stats, baseline_variant, variant, metric):
 
 
 def _preferred_ground_size_metric(stats, baseline_variant, variant):
-    """Use textual ground-program lines when available; otherwise fall back to clingo's Rules statistic."""
+
     if (
         "ground_lines" in stats.get(baseline_variant, {}) and
         "ground_lines" in stats.get(variant, {})
@@ -1201,7 +1151,7 @@ def _preferred_ground_size_metric(stats, baseline_variant, variant):
 
 
 def _detect_seeds(stats):
-    """Detect seed count from aggregated metric counts."""
+
     counts = set()
     for variant in stats.values():
         for metric in variant.values():
@@ -1215,7 +1165,7 @@ def _detect_seeds(stats):
 
 
 def _detect_seeds_per_variant(raw):
-    """Return estimated number of seeds per variant."""
+
     result = {}
     for variant, n_data in raw.items():
         counts = []
@@ -1239,12 +1189,8 @@ def _detect_seeds_per_variant(raw):
     return result
 
 
-# ============================================================================
-# Summary table
-# ============================================================================
-
 def print_summary_table(stats, theme):
-    """Print a summary table with means for key metrics."""
+
     variants = _ordered_variants(stats, theme)
     labels = theme["variant_labels"]
     table_width = 8 + len(variants) * 78
@@ -1302,7 +1248,7 @@ def print_summary_table(stats, theme):
 
 
 def _get_mean_at_n(variant_stats, metric, n):
-    """Return mean for a given N, or None if unavailable."""
+
     if metric not in variant_stats:
         return None
     data = variant_stats[metric]
@@ -1312,12 +1258,8 @@ def _get_mean_at_n(variant_stats, metric, n):
     return None
 
 
-# ============================================================================
-# Processing pipeline
-# ============================================================================
-
 def reset_graphs_dir(graphs_dir):
-    """Remove previous generated charts before rebuilding them from CSV data."""
+
     graphs_dir = os.path.abspath(graphs_dir)
     cwd = os.path.abspath(os.getcwd())
     unsafe_paths = {os.path.abspath(os.sep), cwd, os.path.expanduser("~")}
@@ -1340,10 +1282,10 @@ def reset_graphs_dir(graphs_dir):
 
 
 def ensure_plot_dependencies():
-    """Fail before touching graph outputs if plotting dependencies are missing."""
+
     try:
-        import matplotlib  # noqa: F401
-        import numpy  # noqa: F401
+        import matplotlib
+        import numpy
     except ImportError:
         print("Matplotlib/Numpy non sono installati.")
         print("Crea un virtualenv e installa le dipendenze, ad esempio:")
@@ -1354,7 +1296,7 @@ def ensure_plot_dependencies():
 
 
 def process_csv(csv_path, graphs_dir, theme, problem_name, title_suffix="", excluded_variants=None):
-    """Process a single CSV file: load, compute stats, print table, generate graphs."""
+
     if not os.path.isfile(csv_path):
         print(f"\n[SKIP] {problem_name}: CSV non trovato: '{csv_path}'")
         return False
@@ -1394,12 +1336,8 @@ def process_csv(csv_path, graphs_dir, theme, problem_name, title_suffix="", excl
     return True
 
 
-# ============================================================================
-# Main
-# ============================================================================
-
 def _color(text: str, code: str) -> str:
-    """Color help text when stdout is an interactive terminal."""
+
     if not sys.stdout.isatty() or os.environ.get("NO_COLOR") or os.environ.get("TERM") == "dumb":
         return text
     return f"\033[{code}m{text}\033[0m"
@@ -1544,7 +1482,7 @@ def main():
         else:
             reset_graphs_dir(base_out)
 
-    # ---- BSP ----
+
     bsp_csv = os.path.join(results_dir, "bsp_results.csv")
     bsp_theme = BSP_THEME.copy()
     bsp_theme["suptitle"] = "BSP Benchmark: Standard vs Lazy Heuristic Grounding"
@@ -1582,7 +1520,7 @@ def main():
             processed_any = True
 
     if not bsp_only_filtered_run:
-        # ---- PUP Double ----
+
         pup_double_csv = os.path.join(results_dir, "pup_double_results.csv")
         pup_double_out = os.path.join(base_out, "pup")
         pup_double_theme = PUP_THEME.copy()
@@ -1598,7 +1536,7 @@ def main():
                        excluded_variants=pup_double_excluded):
             processed_any = True
 
-        # ---- PUP DoubleV ----
+
         pup_doublev_csv = os.path.join(results_dir, "pup_doublev_results.csv")
         pup_doublev_out = os.path.join(base_out, "pup")
         pup_doublev_theme = PUP_THEME.copy()
@@ -1614,7 +1552,7 @@ def main():
                        excluded_variants=pup_doublev_excluded):
             processed_any = True
 
-    # ---- Legacy BSP CSV (backward compat) ----
+
     legacy_csv = os.path.join(results_dir, "results.csv")
     if not processed_any and os.path.isfile(legacy_csv):
         print(f"\n[FALLBACK] Trovato file legacy '{legacy_csv}', lo processo come BSP...")

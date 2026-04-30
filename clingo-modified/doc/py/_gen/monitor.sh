@@ -2,7 +2,7 @@
 
 cd "$(dirname "$0")/.."
 
-export cpucount=$[ $(cat /proc/cpuinfo | grep processor | wc -l) - 1 ]
+export cpucount=$(( $(grep -c processor /proc/cpuinfo) - 1 ))
 
 (
     cd _gen

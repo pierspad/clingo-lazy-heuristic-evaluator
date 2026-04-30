@@ -56,8 +56,6 @@ FILE_LA_AUX="BSP/BSP_la_aux.lp"
 FILE_LA_CO="BSP/BSP_la_co.lp"
 
 # Varianti da eseguire.
-# Per riattivare la_co, aggiungi "la_co" alla lista sotto.
-# Puoi anche sovrascrivere da shell, ad esempio:
 #   BSP_VARIANTS="gc gc_aux ga la lc la_aux la_co" ./benchmark_bsp.sh
 DEFAULT_VARIANTS=(gc gc_aux ga la lc la_aux)
 read -r -a ACTIVE_VARIANTS <<< "${BSP_VARIANTS:-${DEFAULT_VARIANTS[*]}}"
