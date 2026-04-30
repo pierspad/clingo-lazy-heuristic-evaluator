@@ -5,7 +5,7 @@ Reads CSV result files from ./test-results/ and generates charts
 with mean ± standard deviation for each CDNL metric.
 
 BSP results:  ./test-results/bsp_results.csv    → ./graphs/bsp/standard/
-                                                  ./graphs/bsp/no_asgs/
+                                                  ./graphs/bsp/no_<excluded>/
 PUP results:  ./test-results/pup_double_results.csv   → ./graphs/pup/
               ./test-results/pup_doublev_results.csv  → ./graphs/pup/
 
@@ -154,12 +154,12 @@ PLOT_CONFIGS = [
 
 BSP_THEME = {
     "variant_labels": {
-        "std": "ground & solve + Clingo sem",
-        "std_aux": "ground & solve + Clingo sem + aux",
-        "asgs": "Alpha ground & solve",
+        "std": "G&S + Clingo sem",
+        "std_aux": "G&S + Clingo sem + Aux",
+        "asgs": "G&S + Alpha sem",
         "lg": "Lazy + Alpha sem",
-        "cslg": "Lazy + Clingo semantics",
-        "auxlg": "Lazy ground + Alpha sem + aux",
+        "cslg": "Lazy + Clingo sem",
+        "auxlg": "Lazy + Alpha sem + Aux",
         "colg": "Lazy + Optimized Constraint (BSP_colg.lp)",
     },
     "variant_files": {
@@ -565,6 +565,9 @@ def _split_exclude_selectors(values) -> list:
     """Expand repeated/comma-separated exclude selectors from the CLI."""
     selectors = []
     for value in values or []:
+        if isinstance(value, (list, tuple)):
+            selectors.extend(_split_exclude_selectors(value))
+            continue
         for item in value.split(","):
             item = item.strip()
             if item:
@@ -1366,15 +1369,17 @@ def parse_args():
     parser.add_argument(
         "--exclude",
         action="append",
+        nargs="+",
         default=[],
         help=(
             "Exclude variants/files from generated charts. Repeat the option or "
-            "use commas. Examples: --exclude BSP_asgs.lp --exclude lg,cslg"
+            "use commas/spaces. Examples: --exclude BSP_asgs.lp --exclude lg cslg"
         ),
     )
     parser.add_argument(
         "--bsp-exclude",
         action="append",
+        nargs="+",
         default=[],
         help=(
             "Like --exclude, but only for BSP charts. Accepts variant ids "
@@ -1412,25 +1417,27 @@ def main():
         bsp_exclude_selectors,
         context="BSP",
     )
-    bsp_user_excluded = set(bsp_user_excluded_order)
-    focused_order = bsp_user_excluded_order or ["asgs"]
-    focused_excluded = set(focused_order)
-    focused_names = ", ".join(
-        _variant_dir_identifier(bsp_theme, variant) for variant in focused_order
-    )
     bsp_graph_sets = [
         (set(), "BSP (Balanced Sum Partition)", ""),
-        (
-            focused_excluded,
-            f"BSP (Balanced Sum Partition, without {focused_names})",
-            f" (without {focused_names})",
-        ),
     ]
+    if bsp_user_excluded_order:
+        focused_excluded = set(bsp_user_excluded_order)
+        focused_names = ", ".join(
+            _variant_dir_identifier(bsp_theme, variant)
+            for variant in bsp_user_excluded_order
+        )
+        bsp_graph_sets.append(
+            (
+                focused_excluded,
+                f"BSP (Balanced Sum Partition, without {focused_names})",
+                f" (without {focused_names})",
+            )
+        )
 
     seen_bsp_dirs = set()
     for graph_excluded, label, title_suffix_text in bsp_graph_sets:
         excluded = graph_excluded if graph_excluded else set()
-        ordered_excluded = focused_order if excluded else []
+        ordered_excluded = bsp_user_excluded_order if excluded else []
         dirname = exclusion_dir_name(bsp_theme, excluded, ordered_excluded)
         if dirname in seen_bsp_dirs:
             continue
@@ -1480,7 +1487,7 @@ def main():
         legacy_out = os.path.join(base_out, "bsp", "standard")
         process_csv(legacy_csv, legacy_out, BSP_THEME,
                     "BSP (Legacy)", title_suffix="legacy",
-                    excluded_variants=bsp_user_excluded)
+                    excluded_variants=set(bsp_user_excluded_order))
         processed_any = True
 
     if not processed_any:
