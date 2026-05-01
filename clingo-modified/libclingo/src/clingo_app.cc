@@ -213,9 +213,9 @@ void ClingoApp::run(Clasp::ClaspFacade &clasp) {
                 app_->message_limit());
 
             Clingo::Control ctl(reinterpret_cast<clingo_control_t*>(grd.get()), false);
-            static HeuristicPropagator my_propagator;
+            HeuristicPropagator my_propagator;
             ctl.register_propagator(my_propagator, true);
-            
+
             grd->main(*app_, claspAppOpts_.input, grOpts_, lp);
         } else {
             ClaspAppBase::run(clasp);

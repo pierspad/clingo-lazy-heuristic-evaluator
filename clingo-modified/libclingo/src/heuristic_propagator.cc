@@ -1,6 +1,5 @@
 #include "clingo/heuristic_propagator.hh"
 #include <algorithm>
-#include <iostream>
 #include <stdexcept>
 #include <unordered_set>
 
@@ -207,6 +206,9 @@ static AggregateFilter parse_aggregate_filter(Clingo::Symbol const &filter_symbo
     filter.source_arg_index = args[0].number();
     filter.target_arg_index = args[1].number();
     filter.target_offset = args.size() == 3 ? args[2].number() : 0;
+    if (filter.source_arg_index < 0 || filter.target_arg_index < 0) {
+        throw std::runtime_error("Sintassi euristica malformata: gli indici di __filter devono essere non negativi.");
+    }
     return filter;
 }
 
@@ -225,6 +227,9 @@ static BodyMatch parse_body_match(Clingo::Symbol const &match_symbol) {
     BodyMatch match;
     match.source_arg_index = args[0].number();
     match.target_arg_index = args[1].number();
+    if (match.source_arg_index < 0 || match.target_arg_index < 0) {
+        throw std::runtime_error("Sintassi euristica malformata: gli indici di __match devono essere non negativi.");
+    }
     return match;
 }
 
@@ -243,6 +248,9 @@ static BodyArgBinding parse_body_arg_binding(Clingo::Symbol const &binding_symbo
     BodyArgBinding binding;
     binding.variable_name = args[0].name();
     binding.source_arg_index = args[1].number();
+    if (binding.source_arg_index < 0) {
+        throw std::runtime_error("Sintassi euristica malformata: l'indice di __bind_arg deve essere non negativo.");
+    }
     return binding;
 }
 
@@ -310,7 +318,59 @@ static bool collect_body_arg_values(BodyPredicateSpec const &spec,
             static_cast<size_t>(binding.source_arg_index) >= body_key.values.size()) {
             return false;
         }
-        values[binding.variable_name] = body_key.values[binding.source_arg_index];
+        int const value = body_key.values[binding.source_arg_index];
+        auto inserted = values.emplace(binding.variable_name, value);
+        if (!inserted.second && inserted.first->second != value) {
+            return false;
+        }
+    }
+    return true;
+}
+
+struct BodyLiteralMatch {
+    Clingo::literal_t lit = 0;
+    std::unordered_map<std::string, int> variable_values;
+};
+
+static std::vector<BodyLiteralMatch> collect_matching_body_literals(
+    BodyPredicateSpec const &spec,
+    std::unordered_map<AtomKey, Clingo::literal_t, AtomKeyHash> const &body_map,
+    AtomKey const &target_key
+) {
+    std::vector<BodyLiteralMatch> matches;
+
+    if (!spec.explicit_mapping) {
+        auto it = body_map.find(target_key);
+        if (it == body_map.end()) return matches;
+
+        BodyLiteralMatch match;
+        match.lit = it->second;
+        if (collect_body_arg_values(spec, target_key, match.variable_values)) {
+            matches.push_back(std::move(match));
+        }
+        return matches;
+    }
+
+    for (auto const &entry : body_map) {
+        if (!body_matches_target(spec, entry.first, target_key)) continue;
+
+        BodyLiteralMatch match;
+        match.lit = entry.second;
+        if (collect_body_arg_values(spec, entry.first, match.variable_values)) {
+            matches.push_back(std::move(match));
+        }
+    }
+
+    return matches;
+}
+
+static bool merge_variable_values(std::unordered_map<std::string, int> &dst,
+                                  std::unordered_map<std::string, int> const &src) {
+    for (auto const &value : src) {
+        auto inserted = dst.emplace(value.first, value.second);
+        if (!inserted.second && inserted.first->second != value.second) {
+            return false;
+        }
     }
     return true;
 }
@@ -359,7 +419,6 @@ void HeuristicPropagator::init(Clingo::PropagateInit &init) {
     aggregate_states_.clear();
     watched_atoms_.clear();
     rule_templates_.clear();
-    body_triggers_.clear();
     candidates_.clear();
     candidate_queue_.clear();
     candidate_refresh_lits_.clear();
@@ -405,7 +464,7 @@ void HeuristicPropagator::parse_lazy_heuristic_templates(Clingo::SymbolicAtoms c
         // __target(pred), corpo, aggregati, peso, priorita' e segno.
         auto const args = symbol.arguments();
         if (args.empty()) {
-            continue;
+            throw std::runtime_error("Sintassi euristica malformata: __heuristic richiede argomenti.");
         }
 
         // Il template conserva la forma generale della direttiva euristica;
@@ -414,6 +473,10 @@ void HeuristicPropagator::parse_lazy_heuristic_templates(Clingo::SymbolicAtoms c
         HeuristicRuleTemplate tmpl;
         tmpl.sign = HeuristicSign::True;
         bool has_target = false;
+        bool has_weight = false;
+        bool has_priority = false;
+        bool has_sign = false;
+        bool has_semantics = false;
         Clingo::Symbol weight_symbol = Clingo::Number(0);
         Clingo::Symbol priority_symbol = Clingo::Number(0);
 
@@ -456,6 +519,12 @@ void HeuristicPropagator::parse_lazy_heuristic_templates(Clingo::SymbolicAtoms c
                 }
 
                 std::string const var_name = arg_args[0].name();
+                if (tmpl.var_bindings.find(var_name) != tmpl.var_bindings.end() ||
+                    tmpl.body_var_names.find(var_name) != tmpl.body_var_names.end()) {
+                    throw std::runtime_error("Sintassi euristica malformata: variabile '" + var_name +
+                                             "' definita piu' volte in __heuristic.");
+                }
+
                 std::string const agg_op_str = arg_args[1].name();
                 auto const agg_inner = arg_args[1].arguments();
 
@@ -474,8 +543,12 @@ void HeuristicPropagator::parse_lazy_heuristic_templates(Clingo::SymbolicAtoms c
 
                 // Indice dell'argomento da aggregare, es. __sum(cost, 1).
                 // Se manca resta -1 per compatibilita' con la vecchia forma.
-                if (agg_inner.size() >= 2 && is_clingo_symbol_number(agg_inner[1]))
+                if (agg_inner.size() >= 2 && is_clingo_symbol_number(agg_inner[1])) {
                     arg_idx = agg_inner[1].number();
+                    if (arg_idx < 0) {
+                        throw std::runtime_error("Sintassi euristica malformata: indice aggregato negativo in __bind.");
+                    }
+                }
                 else if (agg_inner.size() >= 2) {
                     throw std::runtime_error("Sintassi euristica malformata: indice aggregato non numerico in __bind.");
                 }
@@ -497,6 +570,10 @@ void HeuristicPropagator::parse_lazy_heuristic_templates(Clingo::SymbolicAtoms c
                 if (arg_args.size() != 1) {
                     throw std::runtime_error("Sintassi euristica malformata: __weight richiede esattamente un argomento.");
                 }
+                if (has_weight) {
+                    throw std::runtime_error("Sintassi euristica malformata: __weight duplicato in __heuristic.");
+                }
+                has_weight = true;
                 weight_symbol = arg_args[0];
                 continue;
             }
@@ -506,6 +583,10 @@ void HeuristicPropagator::parse_lazy_heuristic_templates(Clingo::SymbolicAtoms c
                 if (arg_args.size() != 1) {
                     throw std::runtime_error("Sintassi euristica malformata: __priority richiede esattamente un argomento.");
                 }
+                if (has_priority) {
+                    throw std::runtime_error("Sintassi euristica malformata: __priority duplicato in __heuristic.");
+                }
+                has_priority = true;
                 priority_symbol = arg_args[0];
                 continue;
             }
@@ -517,11 +598,15 @@ void HeuristicPropagator::parse_lazy_heuristic_templates(Clingo::SymbolicAtoms c
                 if (arg_args.size() != 1 || !is_nullary_function(arg_args[0])) {
                     throw std::runtime_error("Sintassi euristica malformata: __semantics richiede __semantics(alpha|clingo).");
                 }
+                if (has_semantics) {
+                    throw std::runtime_error("Sintassi euristica malformata: __semantics duplicato in __heuristic.");
+                }
                 HeuristicSemantics parsed_semantics;
                 if (!try_parse_semantics(arg_args[0].name(), parsed_semantics)) {
                     throw std::runtime_error("Sintassi euristica malformata: semantica euristica sconosciuta.");
                 }
                 tmpl.semantics = parsed_semantics;
+                has_semantics = true;
                 continue;
             }
 
@@ -531,6 +616,11 @@ void HeuristicPropagator::parse_lazy_heuristic_templates(Clingo::SymbolicAtoms c
             if (arg_name == "__body") {
                 BodyPredicateSpec spec = parse_body_predicate_spec(arg);
                 for (auto const &binding : spec.arg_bindings) {
+                    if (tmpl.var_bindings.find(binding.variable_name) != tmpl.var_bindings.end()) {
+                        throw std::runtime_error("Sintassi euristica malformata: variabile '" +
+                                                 binding.variable_name +
+                                                 "' definita sia con __bind sia con __bind_arg.");
+                    }
                     tmpl.body_var_names.insert(binding.variable_name);
                 }
                 tmpl.pos_body_preds.push_back(std::move(spec));
@@ -543,12 +633,20 @@ void HeuristicPropagator::parse_lazy_heuristic_templates(Clingo::SymbolicAtoms c
                 
                 // 1. Determina la direzione dell'assegnamento euristico (es. true, false)
                 if (try_parse_sign(arg_name, parsed_sign)) {
+                    if (has_sign) {
+                        throw std::runtime_error("Sintassi euristica malformata: modificatore di segno duplicato in __heuristic.");
+                    }
                     tmpl.sign = parsed_sign;
+                    has_sign = true;
                     continue;
                 }
                 
                 // 2. Shorthand: imposta direttamente il valore di dominio come peso
                 if (arg_name == "self") {
+                    if (has_weight) {
+                        throw std::runtime_error("Sintassi euristica malformata: peso duplicato in __heuristic.");
+                    }
+                    has_weight = true;
                     weight_symbol = arg;
                     continue;
                 }
@@ -601,9 +699,6 @@ HeuristicPropagator::RulePredicateSets HeuristicPropagator::extract_lazy_predica
             predicates.neg_preds.insert(neg_pred);
         }
 
-        for (auto const &binding : tmpl.var_bindings) {
-            predicates.agg_preds.insert(binding.second.pred_name);
-        }
     }
 
     return predicates;
@@ -620,7 +715,6 @@ HeuristicPropagator::PredLitMap HeuristicPropagator::build_lazy_predicate_litera
     all_preds.insert(predicates.body_preds.begin(), predicates.body_preds.end());
     all_preds.insert(predicates.target_preds.begin(), predicates.target_preds.end());
     all_preds.insert(predicates.neg_preds.begin(), predicates.neg_preds.end());
-    all_preds.insert(predicates.agg_preds.begin(), predicates.agg_preds.end());
 
     for (auto it = atoms.begin(); it != atoms.end(); ++it) {
         auto const symbol = it->symbol();
@@ -658,6 +752,59 @@ void HeuristicPropagator::register_candidate_refresh_watch(Clingo::PropagateInit
         ids.push_back(candidate_id);
     }
     add_solver_watch(init, lit);
+}
+
+void HeuristicPropagator::add_candidate(Clingo::PropagateInit &init,
+                                        size_t rule_idx,
+                                        Clingo::literal_t target_lit,
+                                        std::vector<int> const &tuple_values,
+                                        std::vector<Clingo::literal_t> pos_body_lits,
+                                        std::vector<Clingo::literal_t> neg_body_lits,
+                                        std::unordered_map<std::string, int> body_var_values) {
+    if (target_lit == 0 || rule_idx >= rule_templates_.size()) return;
+
+    auto const candidate_id = candidates_.size();
+    auto const &tmpl = rule_templates_[rule_idx];
+
+    CandidateState candidate;
+    candidate.rule_idx = rule_idx;
+    candidate.target_lit = target_lit;
+    candidate.self_value = tuple_values.empty() ? 0 : tuple_values[0];
+    candidate.tuple_values = tuple_values;
+    candidate.body_var_values = std::move(body_var_values);
+    candidate.pos_body_lits = std::move(pos_body_lits);
+    candidate.neg_body_lits = std::move(neg_body_lits);
+
+    for (auto const &vb : tmpl.var_bindings) {
+        CandidateAggregateBinding aggregate_binding;
+        aggregate_binding.variable_name = vb.first;
+        aggregate_binding.valid_key = build_runtime_key_from_target_tuple(
+            vb.second,
+            candidate.tuple_values,
+            aggregate_binding.runtime_key
+        );
+        if (aggregate_binding.valid_key) {
+            auto &ids = aggregate_candidates_[aggregate_binding.runtime_key];
+            if (std::find(ids.begin(), ids.end(), candidate_id) == ids.end()) {
+                ids.push_back(candidate_id);
+            }
+        }
+        candidate.aggregate_bindings.push_back(std::move(aggregate_binding));
+    }
+
+    candidates_.push_back(std::move(candidate));
+
+    register_candidate_refresh_watch(init, target_lit, candidate_id);
+    register_candidate_refresh_watch(init, -target_lit, candidate_id);
+
+    for (auto neg_lit : candidates_[candidate_id].neg_body_lits) {
+        register_candidate_refresh_watch(init, neg_lit, candidate_id);
+        register_candidate_refresh_watch(init, -neg_lit, candidate_id);
+    }
+
+    for (auto body_lit : candidates_[candidate_id].pos_body_lits) {
+        register_candidate_refresh_watch(init, body_lit, candidate_id);
+    }
 }
 
 void HeuristicPropagator::erase_candidate_from_queue(size_t candidate_id) noexcept {
@@ -701,7 +848,9 @@ bool HeuristicPropagator::compute_candidate_entry(size_t candidate_id,
         }
     }
 
-    std::unordered_map<std::string, int> var_env = candidate.body_var_values;
+    std::unordered_map<std::string, int> var_env;
+    var_env.reserve(candidate.body_var_values.size() + candidate.aggregate_bindings.size());
+    var_env.insert(candidate.body_var_values.begin(), candidate.body_var_values.end());
     for (auto const &binding : candidate.aggregate_bindings) {
         if (!binding.valid_key) {
             if (tmpl.semantics == HeuristicSemantics::Clingo) return false;
@@ -810,116 +959,67 @@ void HeuristicPropagator::register_lazy_body_triggers(Clingo::PropagateInit &ini
                                                       PredLitMap const &pred_lit_map) {
     for (size_t ri = 0; ri < rule_templates_.size(); ++ri) {
         auto const &tmpl = rule_templates_[ri];
-        if (tmpl.pos_body_preds.empty()) continue;
-
-        auto body_it = pred_lit_map.find(tmpl.pos_body_preds[0].pred_name);
-        if (body_it == pred_lit_map.end()) continue;
 
         auto target_map_it = pred_lit_map.find(tmpl.target_pred);
         if (target_map_it == pred_lit_map.end()) continue;
 
-        for (auto const &entry : body_it->second) {
-            AtomKey const &body_key = entry.first;
-            auto const &first_spec = tmpl.pos_body_preds[0];
+        for (auto const &target_entry : target_map_it->second) {
+            AtomKey const &target_key = target_entry.first;
+            Clingo::literal_t const target_lit = target_entry.second;
+            if (target_lit == 0) continue;
 
-            for (auto const &target_entry : target_map_it->second) {
-                AtomKey const &target_key = target_entry.first;
-                if (!body_matches_target(first_spec, body_key, target_key)) continue;
+            std::vector<Clingo::literal_t> neg_lits;
+            for (auto const &neg_pred : tmpl.neg_body_preds) {
+                auto neg_map_it = pred_lit_map.find(neg_pred);
+                if (neg_map_it != pred_lit_map.end()) {
+                    auto nit = neg_map_it->second.find(target_key);
+                    if (nit != neg_map_it->second.end()) neg_lits.push_back(nit->second);
+                }
+            }
 
-                std::vector<Clingo::literal_t> pos_lits{entry.second};
+            struct PartialMatch {
+                std::vector<Clingo::literal_t> pos_lits;
                 std::unordered_map<std::string, int> body_var_values;
-                if (!collect_body_arg_values(first_spec, body_key, body_var_values)) continue;
+            };
 
-                bool all_pos_available = true;
-                for (size_t pi = 1; pi < tmpl.pos_body_preds.size(); ++pi) {
-                    auto const &spec = tmpl.pos_body_preds[pi];
-                    auto pos_map_it = pred_lit_map.find(spec.pred_name);
-                    if (pos_map_it == pred_lit_map.end()) {
-                        all_pos_available = false;
-                        break;
-                    }
+            std::vector<PartialMatch> partials(1);
 
-                    bool found_matching_body = false;
-                    for (auto const &candidate : pos_map_it->second) {
-                        if (!body_matches_target(spec, candidate.first, target_key)) continue;
-                        std::unordered_map<std::string, int> candidate_values = body_var_values;
-                        if (!collect_body_arg_values(spec, candidate.first, candidate_values)) continue;
-                        body_var_values = std::move(candidate_values);
-                        pos_lits.push_back(candidate.second);
-                        found_matching_body = true;
-                        break;
-                    }
-
-                    if (!found_matching_body) {
-                        all_pos_available = false;
-                        break;
-                    }
+            for (auto const &spec : tmpl.pos_body_preds) {
+                auto pos_map_it = pred_lit_map.find(spec.pred_name);
+                if (pos_map_it == pred_lit_map.end()) {
+                    partials.clear();
+                    break;
                 }
 
-                if (!all_pos_available) continue;
-
-                Clingo::literal_t target_lit = target_entry.second;
-                if (target_lit == 0) continue;
-
-                std::vector<Clingo::literal_t> neg_lits;
-                for (auto const &neg_pred : tmpl.neg_body_preds) {
-                    auto neg_map_it = pred_lit_map.find(neg_pred);
-                    if (neg_map_it != pred_lit_map.end()) {
-                        auto nit = neg_map_it->second.find(target_key);
-                        if (nit != neg_map_it->second.end()) neg_lits.push_back(nit->second);
-                    }
+                auto matches = collect_matching_body_literals(spec, pos_map_it->second, target_key);
+                if (matches.empty()) {
+                    partials.clear();
+                    break;
                 }
 
-                BodyTriggerInfo trigger;
-                trigger.rule_idx = ri;
-                trigger.candidate_id = candidates_.size();
-                trigger.target_lit = target_lit;
-                trigger.self_value = target_key.values.empty() ? 0 : target_key.values[0];
-                trigger.tuple_values = target_key.values;
-                trigger.body_var_values = std::move(body_var_values);
-                trigger.pos_body_lits = pos_lits;
-                trigger.neg_body_lits = std::move(neg_lits);
-
-                CandidateState candidate;
-                candidate.rule_idx = trigger.rule_idx;
-                candidate.target_lit = trigger.target_lit;
-                candidate.self_value = trigger.self_value;
-                candidate.tuple_values = trigger.tuple_values;
-                candidate.body_var_values = trigger.body_var_values;
-                candidate.pos_body_lits = trigger.pos_body_lits;
-                candidate.neg_body_lits = trigger.neg_body_lits;
-
-                for (auto const &vb : tmpl.var_bindings) {
-                    CandidateAggregateBinding aggregate_binding;
-                    aggregate_binding.variable_name = vb.first;
-                    aggregate_binding.valid_key = build_runtime_key_from_target_tuple(
-                        vb.second,
-                        candidate.tuple_values,
-                        aggregate_binding.runtime_key
-                    );
-                    if (aggregate_binding.valid_key) {
-                        auto &ids = aggregate_candidates_[aggregate_binding.runtime_key];
-                        if (std::find(ids.begin(), ids.end(), trigger.candidate_id) == ids.end()) {
-                            ids.push_back(trigger.candidate_id);
+                std::vector<PartialMatch> next_partials;
+                for (auto const &partial : partials) {
+                    for (auto const &match : matches) {
+                        PartialMatch next = partial;
+                        if (!merge_variable_values(next.body_var_values, match.variable_values)) {
+                            continue;
                         }
+                        next.pos_lits.push_back(match.lit);
+                        next_partials.push_back(std::move(next));
                     }
-                    candidate.aggregate_bindings.push_back(std::move(aggregate_binding));
                 }
+                partials = std::move(next_partials);
+                if (partials.empty()) break;
+            }
 
-                candidates_.push_back(std::move(candidate));
-
-                register_candidate_refresh_watch(init, trigger.target_lit, trigger.candidate_id);
-                register_candidate_refresh_watch(init, -trigger.target_lit, trigger.candidate_id);
-
-                for (auto neg_lit : trigger.neg_body_lits) {
-                    register_candidate_refresh_watch(init, neg_lit, trigger.candidate_id);
-                    register_candidate_refresh_watch(init, -neg_lit, trigger.candidate_id);
-                }
-
-                for (auto body_lit : trigger.pos_body_lits) {
-                    body_triggers_[body_lit].push_back(trigger);
-                    register_candidate_refresh_watch(init, body_lit, trigger.candidate_id);
-                }
+            for (auto &partial : partials) {
+                add_candidate(init,
+                              ri,
+                              target_lit,
+                              target_key.values,
+                              std::move(partial.pos_lits),
+                              neg_lits,
+                              std::move(partial.body_var_values));
             }
         }
     }
@@ -929,57 +1029,68 @@ void HeuristicPropagator::register_lazy_aggregate_watches(Clingo::PropagateInit 
                                                           Clingo::SymbolicAtoms const &atoms) {
     auto assignment = init.assignment();
 
+    std::unordered_map<std::string, std::vector<AggregateKey>> aggregate_keys_by_pred;
     for (auto const &tmpl : rule_templates_) {
         for (auto const &vb : tmpl.var_bindings) {
             AggregateKey const &agg_key = vb.second;
+            auto &keys = aggregate_keys_by_pred[agg_key.pred_name];
+            if (std::find(keys.begin(), keys.end(), agg_key) == keys.end()) {
+                keys.push_back(agg_key);
+            }
+        }
+    }
 
-            for (auto it = atoms.begin(); it != atoms.end(); ++it) {
-                auto const sym = it->symbol();
-                if (!is_clingo_symbol_function(sym)) continue;
-                if (sym.name() != agg_key.pred_name) continue;
+    if (aggregate_keys_by_pred.empty()) return;
 
-                int value = 0;
-                if (!extract_numeric_argument(sym, agg_key.arg_index, value)) continue;
+    for (auto it = atoms.begin(); it != atoms.end(); ++it) {
+        auto const sym = it->symbol();
+        if (!is_clingo_symbol_function(sym)) continue;
 
-                RuntimeAggregateKey runtime_key;
-                if (!build_runtime_key_from_source_atom(agg_key, sym, runtime_key)) continue;
+        auto key_it = aggregate_keys_by_pred.find(sym.name());
+        if (key_it == aggregate_keys_by_pred.end()) continue;
 
-                Clingo::literal_t const slit = init.solver_literal(it->literal());
-                if (slit == 0) continue;
+        Clingo::literal_t const slit = init.solver_literal(it->literal());
+        if (slit == 0) continue;
 
-                auto &source_lits = aggregate_source_lits_[runtime_key];
-                if (std::find(source_lits.begin(), source_lits.end(), slit) == source_lits.end()) {
-                    source_lits.push_back(slit);
+        for (auto const &agg_key : key_it->second) {
+            int value = 0;
+            if (!extract_numeric_argument(sym, agg_key.arg_index, value)) continue;
+
+            RuntimeAggregateKey runtime_key;
+            if (!build_runtime_key_from_source_atom(agg_key, sym, runtime_key)) continue;
+
+            auto &source_lits = aggregate_source_lits_[runtime_key];
+            if (std::find(source_lits.begin(), source_lits.end(), slit) == source_lits.end()) {
+                source_lits.push_back(slit);
+            }
+
+            add_solver_watch(init, slit);
+
+            auto aggregate_candidate_it = aggregate_candidates_.find(runtime_key);
+            if (aggregate_candidate_it != aggregate_candidates_.end()) {
+                for (size_t candidate_id : aggregate_candidate_it->second) {
+                    register_candidate_refresh_watch(init, -slit, candidate_id);
                 }
+            }
 
-                add_solver_watch(init, slit);
-
-                auto aggregate_candidate_it = aggregate_candidates_.find(runtime_key);
-                if (aggregate_candidate_it != aggregate_candidates_.end()) {
-                    for (size_t candidate_id : aggregate_candidate_it->second) {
-                        register_candidate_refresh_watch(init, -slit, candidate_id);
-                    }
+            auto &watch_info = watched_atoms_[slit];
+            bool already = false;
+            for (auto const &c : watch_info.contributions) {
+                if (c.runtime_key == runtime_key && c.value == value) {
+                    already = true;
+                    break;
                 }
-
-                auto &watch_info = watched_atoms_[slit];
-                bool already = false;
-                for (auto const &c : watch_info.contributions) {
-                    if (c.runtime_key == runtime_key && c.value == value) {
-                        already = true;
-                        break;
-                    }
+            }
+            if (!already) {
+                WatchedAtomContribution contribution{runtime_key, value};
+                auto &state = aggregate_states_[contribution.runtime_key];
+                if (!state) {
+                    state = make_aggregate(contribution.runtime_key.key.op_name);
                 }
-                if (!already) {
-                    WatchedAtomContribution contribution{runtime_key, value};
-                    auto &state = aggregate_states_[contribution.runtime_key];
-                    if (!state) {
-                        state = make_aggregate(contribution.runtime_key.key.op_name);
-                    }
-                    if (assignment.is_true(slit) && state) {
-                        state->add(contribution.value);
-                    }
-                    watch_info.contributions.push_back(std::move(contribution));
+                if (assignment.is_true(slit) && state) {
+                    state->add(contribution.value);
                 }
+                watch_info.contributions.push_back(std::move(contribution));
             }
         }
     }

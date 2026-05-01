@@ -252,17 +252,6 @@ private:
         std::vector<WatchedAtomContribution> contributions;
     };
 
-    struct BodyTriggerInfo {
-        size_t rule_idx;
-        size_t candidate_id;
-        Clingo::literal_t target_lit;
-        int self_value;
-        std::vector<int> tuple_values;
-        std::unordered_map<std::string, int> body_var_values;
-        std::vector<Clingo::literal_t> pos_body_lits;
-        std::vector<Clingo::literal_t> neg_body_lits;
-    };
-
     struct CandidateAggregateBinding {
         std::string variable_name;
         RuntimeAggregateKey runtime_key;
@@ -309,7 +298,6 @@ private:
         std::unordered_set<std::string> body_preds;
         std::unordered_set<std::string> target_preds;
         std::unordered_set<std::string> neg_preds;
-        std::unordered_set<std::string> agg_preds;
     };
 
     using LitByTuple = std::unordered_map<AtomKey, Clingo::literal_t, AtomKeyHash>;
@@ -317,7 +305,6 @@ private:
 
     std::unordered_map<Clingo::literal_t, WatchedAtomInfo> watched_atoms_;
     std::vector<HeuristicRuleTemplate> rule_templates_;
-    std::unordered_map<Clingo::literal_t, std::vector<BodyTriggerInfo>> body_triggers_;
     std::vector<CandidateState> candidates_;
     std::set<CandidateQueueEntry, CandidateQueueEntryLess> candidate_queue_;
     std::unordered_map<Clingo::literal_t, std::vector<size_t>> candidate_refresh_lits_;
@@ -336,6 +323,13 @@ private:
     void register_lazy_aggregate_watches(Clingo::PropagateInit &init, Clingo::SymbolicAtoms const &atoms);
     void add_solver_watch(Clingo::PropagateInit &init, Clingo::literal_t lit);
     void register_candidate_refresh_watch(Clingo::PropagateInit &init, Clingo::literal_t lit, size_t candidate_id);
+    void add_candidate(Clingo::PropagateInit &init,
+                       size_t rule_idx,
+                       Clingo::literal_t target_lit,
+                       std::vector<int> const &tuple_values,
+                       std::vector<Clingo::literal_t> pos_body_lits,
+                       std::vector<Clingo::literal_t> neg_body_lits,
+                       std::unordered_map<std::string, int> body_var_values);
     void erase_candidate_from_queue(size_t candidate_id) noexcept;
     bool compute_candidate_entry(size_t candidate_id, Clingo::Assignment const &assignment,
                                  CandidateQueueEntry &entry) const;

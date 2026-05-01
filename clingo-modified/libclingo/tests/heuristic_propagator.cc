@@ -98,5 +98,103 @@ TEST_CASE("lazy-heuristic-propagator-corner-cases", "[clingo][heuristic]") {
     }
 }
 
+TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
+    MessageVec messages;
+    ModelVec models;
+    Logger logger = [&messages](WarningCode code, char const *msg) {
+        messages.emplace_back(code, msg);
+    };
+
+    SECTION("simple body uses self as weight") {
+        Control ctl{{"1", "--heuristic=Domain"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            dom(1..3).
+            1 { choose(X) : dom(X) } 1.
+            __heuristic(__target(choose), dom, __weight(self), __priority(1), true).
+            #show choose/1.
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE(test_solve(ctl.solve(), models).is_satisfiable());
+        REQUIRE(models == ModelVec({{Function("choose", {Number(3)})}}));
+    }
+
+    SECTION("explicit body binding feeds arithmetic expressions") {
+        Control ctl{{"1", "--heuristic=Domain"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            dom(1..3).
+            score(1,10). score(2,5). score(3,7).
+            body(X,W) :- dom(X), score(X,W).
+            1 { choose(X) : dom(X) } 1.
+            __heuristic(__target(choose), __body(body, __match(0, 0), __bind_arg(w, 1)),
+                        __weight(w), __priority(1), true).
+            #show choose/1.
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE(test_solve(ctl.solve(), models).is_satisfiable());
+        REQUIRE(models == ModelVec({{Function("choose", {Number(1)})}}));
+    }
+
+    SECTION("filtered aggregate weights are target-specific") {
+        Control ctl{{"1", "--heuristic=Domain"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            dom(1..2).
+            source(1,5). source(2,9).
+            1 { choose(X) : dom(X) } 1.
+            __heuristic(__target(choose), dom,
+                        __bind(s, __sum(source, 1, __filter(0, 0))),
+                        __weight(s), __priority(1), true).
+            #show choose/1.
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE(test_solve(ctl.solve(), models).is_satisfiable());
+        REQUIRE(models == ModelVec({{Function("choose", {Number(2)})}}));
+    }
+}
+
+TEST_CASE("lazy-heuristic-syntax-validation", "[clingo][heuristic]") {
+    MessageVec messages;
+    ModelVec models;
+    Logger logger = [&messages](WarningCode code, char const *msg) {
+        messages.emplace_back(code, msg);
+    };
+
+    SECTION("duplicate aggregate variable is rejected") {
+        Control ctl{{"0"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            dom(1).
+            { choose(X) } :- dom(X).
+            __heuristic(__target(choose), dom,
+                        __bind(s, __sum(dom, 0)),
+                        __bind(s, __count(dom, 0)),
+                        __weight(s), true).
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE_THROWS(test_solve(ctl.solve(), models));
+    }
+
+    SECTION("negative aggregate index is rejected") {
+        Control ctl{{"0"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            dom(1).
+            { choose(X) } :- dom(X).
+            __heuristic(__target(choose), dom,
+                        __bind(s, __sum(dom, -1)),
+                        __weight(s), true).
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE_THROWS(test_solve(ctl.solve(), models));
+    }
+}
+
 } // namespace Test
 } // namespace Clingo
