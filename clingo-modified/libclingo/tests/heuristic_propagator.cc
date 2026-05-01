@@ -194,6 +194,37 @@ TEST_CASE("lazy-heuristic-syntax-validation", "[clingo][heuristic]") {
         ctl.ground({{"base", {}}}, nullptr);
         REQUIRE_THROWS(test_solve(ctl.solve(), models));
     }
+
+    SECTION("explicit body without match is rejected") {
+        Control ctl{{"0"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            dom(1).
+            body(1,10).
+            { choose(X) } :- dom(X).
+            __heuristic(__target(choose), __body(body, __bind_arg(w, 1)),
+                        __weight(w), true).
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE_THROWS(test_solve(ctl.solve(), models));
+    }
+
+    SECTION("duplicate body variable is rejected") {
+        Control ctl{{"0"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            dom(1).
+            body(1,10,20).
+            { choose(X) } :- dom(X).
+            __heuristic(__target(choose),
+                        __body(body, __match(0, 0), __bind_arg(w, 1), __bind_arg(w, 2)),
+                        __weight(w), true).
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE_THROWS(test_solve(ctl.solve(), models));
+    }
 }
 
 } // namespace Test
