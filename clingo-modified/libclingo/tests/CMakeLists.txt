@@ -12,6 +12,7 @@ source_group("${ide_source_group}" FILES ${source-group})
 set(source
     ${source-group})
 if(CLINGO_BUILD_SHARED)
+    list(APPEND source "${CMAKE_CURRENT_SOURCE_DIR}/../src/heuristic_parser.cc")
     list(APPEND source "${CMAKE_CURRENT_SOURCE_DIR}/../src/heuristic_propagator.cc")
 endif()
 # ]]]

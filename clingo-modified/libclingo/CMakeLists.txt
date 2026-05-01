@@ -10,7 +10,11 @@ set(header-group-clingo
     "${CMAKE_CURRENT_SOURCE_DIR}/clingo/clingocontrol.hh"
     "${CMAKE_CURRENT_SOURCE_DIR}/clingo/control.hh"
     "${CMAKE_CURRENT_SOURCE_DIR}/clingo/gringo_options.hh"
+    "${CMAKE_CURRENT_SOURCE_DIR}/clingo/heuristic_aggregate.hh"
+    "${CMAKE_CURRENT_SOURCE_DIR}/clingo/heuristic_parser.hh"
     "${CMAKE_CURRENT_SOURCE_DIR}/clingo/heuristic_propagator.hh"
+    "${CMAKE_CURRENT_SOURCE_DIR}/clingo/heuristic_symbol.hh"
+    "${CMAKE_CURRENT_SOURCE_DIR}/clingo/heuristic_types.hh"
     "${CMAKE_CURRENT_SOURCE_DIR}/clingo/incmode.hh"
     "${CMAKE_CURRENT_SOURCE_DIR}/clingo/scripts.hh")
 source_group("${ide_header_group}\\clingo" FILES ${header-group-clingo})
@@ -31,6 +35,7 @@ set(source-group
     "${CMAKE_CURRENT_SOURCE_DIR}/src/control.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/gringo_app.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/gringo_options.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/heuristic_parser.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/heuristic_propagator.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/incmode.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/scripts.cc")
