@@ -7,6 +7,18 @@ per generare i grafici escludendo alcuni risultati
 
 python gen_graphs.py --bsp-exclude BSP_la_aux.lp,BSP_gc.lp
 
+// ======
+// NOTE --------
+// Questo comando e' outdated dopo la riorganizzazione della cartella.
+// Ora il tool sta in test_folder/tools/gen_graphs.py, legge di default da
+// test_folder/results e scrive in test_folder/results/graphs.
+// L'opzione corretta e' --exclude, per esempio:
+//
+// python3 test_folder/tools/gen_graphs.py --exclude BSP_la_aux.lp,BSP_gc.lp
+//
+// END NOTE ---------
+// ======
+
 Esempio
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -21,6 +33,14 @@ In Clingo, i pesi e le priorità ([W@P]) di un'euristica devono essere risolti d
 L'euristica che viene aggiunta con lo scopo di velocizzare il tempo di solving finisce per saturare la RAM e rendere il processo di grounding impraticabile o il processo di solving inefficiente a causa dell'enorme spazio di ricerca generato.
 
 Nel balanced sum problem, come definito nel paper di Comploi-Taupe, l'obiettivo è che la differenza in valore assoluto della somma degli elementi contenuti in due insiemi sia uguale a 1.
+// ======
+// NOTE --------
+// Qui conviene essere piu' precisi: negli encoding presenti in questa repo il
+// vincolo implementato e' |Sum(b)-Sum(c)| <= 1, non strettamente "uguale a 1".
+// Per totali dispari le due formulazioni coincidono sul bilanciamento ottimo;
+// per una descrizione generale del BSP, pero', "al massimo 1" evita ambiguita'.
+// END NOTE ---------
+// ======
 Immaginando di dover distribuire equamente i numeri da 1 a 3 tra due insiemi, b e c, con la condizione che ogni numero può essere assegnato solo a uno dei due insiemi. Per indirizzare il solver, è utile massimizzare l'assegnazione a un insieme valutando dinamicamente la somma dell'altro. Usando la sintassi nativa, scriveremmo:
 
 #heuristic b(X): x(X), not c(X), S = #sum{Y : c(Y)}. [X@S, true]
@@ -87,6 +107,14 @@ Di conseguenza, non potendo calcolare un valore univoco per S, il grounder è co
 Per rendere quindi il processo più efficiente l'obiettivo è far si che l'euristica venga valutata e groundata da gringo come un fatto semplice, delegando ad un propagatore in c++ a runtime la valutazione e il calcolo dell'euristica.
 
 Per realizzare ciò il programma viene passato a Clingo, ma invece di far groundare a Gringo le euristiche secondo il pattern classico #heuristic, esse vengono tradotte in un fatto proposizionale (aiutandosi anche con il file asp_heuristic_converter.py), queste vengono codificate come template strutturali, ovvero fatti proposizionali statici della forma:
+// ======
+// NOTE --------
+// Path aggiornato: il converter ora si trova in test_folder/tools/asp_heuristic_converter.py.
+// Inoltre il parser legacy regex e' stato rimosso: la conversione passa solo da
+// clingo.ast. Se una direttiva #heuristic non e' parseabile via AST, il converter
+// fallisce esplicitamente invece di tentare un fallback testuale.
+// END NOTE ---------
+// ======
 
 __heuristic(__target(TargetPred), ...argomenti flessibili...).
 
@@ -126,6 +154,15 @@ multi-argomento. Per PUP gli altri valori contestuali vanno espressi tramite
 
 I fatti generati vengono successivamente interpretati dinamicamente dal propagatore custom durante la fase di solving in Clasp. 
 Il propagatore monitora l'assegnazione parziale corrente e istanzia l'euristica (calcolandone peso e priorità) in tempo reale, unicamente quando i letterali trigger nel corpo diventano veri. 
+// ======
+// NOTE --------
+// Aggiornamento implementativo: le strutture C++ non conservano piu' i nomi
+// logici principali come std::string. Target, predicati di body, variabili di
+// binding e chiavi aggregate usano Clingo::Symbol, sfruttando l'identita'
+// internata di Clingo. Rimangono stringhe solo per messaggi/parse helper o per
+// confrontare nomi sintattici come "__sum" durante il parsing.
+// END NOTE ---------
+// ======
 
 
 alcuni esempi:
@@ -214,6 +251,15 @@ il metodo decide sceglie un letterale (che può essere di segno positivo o negat
 fino a quando non si è dimostrato che non si possono trovare più nuovi AS
 
 4) Raggiunto un assegnamento totale, o un fixpoint intermedio a seconda della configurazione, il solver invoca il metodo check. In questa fase il propagatore effettua una validazione globale sul modello candidato, potendo generare "lazy no-good" per scartare soluzioni che soddisfano le regole ASP ma violano logiche complesse del dominio esterno valutabili solo a modello completo.
+// ======
+// NOTE --------
+// Questa frase descrive correttamente il ruolo generale di Propagator::check,
+// ma il nostro HeuristicPropagator corrente non override-a check e non aggiunge
+// nogood lazy. In questo MVP usa init/propagate/undo/decide per mantenere e
+// leggere stati euristici; la validazione dei modelli resta nell'encoding ASP
+// o negli script di validazione esterni.
+// END NOTE ---------
+// ======
 
 5) Passaggio "extra": se durante la propagazione il solver falsifica una
 nogood, viene rilevato un conflitto. Il conflitto viene analizzato per
@@ -284,6 +330,14 @@ numero di conflitti generati durante la ricerca.
 
 % output di 
 % gringo --text BSP/BSP_gc.lp BSP_instances/BSP_range.lp
+// ======
+// NOTE --------
+// Path outdated: dopo il refactor del layout il comando equivalente e':
+// clingo --text test_folder/encodings/BSP/BSP_gc.lp test_folder/instances/BSP_instances/BSP_range.lp
+// Lo stesso vale per gli altri esempi BSP sotto: gli encoding stanno in
+// encodings/BSP/ e le istanze in instances/BSP_instances/.
+// END NOTE ---------
+// ======
 
 x(1).
 x(2).
@@ -383,6 +437,13 @@ sumB(6):-#sum{1:b(1);2:b(2);3:b(3)}=6.
 
 % output di 
 % gringo --text BSP/BSP_la_co.lp BSP_instances/BSP_range.lp
+// ======
+// NOTE --------
+// Anche qui i path corretti sono:
+// test_folder/encodings/BSP/BSP_la_co.lp
+// test_folder/instances/BSP_instances/BSP_range.lp
+// END NOTE ---------
+// ======
 
 __heuristic(__target(b),x,__n_c,__bind(s,__sum(c)),__weight(self),__priority(s),true).
 __heuristic(__target(c),x,__n_b,__bind(s,__sum(b)),__weight(self),__priority(s),true).
@@ -451,6 +512,14 @@ Vincoli semantici addizionali:
 1) deve essere presente esattamente un argomento <target>;
 2) ogni <var-id> usata in <arith-expr> deve essere introdotta da almeno un
   __bind nello stesso fatto __heuristic/N;
+// ======
+// NOTE --------
+// Questa regola e' incompleta per la versione corrente: una variabile locale puo'
+// essere introdotta anche da __bind_arg(var, source_idx) dentro un __body(...)
+// esplicito. Il parser C++ accetta quindi sia variabili da aggregato (__bind)
+// sia variabili estratte da un predicato di body (__bind_arg).
+// END NOTE ---------
+// ======
 3) la semantica MVP di "self" coincide con il primo argomento numerico
   dell'atomo target nell'istanza corrente; in presenza di tuple target
   multi-argomento, "self" valuta specificamente il primo argomento numerico
@@ -471,6 +540,20 @@ Si introducono le seguenti grandezze:
 - E = dimensione media (nodi) degli AST di weight/priority;
 - A = numero di aggiornamenti aggregato attivati da un literal in propagate;
 - U = numero di literal annullati in un singolo undo.
+// ======
+// NOTE --------
+// Mancano due grandezze utili per descrivere il codice attuale:
+// - C = numero di CandidateState materializzati in init, cioe' target ground
+//   compatibili con body/trigger;
+// - S = numero di atomi sorgente osservati per gli aggregati runtime.
+// T da solo descrive i template, ma non il volume runtime: il costo reale di
+// init dipende anche dalla scansione degli atomi simbolici e dalla costruzione
+// dei CandidateState. Inoltre AtomKey e RuntimeAggregateKey usano ancora tuple
+// di interi (std::vector<int>) per il matching multi-argomento: e' semplice e
+// leggibile, ma resta un hotspot da profilare prima di sostituirlo con chiavi
+// piu' compatte basate su literal_t.
+// END NOTE ---------
+// ======
 
 Tabella di confronto sintetico (per il testo tesi):
 
@@ -496,6 +579,16 @@ Complessita' del percorso caldo (decide):
 - valutazione espressioni precompilate: O(E);
 - overhead totale per istanza attiva: O(E), senza parsing dinamico, allocazioni
   heap o lookup stringa.
+// ======
+// NOTE --------
+// Questa descrizione e' outdated. L'implementazione corrente non usa env_buffer_
+// indicizzato: usa mappe su Clingo::Symbol per l'ambiente delle variabili e una
+// candidate_queue_ ordinata (std::set) per evitare la scansione lineare in decide.
+// I lookup non sono piu' lookup su std::string, ma restano lookup hash; quindi il
+// percorso caldo reale e' dominato da estrazione/rivalidazione del miglior candidato,
+// valutazione AST O(E) e aggiornamenti O(log C) quando un candidato entra/esce dalla coda.
+// END NOTE ---------
+// ======
 
 Complessita' di propagate:
 - per ciascun trigger attivato: aggiornamento stato body in O(1);
@@ -536,6 +629,16 @@ Configurazione sperimentale:
 3) almeno 5 run per istanza con media e deviazione standard;
 4) metriche: grounding time, solving time, totale, RSS max, conflicts,
   choices, propagations, numero regole groundate.
+// ======
+// NOTE --------
+// Lo script benchmark corrente e' stato consolidato: benchmark_bsp.sh e
+// benchmark_pup.sh sono ora iteratori sottili, mentre benchmark_runner.py esegue
+// il singolo run con --outf=2 --stats=2 e parsa le metriche solver dal JSON.
+// I CSV finiscono in test_folder/results/. Rimane un pass --text separato solo
+// per contare righe/fatti del programma ground, perche' quei conteggi non sono
+// esposti direttamente nel JSON di Clingo.
+// END NOTE ---------
+// ======
 
 Obiettivo analitico:
 1) verificare se il beneficio persiste oltre BSP quando la ricerca non e'
@@ -606,6 +709,17 @@ Queste modifiche mantengono intatta la semantica logica del problema originale e
 Nel benchmark BSP ora conviene distinguere quattro famiglie concettuali.
 
 1) Standard Clingo ground-and-solve (`gc`, file BSP/BSP_gc.lp).
+// ======
+// NOTE --------
+// Path aggiornato per tutta questa sezione:
+// BSP/BSP_*.lp -> test_folder/encodings/BSP/BSP_*.lp
+// PUP/PUP_*.lp -> test_folder/encodings/PUP/PUP_*.lp
+// BSP_instances/ -> test_folder/instances/BSP_instances/
+// PUP_instances/ -> test_folder/instances/PUP_instances/
+// Gli script benchmark ora stanno in test_folder/benchmarks/ e usano
+// benchmark_runner.py con output CSV in test_folder/results/.
+// END NOTE ---------
+// ======
 Usa direttamente le direttive native:
 
 #heuristic b(X): x(X), not c(X), S = #sum{Y : c(Y)}. [X@S,true]

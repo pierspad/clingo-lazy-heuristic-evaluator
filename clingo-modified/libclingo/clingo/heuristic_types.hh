@@ -1,5 +1,6 @@
 #pragma once
 
+#include <clingo.hh>
 #include <cstddef>
 #include <functional>
 #include <memory>
@@ -22,14 +23,14 @@ struct AggregateFilter {
 };
 
 struct AggregateKey {
-    std::string op_name;
-    std::string pred_name;
+    Clingo::Symbol op_symbol;
+    Clingo::Symbol pred_symbol;
     int arg_index = -1;
     std::vector<AggregateFilter> filters;
 
     bool operator==(AggregateKey const &o) const {
-        return op_name == o.op_name &&
-               pred_name == o.pred_name &&
+        return op_symbol == o.op_symbol &&
+               pred_symbol == o.pred_symbol &&
                arg_index == o.arg_index &&
                filters == o.filters;
     }
@@ -38,8 +39,8 @@ struct AggregateKey {
 struct AggregateKeyHash {
     std::size_t operator()(AggregateKey const &k) const {
         std::size_t h = 17;
-        h = h * 31 + std::hash<std::string>{}(k.op_name);
-        h = h * 31 + std::hash<std::string>{}(k.pred_name);
+        h = h * 31 + std::hash<Clingo::Symbol>{}(k.op_symbol);
+        h = h * 31 + std::hash<Clingo::Symbol>{}(k.pred_symbol);
         h = h * 31 + std::hash<int>{}(k.arg_index);
         for (auto const &filter : k.filters) {
             h = h * 31 + std::hash<int>{}(filter.source_arg_index);
@@ -104,12 +105,12 @@ struct BodyMatch {
 };
 
 struct BodyArgBinding {
-    std::string variable_name;
+    Clingo::Symbol variable_name;
     int source_arg_index = -1;
 };
 
 struct BodyPredicateSpec {
-    std::string pred_name;
+    Clingo::Symbol pred_name;
     std::vector<BodyMatch> matches;
     std::vector<BodyArgBinding> arg_bindings;
     bool explicit_mapping = false;
@@ -127,7 +128,7 @@ enum class ArithmeticExpressionKind {
 struct ArithmeticExpression {
     ArithmeticExpressionKind kind = ArithmeticExpressionKind::Number;
     int value = 0;
-    std::string variable_name;
+    Clingo::Symbol variable_name;
     std::unique_ptr<ArithmeticExpression> left;
     std::unique_ptr<ArithmeticExpression> right;
 
@@ -144,7 +145,7 @@ struct ArithmeticExpression {
         return expr;
     }
 
-    static ArithmeticExpression bound_variable(std::string name) {
+    static ArithmeticExpression bound_variable(Clingo::Symbol name) {
         ArithmeticExpression expr;
         expr.kind = ArithmeticExpressionKind::BoundVariable;
         expr.variable_name = std::move(name);
@@ -163,13 +164,13 @@ struct ArithmeticExpression {
 };
 
 struct HeuristicRuleTemplate {
-    std::string target_pred;
+    Clingo::Symbol target_pred;
     std::vector<BodyPredicateSpec> pos_body_preds;
-    std::vector<std::string> neg_body_preds;
+    std::vector<Clingo::Symbol> neg_body_preds;
     HeuristicSign sign = HeuristicSign::True;
     HeuristicSemantics semantics = HeuristicSemantics::Alpha;
-    std::unordered_map<std::string, AggregateKey> var_bindings;
-    std::unordered_set<std::string> body_var_names;
+    std::unordered_map<Clingo::Symbol, AggregateKey> var_bindings;
+    std::unordered_set<Clingo::Symbol> body_var_names;
     ArithmeticExpression weight_expr = ArithmeticExpression::number(0);
     ArithmeticExpression priority_expr = ArithmeticExpression::number(0);
 };

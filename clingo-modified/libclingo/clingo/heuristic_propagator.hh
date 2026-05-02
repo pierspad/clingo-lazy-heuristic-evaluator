@@ -24,7 +24,7 @@ private:
     };
 
     struct CandidateAggregateBinding {
-        std::string variable_name;
+        Clingo::Symbol variable_name;
         RuntimeAggregateKey runtime_key;
         bool valid_key = false;
     };
@@ -57,7 +57,7 @@ private:
         Clingo::literal_t target_lit = 0;
         int self_value = 0;
         std::vector<int> tuple_values;
-        std::unordered_map<std::string, int> body_var_values;
+        std::unordered_map<Clingo::Symbol, int> body_var_values;
         std::vector<Clingo::literal_t> pos_body_lits;
         std::vector<Clingo::literal_t> neg_body_lits;
         std::vector<CandidateAggregateBinding> aggregate_bindings;
@@ -66,13 +66,13 @@ private:
     };
 
     struct RulePredicateSets {
-        std::unordered_set<std::string> body_preds;
-        std::unordered_set<std::string> target_preds;
-        std::unordered_set<std::string> neg_preds;
+        std::unordered_set<Clingo::Symbol> body_preds;
+        std::unordered_set<Clingo::Symbol> target_preds;
+        std::unordered_set<Clingo::Symbol> neg_preds;
     };
 
     using LitByTuple = std::unordered_map<AtomKey, Clingo::literal_t, AtomKeyHash>;
-    using PredLitMap = std::unordered_map<std::string, LitByTuple>;
+    using PredLitMap = std::unordered_map<Clingo::Symbol, LitByTuple>;
 
     std::unordered_map<Clingo::literal_t, WatchedAtomInfo> watched_atoms_;
     std::vector<HeuristicRuleTemplate> rule_templates_;
@@ -99,7 +99,7 @@ private:
                        std::vector<int> const &tuple_values,
                        std::vector<Clingo::literal_t> pos_body_lits,
                        std::vector<Clingo::literal_t> neg_body_lits,
-                       std::unordered_map<std::string, int> body_var_values);
+                       std::unordered_map<Clingo::Symbol, int> body_var_values);
     void erase_candidate_from_queue(size_t candidate_id) noexcept;
     bool compute_candidate_entry(size_t candidate_id, Clingo::Assignment const &assignment,
                                  CandidateQueueEntry &entry) const;

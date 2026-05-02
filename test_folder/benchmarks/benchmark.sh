@@ -5,6 +5,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+TEST_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 BSP_SCRIPT="${SCRIPT_DIR}/benchmark_bsp.sh"
 PUP_SCRIPT="${SCRIPT_DIR}/benchmark_pup.sh"
 
@@ -32,5 +33,5 @@ bash "${PUP_SCRIPT}"
 echo ""
 echo "==============================================================="
 echo " Benchmark completi (BSP + PUP)."
-echo " Risultati disponibili in ./test-results"
+echo " Risultati disponibili in ${TEST_ROOT}/results"
 echo "==============================================================="

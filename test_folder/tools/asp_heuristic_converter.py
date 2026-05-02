@@ -58,128 +58,6 @@ class LazyBodyVar:
     source_arg_index: int
 
 
-HEURISTIC_RE = re.compile(
-    r'^\s*#heuristic\s+(.+?)\.\s*\[(.+?)\]\s*$',
-    re.DOTALL
-)
-
-
-TARGET_RE = re.compile(r'^(\w+)\(([^)]+)\)')
-
-
-AGGREGATE_RE = re.compile(
-    r'(\w+)\s*=\s*#(sum|count|min|max)\s*\{([^}]+)\}'
-)
-
-
-MODIFIER_RE = re.compile(
-    r'^\s*(.+?)(?:\s*@\s*(.+?))?\s*(?:,\s*(true|false|sign))?\s*$'
-)
-
-
-def _strip_comments(line: str) -> str:
-
-    in_string = False
-    for i, ch in enumerate(line):
-        if ch == '"':
-            in_string = not in_string
-        elif ch == '%' and not in_string:
-            return line[:i]
-    return line
-
-
-def _split_top_level(text: str, sep: str = ',') -> list:
-
-    parts = []
-    start = 0
-    depth = 0
-    for i, ch in enumerate(text):
-        if ch in '({[':
-            depth += 1
-        elif ch in ')}]':
-            depth = max(0, depth - 1)
-        elif ch == sep and depth == 0:
-            parts.append(text[start:i].strip())
-            start = i + 1
-    parts.append(text[start:].strip())
-    return parts
-
-
-def _parse_target_aliases(body_str: str, target_positions: dict) -> dict:
-
-
-    aliases = {}
-    for part in _split_top_level(body_str):
-        m = re.match(r'^\s*(\w+)\s*=\s*(\w+)\s*([+-])\s*(\d+)\s*$', part)
-        if m and m.group(2) in target_positions:
-            sign = 1 if m.group(3) == '+' else -1
-            aliases[m.group(1)] = (target_positions[m.group(2)], sign * int(m.group(4)))
-            continue
-
-        m = re.match(r'^\s*(\w+)\s*=\s*(\w+)\s*$', part)
-        if m and m.group(2) in target_positions:
-            aliases[m.group(1)] = (target_positions[m.group(2)], 0)
-
-    return aliases
-
-
-def _term_to_target_filter(term: str, target_positions: dict, aliases: dict) -> Optional[tuple]:
-
-    term = term.strip()
-    if term in target_positions:
-        return target_positions[term], 0
-    if term in aliases:
-        return aliases[term]
-    return None
-
-
-def _extract_pred_and_index_from_aggregate_body(
-    agg_body: str,
-    target_positions: Optional[dict] = None,
-    aliases: Optional[dict] = None,
-) -> tuple:
-
-
-    target_positions = target_positions or {}
-    aliases = aliases or {}
-
-    parts = agg_body.split(':')
-    if len(parts) < 2:
-        return None, None, []
-
-    tuple_terms = _split_top_level(parts[0].strip())
-    target_term = tuple_terms[0] if tuple_terms else ""
-
-    pred_part = ':'.join(parts[1:]).strip()
-    m = re.match(r'(\w+)\s*\((.*)\)\s*$', pred_part)
-    if not m:
-        return None, None, []
-
-    pred_name = m.group(1)
-    pred_args = _split_top_level(m.group(2))
-    arg_index = None
-    for idx, arg in enumerate(pred_args):
-        if arg == target_term:
-            arg_index = idx
-            break
-
-    filters = []
-    for idx, arg in enumerate(pred_args):
-        if idx == arg_index:
-            continue
-        if arg.strip() == "_":
-            continue
-
-        filter_target = _term_to_target_filter(arg, target_positions, aliases)
-        if filter_target is None:
-            continue
-
-        target_idx, offset = filter_target
-        filters.append((idx, target_idx, offset))
-
-    return pred_name, arg_index, filters
-
-
 def _is_domain_variable(expr: str, target_var: Optional[str]) -> bool:
 
     return target_var is not None and expr.strip() == target_var
@@ -265,163 +143,6 @@ def _convert_arith_expr(
 
 
     return expr
-
-
-def _parse_body_predicate(lit: str, negated: bool = False) -> Optional[BodyPredicate]:
-
-    text = lit.strip()
-    if negated:
-        text = re.sub(r'^\s*not\s+', '', text).strip()
-
-    m = re.match(r'^(\w+)\s*\((.*)\)\s*$', text)
-    if m:
-        pred_name = m.group(1)
-        args = _split_top_level(m.group(2))
-        return BodyPredicate(pred_name=pred_name, args=args, negated=negated, text=lit.strip())
-
-    m = re.match(r'^([a-z_]\w*)\s*$', text)
-    if m:
-        return BodyPredicate(pred_name=m.group(1), args=[], negated=negated, text=lit.strip())
-
-    return None
-
-
-def _parse_body_literals(body_str: str, target_args: Optional[list] = None) -> tuple:
-
-
-    target_args = target_args or []
-    target_positions = {
-        arg: idx
-        for idx, arg in enumerate(target_args)
-        if re.match(r'^[A-Z_]\w*$', arg)
-    }
-    aliases = _parse_target_aliases(body_str, target_positions)
-
-    pos_body = []
-    neg_body = []
-    body_predicates = []
-    bindings = []
-
-
-    remaining = body_str
-    for m in AGGREGATE_RE.finditer(body_str):
-        var_name = m.group(1)
-        agg_type = m.group(2)
-        agg_body = m.group(3)
-        pred, arg_index, filters = _extract_pred_and_index_from_aggregate_body(
-            agg_body,
-            target_positions=target_positions,
-            aliases=aliases,
-        )
-        if pred:
-            bindings.append(AggregateBinding(var_name, agg_type, pred, arg_index, filters))
-
-        remaining = remaining.replace(m.group(0), '', 1)
-
-
-    for lit in _split_top_level(remaining):
-        lit = lit.strip()
-        if not lit:
-            continue
-
-
-        neg_match = re.match(r'not\s+(\w+)(?:\s*\(|$)', lit)
-        if neg_match:
-            parsed = _parse_body_predicate(lit, negated=True)
-            if parsed:
-                neg_body.append(parsed)
-                body_predicates.append(parsed)
-            continue
-
-
-        parsed = _parse_body_predicate(lit, negated=False)
-        if parsed and parsed.pred_name != 'not':
-            pos_body.append(parsed)
-            body_predicates.append(parsed)
-            continue
-
-
-        if re.match(r'^[A-Z_]\w*$', lit):
-            continue
-
-    return pos_body, neg_body, bindings, body_predicates
-
-
-def parse_heuristic_line(line: str) -> Optional[HeuristicDirective]:
-
-
-    m = HEURISTIC_RE.match(line)
-    if not m:
-        return None
-
-    main_part = m.group(1).strip()
-    modifiers_str = m.group(2).strip()
-
-
-    mod_match = MODIFIER_RE.match(modifiers_str)
-    if not mod_match:
-        return None
-
-    weight_str = mod_match.group(1).strip()
-    priority_str = mod_match.group(2).strip() if mod_match.group(2) else "0"
-    sign_str = mod_match.group(3) if mod_match.group(3) else "true"
-
-
-    colon_pos = main_part.find(':')
-    if colon_pos < 0:
-        target_part = main_part
-        body_str = ""
-    else:
-        target_part = main_part[:colon_pos].strip()
-        body_str = main_part[colon_pos + 1:].strip()
-
-
-    target_match = TARGET_RE.match(target_part)
-    if not target_match:
-        return None
-
-    target_pred = target_match.group(1)
-    target_args = target_match.group(2).strip()
-    target_arg_list = [a.strip() for a in _split_top_level(target_args)]
-    target_text = f"{target_pred}({', '.join(target_arg_list)})"
-
-
-    target_var = None
-    for arg in target_arg_list:
-        if re.match(r'^[A-Z_]\w*$', arg):
-            target_var = arg
-            break
-
-
-    var_args = [a for a in target_arg_list if re.match(r'^[A-Z_]\w*$', a)]
-    if len(var_args) > 1:
-        print(
-            f"  ⚠ WARNING: target '{target_pred}({target_args})' ha {len(var_args)} variabili "
-            f"({', '.join(var_args)}). Il propagatore C++ ora fa matching sulla tupla completa; "
-            f"'self' resta la prima variabile ('{var_args[0]}').",
-            file=sys.stderr
-        )
-
-
-    pos_body, neg_body, bindings, body_predicates = _parse_body_literals(body_str, target_arg_list)
-
-    directive = HeuristicDirective(
-        target_pred=target_pred,
-        target_text=target_text,
-        target_args=target_arg_list,
-        target_var=target_var,
-        pos_body=pos_body,
-        neg_body=neg_body,
-        body_predicates=body_predicates,
-        bindings=bindings,
-        weight_expr=weight_str,
-        priority_expr=priority_str,
-        sign=sign_str,
-        body_str=body_str,
-        original_line=line.strip()
-    )
-
-    return directive
 
 
 def _matches_target_tuple(pred: BodyPredicate, directive: HeuristicDirective) -> bool:
@@ -909,9 +630,12 @@ def _offset_from_position(offsets: list, position) -> int:
     return offsets[position.line - 1] + position.column - 1
 
 
-def _process_file_ast(input_path: str, dry_run: bool = False, mode: str = "la") -> Optional[tuple]:
+def _process_file_ast(input_path: str, dry_run: bool = False, mode: str = "la") -> tuple:
     if clingo_ast is None:
-        return None
+        raise RuntimeError(
+            "clingo.ast non disponibile: installa il pacchetto Python 'clingo' "
+            "per usare il converter AST-only."
+        )
 
     with open(input_path, 'r', encoding='utf-8') as f:
         content = f.read()
@@ -936,43 +660,31 @@ def _process_file_ast(input_path: str, dry_run: bool = False, mode: str = "la") 
 
         directive = _directive_from_heuristic_ast(ast_node)
         if directive is None:
-            directive = parse_heuristic_line(original_one_line)
-
-        if directive is None:
-            warnings.append(
+            raise ValueError(
                 f"Righe {ast_node.location.begin.line}-{ast_node.location.end.line}: "
-                "impossibile convertire la direttiva #heuristic via AST"
+                "direttiva #heuristic valida per Clingo ma non supportata dal converter AST"
             )
-            replacement = (
-                "% WARNING: euristica non convertibile\n"
-                f"% {original_one_line}\n"
-                f"{original_text}"
+
+        directive.original_line = original_one_line
+        warn_lines, converted = _generate_directive_output(directive, conversions + 1, mode)
+        replacement = f"% Originale: {directive.original_line}\n"
+        replacement += "".join(warn_lines)
+        replacement += f"{converted}\n"
+        conversions += 1
+        if dry_run:
+            print(
+                f"  Righe {ast_node.location.begin.line}-{ast_node.location.end.line}: "
+                f"{directive.original_line}",
+                file=sys.stderr
             )
-        else:
-            directive.original_line = original_one_line
-            warn_lines, converted = _generate_directive_output(directive, conversions + 1, mode)
-            replacement = f"% Originale: {directive.original_line}\n"
-            replacement += "".join(warn_lines)
-            replacement += f"{converted}\n"
-            conversions += 1
-            if dry_run:
-                print(
-                    f"  Righe {ast_node.location.begin.line}-{ast_node.location.end.line}: "
-                    f"{directive.original_line}",
-                    file=sys.stderr
-                )
-                print(f"        → {converted}", file=sys.stderr)
+            print(f"        → {converted}", file=sys.stderr)
 
         replacements.append((start, end, replacement))
 
     try:
         clingo_ast.parse_files([input_path], on_ast)
     except Exception as exc:
-        print(
-            f"WARNING: parsing AST fallito ({exc}); uso il parser legacy.",
-            file=sys.stderr
-        )
-        return None
+        raise RuntimeError(f"parsing AST fallito: {exc}") from exc
 
     if not replacements:
         return content.splitlines(keepends=True), conversions, warnings
@@ -988,84 +700,8 @@ def _process_file_ast(input_path: str, dry_run: bool = False, mode: str = "la") 
     return "".join(output).splitlines(keepends=True), conversions, warnings
 
 
-def _process_file_legacy(input_path: str, dry_run: bool = False, mode: str = "la") -> tuple:
-
-
-    with open(input_path, 'r', encoding='utf-8') as f:
-        lines = f.readlines()
-
-    output_lines = []
-    conversions = 0
-    warnings = []
-
-
-    accumulating = False
-    accumulated = ""
-    accumulated_start = 0
-
-    for i, line in enumerate(lines, 1):
-        stripped = _strip_comments(line).strip()
-
-
-        if not accumulating and stripped.startswith('#heuristic'):
-
-            if ']' in stripped:
-
-                directive = parse_heuristic_line(stripped)
-                if directive:
-                    warn_lines, converted = _generate_directive_output(directive, conversions + 1, mode)
-                    output_lines.append(f"% Originale: {directive.original_line}\n")
-                    output_lines.extend(warn_lines)
-                    output_lines.append(f"{converted}\n")
-                    conversions += 1
-                    if dry_run:
-                        print(f"  Riga {i}: {directive.original_line}")
-                        print(f"        → {converted}")
-                else:
-                    warnings.append(
-                        f"Riga {i}: impossibile parsare '{stripped}', preservata come commento"
-                    )
-                    output_lines.append(f"% WARNING: euristica non convertibile\n")
-                    output_lines.append(f"% {stripped}\n")
-                    output_lines.append(line)
-            else:
-
-                accumulating = True
-                accumulated = stripped
-                accumulated_start = i
-        elif accumulating:
-            accumulated += " " + stripped
-            if ']' in stripped:
-
-                accumulating = False
-                directive = parse_heuristic_line(accumulated)
-                if directive:
-                    warn_lines, converted = _generate_directive_output(directive, conversions + 1, mode)
-                    output_lines.append(f"% Originale: {directive.original_line}\n")
-                    output_lines.extend(warn_lines)
-                    output_lines.append(f"{converted}\n")
-                    conversions += 1
-                    if dry_run:
-                        print(f"  Righe {accumulated_start}-{i}: {directive.original_line}")
-                        print(f"        → {converted}")
-                else:
-                    warnings.append(
-                        f"Righe {accumulated_start}-{i}: impossibile parsare, preservata"
-                    )
-                    output_lines.append(f"% WARNING: euristica non convertibile\n")
-                    output_lines.append(f"% {accumulated}\n")
-        else:
-
-            output_lines.append(line)
-
-    return output_lines, conversions, warnings
-
-
 def process_file(input_path: str, dry_run: bool = False, mode: str = "la") -> tuple:
-    ast_result = _process_file_ast(input_path, dry_run=dry_run, mode=mode)
-    if ast_result is not None:
-        return ast_result
-    return _process_file_legacy(input_path, dry_run=dry_run, mode=mode)
+    return _process_file_ast(input_path, dry_run=dry_run, mode=mode)
 
 
 def _color(text: str, code: str) -> str:
@@ -1121,16 +757,16 @@ def main():
       Omit the comment that records the original #heuristic directive.
 
 {heading("Examples")}
-  {cmd("%(prog)s BSP/BSP_gc.lp --mode la -o BSP/BSP_la.lp")}
+  {cmd("%(prog)s test_folder/encodings/BSP/BSP_gc.lp --mode la -o test_folder/encodings/BSP/BSP_la.lp")}
       Convert to lazy grounding with Alpha semantics.
 
-  {cmd("%(prog)s BSP/BSP_gc.lp --mode la-aux -o BSP/BSP_la_aux.lp")}
+  {cmd("%(prog)s test_folder/encodings/BSP/BSP_gc.lp --mode la-aux -o test_folder/encodings/BSP/BSP_la_aux.lp")}
       Convert through an auxiliary lazy body predicate.
 
-  {cmd("%(prog)s BSP/BSP_gc.lp --mode lc -o BSP/BSP_lc.lp")}
+  {cmd("%(prog)s test_folder/encodings/BSP/BSP_gc.lp --mode lc -o test_folder/encodings/BSP/BSP_lc.lp")}
       Convert to lazy syntax with Clingo semantics for negative literals.
 
-  {cmd("%(prog)s BSP/BSP_gc.lp --dry-run")}
+  {cmd("%(prog)s test_folder/encodings/BSP/BSP_gc.lp --dry-run")}
       Check what would change before writing anything.
         """.strip(),
         formatter_class=argparse.RawDescriptionHelpFormatter
@@ -1180,7 +816,11 @@ def main():
 
     print(f"Processando: {args.input} (mode={args.mode})", file=sys.stderr)
 
-    output_lines, conversions, warnings = process_file(args.input, dry_run=args.dry_run, mode=args.mode)
+    try:
+        output_lines, conversions, warnings = process_file(args.input, dry_run=args.dry_run, mode=args.mode)
+    except (RuntimeError, ValueError) as exc:
+        print(f"Errore: {exc}", file=sys.stderr)
+        sys.exit(1)
 
 
     if args.no_comments:

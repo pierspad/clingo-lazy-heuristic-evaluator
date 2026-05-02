@@ -15,6 +15,10 @@ static Clingo::literal_t apply_sign(HeuristicSign sign, Clingo::literal_t target
     return target_lit;
 }
 
+static Clingo::Symbol predicate_name_symbol(Clingo::Symbol const &atom_symbol) {
+    return Clingo::Id(atom_symbol.name());
+}
+
 static bool build_body_match_key_from_body(BodyPredicateSpec const &spec,
                                            AtomKey const &body_key,
                                            AtomKey &match_key) {
@@ -47,7 +51,7 @@ static bool build_body_match_key_from_target(BodyPredicateSpec const &spec,
 
 static bool collect_body_arg_values(BodyPredicateSpec const &spec,
                                     AtomKey const &body_key,
-                                    std::unordered_map<std::string, int> &values) {
+                                    std::unordered_map<Clingo::Symbol, int> &values) {
     for (auto const &binding : spec.arg_bindings) {
         if (binding.source_arg_index < 0 ||
             static_cast<size_t>(binding.source_arg_index) >= body_key.values.size()) {
@@ -64,7 +68,7 @@ static bool collect_body_arg_values(BodyPredicateSpec const &spec,
 
 struct BodyLiteralMatch {
     Clingo::literal_t lit = 0;
-    std::unordered_map<std::string, int> variable_values;
+    std::unordered_map<Clingo::Symbol, int> variable_values;
 };
 
 using BodyMatchIndex = std::unordered_map<AtomKey, std::vector<BodyLiteralMatch>, AtomKeyHash>;
@@ -90,8 +94,8 @@ static BodyMatchIndex build_body_match_index(
     return index;
 }
 
-static bool merge_variable_values(std::unordered_map<std::string, int> &dst,
-                                  std::unordered_map<std::string, int> const &src) {
+static bool merge_variable_values(std::unordered_map<Clingo::Symbol, int> &dst,
+                                  std::unordered_map<Clingo::Symbol, int> const &src) {
     for (auto const &value : src) {
         auto inserted = dst.emplace(value.first, value.second);
         if (!inserted.second && inserted.first->second != value.second) {
@@ -185,7 +189,7 @@ HeuristicPropagator::PredLitMap HeuristicPropagator::build_lazy_predicate_litera
 ) const {
     PredLitMap pred_lit_map;
 
-    std::unordered_set<std::string> all_preds;
+    std::unordered_set<Clingo::Symbol> all_preds;
     all_preds.insert(predicates.body_preds.begin(), predicates.body_preds.end());
     all_preds.insert(predicates.target_preds.begin(), predicates.target_preds.end());
     all_preds.insert(predicates.neg_preds.begin(), predicates.neg_preds.end());
@@ -194,7 +198,7 @@ HeuristicPropagator::PredLitMap HeuristicPropagator::build_lazy_predicate_litera
         auto const symbol = it->symbol();
         if (!is_clingo_symbol_function(symbol)) continue;
 
-        auto const pname = symbol.name();
+        auto const pname = predicate_name_symbol(symbol);
         if (all_preds.find(pname) == all_preds.end()) continue;
 
         auto const sym_args = symbol.arguments();
@@ -234,7 +238,7 @@ void HeuristicPropagator::add_candidate(Clingo::PropagateInit &init,
                                         std::vector<int> const &tuple_values,
                                         std::vector<Clingo::literal_t> pos_body_lits,
                                         std::vector<Clingo::literal_t> neg_body_lits,
-                                        std::unordered_map<std::string, int> body_var_values) {
+                                        std::unordered_map<Clingo::Symbol, int> body_var_values) {
     if (target_lit == 0 || rule_idx >= rule_templates_.size()) return;
 
     auto const candidate_id = candidates_.size();
@@ -323,7 +327,7 @@ bool HeuristicPropagator::compute_candidate_entry(size_t candidate_id,
         }
     }
 
-    std::unordered_map<std::string, int> var_env;
+    std::unordered_map<Clingo::Symbol, int> var_env;
     var_env.reserve(candidate.body_var_values.size() + candidate.aggregate_bindings.size());
     var_env.insert(candidate.body_var_values.begin(), candidate.body_var_values.end());
     for (auto const &binding : candidate.aggregate_bindings) {
@@ -482,7 +486,7 @@ void HeuristicPropagator::register_lazy_body_triggers(Clingo::PropagateInit &ini
 
             struct PartialMatch {
                 std::vector<Clingo::literal_t> pos_lits;
-                std::unordered_map<std::string, int> body_var_values;
+                std::unordered_map<Clingo::Symbol, int> body_var_values;
             };
 
             std::vector<PartialMatch> partials(1);
@@ -549,11 +553,11 @@ void HeuristicPropagator::register_lazy_aggregate_watches(Clingo::PropagateInit 
                                                           Clingo::SymbolicAtoms const &atoms) {
     auto assignment = init.assignment();
 
-    std::unordered_map<std::string, std::vector<AggregateKey>> aggregate_keys_by_pred;
+    std::unordered_map<Clingo::Symbol, std::vector<AggregateKey>> aggregate_keys_by_pred;
     for (auto const &tmpl : rule_templates_) {
         for (auto const &vb : tmpl.var_bindings) {
             AggregateKey const &agg_key = vb.second;
-            auto &keys = aggregate_keys_by_pred[agg_key.pred_name];
+            auto &keys = aggregate_keys_by_pred[agg_key.pred_symbol];
             if (std::find(keys.begin(), keys.end(), agg_key) == keys.end()) {
                 keys.push_back(agg_key);
             }
@@ -566,7 +570,7 @@ void HeuristicPropagator::register_lazy_aggregate_watches(Clingo::PropagateInit 
         auto const sym = it->symbol();
         if (!is_clingo_symbol_function(sym)) continue;
 
-        auto key_it = aggregate_keys_by_pred.find(sym.name());
+        auto key_it = aggregate_keys_by_pred.find(predicate_name_symbol(sym));
         if (key_it == aggregate_keys_by_pred.end()) continue;
 
         Clingo::literal_t const slit = init.solver_literal(it->literal());
@@ -605,7 +609,7 @@ void HeuristicPropagator::register_lazy_aggregate_watches(Clingo::PropagateInit 
                 WatchedAtomContribution contribution{runtime_key, value};
                 auto &state = aggregate_states_[contribution.runtime_key];
                 if (!state) {
-                    state = make_aggregate(contribution.runtime_key.key.op_name);
+                    state = make_aggregate(contribution.runtime_key.key.op_symbol.name());
                 }
                 if (assignment.is_true(slit) && state) {
                     state->add(contribution.value);
@@ -642,7 +646,7 @@ void HeuristicPropagator::propagate(Clingo::PropagateControl &control, Clingo::L
             for (auto const &contrib : watch_it->second.contributions) {
                 auto &state = aggregate_states_[contrib.runtime_key];
                 if (!state) {
-                    state = make_aggregate(contrib.runtime_key.key.op_name);
+                    state = make_aggregate(contrib.runtime_key.key.op_symbol.name());
                 }
                 if (state) {
                     state->add(contrib.value);

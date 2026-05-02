@@ -2,7 +2,8 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
-BUILD_DIR="$SCRIPT_DIR/../clingo-modified/build"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+BUILD_DIR="$REPO_ROOT/clingo-modified/build"
 
 if [ ! -d "$BUILD_DIR" ]; then
     echo "Errore: La directory $BUILD_DIR non esiste. Esegui prima la configurazione con CMake."

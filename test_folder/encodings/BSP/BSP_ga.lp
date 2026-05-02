@@ -1,7 +1,7 @@
 % ============================================
 % Alpha semantics ground-and-solve per BSP.
 % il range e' definito in:
-% BSP_instances/BSP_range.lp
+% instances/BSP_instances/BSP_range.lp
 %
 % Questa variante non usa il propagatore lazy: forza Gringo a generare una
 % famiglia di #heuristic native per ogni valore possibile della somma.

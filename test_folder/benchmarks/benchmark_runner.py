@@ -1,0 +1,310 @@
+#!/usr/bin/env python3
+
+import argparse
+import csv
+import json
+import os
+import resource
+import signal
+import subprocess
+import sys
+from pathlib import Path
+from typing import Any
+
+
+CSV_FIELDS = [
+    "n",
+    "variant",
+    "seed",
+    "solving_s",
+    "total_s",
+    "grounding_s",
+    "choices",
+    "conflicts",
+    "restarts",
+    "rules",
+    "variables",
+    "memory_mb",
+    "ground_heuristics",
+    "ground_lazy_heuristic_facts",
+    "ground_facts",
+    "ground_lines",
+]
+
+SUCCESS_STATUSES = {0, 10, 20, 30}
+
+
+def find_clingo(explicit_path: str | None) -> str:
+    if explicit_path:
+        return explicit_path
+
+    test_root = Path(__file__).resolve().parents[1]
+    repo_root = test_root.parent
+    candidates = [
+        repo_root / "build" / "bin" / "clingo",
+        repo_root / "clingo-modified" / "build" / "bin" / "clingo",
+    ]
+    for candidate in candidates:
+        if candidate.is_file() and os.access(candidate, os.X_OK):
+            return str(candidate)
+
+    return "clingo"
+
+
+def set_memory_limit(limit_bytes: int | None):
+    if not limit_bytes:
+        return None
+
+    def preexec():
+        resource.setrlimit(resource.RLIMIT_AS, (limit_bytes, limit_bytes))
+
+    return preexec
+
+
+def ordered_files(args) -> list[str]:
+    if args.order == "encoding-first":
+        return [*args.encoding, *args.instance]
+    return [*args.instance, *args.encoding]
+
+
+def build_clingo_command(args, clingo: str, *, json_mode: bool) -> list[str]:
+    cmd = [clingo, *ordered_files(args)]
+    for const in args.constant:
+        cmd.extend(["-c", const])
+    if args.domain_heuristic:
+        cmd.append("--heuristic=Domain")
+    if json_mode:
+        cmd.extend(["--outf=2", "--stats=2", f"--seed={args.seed}", "-n", str(args.models)])
+        cmd.append(f"--time-limit={args.timeout}")
+    else:
+        cmd.append("--text")
+    return cmd
+
+
+def run_command(cmd: list[str], timeout: int, memory_bytes: int | None) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        cmd,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=timeout,
+        preexec_fn=set_memory_limit(memory_bytes),
+    )
+
+
+def nested_get(data: dict[str, Any], path: list[str], default="NA"):
+    cur: Any = data
+    for key in path:
+        if not isinstance(cur, dict) or key not in cur:
+            return default
+        cur = cur[key]
+    return cur
+
+
+def as_number(value, default="NA"):
+    if isinstance(value, (int, float)):
+        return value
+    return default
+
+
+def format_float(value, digits: int = 6):
+    if value == "NA":
+        return value
+    return f"{float(value):.{digits}f}"
+
+
+def parse_solver_metrics(data: dict[str, Any], memory_mb: str) -> dict[str, str]:
+    total = as_number(nested_get(data, ["Time", "Total"]))
+    solve = as_number(nested_get(data, ["Time", "Solve"]))
+    if total != "NA" and solve != "NA":
+        grounding = max(float(total) - float(solve), 0.0)
+    else:
+        grounding = "NA"
+
+    return {
+        "solving_s": format_float(solve),
+        "total_s": format_float(total),
+        "grounding_s": format_float(grounding),
+        "choices": str(as_number(nested_get(data, ["Stats", "Core", "Choices"]))),
+        "conflicts": str(as_number(nested_get(data, ["Stats", "Core", "Conflicts"]))),
+        "restarts": str(as_number(nested_get(data, ["Stats", "Core", "Restarts"]))),
+        "rules": str(as_number(nested_get(data, ["Stats", "LP", "Rules", "Final"]))),
+        "variables": str(as_number(nested_get(data, ["Stats", "Problem", "Variables"]))),
+        "memory_mb": memory_mb,
+    }
+
+
+def failure_metrics() -> dict[str, str]:
+    return {
+        "solving_s": "NA",
+        "total_s": "NA",
+        "grounding_s": "NA",
+        "choices": "NA",
+        "conflicts": "NA",
+        "restarts": "NA",
+        "rules": "NA",
+        "variables": "NA",
+        "memory_mb": "NA",
+    }
+
+
+def collect_ground_counts(args, clingo: str) -> dict[str, str]:
+    cmd = build_clingo_command(args, clingo, json_mode=False)
+    try:
+        proc = run_command(cmd, args.timeout, args.memory_bytes)
+    except (subprocess.TimeoutExpired, OSError):
+        return {
+            "ground_heuristics": "NA",
+            "ground_lazy_heuristic_facts": "NA",
+            "ground_facts": "NA",
+            "ground_lines": "NA",
+        }
+
+    if proc.returncode not in SUCCESS_STATUSES:
+        return {
+            "ground_heuristics": "NA",
+            "ground_lazy_heuristic_facts": "NA",
+            "ground_facts": "NA",
+            "ground_lines": "NA",
+        }
+
+    heuristics = 0
+    lazy_facts = 0
+    facts = 0
+    lines = 0
+    for line in proc.stdout.splitlines():
+        lines += 1
+        stripped = line.strip()
+        if stripped.startswith("#heuristic"):
+            heuristics += 1
+            continue
+        if stripped.startswith("__heuristic("):
+            lazy_facts += 1
+            facts += 1
+            continue
+        if not stripped or stripped.startswith("%"):
+            continue
+        if stripped.endswith(".") and ":-" not in stripped:
+            facts += 1
+
+    return {
+        "ground_heuristics": str(heuristics),
+        "ground_lazy_heuristic_facts": str(lazy_facts),
+        "ground_facts": str(facts),
+        "ground_lines": str(lines),
+    }
+
+
+def child_memory_mb() -> str:
+    usage = resource.getrusage(resource.RUSAGE_CHILDREN)
+    # Linux reports ru_maxrss in KiB.
+    return f"{usage.ru_maxrss / 1024:.4f}"
+
+
+def append_csv(csv_path: str, row: dict[str, str]):
+    path = Path(csv_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    write_header = not path.exists() or path.stat().st_size == 0
+    with path.open("a", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=CSV_FIELDS)
+        if write_header:
+            writer.writeheader()
+        writer.writerow({field: row.get(field, "NA") for field in CSV_FIELDS})
+
+
+def run_benchmark(args) -> int:
+    clingo = find_clingo(args.clingo)
+    json_cmd = build_clingo_command(args, clingo, json_mode=True)
+    row = {"n": args.size, "variant": args.variant, "seed": str(args.seed)}
+
+    print(f"  [seed={args.seed}] {' '.join(json_cmd)}")
+    try:
+        proc = run_command(json_cmd, args.timeout + 5, args.memory_bytes)
+    except subprocess.TimeoutExpired:
+        print("    warning: timeout; solver metrics marked as NA", file=sys.stderr)
+        row.update(failure_metrics())
+    except OSError as exc:
+        print(f"    warning: cannot execute clingo: {exc}", file=sys.stderr)
+        row.update(failure_metrics())
+    else:
+        memory_mb = child_memory_mb()
+        run_ok = proc.returncode in SUCCESS_STATUSES
+        if run_ok:
+            try:
+                data = json.loads(proc.stdout)
+            except json.JSONDecodeError as exc:
+                print(f"    warning: cannot parse clingo JSON: {exc}", file=sys.stderr)
+                run_ok = False
+        if run_ok and data.get("Result") != "UNKNOWN":
+            row.update(parse_solver_metrics(data, memory_mb))
+        else:
+            print(
+                f"    warning: clingo exited with status {proc.returncode}; solver metrics marked as NA",
+                file=sys.stderr,
+            )
+            if proc.stderr:
+                print(proc.stderr.strip(), file=sys.stderr)
+            row.update(failure_metrics())
+
+    row.update(collect_ground_counts(args, clingo))
+    append_csv(args.csv, row)
+
+    print(
+        "    grounding={grounding_s}s solving={solving_s}s total={total_s}s "
+        "choices={choices} conflicts={conflicts} restarts={restarts} "
+        "rules={rules} vars={variables} mem={memory_mb}MB "
+        "heur={ground_heuristics} lazy_facts={ground_lazy_heuristic_facts} "
+        "facts={ground_facts} ground_lines={ground_lines}".format(**row)
+    )
+    return 0
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Run one clingo benchmark and append JSON-derived metrics to a CSV file."
+    )
+    parser.add_argument("--clingo", help="Path to the modified clingo binary.")
+    parser.add_argument("--encoding", action="append", required=True, help="Encoding file. Can be repeated.")
+    parser.add_argument("--instance", action="append", required=True, help="Instance/data file. Can be repeated.")
+    parser.add_argument("--variant", required=True, help="Variant label written to the CSV.")
+    parser.add_argument("--size", required=True, help="Instance size written to the CSV n column.")
+    parser.add_argument("--seed", type=int, required=True, help="Clingo random seed.")
+    parser.add_argument("--semantics", default="native", help="Semantic label for logs and benchmark configs.")
+    parser.add_argument("--csv", required=True, help="CSV file to append.")
+    parser.add_argument("--models", type=int, default=1, help="Number of models requested. Default: 1.")
+    parser.add_argument("--timeout", type=int, default=600, help="Timeout in seconds. Default: 600.")
+    parser.add_argument(
+        "--memory-bytes",
+        type=int,
+        default=32 * 1024 * 1024 * 1024,
+        help="Address-space limit in bytes. Default: 32 GiB.",
+    )
+    parser.add_argument(
+        "-c",
+        "--constant",
+        action="append",
+        default=[],
+        metavar="NAME=VALUE",
+        help="Constant passed to clingo. Can be repeated.",
+    )
+    parser.add_argument(
+        "--domain-heuristic",
+        action="store_true",
+        help="Pass --heuristic=Domain to clingo.",
+    )
+    parser.add_argument(
+        "--order",
+        choices=["instance-first", "encoding-first"],
+        default="instance-first",
+        help="Order of input files passed to clingo. Default: instance-first.",
+    )
+    return parser.parse_args()
+
+
+def main() -> int:
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+    return run_benchmark(parse_args())
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

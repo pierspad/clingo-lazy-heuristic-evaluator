@@ -77,8 +77,8 @@ static ArithmeticExpressionKind expression_kind_for_operator(ArithmeticOperator 
 
 static ArithmeticExpression parse_arithmetic_expression(
     Clingo::Symbol const &term,
-    std::unordered_map<std::string, AggregateKey> const &bindings,
-    std::unordered_set<std::string> const &body_vars,
+    std::unordered_map<Clingo::Symbol, AggregateKey> const &bindings,
+    std::unordered_set<Clingo::Symbol> const &body_vars,
     std::string const &field_name
 ) {
     if (is_clingo_symbol_number(term)) {
@@ -91,17 +91,18 @@ static ArithmeticExpression parse_arithmetic_expression(
     }
 
     std::string const name = term.name();
+    Clingo::Symbol const name_symbol = term;
     auto const args = term.arguments();
 
     if (args.empty()) {
         if (name == "self") {
             return ArithmeticExpression::self();
         }
-        if (bindings.find(name) != bindings.end()) {
-            return ArithmeticExpression::bound_variable(name);
+        if (bindings.find(name_symbol) != bindings.end()) {
+            return ArithmeticExpression::bound_variable(name_symbol);
         }
-        if (body_vars.find(name) != body_vars.end()) {
-            return ArithmeticExpression::bound_variable(name);
+        if (body_vars.find(name_symbol) != body_vars.end()) {
+            return ArithmeticExpression::bound_variable(name_symbol);
         }
         throw std::runtime_error("Sintassi euristica malformata: variabile '" + name +
                                  "' usata in " + field_name + " ma non definita con __bind o __bind_arg.");
@@ -125,7 +126,7 @@ static ArithmeticExpression parse_arithmetic_expression(
 int evaluate_arithmetic_expression(
     ArithmeticExpression const &expr,
     int self_value,
-    std::unordered_map<std::string, int> const &var_env
+    std::unordered_map<Clingo::Symbol, int> const &var_env
 ) {
     switch (expr.kind) {
         case ArithmeticExpressionKind::Number:
@@ -206,7 +207,7 @@ static BodyArgBinding parse_body_arg_binding(Clingo::Symbol const &binding_symbo
     }
 
     BodyArgBinding binding;
-    binding.variable_name = args[0].name();
+    binding.variable_name = args[0];
     binding.source_arg_index = args[1].number();
     if (binding.source_arg_index < 0) {
         throw std::runtime_error("Sintassi euristica malformata: l'indice di __bind_arg deve essere non negativo.");
@@ -225,7 +226,7 @@ static BodyPredicateSpec parse_body_predicate_spec(Clingo::Symbol const &body_sy
     }
 
     BodyPredicateSpec spec;
-    spec.pred_name = args[0].name();
+    spec.pred_name = args[0];
     spec.explicit_mapping = true;
 
     for (size_t i = 1; i < args.size(); ++i) {
@@ -316,7 +317,7 @@ std::vector<HeuristicRuleTemplate> parse_lazy_heuristic_templates(Clingo::Symbol
                 if (has_target) {
                     throw std::runtime_error("Sintassi euristica malformata: target duplicato in __heuristic.");
                 }
-                tmpl.target_pred = arg_args[0].name();
+                tmpl.target_pred = arg_args[0];
                 has_target = true;
                 continue;
             }
@@ -326,9 +327,10 @@ std::vector<HeuristicRuleTemplate> parse_lazy_heuristic_templates(Clingo::Symbol
                     throw std::runtime_error("Sintassi euristica malformata: __bind richiede __bind(var, __agg(pred, idx?, filters...)).");
                 }
 
+                Clingo::Symbol const var_symbol = arg_args[0];
                 std::string const var_name = arg_args[0].name();
-                if (tmpl.var_bindings.find(var_name) != tmpl.var_bindings.end() ||
-                    tmpl.body_var_names.find(var_name) != tmpl.body_var_names.end()) {
+                if (tmpl.var_bindings.find(var_symbol) != tmpl.var_bindings.end() ||
+                    tmpl.body_var_names.find(var_symbol) != tmpl.body_var_names.end()) {
                     throw std::runtime_error("Sintassi euristica malformata: variabile '" + var_name +
                                              "' definita piu' volte in __heuristic.");
                 }
@@ -342,7 +344,7 @@ std::vector<HeuristicRuleTemplate> parse_lazy_heuristic_templates(Clingo::Symbol
                     throw std::runtime_error("Sintassi euristica malformata: operatore aggregato sconosciuto o predicato interno mancante.");
                 }
 
-                std::string const pred = agg_inner[0].name();
+                Clingo::Symbol const pred_symbol = agg_inner[0];
                 int arg_idx = -1;
                 std::vector<AggregateFilter> filters;
 
@@ -360,8 +362,8 @@ std::vector<HeuristicRuleTemplate> parse_lazy_heuristic_templates(Clingo::Symbol
                     filters.push_back(parse_aggregate_filter(agg_inner[j]));
                 }
 
-                AggregateKey key{agg_op_str, pred, arg_idx, std::move(filters)};
-                tmpl.var_bindings.emplace(var_name, std::move(key));
+                AggregateKey key{Clingo::Id(agg_op_str.c_str()), pred_symbol, arg_idx, std::move(filters)};
+                tmpl.var_bindings.emplace(var_symbol, std::move(key));
                 continue;
             }
 
@@ -411,7 +413,7 @@ std::vector<HeuristicRuleTemplate> parse_lazy_heuristic_templates(Clingo::Symbol
                     if (tmpl.var_bindings.find(binding.variable_name) != tmpl.var_bindings.end() ||
                         !tmpl.body_var_names.insert(binding.variable_name).second) {
                         throw std::runtime_error("Sintassi euristica malformata: variabile '" +
-                                                 binding.variable_name +
+                                                 std::string(binding.variable_name.name()) +
                                                  "' definita piu' volte in __heuristic.");
                     }
                 }
@@ -441,12 +443,13 @@ std::vector<HeuristicRuleTemplate> parse_lazy_heuristic_templates(Clingo::Symbol
                 }
 
                 if (is_neg_body(arg_name)) {
-                    tmpl.neg_body_preds.push_back(strip_neg_prefix(arg_name));
+                    std::string pred_name = strip_neg_prefix(arg_name);
+                    tmpl.neg_body_preds.push_back(Clingo::Id(pred_name.c_str()));
                     continue;
                 }
 
                 BodyPredicateSpec spec;
-                spec.pred_name = arg_name;
+                spec.pred_name = arg;
                 tmpl.pos_body_preds.push_back(std::move(spec));
                 continue;
             }

@@ -15,8 +15,8 @@ def find_clingo(explicit_path: str | None) -> str:
     if explicit_path:
         return explicit_path
 
-    script_dir = Path(__file__).resolve().parent
-    repo_root = script_dir.parent
+    test_root = Path(__file__).resolve().parents[1]
+    repo_root = test_root.parent
     candidates = [
         repo_root / "build" / "bin" / "clingo",
         repo_root / "clingo-modified" / "build" / "bin" / "clingo",

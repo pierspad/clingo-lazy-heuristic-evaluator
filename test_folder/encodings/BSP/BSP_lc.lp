@@ -1,7 +1,7 @@
 % ============================================
 % Definizione del dominio come definito nel paper di alpha
 % il range è definito in :
-% BSP_instances/BSP_range.lp
+% instances/BSP_instances/BSP_range.lp
 
 x(1..n).
 
@@ -21,5 +21,4 @@ sumC(Sum) :- Sum = #sum{Y : c(Y)}.
 __heuristic(__target(b), x, __n_c, __bind(s, __sum(c, 0)), __weight(self), __priority(s), true, __semantics(clingo)).
 % Originale: #heuristic c(X) : x(X), not b(X), S = #sum{Y : b(Y)}. [X@S, true]
 __heuristic(__target(c), x, __n_b, __bind(s, __sum(b, 0)), __weight(self), __priority(s), true, __semantics(clingo)).
-
 

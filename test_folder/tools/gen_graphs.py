@@ -10,8 +10,10 @@ import textwrap
 from collections import defaultdict
 
 
-DEFAULT_RESULTS_DIR = "test-results"
-DEFAULT_GRAPHS_DIR = "graphs"
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+TEST_ROOT = os.path.dirname(SCRIPT_DIR)
+DEFAULT_RESULTS_DIR = os.path.join(TEST_ROOT, "results")
+DEFAULT_GRAPHS_DIR = os.path.join(TEST_ROOT, "results", "graphs")
 
 METRIC_FIELDS = [
     "grounding_s",
@@ -139,13 +141,13 @@ BSP_THEME = {
         "la_co": "Lazy + Optimized Constraint (BSP_la_co.lp)",
     },
     "variant_files": {
-        "gc": "BSP/BSP_gc.lp",
-        "gc_aux": "BSP/BSP_gc_aux.lp",
-        "ga": "BSP/BSP_ga.lp",
-        "la": "BSP/BSP_la.lp",
-        "lc": "BSP/BSP_lc.lp",
-        "la_aux": "BSP/BSP_la_aux.lp",
-        "la_co": "BSP/BSP_la_co.lp",
+        "gc": "encodings/BSP/BSP_gc.lp",
+        "gc_aux": "encodings/BSP/BSP_gc_aux.lp",
+        "ga": "encodings/BSP/BSP_ga.lp",
+        "la": "encodings/BSP/BSP_la.lp",
+        "lc": "encodings/BSP/BSP_lc.lp",
+        "la_aux": "encodings/BSP/BSP_la_aux.lp",
+        "la_co": "encodings/BSP/BSP_la_co.lp",
     },
     "variant_colors": {
         "gc":  "#E74C3C",
@@ -186,16 +188,16 @@ PUP_THEME = {
         "pup_doublev_aux_l": "Aggregati Dinamici Variante + Aux",
     },
     "variant_files": {
-        "pup": "PUP/PUP.lp",
-        "pup_heur": "PUP/PUP_heur.lp",
-        "pup_double_std": "PUP/PUP_double.lp",
-        "pup_double_aux": "PUP/PUP_double_aux.lp",
-        "pup_double": "PUP/PUP_double_l.lp",
-        "pup_double_aux_l": "PUP/PUP_double_aux_l.lp",
-        "pup_doublev_std": "PUP/PUP_double_variant.lp",
-        "pup_doublev_aux": "PUP/PUP_double_variant_aux.lp",
-        "pup_doublev": "PUP/PUP_double_variant_l.lp",
-        "pup_doublev_aux_l": "PUP/PUP_double_variant_aux_l.lp",
+        "pup": "encodings/PUP/PUP.lp",
+        "pup_heur": "encodings/PUP/PUP_heur.lp",
+        "pup_double_std": "encodings/PUP/PUP_double.lp",
+        "pup_double_aux": "encodings/PUP/PUP_double_aux.lp",
+        "pup_double": "encodings/PUP/PUP_double_l.lp",
+        "pup_double_aux_l": "encodings/PUP/PUP_double_aux_l.lp",
+        "pup_doublev_std": "encodings/PUP/PUP_double_variant.lp",
+        "pup_doublev_aux": "encodings/PUP/PUP_double_variant_aux.lp",
+        "pup_doublev": "encodings/PUP/PUP_double_variant_l.lp",
+        "pup_doublev_aux_l": "encodings/PUP/PUP_double_variant_aux_l.lp",
     },
     "variant_colors": {
         "pup":        "#E74C3C",
@@ -1309,8 +1311,8 @@ def ensure_plot_dependencies():
         print("Matplotlib/Numpy non sono installati.")
         print("Crea un virtualenv e installa le dipendenze, ad esempio:")
         print("  python3 -m venv /tmp/clingo-graphs-venv")
-        print("  /tmp/clingo-graphs-venv/bin/python -m pip install -r test_folder/requirements.txt")
-        print("  cd test_folder && /tmp/clingo-graphs-venv/bin/python gen_graphs.py")
+        print("  /tmp/clingo-graphs-venv/bin/python -m pip install -r test_folder/tools/requirements.txt")
+        print("  /tmp/clingo-graphs-venv/bin/python test_folder/tools/gen_graphs.py")
         sys.exit(1)
 
 
@@ -1374,7 +1376,7 @@ def parse_args():
         epilog=f"""
 {heading("Commands")}
   {cmd("%(prog)s")}
-      Read CSV files from test-results/ and write charts to graphs/.
+      Read CSV files from results/ and write charts to results/graphs/.
 
   {cmd("%(prog)s --results-dir DIR --out DIR")}
       Read result CSV files from a custom directory and write charts elsewhere.
@@ -1389,13 +1391,13 @@ def parse_args():
   {value("results.csv")}              legacy BSP fallback.
 
 {heading("Output directories")}
-  {value("graphs/bsp/standard/")}      BSP charts with all variants.
-  {value("graphs/bsp/no_<variant>/")}  BSP charts with selected variants removed.
-  {value("graphs/pup/")}               PUP Double and DoubleV charts.
+  {value("results/graphs/bsp/standard/")}      BSP charts with all variants.
+  {value("results/graphs/bsp/no_<variant>/")}  BSP charts with selected variants removed.
+  {value("results/graphs/pup/")}               PUP Double and DoubleV charts.
 
 {heading("Options")}
   {opt("--results-dir DIR")}
-      Directory containing benchmark CSV files. Default: test-results.
+      Directory containing benchmark CSV files. Default: results/.
 
   {opt("--out DIR")}
       Base output directory for generated PNG charts. Default: graphs.
@@ -1415,8 +1417,8 @@ def parse_args():
   {cmd("%(prog)s")}
       Generate every chart with default paths.
 
-  {cmd("%(prog)s --results-dir test-results --out graphs")}
-      Same as the default, written explicitly.
+  {cmd("%(prog)s --results-dir ../results --out ../results/graphs")}
+      Explicit paths when running from test_folder/tools.
 
   {cmd("%(prog)s --exclude BSP_lc.lp")}
       Exclude the BSP_lc.lp variant wherever it is recognized.
@@ -1549,7 +1551,7 @@ def main():
 
     if not processed_any:
         print("\nNessun file CSV di risultati trovato.")
-        print("Esegui prima benchmark_bsp.sh e/o benchmark_pup.sh.")
+        print("Esegui prima benchmarks/benchmark_bsp.sh e/o benchmarks/benchmark_pup.sh.")
         sys.exit(1)
 
     print(f"\nDone. Tutti i grafici sono in '{base_out}/'.")
