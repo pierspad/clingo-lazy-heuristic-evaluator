@@ -3,18 +3,51 @@
 https://github.com/tilmanni/Alpha/tree/domspec_heuristics_extended_prolog/Evaluation/PUP
 
 
-per generare i grafici escludendo alcuni risultati
-
-python gen_graphs.py --bsp-exclude BSP_la_aux.lp,BSP_gc.lp
+per generare i grafici
 
 // ======
 // NOTE --------
-// Questo comando e' outdated dopo la riorganizzazione della cartella.
-// Ora il tool sta in test_folder/tools/gen_graphs.py, legge di default da
+// Il tool sta in test_folder/tools/gen_graphs.py, legge di default da
 // test_folder/results e scrive in test_folder/results/graphs.
-// L'opzione corretta e' --exclude, per esempio:
 //
-// python3 test_folder/tools/gen_graphs.py --exclude BSP_la_aux.lp,BSP_gc.lp
+// Comportamento della CLI:
+//
+// python3 test_folder/tools/gen_graphs.py --reset
+//   svuota tutte le cartelle dei grafici ed esce. Il reset avviene solo con
+//   --reset esplicito.
+//
+// python3 test_folder/tools/gen_graphs.py
+//   genera tutti i grafici standard disponibili, BSP e PUP, senza cancellare
+//   quelli gia' presenti.
+//
+// python3 test_folder/tools/gen_graphs.py --type bsp
+//   genera solo i grafici BSP standard in:
+//   test_folder/results/graphs/bsp/standard/
+//
+// python3 test_folder/tools/gen_graphs.py --type bsp --exclude bspga
+//   genera una cartella BSP separata, per esempio:
+//   test_folder/results/graphs/bsp/no_ga/
+//
+// python3 test_folder/tools/gen_graphs.py --type bsp --exclude bspga,bspgcaux
+//   genera una cartella BSP separata, per esempio:
+//   test_folder/results/graphs/bsp/no_ga-no_gc_aux/
+//
+// I selector di --exclude possono essere nomi file esatti oppure stem compatti:
+// lowercase, senza estensione, spazi o underscore. Per esempio BSP_ga.lp
+// diventa bspga, mentre BSP_gc_aux.lp diventa bspgcaux.
+//
+// --exclude richiede sempre --type. Non sono ammesse generazioni "tutto ma con
+// esclusioni": tutti i grafici si generano solo con il comando senza condizioni.
+//
+// Per rigenerare la sequenza piu' comune si puo' eseguire:
+//
+// sh test_folder/generate_graphs.sh
+//
+// che lancia dalla cartella test_folder:
+//   py tools/gen_graphs.py --reset
+//   py tools/gen_graphs.py --type bsp
+//   py tools/gen_graphs.py --type bsp --exclude bspga,bspgcaux
+// Lo script usa py se disponibile, altrimenti prova python3/python.
 //
 // END NOTE ---------
 // ======
@@ -742,6 +775,109 @@ Dato che in BSP i valori sono positivi, tra tutte le regole attive vince la
 priorita' massima S, cioe' la somma corrente degli atomi assegnati a vero.
 Questo e' utile per testing perche' resta "ground and solve", ma produce molte
 euristiche ground e quindi puo' essere molto piu' pesante della variante lazy.
+
+// ======
+// NOTE --------
+// Perche' `ga` si comporta in modo cosi' diverso da `gc`?
+//
+// La variante `ga` non va interpretata come "Clingo standard, ma con una
+// piccola modifica sintattica per ottenere la semantica Alpha". E' invece una
+// compilazione statica, dentro il linguaggio ground-and-solve di Clingo, di un
+// comportamento che in Alpha e' naturalmente dinamico: leggere lo stato
+// corrente dell'assegnamento parziale e usare la somma degli atomi gia' veri
+// come priorita' euristica corrente.
+//
+// In `gc` la direttiva nativa e':
+//
+//   #heuristic b(X): x(X), not c(X), S = #sum{Y : c(Y)}. [X@S,true]
+//
+// Qui il grounder/solver resta nella semantica ordinaria di Clingo per le
+// direttive `#heuristic`: il body della direttiva e il binding `S = #sum{...}`
+// sono trattati come parte della machinery nativa di Clingo. La direttiva e'
+// standard e il solver applica la sua politica interna per capire quando un
+// contributo euristico e' utilizzabile.
+//
+// In `ga`, invece, proviamo a forzare una lettura "alla Alpha" usando:
+//
+//   sum_value(0..tot).
+//   #heuristic b(X): x(X), sum_value(S), S <= #sum{Y : c(Y)}. [X@S,true]
+//
+// Questo encoding dice: per ogni valore possibile S, se la somma corrente
+// garantisce almeno S, allora esiste una direttiva euristica con priorita' S.
+// Siccome nel BSP tutti i contributi Y sono positivi, il massimo S attivo
+// dovrebbe coincidere con la somma degli atomi c(Y) attualmente veri. Quindi
+// l'idea concettuale e' sensata: trasformare il valore dinamico della somma in
+// una famiglia di soglie statiche.
+//
+// Il problema e' che questa trasformazione cambia profondamente cio' che il
+// solver vede durante CDNL:
+//
+// 1) Una singola euristica concettuale diventa una scala di molte euristiche.
+//    Per ogni target b(X) o c(X), il programma contiene direttive per molti
+//    valori di S. Quando la somma cresce, non si "aggiorna" una sola priorita':
+//    diventano applicabili molte direttive di soglia. Anche se alla fine la
+//    priorita' massima dovrebbe dominare, il solver deve comunque gestire una
+//    struttura euristica molto piu' articolata.
+//
+// 2) La versione `ga` usa un predicato ausiliario `sum_value(0..tot)`.
+//    Questo introduce fatti e combinazioni aggiuntive che non rappresentano
+//    scelte del problema, ma solo valori potenziali della priorita'. Sono
+//    necessari per rendere groundabile l'espressione, pero' sono anche un
+//    artefatto dell'emulazione.
+//
+// 3) La condizione `S <= #sum{...}` e' monotona. Appena la somma degli atomi
+//    veri supera una soglia, quella soglia resta vera lungo il ramo corrente.
+//    Questo e' vicino all'intuizione Alpha, ma non e' equivalente ad avere una
+//    singola euristica runtime che ricalcola "adesso S vale k". Nel programma
+//    ground il valore k e' rappresentato implicitamente dall'insieme di tutte
+//    le soglie S <= k.
+//
+// 4) La search puo' diventare molto diversa anche quando il grounding non
+//    sembra esplodere piu' di `gc`. Nei risultati BSP, `ga` puo' avere un numero
+//    di direttive `#heuristic` ground simile a `gc`, ma produrre ordini di
+//    grandezza in piu' in choices/conflicts/restarts. Questo indica che il
+//    collo di bottiglia principale, in quei punti, non e' solo "quante righe
+//    ground sono state prodotte", ma quale guidance viene data al solver
+//    durante la ricerca.
+//
+// Quindi: e' un problema del tuo encoding?
+//
+// Risposta breve: non e' un errore banale dell'encoding; e' un limite del
+// tentativo di esprimere una semantica dinamica di assegnamento parziale usando
+// sole direttive native ground-and-solve. L'encoding `ga` e' una possibile
+// emulazione, utile come baseline sperimentale, ma non e' una rappresentazione
+// naturale della semantica Alpha.
+//
+// Detto meglio:
+// - se vuoi restare in ground-and-solve puro, devi "precompilare" i possibili
+//   valori runtime in oggetti ground statici: soglie, valori possibili, regole
+//   ausiliarie, o altri gadget simili;
+// - questa precompilazione puo' essere corretta come idea logica su domini
+//   monotoni e positivi come BSP, ma tende a essere fragile e costosa;
+// - su euristiche piu' generali, con aggregati non monotoni, pesi negativi,
+//   filtri, min/max, condizioni congiuntive o dipendenze dal fatto che un
+//   atomo sia libero/falso/vero, la compilazione ground-and-solve diventa molto
+//   piu' difficile o puo' richiedere un'esplosione di casi;
+// - il propagatore lazy evita proprio questa compilazione: lascia a Gringo un
+//   fatto strutturale piccolo (`__heuristic(...)`) e legge direttamente lo stato
+//   del solver per calcolare peso/priorita' nel momento della decisione.
+//
+// Conclusione operativa per la tesi:
+// `ga` non dimostra che "Alpha semantics e' lenta"; dimostra che emulare Alpha
+// semantics dentro il modello ground-and-solve di Clingo puo' produrre una
+// guidance molto diversa e molto peggiore. Il confronto piu' interessante non
+// e' quindi `gc` vs `ga` come se fossero due encoding equivalenti, ma:
+// - `gc`: semantica nativa Clingo, completamente groundata;
+// - `ga`: emulazione ground-and-solve della lettura Alpha, utile ma artificiale;
+// - `la`: valutazione lazy/runtime della stessa intuizione Alpha, senza
+//   materializzare tutte le soglie come direttive native.
+//
+// Per questo, se `ga` esplode in choices/conflicts, il risultato va spiegato
+// come effetto della compilazione statica della semantica dinamica, non come
+// fallimento dell'approccio lazy. Anzi, e' proprio il tipo di fenomeno che
+// motiva l'uso del propagatore.
+// END NOTE ---------
+// ======
 
 3) Alpha semantics lazy (`la`, file BSP/BSP_la.lp).
 Le euristiche sono template statici:

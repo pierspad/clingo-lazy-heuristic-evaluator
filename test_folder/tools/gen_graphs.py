@@ -66,7 +66,7 @@ PLOT_CONFIGS = [
     },
     {
         "metric": "solving_s",
-        "title": "Solving Time (CDNL)",
+        "title": "Solving Time",
         "ylabel": "Time (seconds)",
         "description": "Net time spent in CDNL search\n(grounding excluded)",
         "filename": "solving_time.png",
@@ -608,6 +608,16 @@ def resolve_excluded_variant_list_quiet(theme: dict, selectors: list) -> list:
 
 def warn_unmatched_exclude_selectors(selectors: list, themes: list) -> None:
 
+    unknown = unmatched_exclude_selectors(selectors, themes)
+    if unknown:
+        print(
+            "[WARN] exclude selector non riconosciuti: "
+            f"{', '.join(unknown)}"
+        )
+
+
+def unmatched_exclude_selectors(selectors: list, themes: list) -> list:
+
     unknown = []
     for selector in selectors:
         key = selector.strip().lower()
@@ -618,12 +628,7 @@ def warn_unmatched_exclude_selectors(selectors: list, themes: list) -> None:
         )
         if not matched:
             unknown.append(selector)
-
-    if unknown:
-        print(
-            "[WARN] exclude selector non riconosciuti: "
-            f"{', '.join(unknown)}"
-        )
+    return unknown
 
 
 def _variant_dir_identifier(theme: dict, variant: str) -> str:
@@ -1376,13 +1381,21 @@ def parse_args():
         epilog=f"""
 {heading("Commands")}
   {cmd("%(prog)s")}
-      Read CSV files from results/ and write charts to results/graphs/.
+      Generate every standard chart: BSP and PUP, without exclusions.
+
+  {cmd("%(prog)s --reset")}
+      Empty the graph output directory and exit. This is the only command
+      that removes existing graph files.
+
+  {cmd("%(prog)s --type bsp")}
+      Generate only standard BSP charts.
+
+  {cmd("%(prog)s --type bsp --exclude bspga,bspgcaux")}
+      Generate BSP charts in a separate exclusion directory, without the
+      selected variants.
 
   {cmd("%(prog)s --results-dir DIR --out DIR")}
       Read result CSV files from a custom directory and write charts elsewhere.
-
-  {cmd("%(prog)s --exclude SELECTOR")}
-      Generate charts while excluding one or more matching variants.
 
 {heading("Expected CSV files")}
   {value("bsp_results.csv")}          BSP benchmark results.
@@ -1402,8 +1415,15 @@ def parse_args():
   {opt("--out DIR")}
       Base output directory for generated PNG charts. Default: graphs.
 
+  {opt("--type {bsp,pup}")}
+      Restrict generation to one benchmark family. Required when using
+      --exclude.
+
+  {opt("--reset")}
+      Empty the graph output directory and exit.
+
   {opt("--exclude SELECTOR")}
-      Exclude matching variants globally. Accepts exact filenames with
+      Exclude matching variants for the selected --type. Accepts exact filenames with
       extension, or compact file stems: lowercase, without spaces,
       underscores, or extension. Can be repeated or comma-separated.
 
@@ -1420,13 +1440,13 @@ def parse_args():
   {cmd("%(prog)s --results-dir ../results --out ../results/graphs")}
       Explicit paths when running from test_folder/tools.
 
-  {cmd("%(prog)s --exclude BSP_lc.lp")}
-      Exclude the BSP_lc.lp variant wherever it is recognized.
+  {cmd("%(prog)s --type bsp --exclude BSP_lc.lp")}
+      Exclude the BSP_lc.lp variant from a separate BSP graph set.
 
-  {cmd("%(prog)s --exclude bspla,bspgcaux, BSP_la_co.lp")}
+  {cmd("%(prog)s --type bsp --exclude bspla,bspgcaux, BSP_la_co.lp")}
       Exclude several variants with a comma-separated list.
 
-  {cmd("%(prog)s --exclude bspla,bspgcaux --exclude BSP_la_co.lp")}
+  {cmd("%(prog)s --type bsp --exclude bspla,bspgcaux --exclude BSP_la_co.lp")}
       Exclude several variants in one run.
         """.strip(),
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -1454,12 +1474,118 @@ def parse_args():
         default=[],
         metavar="SELECTOR",
         help=(
-            "Exclude variants globally. Accepts exact filenames with extension "
+            "Exclude variants for the selected --type. Accepts exact filenames with extension "
             "or compact file stems: lowercase, without spaces, underscores, or "
             "extension. Repeat it or use comma-separated values."
         ),
     )
-    return parser.parse_args()
+    parser.add_argument(
+        "--type",
+        choices=("bsp", "pup"),
+        default=None,
+        help=(
+            "Generate only one benchmark family. Required when using --exclude. "
+            "Without --type and without --exclude, all standard charts are generated."
+        ),
+    )
+    parser.add_argument(
+        "--reset",
+        action="store_true",
+        help="Empty the graph output directory and exit.",
+    )
+
+    args = parser.parse_args()
+    exclude_selectors = _split_exclude_selectors(args.exclude)
+    if args.reset and (args.type or exclude_selectors):
+        parser.error("--reset deve essere usato da solo: non combinare --reset con --type o --exclude.")
+    if exclude_selectors and not args.type:
+        parser.error("--exclude richiede --type bsp oppure --type pup.")
+    return args
+
+
+def build_themes():
+    bsp_theme = BSP_THEME.copy()
+    bsp_theme["suptitle"] = "BSP Benchmark: Standard vs Lazy Heuristic Grounding"
+
+    pup_double_theme = PUP_THEME.copy()
+    pup_double_theme["suptitle"] = "PUP Benchmark — Double Family"
+    pup_double_theme["heuristic_baseline"] = "pup_double_std"
+
+    pup_doublev_theme = PUP_THEME.copy()
+    pup_doublev_theme["suptitle"] = "PUP Benchmark — DoubleV Family"
+    pup_doublev_theme["heuristic_baseline"] = "pup_doublev_std"
+
+    return bsp_theme, pup_double_theme, pup_doublev_theme
+
+
+def process_bsp(results_dir, base_out, exclude_selectors):
+    bsp_csv = os.path.join(results_dir, "bsp_results.csv")
+    bsp_theme, _, _ = build_themes()
+
+    bsp_user_excluded_order = resolve_excluded_variant_list_quiet(
+        bsp_theme,
+        exclude_selectors,
+    )
+    bsp_excluded = set(bsp_user_excluded_order)
+    bsp_label = "BSP (Balanced Sum Partition)"
+    bsp_out = os.path.join(
+        base_out,
+        "bsp",
+        exclusion_dir_name(bsp_theme, bsp_excluded, bsp_user_excluded_order),
+    )
+    return process_csv(bsp_csv, bsp_out, bsp_theme, bsp_label, excluded_variants=bsp_excluded)
+
+
+def process_pup(results_dir, base_out, exclude_selectors):
+    _, pup_double_theme, pup_doublev_theme = build_themes()
+
+    pup_double_excluded_order = resolve_excluded_variant_list_quiet(
+        pup_double_theme,
+        exclude_selectors,
+    )
+    pup_doublev_excluded_order = resolve_excluded_variant_list_quiet(
+        pup_doublev_theme,
+        exclude_selectors,
+    )
+    seen_double_exclusions = set(pup_double_excluded_order)
+    ordered_exclusions = pup_double_excluded_order + [
+        variant
+        for variant in pup_doublev_excluded_order
+        if variant not in seen_double_exclusions
+    ]
+    pup_excluded = set(ordered_exclusions)
+
+    pup_out = os.path.join(base_out, "pup")
+    if pup_excluded:
+        pup_out = os.path.join(
+            pup_out,
+            exclusion_dir_name(pup_double_theme, pup_excluded, ordered_exclusions),
+        )
+
+    processed_any = False
+    pup_double_csv = os.path.join(results_dir, "pup_double_results.csv")
+    if process_csv(
+        pup_double_csv,
+        pup_out,
+        pup_double_theme,
+        "PUP Double",
+        title_suffix="Double",
+        excluded_variants=set(pup_double_excluded_order),
+    ):
+        processed_any = True
+
+    pup_doublev_csv = os.path.join(results_dir, "pup_doublev_results.csv")
+    if process_csv(
+        pup_doublev_csv,
+        pup_out,
+        pup_doublev_theme,
+        "PUP DoubleV",
+        title_suffix="DoubleV",
+        excluded_variants=set(pup_doublev_excluded_order),
+    ):
+        processed_any = True
+
+    return processed_any
 
 
 def main():
@@ -1468,7 +1594,26 @@ def main():
     base_out = args.out
     global_exclude_selectors = _split_exclude_selectors(args.exclude)
 
-    processed_any = False
+    if args.reset:
+        reset_graphs_dir(base_out)
+        return
+
+    bsp_theme, pup_double_theme, pup_doublev_theme = build_themes()
+    selected_themes = {
+        "bsp": [bsp_theme],
+        "pup": [pup_double_theme, pup_doublev_theme],
+        None: [bsp_theme, pup_double_theme, pup_doublev_theme],
+    }[args.type]
+    unknown_exclude_selectors = unmatched_exclude_selectors(
+        global_exclude_selectors,
+        selected_themes,
+    )
+    if unknown_exclude_selectors:
+        print(
+            "[ERROR] exclude selector non validi per "
+            f"--type {args.type}: {', '.join(unknown_exclude_selectors)}"
+        )
+        sys.exit(2)
 
     expected_csvs = [
         os.path.join(results_dir, "bsp_results.csv"),
@@ -1478,75 +1623,27 @@ def main():
     ]
     if any(os.path.isfile(path) for path in expected_csvs):
         ensure_plot_dependencies()
-        reset_graphs_dir(base_out)
 
+    processed_any = False
+    if args.type in (None, "bsp"):
+        if process_bsp(results_dir, base_out, global_exclude_selectors):
+            processed_any = True
 
-    bsp_csv = os.path.join(results_dir, "bsp_results.csv")
-    bsp_theme = BSP_THEME.copy()
-    bsp_theme["suptitle"] = "BSP Benchmark: Standard vs Lazy Heuristic Grounding"
-    pup_double_theme = PUP_THEME.copy()
-    pup_double_theme["suptitle"] = "PUP Benchmark — Double Family"
-    pup_double_theme["heuristic_baseline"] = "pup_double_std"
-    pup_doublev_theme = PUP_THEME.copy()
-    pup_doublev_theme["suptitle"] = "PUP Benchmark — DoubleV Family"
-    pup_doublev_theme["heuristic_baseline"] = "pup_doublev_std"
-
-    warn_unmatched_exclude_selectors(
-        global_exclude_selectors,
-        [bsp_theme, pup_double_theme, pup_doublev_theme],
-    )
-
-    bsp_user_excluded_order = resolve_excluded_variant_list_quiet(
-        bsp_theme,
-        global_exclude_selectors,
-    )
-    bsp_excluded = set(bsp_user_excluded_order)
-    bsp_label = "BSP (Balanced Sum Partition)"
-    bsp_title_suffix = ""
-    if bsp_user_excluded_order:
-        focused_names = ", ".join(exclusion_display_names(bsp_theme, bsp_user_excluded_order))
-        bsp_label = f"BSP (Balanced Sum Partition, without {focused_names})"
-        bsp_title_suffix = f" (without {focused_names})"
-
-    bsp_out = os.path.join(
-        base_out,
-        "bsp",
-        exclusion_dir_name(bsp_theme, bsp_excluded, bsp_user_excluded_order),
-    )
-    bsp_theme["suptitle"] += bsp_title_suffix
-    if process_csv(bsp_csv, bsp_out, bsp_theme, bsp_label, excluded_variants=bsp_excluded):
-        processed_any = True
-
-    pup_double_csv = os.path.join(results_dir, "pup_double_results.csv")
-    pup_double_out = os.path.join(base_out, "pup")
-    pup_double_excluded = set(resolve_excluded_variant_list_quiet(
-        pup_double_theme,
-        global_exclude_selectors,
-    ))
-    if process_csv(pup_double_csv, pup_double_out, pup_double_theme,
-                   "PUP Double", title_suffix="Double",
-                   excluded_variants=pup_double_excluded):
-        processed_any = True
-
-    pup_doublev_csv = os.path.join(results_dir, "pup_doublev_results.csv")
-    pup_doublev_out = os.path.join(base_out, "pup")
-    pup_doublev_excluded = set(resolve_excluded_variant_list_quiet(
-        pup_doublev_theme,
-        global_exclude_selectors,
-    ))
-    if process_csv(pup_doublev_csv, pup_doublev_out, pup_doublev_theme,
-                   "PUP DoubleV", title_suffix="DoubleV",
-                   excluded_variants=pup_doublev_excluded):
-        processed_any = True
-
+    if args.type in (None, "pup"):
+        if process_pup(results_dir, base_out, global_exclude_selectors):
+            processed_any = True
 
     legacy_csv = os.path.join(results_dir, "results.csv")
-    if not processed_any and os.path.isfile(legacy_csv):
+    if args.type in (None, "bsp") and not processed_any and os.path.isfile(legacy_csv):
         print(f"\n[FALLBACK] Trovato file legacy '{legacy_csv}', lo processo come BSP...")
         legacy_out = os.path.join(base_out, "bsp", "standard")
         process_csv(legacy_csv, legacy_out, BSP_THEME,
                     "BSP (Legacy)", title_suffix="legacy",
-                    excluded_variants=set(bsp_user_excluded_order))
+                    excluded_variants=resolve_excluded_variants(
+                        BSP_THEME,
+                        global_exclude_selectors,
+                        context="BSP legacy",
+                    ))
         processed_any = True
 
     if not processed_any:
