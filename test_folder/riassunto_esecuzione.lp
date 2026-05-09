@@ -3,56 +3,14 @@
 https://github.com/tilmanni/Alpha/tree/domspec_heuristics_extended_prolog/Evaluation/PUP
 
 
-per generare i grafici
-
-// ======
-// NOTE --------
-// Il tool sta in test_folder/tools/gen_graphs.py, legge di default da
-// test_folder/results e scrive in test_folder/results/graphs.
-//
-// Comportamento della CLI:
-//
-// python3 test_folder/tools/gen_graphs.py --reset
-//   svuota tutte le cartelle dei grafici ed esce. Il reset avviene solo con
-//   --reset esplicito.
-//
-// python3 test_folder/tools/gen_graphs.py
-//   genera tutti i grafici standard disponibili, BSP e PUP, senza cancellare
-//   quelli gia' presenti.
-//
-// python3 test_folder/tools/gen_graphs.py --type bsp
-//   genera solo i grafici BSP standard in:
-//   test_folder/results/graphs/bsp/standard/
-//
-// python3 test_folder/tools/gen_graphs.py --type bsp --exclude bspga
-//   genera una cartella BSP separata, per esempio:
-//   test_folder/results/graphs/bsp/no_ga/
-//
-// python3 test_folder/tools/gen_graphs.py --type bsp --exclude bspga,bspgcaux
-//   genera una cartella BSP separata, per esempio:
-//   test_folder/results/graphs/bsp/no_ga-no_gc_aux/
-//
-// I selector di --exclude possono essere nomi file esatti oppure stem compatti:
-// lowercase, senza estensione, spazi o underscore. Per esempio BSP_ga.lp
-// diventa bspga, mentre BSP_gc_aux.lp diventa bspgcaux.
-//
-// --exclude richiede sempre --type. Non sono ammesse generazioni "tutto ma con
-// esclusioni": tutti i grafici si generano solo con il comando senza condizioni.
-//
-// Per rigenerare la sequenza piu' comune si puo' eseguire:
-//
-// sh test_folder/generate_graphs.sh
-//
-// che lancia dalla cartella test_folder:
-//   py tools/gen_graphs.py --reset
-//   py tools/gen_graphs.py --type bsp
-//   py tools/gen_graphs.py --type bsp --exclude bspga,bspgcaux
-// Lo script usa py se disponibile, altrimenti prova python3/python.
-//
-// END NOTE ---------
-// ======
-
-Esempio
+clingo-modified/libclingo/src/heuristic_propagator.cc
+clingo-modified/libclingo/src/heuristic_parser.cc
+clingo-modified/libclingo/clingo/heuristic_symbol.hh
+clingo-modified/libclingo/clingo/heuristic_types.hh
+clingo-modified/libclingo/clingo/heuristic_aggregate.hh
+clingo-modified/libclingo/clingo/heuristic_parser.hh
+clingo-modified/libclingo/clingo/heuristic_propagator.hh
+clingo-modified/libclingo/tests/heuristic_propagator.cc
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 1) Introduzione al problema del grounding bottleneck con euristiche e aggregati
@@ -65,16 +23,7 @@ Un problema critico di questo processo è che istanze di grandi dimensioni non p
 In Clingo, i pesi e le priorità ([W@P]) di un'euristica devono essere risolti dal grounder come costanti intere statiche prima che il solving inizi. Se W o P dipendono dal risultato di un aggregato (come S), Gringo non ha un valore costante da inserire nell'istruzione per il solver. Di conseguenza, l'unico modo per preservare la logica è istanziare una direttiva euristica separata per ogni singolo valore intero che l'aggregato può generare.
 L'euristica che viene aggiunta con lo scopo di velocizzare il tempo di solving finisce per saturare la RAM e rendere il processo di grounding impraticabile o il processo di solving inefficiente a causa dell'enorme spazio di ricerca generato.
 
-Nel balanced sum problem, come definito nel paper di Comploi-Taupe, l'obiettivo è che la differenza in valore assoluto della somma degli elementi contenuti in due insiemi sia uguale a 1.
-// ======
-// NOTE --------
-// Qui conviene essere piu' precisi: negli encoding presenti in questa repo il
-// vincolo implementato e' |Sum(b)-Sum(c)| <= 1, non strettamente "uguale a 1".
-// Per totali dispari le due formulazioni coincidono sul bilanciamento ottimo;
-// per una descrizione generale del BSP, pero', "al massimo 1" evita ambiguita'.
-// END NOTE ---------
-// ======
-Immaginando di dover distribuire equamente i numeri da 1 a 3 tra due insiemi, b e c, con la condizione che ogni numero può essere assegnato solo a uno dei due insiemi. Per indirizzare il solver, è utile massimizzare l'assegnazione a un insieme valutando dinamicamente la somma dell'altro. Usando la sintassi nativa, scriveremmo:
+Nel balanced sum problem, come definito nel paper di Comploi-Taupe, l'obiettivo è suddividere i numeri da $1$ a $n$ in due insiemi disgiunti, b e c, in modo tale che la differenza in valore assoluto tra la somma dei loro elementi sia al massimo 1. Immaginando di dover distribuire equamente i numeri, per indirizzare il solver è utile massimizzare l'assegnazione a un insieme valutando dinamicamente la somma dell'altro. Usando la sintassi nativa, scriveremmo:
 
 #heuristic b(X): x(X), not c(X), S = #sum{Y : c(Y)}. [X@S, true]
 #heuristic c(X): x(X), not b(X), S = #sum{Y : b(Y)}. [X@S, true]
@@ -137,17 +86,9 @@ Di conseguenza, non potendo calcolare un valore univoco per S, il grounder è co
 #heuristic c(3):not b(3),#sum{1:b(1);2:b(2);3:b(3)}=6.[3@6,true]
 
 
-Per rendere quindi il processo più efficiente l'obiettivo è far si che l'euristica venga valutata e groundata da gringo come un fatto semplice, delegando ad un propagatore in c++ a runtime la valutazione e il calcolo dell'euristica.
+Per rendere il processo più efficiente, le euristiche vengono tradotte in un fatto proposizionale tramite lo script `test_folder/tools/asp_heuristic_converter.py`. Questo tool individua e interpreta le direttive `#heuristic` tramite l'Abstract Syntax Tree (AST) esposto da `clingo.ast`, senza usare vecchi meccanismi di fallback basati su parsing testuale della direttiva. Se una direttiva valida per Clingo non è processabile in modo rigoroso dal converter AST, lo script fallisce esplicitamente invece di produrre una conversione approssimata.
 
-Per realizzare ciò il programma viene passato a Clingo, ma invece di far groundare a Gringo le euristiche secondo il pattern classico #heuristic, esse vengono tradotte in un fatto proposizionale (aiutandosi anche con il file asp_heuristic_converter.py), queste vengono codificate come template strutturali, ovvero fatti proposizionali statici della forma:
-// ======
-// NOTE --------
-// Path aggiornato: il converter ora si trova in test_folder/tools/asp_heuristic_converter.py.
-// Inoltre il parser legacy regex e' stato rimosso: la conversione passa solo da
-// clingo.ast. Se una direttiva #heuristic non e' parseabile via AST, il converter
-// fallisce esplicitamente invece di tentare un fallback testuale.
-// END NOTE ---------
-// ======
+I fatti prodotti vengono codificati come template strutturali, ovvero fatti proposizionali statici della forma:
 
 __heuristic(__target(TargetPred), ...argomenti flessibili...).
 
@@ -155,16 +96,18 @@ Il predicato target viene dichiarato esplicitamente con __target(TargetPred).
 L'ordine degli argomenti non è rilevante e vengono classificati automaticamente dal parser C++:
   - __target(pred)                             → predicato target
   - atomo semplice (es. x)                    → body positivo
+  - __body(pred, __match(...), __bind_arg(...)) → body positivo con mapping esplicito
   - prefisso __n_ (es. __n_c)                → body negativo (not c(X))
   - __bind(var, __agg(pred, idx?, filters...)) → binding variabile → aggregato
   - __weight(expr)                             → espressione per il peso
   - __priority(expr)                           → espressione per la priorità
   - "true" / "false" / "sign"                  → segno dell'euristica
+  - __semantics(alpha|clingo)                  → semantica di attivazione dei body
 
 Le espressioni (expr) supportate sono:
   - numero intero                              → costante (es. 5)
   - self                                       → valore del dominio MVP: primo argomento numerico del target (es. X in b(X))
-  - variabile (nome da __bind)                 → valore corrente dell'aggregato legato
+  - variabile (nome da __bind o __bind_arg)    → valore corrente dell'aggregato legato o argomento estratto dal body
   - __add(a, b)                                → somma di due espressioni
   - __sub(a, b)                                → sottrazione
   - __mul(a, b)                                → moltiplicazione
@@ -185,17 +128,7 @@ multi-argomento. Per PUP gli altri valori contestuali vanno espressi tramite
 
 
 
-I fatti generati vengono successivamente interpretati dinamicamente dal propagatore custom durante la fase di solving in Clasp. 
-Il propagatore monitora l'assegnazione parziale corrente e istanzia l'euristica (calcolandone peso e priorità) in tempo reale, unicamente quando i letterali trigger nel corpo diventano veri. 
-// ======
-// NOTE --------
-// Aggiornamento implementativo: le strutture C++ non conservano piu' i nomi
-// logici principali come std::string. Target, predicati di body, variabili di
-// binding e chiavi aggregate usano Clingo::Symbol, sfruttando l'identita'
-// internata di Clingo. Rimangono stringhe solo per messaggi/parse helper o per
-// confrontare nomi sintattici come "__sum" durante il parsing.
-// END NOTE ---------
-// ======
+I fatti generati vengono successivamente interpretati dinamicamente dal propagatore custom durante la fase di solving in Clasp. Il propagatore monitora l'assegnazione parziale corrente e istanzia l'euristica, calcolandone peso e priorità in tempo reale, quando i letterali trigger nel corpo sono soddisfatti. Nelle strutture C++ correnti target, predicati di body, variabili di binding e chiavi aggregate sono rappresentati principalmente come `Clingo::Symbol`, sfruttando l'identità internata di Clingo; le stringhe rimangono solo per messaggi, helper di parsing e confronti sintattici come `"__sum"` durante il parsing.
 
 
 alcuni esempi:
@@ -283,16 +216,7 @@ aggiornamenti.
 il metodo decide sceglie un letterale (che può essere di segno positivo o negativo) da far diventare vero nel ramo corrente e il ciclo si ripete dal punto 2.
 fino a quando non si è dimostrato che non si possono trovare più nuovi AS
 
-4) Raggiunto un assegnamento totale, o un fixpoint intermedio a seconda della configurazione, il solver invoca il metodo check. In questa fase il propagatore effettua una validazione globale sul modello candidato, potendo generare "lazy no-good" per scartare soluzioni che soddisfano le regole ASP ma violano logiche complesse del dominio esterno valutabili solo a modello completo.
-// ======
-// NOTE --------
-// Questa frase descrive correttamente il ruolo generale di Propagator::check,
-// ma il nostro HeuristicPropagator corrente non override-a check e non aggiunge
-// nogood lazy. In questo MVP usa init/propagate/undo/decide per mantenere e
-// leggere stati euristici; la validazione dei modelli resta nell'encoding ASP
-// o negli script di validazione esterni.
-// END NOTE ---------
-// ======
+4) Raggiunto un assegnamento totale, o un fixpoint intermedio a seconda della configurazione, il solver può invocare il metodo check. Sebbene in questa fase un propagatore possa effettuare validazioni globali e generare lazy no-good, l'implementazione attuale di `HeuristicPropagator` non sovrascrive il metodo `check`. Il mantenimento degli stati euristici è delegato a `init`, `propagate`, `undo` e `decide`, mentre la validazione formale dei modelli rimane in carico ai vincoli di integrità dell'encoding ASP.
 
 5) Passaggio "extra": se durante la propagazione il solver falsifica una
 nogood, viene rilevato un conflitto. Il conflitto viene analizzato per
@@ -362,15 +286,7 @@ numero di conflitti generati durante la ricerca.
 
 
 % output di 
-% gringo --text BSP/BSP_gc.lp BSP_instances/BSP_range.lp
-// ======
-// NOTE --------
-// Path outdated: dopo il refactor del layout il comando equivalente e':
-// clingo --text test_folder/encodings/BSP/BSP_gc.lp test_folder/instances/BSP_instances/BSP_range.lp
-// Lo stesso vale per gli altri esempi BSP sotto: gli encoding stanno in
-// encodings/BSP/ e le istanze in instances/BSP_instances/.
-// END NOTE ---------
-// ======
+% clingo --text test_folder/encodings/BSP/BSP_gc.lp test_folder/instances/BSP_instances/BSP_range.lp
 
 x(1).
 x(2).
@@ -469,14 +385,7 @@ sumB(6):-#sum{1:b(1);2:b(2);3:b(3)}=6.
 #delayed(3) <=> 1<=#count{0,b(3):b(3);0,c(3):c(3)}<=1
 
 % output di 
-% gringo --text BSP/BSP_la_co.lp BSP_instances/BSP_range.lp
-// ======
-// NOTE --------
-// Anche qui i path corretti sono:
-// test_folder/encodings/BSP/BSP_la_co.lp
-// test_folder/instances/BSP_instances/BSP_range.lp
-// END NOTE ---------
-// ======
+% clingo --text test_folder/encodings/BSP/BSP_la_co.lp test_folder/instances/BSP_instances/BSP_range.lp
 
 __heuristic(__target(b),x,__n_c,__bind(s,__sum(c)),__weight(self),__priority(s),true).
 __heuristic(__target(c),x,__n_b,__bind(s,__sum(b)),__weight(self),__priority(s),true).
@@ -504,14 +413,19 @@ __heuristic/N puo' essere formalizzata in EBNF come segue.
 <target>           ::= "__target(" <pred-id> ")"
 
 <h-arg>            ::= <target>
-              | <pos-lit>
-              | <neg-lit>
-              | <bind>
-              | <weight>
-              | <priority>
-              | <sign>
+	              | <pos-lit>
+	              | <body-lit>
+	              | <neg-lit>
+	              | <bind>
+	              | <weight>
+	              | <priority>
+	              | <sign>
+	              | <semantics>
 
 <pos-lit>          ::= <pred-id>
+<body-lit>         ::= "__body(" <pred-id> "," <body-mapping> {"," <body-mapping>} ")"
+<body-mapping>     ::= "__match(" <source-index> "," <target-index> ")"
+	              | "__bind_arg(" <var-id> "," <source-index> ")"
 <neg-lit>          ::= "__n_" <pred-id>
 
 <bind>             ::= "__bind(" <var-id> "," <agg-expr> ")"
@@ -532,6 +446,7 @@ __heuristic/N puo' essere formalizzata in EBNF come segue.
               | "__mul(" <arith-expr> "," <arith-expr> ")"
 
 <sign>             ::= "true" | "false" | "sign"
+<semantics>        ::= "__semantics(alpha)" | "__semantics(clingo)"
 
 <pred-id>          ::= identificatore predicato ASP valido
 <var-id>           ::= identificatore variabile locale valida
@@ -543,16 +458,11 @@ __heuristic/N puo' essere formalizzata in EBNF come segue.
 
 Vincoli semantici addizionali:
 1) deve essere presente esattamente un argomento <target>;
-2) ogni <var-id> usata in <arith-expr> deve essere introdotta da almeno un
-  __bind nello stesso fatto __heuristic/N;
-// ======
-// NOTE --------
-// Questa regola e' incompleta per la versione corrente: una variabile locale puo'
-// essere introdotta anche da __bind_arg(var, source_idx) dentro un __body(...)
-// esplicito. Il parser C++ accetta quindi sia variabili da aggregato (__bind)
-// sia variabili estratte da un predicato di body (__bind_arg).
-// END NOTE ---------
-// ======
+2) ogni <var-id> usata in <arith-expr> deve essere introdotta nell'ambiente di
+  valutazione o tramite un binding di aggregato (`__bind` all'interno dello
+  stesso fatto `__heuristic/N`) oppure estratta esplicitamente da un predicato
+  di body tramite la direttiva `__bind_arg(var, source_idx)` all'interno di un
+  costrutto `__body(...)`;
 3) la semantica MVP di "self" coincide con il primo argomento numerico
   dell'atomo target nell'istanza corrente; in presenza di tuple target
   multi-argomento, "self" valuta specificamente il primo argomento numerico
@@ -560,6 +470,11 @@ Vincoli semantici addizionali:
 4) l'ordine degli argomenti e' irrilevante;
 5) in presenza di bind multipli sullo stesso <var-id> si applica il vincolo di
   unicita' (errore di parsing/inizializzazione).
+6) un costrutto `__body(...)` deve contenere almeno un `__match(...)`; i
+  `__bind_arg(...)` nello stesso body non possono ridefinire variabili già
+  introdotte da `__bind` o da altri `__bind_arg`;
+7) `__weight`, `__priority`, segno e `__semantics` sono opzionali nel parser
+  corrente: i default sono rispettivamente 0, 0, `true` e `alpha`.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -571,22 +486,10 @@ Si introducono le seguenti grandezze:
 - B = numero medio di letterali di body monitorati per template;
 - K = numero medio di bind/aggregati per template;
 - E = dimensione media (nodi) degli AST di weight/priority;
+- C = numero di `CandidateState` materializzati in fase di inizializzazione;
+- S = numero di atomi sorgente osservati per gli aggregati runtime;
 - A = numero di aggiornamenti aggregato attivati da un literal in propagate;
 - U = numero di literal annullati in un singolo undo.
-// ======
-// NOTE --------
-// Mancano due grandezze utili per descrivere il codice attuale:
-// - C = numero di CandidateState materializzati in init, cioe' target ground
-//   compatibili con body/trigger;
-// - S = numero di atomi sorgente osservati per gli aggregati runtime.
-// T da solo descrive i template, ma non il volume runtime: il costo reale di
-// init dipende anche dalla scansione degli atomi simbolici e dalla costruzione
-// dei CandidateState. Inoltre AtomKey e RuntimeAggregateKey usano ancora tuple
-// di interi (std::vector<int>) per il matching multi-argomento: e' semplice e
-// leggibile, ma resta un hotspot da profilare prima di sostituirlo con chiavi
-// piu' compatte basate su literal_t.
-// END NOTE ---------
-// ======
 
 Tabella di confronto sintetico (per il testo tesi):
 
@@ -603,25 +506,23 @@ Confronto asintotico ad alto livello:
 - Lazy: il grounding resta O(T) sui template; il costo runtime e' O(E) per
   istanza attiva, con T numero template ed E dimensione AST.
 
-Complessita' di inizializzazione (init_lazy_mode):
-- tempo: O(T * (B + K + E));
-- spazio: O(T * (B + K + E)) per indici, metadata e AST compilati.
+Complessita' di inizializzazione (`init_lazy_mode`):
+Il tempo e lo spazio dipendono dalla scansione degli atomi simbolici per la
+costruzione dei candidati. Sono pari a $O(C \cdot (B + K + E) + S)$, necessari
+per istanziare i metadati, allocare le chiavi di aggregazione e compilare gli
+AST. In aggiunta, `AtomKey` e `RuntimeAggregateKey` mantengono tuple di interi
+per il matching multi-argomento e per i filtri runtime.
 
-Complessita' del percorso caldo (decide):
-- accesso ai valori locali tramite env_buffer_ indicizzato: O(1) per variabile;
-- valutazione espressioni precompilate: O(E);
-- overhead totale per istanza attiva: O(E), senza parsing dinamico, allocazioni
-  heap o lookup stringa.
-// ======
-// NOTE --------
-// Questa descrizione e' outdated. L'implementazione corrente non usa env_buffer_
-// indicizzato: usa mappe su Clingo::Symbol per l'ambiente delle variabili e una
-// candidate_queue_ ordinata (std::set) per evitare la scansione lineare in decide.
-// I lookup non sono piu' lookup su std::string, ma restano lookup hash; quindi il
-// percorso caldo reale e' dominato da estrazione/rivalidazione del miglior candidato,
-// valutazione AST O(E) e aggiornamenti O(log C) quando un candidato entra/esce dalla coda.
-// END NOTE ---------
-// ======
+Complessita' del percorso caldo (`decide`):
+L'implementazione non utilizza array bufferizzati per l'ambiente delle variabili,
+ma mappe hash basate su `Clingo::Symbol`. La coda dei candidati è mantenuta
+tramite un `std::set` ordinato. L'estrazione e la rivalidazione del miglior
+candidato richiedono la valutazione dell'AST precompilato in tempo $O(E)$ e, se
+il candidato cambia stato o priorità, operazioni di aggiornamento della coda in
+$O(\log C)$. Non vi è parsing testuale durante la ricerca; il codice corrente
+ricostruisce però una piccola `std::unordered_map` locale per l'ambiente
+`var_env` durante la valutazione del candidato, quindi non è corretto affermare
+che l'hot path sia completamente privo di allocazioni heap.
 
 Complessita' di propagate:
 - per ciascun trigger attivato: aggiornamento stato body in O(1);
@@ -662,16 +563,14 @@ Configurazione sperimentale:
 3) almeno 5 run per istanza con media e deviazione standard;
 4) metriche: grounding time, solving time, totale, RSS max, conflicts,
   choices, propagations, numero regole groundate.
-// ======
-// NOTE --------
-// Lo script benchmark corrente e' stato consolidato: benchmark_bsp.sh e
-// benchmark_pup.sh sono ora iteratori sottili, mentre benchmark_runner.py esegue
-// il singolo run con --outf=2 --stats=2 e parsa le metriche solver dal JSON.
-// I CSV finiscono in test_folder/results/. Rimane un pass --text separato solo
-// per contare righe/fatti del programma ground, perche' quei conteggi non sono
-// esposti direttamente nel JSON di Clingo.
-// END NOTE ---------
-// ======
+
+Nel benchmark corrente, `test_folder/benchmarks/benchmark_bsp.sh` e
+`test_folder/benchmarks/benchmark_pup.sh` sono iteratori sottili, mentre
+`test_folder/benchmarks/benchmark_runner.py` esegue il singolo run con
+`--outf=2 --stats=2` e parsa le metriche solver dal JSON. I CSV finiscono in
+`test_folder/results/`. Rimane un pass `--text` separato solo per contare
+righe/fatti del programma ground, perché quei conteggi non sono esposti
+direttamente nel JSON di Clingo.
 
 Obiettivo analitico:
 1) verificare se il beneficio persiste oltre BSP quando la ricerca non e'
@@ -730,9 +629,9 @@ Questo garantisce che l'aggregato lazy dipenda da un singolo letterale trigger v
 
 In secondo luogo, si procede con l'inlining delle espressioni matematiche. 
 Le variabili intermedie definite nel corpo dell'euristica per scomporre il calcolo di peso e priorità vengono eliminate. 
-L'intera logica aritmetica viene collassata direttamente all'interno dei modificatori della direttiva finale. Questa espansione è architetturalmente obbligatoria affinché l'Abstract Syntax Tree (AST) precompilato nella fase di init_lazy_mode  possa mappare direttamente le variabili di aggregazione sull'ambiente di valutazione (environment array) . 
-Ciò elimina la necessità di eseguire il parsing di dipendenze annidate a runtime o di effettuare allocazioni dinamiche sulla memoria heap. 
-Queste modifiche mantengono intatta la semantica logica del problema originale e assicurano che il propagatore non introduca overhead durante la propagazione e l'undo.
+L'intera logica aritmetica viene collassata direttamente all'interno dei modificatori della direttiva finale. Questa espansione permette all'Abstract Syntax Tree (AST) precompilato nella fase di `init_lazy_mode` di mappare direttamente le variabili di aggregazione e di body sull'ambiente di valutazione costruito con chiavi `Clingo::Symbol`.
+Ciò elimina la necessità di eseguire parsing testuale di dipendenze annidate a runtime. Il propagatore introduce comunque un overhead controllato durante `propagate`, `undo` e `decide`, dovuto all'aggiornamento incrementale degli aggregati e alla rivalidazione dei candidati, ma evita la materializzazione combinatoria delle direttive euristiche nel grounding.
+Queste modifiche mantengono intatta la semantica logica del problema originale.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -741,18 +640,7 @@ Queste modifiche mantengono intatta la semantica logica del problema originale e
 
 Nel benchmark BSP ora conviene distinguere quattro famiglie concettuali.
 
-1) Standard Clingo ground-and-solve (`gc`, file BSP/BSP_gc.lp).
-// ======
-// NOTE --------
-// Path aggiornato per tutta questa sezione:
-// BSP/BSP_*.lp -> test_folder/encodings/BSP/BSP_*.lp
-// PUP/PUP_*.lp -> test_folder/encodings/PUP/PUP_*.lp
-// BSP_instances/ -> test_folder/instances/BSP_instances/
-// PUP_instances/ -> test_folder/instances/PUP_instances/
-// Gli script benchmark ora stanno in test_folder/benchmarks/ e usano
-// benchmark_runner.py con output CSV in test_folder/results/.
-// END NOTE ---------
-// ======
+1) Standard Clingo ground-and-solve (`gc`, file `test_folder/encodings/BSP/BSP_gc.lp`).
 Usa direttamente le direttive native:
 
 #heuristic b(X): x(X), not c(X), S = #sum{Y : c(Y)}. [X@S,true]
@@ -762,124 +650,25 @@ Qui Gringo deve produrre euristiche ground native. Il vantaggio e' che questa
 e' la semantica standard di Clingo; lo svantaggio e' il grounding bottleneck
 quando peso o priorita' dipendono da aggregati.
 
-2) Alpha semantics ground-and-solve (`ga`, file BSP/BSP_ga.lp).
-Questa variante non usa il propagatore lazy. Emula l'idea Alpha con direttive
-native gia' groundabili:
+2) Alpha semantics ground-and-solve (`ga`, file `test_folder/encodings/BSP/BSP_ga.lp`).
+Questa variante emula la logica dinamica di Alpha all'interno della semantica
+ground standard di Clingo, introducendo il predicato ausiliario `sum_value(0..tot)`:
 
 sum_value(0..tot).
 #heuristic b(X): x(X), sum_value(S), S <= #sum{Y : c(Y)}. [X@S,true]
 #heuristic c(X): x(X), sum_value(S), S <= #sum{Y : b(Y)}. [X@S,true]
 
-La condizione `S <= #sum{...}` e' monotona rispetto agli atomi gia' veri.
-Dato che in BSP i valori sono positivi, tra tutte le regole attive vince la
-priorita' massima S, cioe' la somma corrente degli atomi assegnati a vero.
-Questo e' utile per testing perche' resta "ground and solve", ma produce molte
-euristiche ground e quindi puo' essere molto piu' pesante della variante lazy.
+Poiché il grounder deve precompilare i possibili valori runtime, una singola
+euristica concettuale si frammenta in una moltitudine di soglie statiche. Non si
+aggiorna una priorità singola, ma diventano progressivamente applicabili diverse
+direttive monotone (`S <= #sum{...}`). Questa precompilazione statica altera
+profondamente la guidance del CDNL rispetto a una valutazione runtime puntuale:
+il solver affronta una struttura euristica artificialmente complessa, che può
+generare ordini di grandezza superiori in conflitti e scelte. Questo encoding
+funge da baseline sperimentale per dimostrare le inefficienze della simulazione
+logica rispetto a una reale iniezione lazy nello stack decisionale.
 
-// ======
-// NOTE --------
-// Perche' `ga` si comporta in modo cosi' diverso da `gc`?
-//
-// La variante `ga` non va interpretata come "Clingo standard, ma con una
-// piccola modifica sintattica per ottenere la semantica Alpha". E' invece una
-// compilazione statica, dentro il linguaggio ground-and-solve di Clingo, di un
-// comportamento che in Alpha e' naturalmente dinamico: leggere lo stato
-// corrente dell'assegnamento parziale e usare la somma degli atomi gia' veri
-// come priorita' euristica corrente.
-//
-// In `gc` la direttiva nativa e':
-//
-//   #heuristic b(X): x(X), not c(X), S = #sum{Y : c(Y)}. [X@S,true]
-//
-// Qui il grounder/solver resta nella semantica ordinaria di Clingo per le
-// direttive `#heuristic`: il body della direttiva e il binding `S = #sum{...}`
-// sono trattati come parte della machinery nativa di Clingo. La direttiva e'
-// standard e il solver applica la sua politica interna per capire quando un
-// contributo euristico e' utilizzabile.
-//
-// In `ga`, invece, proviamo a forzare una lettura "alla Alpha" usando:
-//
-//   sum_value(0..tot).
-//   #heuristic b(X): x(X), sum_value(S), S <= #sum{Y : c(Y)}. [X@S,true]
-//
-// Questo encoding dice: per ogni valore possibile S, se la somma corrente
-// garantisce almeno S, allora esiste una direttiva euristica con priorita' S.
-// Siccome nel BSP tutti i contributi Y sono positivi, il massimo S attivo
-// dovrebbe coincidere con la somma degli atomi c(Y) attualmente veri. Quindi
-// l'idea concettuale e' sensata: trasformare il valore dinamico della somma in
-// una famiglia di soglie statiche.
-//
-// Il problema e' che questa trasformazione cambia profondamente cio' che il
-// solver vede durante CDNL:
-//
-// 1) Una singola euristica concettuale diventa una scala di molte euristiche.
-//    Per ogni target b(X) o c(X), il programma contiene direttive per molti
-//    valori di S. Quando la somma cresce, non si "aggiorna" una sola priorita':
-//    diventano applicabili molte direttive di soglia. Anche se alla fine la
-//    priorita' massima dovrebbe dominare, il solver deve comunque gestire una
-//    struttura euristica molto piu' articolata.
-//
-// 2) La versione `ga` usa un predicato ausiliario `sum_value(0..tot)`.
-//    Questo introduce fatti e combinazioni aggiuntive che non rappresentano
-//    scelte del problema, ma solo valori potenziali della priorita'. Sono
-//    necessari per rendere groundabile l'espressione, pero' sono anche un
-//    artefatto dell'emulazione.
-//
-// 3) La condizione `S <= #sum{...}` e' monotona. Appena la somma degli atomi
-//    veri supera una soglia, quella soglia resta vera lungo il ramo corrente.
-//    Questo e' vicino all'intuizione Alpha, ma non e' equivalente ad avere una
-//    singola euristica runtime che ricalcola "adesso S vale k". Nel programma
-//    ground il valore k e' rappresentato implicitamente dall'insieme di tutte
-//    le soglie S <= k.
-//
-// 4) La search puo' diventare molto diversa anche quando il grounding non
-//    sembra esplodere piu' di `gc`. Nei risultati BSP, `ga` puo' avere un numero
-//    di direttive `#heuristic` ground simile a `gc`, ma produrre ordini di
-//    grandezza in piu' in choices/conflicts/restarts. Questo indica che il
-//    collo di bottiglia principale, in quei punti, non e' solo "quante righe
-//    ground sono state prodotte", ma quale guidance viene data al solver
-//    durante la ricerca.
-//
-// Quindi: e' un problema del tuo encoding?
-//
-// Risposta breve: non e' un errore banale dell'encoding; e' un limite del
-// tentativo di esprimere una semantica dinamica di assegnamento parziale usando
-// sole direttive native ground-and-solve. L'encoding `ga` e' una possibile
-// emulazione, utile come baseline sperimentale, ma non e' una rappresentazione
-// naturale della semantica Alpha.
-//
-// Detto meglio:
-// - se vuoi restare in ground-and-solve puro, devi "precompilare" i possibili
-//   valori runtime in oggetti ground statici: soglie, valori possibili, regole
-//   ausiliarie, o altri gadget simili;
-// - questa precompilazione puo' essere corretta come idea logica su domini
-//   monotoni e positivi come BSP, ma tende a essere fragile e costosa;
-// - su euristiche piu' generali, con aggregati non monotoni, pesi negativi,
-//   filtri, min/max, condizioni congiuntive o dipendenze dal fatto che un
-//   atomo sia libero/falso/vero, la compilazione ground-and-solve diventa molto
-//   piu' difficile o puo' richiedere un'esplosione di casi;
-// - il propagatore lazy evita proprio questa compilazione: lascia a Gringo un
-//   fatto strutturale piccolo (`__heuristic(...)`) e legge direttamente lo stato
-//   del solver per calcolare peso/priorita' nel momento della decisione.
-//
-// Conclusione operativa per la tesi:
-// `ga` non dimostra che "Alpha semantics e' lenta"; dimostra che emulare Alpha
-// semantics dentro il modello ground-and-solve di Clingo puo' produrre una
-// guidance molto diversa e molto peggiore. Il confronto piu' interessante non
-// e' quindi `gc` vs `ga` come se fossero due encoding equivalenti, ma:
-// - `gc`: semantica nativa Clingo, completamente groundata;
-// - `ga`: emulazione ground-and-solve della lettura Alpha, utile ma artificiale;
-// - `la`: valutazione lazy/runtime della stessa intuizione Alpha, senza
-//   materializzare tutte le soglie come direttive native.
-//
-// Per questo, se `ga` esplode in choices/conflicts, il risultato va spiegato
-// come effetto della compilazione statica della semantica dinamica, non come
-// fallimento dell'approccio lazy. Anzi, e' proprio il tipo di fenomeno che
-// motiva l'uso del propagatore.
-// END NOTE ---------
-// ======
-
-3) Alpha semantics lazy (`la`, file BSP/BSP_la.lp).
+3) Alpha semantics lazy (`la`, file `test_folder/encodings/BSP/BSP_la.lp`).
 Le euristiche sono template statici:
 
 __heuristic(__target(b),x,__n_c,__bind(s,__sum(c,0)),__weight(self),__priority(s),true).
@@ -890,7 +679,7 @@ significa "c(X) non e' vero": quindi l'euristica puo' attivarsi anche se c(X)
 e' ancora libero. Gli aggregati sono incrementali: sommano/contano gli atomi
 attualmente veri e non aspettano che tutti gli atomi del dominio siano decisi.
 
-4) Clingo semantics lazy (`lc`, file BSP/BSP_lc.lp).
+4) Clingo semantics lazy (`lc`, file `test_folder/encodings/BSP/BSP_lc.lp`).
 E' identica alla variante lazy, ma aggiunge:
 
 __semantics(clingo)
