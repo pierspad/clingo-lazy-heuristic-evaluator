@@ -193,6 +193,16 @@ Le espressioni (expr) supportate sono:
   - __sub(a, b)                                → sottrazione
   - __mul(a, b)                                → moltiplicazione
 
+
+
+Convenzione semantica implementativa per aggregati vuoti:
+
+`__sum` e `__count` restituiscono naturalmente 0 quando nessun letterale sorgente è attivo. 
+Anche `__min` e `__max`, nell'implementazione corrente, restituiscono 0 quando l'insieme osservato è vuoto. 
+In particolare, le strutture `MinState` e `MaxState` mantengono una `std::map<int,int>` delle occorrenze attive e il metodo `result()` ritorna 0 se tale mappa è vuota. 
+Questa non va letta come la definizione matematica pura di minimo o massimo dell'insieme vuoto, che spesso richiederebbe valori sentinella come +infinito o -infinito:
+è una convenzione locale del propagatore lazy, scelta per mantenere totale la valutazione degli AST aritmetici di peso e priorità ed evitare overflow o comportamenti indefiniti nel percorso decisionale. 
+
 Questo fa sì che Gringo includa nel programma proposizionale una singola riga per ogni template euristico, senza espandere le variabili di dominio, generando quindi invece soltanto:
 
 
@@ -343,6 +353,11 @@ __heuristic(__target(choose),
 % `__match(0,0)` dice che l'argomento 0 di body deve coincidere con
 % l'argomento 0 del target choose. `__bind_arg(w,1)` salva il secondo
 % argomento di body nella variabile locale w, poi usata nel peso.
+% Se piu' istanze del predicato di body possono generare lo stesso target con
+% valori diversi per una variabile legata, il propagatore costruisce partial
+% match separati. Le combinazioni in cui la stessa variabile locale riceve due
+% valori incompatibili vengono scartate da `merge_variable_values`, mentre i
+% partial match coerenti producono candidati distinti.
 
 
 % 7. PUP: aggregato filtrato rispetto a un argomento del target.
@@ -543,6 +558,8 @@ Questa entry viene inserita in `candidate_queue_`, ordinata per priorità
 decrescente, poi peso decrescente, poi literal e id candidato per stabilizzare i
 pareggi. Quindi il valore salvato negli aggregati viene effettivamente usato per
 decidere l'ordine dei prossimi branching literal.
+La stabilizzazione dei pareggi non è solo estetica: `CandidateQueueEntryLess` usa `target_lit` e poi `candidate_id` come criteri finali di ordinamento. 
+A parità di priorità, peso e seed casuale di Clasp, il solver percorre quindi lo stesso albero CDNL, proprietà importante per rendere riproducibili i benchmark e confrontare in modo corretto varianti di encoding diverse.
 
 3) `compute_candidate_entry`: controllo della semantica del template.
 
@@ -589,6 +606,11 @@ con il segno richiesto:
 
 Se la coda è vuota o nessun candidato rimane valido, `decide` restituisce `0`.
 In quel caso Clasp continua con la propria euristica di default.
+
+Un dettaglio ingegneristico rilevante è che il percorso di `decide` è racchiuso in un blocco `try ... catch (...)`, e lo stesso schema è usato nelle funzioni `refresh_candidate_noexcept` chiamate durante `undo`. 
+Se la rivalutazione lazy di un candidato fallisce, per esempio per un errore nella valutazione dell'espressione aritmetica o per un'eccezione di allocazione, il candidato viene rimosso dalla `candidate_queue_` tramite `erase_candidate_from_queue`.
+Nel caso di `decide`, l'eccezione viene degradata in un ritorno `0`, cioè nella scelta di non suggerire alcun literal e lasciare spazio all'euristica nativa di Clasp. 
+Questo rende il propagatore exception-safe rispetto all'hot path: un fallimento locale della valutazione lazy non causa il crash del solving.
 
 5) `undo`: ripristino durante backtracking e backjumping.
 
@@ -859,7 +881,16 @@ Vincoli semantici addizionali:
 6) un costrutto `__body(...)` deve contenere almeno un `__match(...)`; i
   `__bind_arg(...)` nello stesso body non possono ridefinire variabili già
   introdotte da `__bind` o da altri `__bind_arg`;
-7) `__weight`, `__priority`, segno e `__semantics` sono opzionali nel parser
+7) durante la materializzazione dei candidati, i valori estratti da
+  `__bind_arg(...)` sono unificati per nome di variabile. Se due body match
+  assegnano valori diversi alla stessa variabile locale, la combinazione viene
+  scartata; se invece esistono piu' match coerenti per lo stesso target, essi
+  generano candidati distinti;
+8) per `__min` e `__max` su insieme runtime vuoto, il propagatore restituisce
+  0 come valore convenzionale implementativo. Questa scelta mantiene totale la
+  valutazione delle espressioni lazy, ma non coincide con una modellazione
+  matematica tramite +infinito o -infinito;
+9) `__weight`, `__priority`, segno e `__semantics` sono opzionali nel parser
   corrente: i default sono rispettivamente 0, 0, `true` e `alpha`.
 
 
@@ -909,6 +940,15 @@ $O(\log C)$. Non vi è parsing testuale durante la ricerca; il codice corrente
 ricostruisce però una piccola `std::unordered_map` locale per l'ambiente
 `var_env` durante la valutazione del candidato, quindi non è corretto affermare
 che l'hot path sia completamente privo di allocazioni heap.
+Poiche' `compute_candidate_entry` viene invocata anche da `decide` per
+rivalidare la testa della coda, queste allocazioni possono cadere direttamente
+nel percorso piu' frequente della ricerca. Uno sviluppo futuro naturale è
+rendere l'hot path a zero allocazioni sostituendo `var_env` con un buffer flat
+preallocato: durante `init` si potrebbe assegnare a ogni variabile locale un
+indice statico per ciascun template/candidato e valutare gli AST leggendo un
+`std::vector<int>` o una piccola struttura contigua già dimensionata. In questo
+modo si eliminerebbero bucket e traffico heap della mappa hash durante
+`compute_candidate_entry`, mantenendo invariata la semantica.
 
 Complessita' di propagate:
 - per ciascun trigger attivato: aggiornamento stato body in O(1);
