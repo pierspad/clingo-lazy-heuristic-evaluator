@@ -16,23 +16,41 @@ clingo-modified/libclingo/tests/heuristic_propagator.cc
 % 1) Introduzione al problema del grounding bottleneck con euristiche e aggregati
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Answer Set Programming (ASP) è un framework di rappresentazione della conoscenza e ragionamento dichiarativo basato sulla logica del primo ordine. Il paradigma di calcolo dei moderni sistemi ASP, come Clingo, si articola in due fasi principali. Inizialmente, il grounder (Gringo) trasforma le descrizioni del primo ordine in logica proposizionale, costruendo l'universo di Herbrand ed eliminando le variabili. Successivamente, il programma proposizionale equivalente viene risolto dal solver (Clasp), il quale opera sullo spazio di ricerca tramite tecniche avanzate come il CDNL (Conflict-Driven Clause Learning) per generare le soluzioni .
+Answer Set Programming (ASP) è un framework di rappresentazione della conoscenza e ragionamento dichiarativo basato sulla logica del primo ordine. 
+Il paradigma di calcolo dei moderni sistemi ASP, come Clingo, si articola in due fasi principali. 
+Inizialmente, il grounder (Gringo) trasforma le descrizioni del primo ordine in logica proposizionale, costruendo l'universo di Herbrand ed eliminando le variabili. 
+Successivamente, il programma proposizionale equivalente viene risolto dal solver (Clasp), il quale opera sullo spazio di ricerca tramite tecniche avanzate come il CDNL (Conflict-Driven Clause Learning) per generare le soluzioni.
 
-Un problema critico di questo processo è che istanze di grandi dimensioni non possono essere groundate in tempi e spazi di memoria accettabili. Questa esplosione combinatoria, nota come grounding bottleneck, si può notare persino quando si utilizzano euristiche domain-specific che incorporano aggregati.  
+Un problema critico di questo processo è che istanze di grandi dimensioni non possono essere groundate in tempi e spazi di memoria accettabili. 
+Questa esplosione combinatoria, nota come grounding bottleneck, si può notare persino quando si utilizzano euristiche domain-specific che incorporano aggregati.  
 
-In Clingo, i pesi e le priorità ([W@P]) di un'euristica devono essere risolti dal grounder come costanti intere statiche prima che il solving inizi. Se W o P dipendono dal risultato di un aggregato (come S), Gringo non ha un valore costante da inserire nell'istruzione per il solver. Di conseguenza, l'unico modo per preservare la logica è istanziare una direttiva euristica separata per ogni singolo valore intero che l'aggregato può generare.
+In Clingo, i pesi e le priorità ([W@P]) di un'euristica devono essere risolti dal grounder come costanti intere statiche prima che il solving inizi. 
+Se W o P dipendono dal risultato di un aggregato (come S), Gringo non ha un valore costante da inserire nell'istruzione per il solver. 
+Di conseguenza, l'unico modo per preservare la logica è istanziare una direttiva euristica separata per ogni singolo valore intero che l'aggregato può generare.
 L'euristica che viene aggiunta con lo scopo di velocizzare il tempo di solving finisce per saturare la RAM e rendere il processo di grounding impraticabile o il processo di solving inefficiente a causa dell'enorme spazio di ricerca generato.
 
-Nel balanced sum problem, come definito nel paper di Comploi-Taupe, l'obiettivo è suddividere i numeri da $1$ a $n$ in due insiemi disgiunti, b e c, in modo tale che la differenza in valore assoluto tra la somma dei loro elementi sia al massimo 1. Immaginando di dover distribuire equamente i numeri, per indirizzare il solver è utile massimizzare l'assegnazione a un insieme valutando dinamicamente la somma dell'altro. Usando la sintassi nativa, scriveremmo:
+Nel balanced sum problem, come definito nel paper di Comploi-Taupe, l'obiettivo è suddividere i numeri da $1$ a $n$ in due insiemi disgiunti, b e c, in modo tale che la differenza in valore assoluto tra la somma dei loro elementi sia al massimo 1. 
+Immaginando di dover distribuire equamente i numeri, per indirizzare il solver è utile massimizzare l'assegnazione a un insieme valutando dinamicamente la somma dell'altro. 
+
+Usando la sintassi nativa, scriveremmo:
 
 #heuristic b(X): x(X), not c(X), S = #sum{Y : c(Y)}. [X@S, true]
 #heuristic c(X): x(X), not b(X), S = #sum{Y : b(Y)}. [X@S, true]
 
 è importante specificare che non è l'aggregato in se a generare un esplosione combinatoria.
 Se venisse usato in un normale vincolo logico, gringo lo tradurrebbe in un weight constraint.
-il problema sorge quando viene usato in un'euristica, poiché allo stato dell'arte, gli aggregati in ASP sono valutati esclusivamente rispetto a un assegnamento completo di valori di verità, il che implica che il loro valore non può mutare dinamicamente durante il solving. Contestualmente, la direttiva euristica esige che il livello di priorità, rappresentato dalla variabile S nel costrutto [X@S], sia un numero intero concreto e definito già durante la fase di grounding. Tuttavia, Gringo opera prima dell'inizio della ricerca e non ha modo di prevedere l'assegnamento parziale, ovvero non sa quanti e quali atomi c(Y) o b(Y) diventeranno veri.
 
-Di conseguenza, non potendo calcolare un valore univoco per S, il grounder è costretto a coprire ogni possibile scenario futuro per preservare la correttezza logica del programma.  Per farlo, genera una direttiva euristica proposizionale separata per ogni singolo valore intero che l'aggregato potrebbe ipoteticamente restituire. Gringo grounderebbe quindi l'euristica secondo il seguente pattern prima ancora di avviare la fase di solving, esaurendo rapidamente la memoria RAM con regole superflue:
+// TODO qua va spiegato bene cos'è un weight constraint, cosa fa gringo/clingo quando vede un aggregato e come lo ottimizza
+
+//TODO modifica leggermente questa parte perchè stai dicendo che gli aggregati vengono valutati solo per uno stato completo di valore di verità, stai quindi ignorando il fatto che poco prima si parlava di aggregati ottimizzati? chiarisci
+
+il problema sorge quando viene usato in un'euristica, poiché allo stato dell'arte, gli aggregati in ASP sono valutati esclusivamente rispetto a un assegnamento completo di valori di verità, il che implica che il loro valore non può mutare dinamicamente durante il solving. 
+Contestualmente, la direttiva euristica esige che il livello di priorità, rappresentato dalla variabile S nel costrutto [X@S], sia un numero intero concreto e definito già durante la fase di grounding. 
+Tuttavia, Gringo opera prima dell'inizio della ricerca e non ha modo di prevedere l'assegnamento parziale, ovvero non sa quanti e quali atomi c(Y) o b(Y) diventeranno veri.
+
+Di conseguenza, non potendo calcolare un valore univoco per S, il grounder è costretto a coprire ogni possibile scenario futuro per preservare la correttezza logica del programma.  
+Per farlo, genera una direttiva euristica proposizionale separata per ogni singolo valore intero che l'aggregato potrebbe ipoteticamente restituire. 
+Gringo grounderebbe quindi l'euristica secondo il seguente pattern prima ancora di avviare la fase di solving, esaurendo rapidamente la memoria RAM con regole superflue:
 
 % prima euristica
 #heuristic b(1):not c(1),#sum{1:c(1);2:c(2);3:c(3)}=0.[1@0,true]
@@ -86,9 +104,7 @@ Di conseguenza, non potendo calcolare un valore univoco per S, il grounder è co
 #heuristic c(3):not b(3),#sum{1:b(1);2:b(2);3:b(3)}=6.[3@6,true]
 
 
-Per rendere il processo più efficiente, le euristiche vengono tradotte in un fatto proposizionale tramite lo script `test_folder/tools/asp_heuristic_converter.py`. Questo tool individua e interpreta le direttive `#heuristic` tramite l'Abstract Syntax Tree (AST) esposto da `clingo.ast`, senza usare vecchi meccanismi di fallback basati su parsing testuale della direttiva. Se una direttiva valida per Clingo non è processabile in modo rigoroso dal converter AST, lo script fallisce esplicitamente invece di produrre una conversione approssimata.
-
-I fatti prodotti vengono codificati come template strutturali, ovvero fatti proposizionali statici della forma:
+Per rendere il processo più efficiente, le euristiche vengono tradotte come template strutturali, ovvero fatti proposizionali statici della forma:
 
 __heuristic(__target(TargetPred), ...argomenti flessibili...).
 
@@ -117,18 +133,29 @@ Questo fa sì che Gringo includa nel programma proposizionale una singola riga p
 __heuristic(__target(b), x, __n_c, __bind(s, __sum(c)), __weight(self), __priority(s), true).
 __heuristic(__target(c), x, __n_b, __bind(s, __sum(b)), __weight(self), __priority(s), true).
 
+
+Per semplicità la traduzione è standardizzata e delegata allo script `test_folder/tools/asp_heuristic_converter.py`. 
+Questo tool individua e interpreta le direttive `#heuristic` tramite l'Abstract Syntax Tree (AST) esposto da `clingo.ast` e le traduce nel nuovo formato lazy
+
+
+// TODO chiarisci meglio questa nota, magari sarebbe una buona idea prendere le euristiche con vari esempi e far vedere come vengono tradotte ecc.
+Sotto ce ne sono alcuni ma vorrei che la scrivessi meglio
+
 Nota di perimetro MVP: `self` non e' stato eliminato nel propagatore corrente.
 E' supportato dentro `__weight(...)` e `__priority(...)`, anche in espressioni
 aritmetiche, ma con una semantica volutamente stretta: coincide con il primo
-argomento numerico della tupla target. Quindi copre direttamente casi come
+argomento numerico della tupla target. 
+Quindi copre direttamente casi come
 `b(X)` e `c(X)` nel BSP, dove `[X@S]` diventa `__weight(self)`,
 ma non introduce ancora nomi separati per tutti gli argomenti di un target
-multi-argomento. Per PUP gli altri valori contestuali vanno espressi tramite
+multi-argomento. 
+Per PUP gli altri valori contestuali vanno espressi tramite
 `__bind(...)` e filtri `__filter(...)`.
 
 
-
-I fatti generati vengono successivamente interpretati dinamicamente dal propagatore custom durante la fase di solving in Clasp. Il propagatore monitora l'assegnazione parziale corrente e istanzia l'euristica, calcolandone peso e priorità in tempo reale, quando i letterali trigger nel corpo sono soddisfatti. Nelle strutture C++ correnti target, predicati di body, variabili di binding e chiavi aggregate sono rappresentati principalmente come `Clingo::Symbol`, sfruttando l'identità internata di Clingo; le stringhe rimangono solo per messaggi, helper di parsing e confronti sintattici come `"__sum"` durante il parsing.
+I fatti generati vengono successivamente interpretati dinamicamente dal propagatore custom durante la fase di solving in Clasp. 
+Il propagatore monitora l'assegnazione parziale corrente e istanzia l'euristica, calcolandone peso e priorità in tempo reale, quando i letterali trigger nel corpo sono soddisfatti. 
+Nelle strutture C++ correnti target, predicati di body, variabili di binding e chiavi aggregate sono rappresentati principalmente come `Clingo::Symbol`, sfruttando l'identità internata di Clingo; le stringhe rimangono solo per messaggi, helper di parsing e confronti sintattici come `"__sum"` durante il parsing.
 
 
 alcuni esempi:
@@ -184,59 +211,43 @@ Di solito il funzionamento di un propagatore (nello specifico della classe
 CLingo::Heuristic che eredita da Clingo::Propagator) si articola nelle fasi
 seguenti:
 
-1) Prima di fare qualunque cosa c'e' il metodo init. In init il propagatore
-euristico analizza i fatti ground, costruisce le strutture dati interne e
+1) Prima di fare qualunque cosa c'è il metodo init. 
+In init il propagatore euristico analizza i fatti ground, costruisce le strutture dati interne e
 registra, tramite add_watch, i letterali solver di cui vuole osservare i
-cambiamenti di stato. Il watch non viene registrato su un fatto astratto, ma
-sul literal solver corrispondente alla condizione che interessa il
-propagatore. Se un'euristica dipende dal fatto che c(X) sia falso, cioe' da
-`not c(X)` nel body, il propagatore deve registrare il watch sul literal solver
-negativo corrispondente a c(X), cosi' da essere notificato quando quella
-condizione diventa vera nell'assegnamento corrente.
+cambiamenti di stato. 
+Il watch non viene registrato su un fatto astratto, ma sul literal solver corrispondente alla condizione che interessa il propagatore. 
+Se un'euristica dipende dal fatto che c(X) sia falso, cioe' da `not c(X)` nel body, il propagatore deve registrare il watch sul literal solver negativo corrispondente a c(X), cosi' da essere notificato quando quella condizione diventa vera nell'assegnamento corrente.
 
-2) Segue la fase di unit propagation, piu' precisamente Boolean Constraint
-Propagation (BCP). Il solver applica la propagazione booleana sui vincoli e
-sulle nogood gia' presenti. Durante questa fase, ogni volta che un letterale
-osservato tramite watch cambia stato in modo rilevante, il solver invoca il
-metodo propagate del propagatore su quel letterale.
-
-In generale un propagatore puo' aggiungere nuove nogood tramite add_clause()
-quando rileva un'inconsistenza. Nel caso specifico dello HeuristicPropagator,
-pero', la funzione primaria di propagate non e' produrre nuova deduzione
-logica: e' aggiornare incrementalmente le strutture dati interne, in
-particolare gli AggregateState, e mantenere coerente la lista dei trigger
-euristici attivi rispetto all'assegnamento parziale corrente.
-
-Questo ciclo si ripete fino a quando non si raggiunge un fixpoint, ovvero un
-punto in cui ne' la BCP ne' i propagatori registrati producono ulteriori
-aggiornamenti.
+// TODO spiega o qui nel punto 2 o nel punto 3 dove vengono effettivamente usati i valori salvati negli aggregate state, per come è scritto ora pare che li aggiorniamo ma non li usiamo mai
+2) Segue la fase di unit propagation, piu' precisamente Boolean Constraint Propagation (BCP). 
+Il solver applica la propagazione booleana sui vincoli e sulle nogood gia' presenti. 
+Durante questa fase, ogni volta che un letterale osservato tramite watch cambia stato in modo rilevante, il solver invoca il metodo propagate del propagatore su quel letterale.
+In generale un propagatore puo' aggiungere nuove nogood tramite add_clause() quando rileva un'inconsistenza. 
+Nel caso specifico dello HeuristicPropagator, pero', la funzione primaria di propagate non e' produrre nuova deduzione logica: e' aggiornare incrementalmente le strutture dati interne, in particolare gli AggregateState, e mantenere coerente la lista dei trigger euristici attivi rispetto all'assegnamento parziale corrente.
+Questo ciclo si ripete fino a quando non si raggiunge un fixpoint, ovvero un punto in cui ne' la BCP ne' i propagatori registrati producono ulteriori aggiornamenti.
 
 3) raggiunto il fixpoint il solver è costretto a esplorare una diramazione dell'albero di ricerca e qui chiama il metodo decide.
-
 il metodo decide sceglie un letterale (che può essere di segno positivo o negativo) da far diventare vero nel ramo corrente e il ciclo si ripete dal punto 2.
 fino a quando non si è dimostrato che non si possono trovare più nuovi AS
 
-4) Raggiunto un assegnamento totale, o un fixpoint intermedio a seconda della configurazione, il solver può invocare il metodo check. Sebbene in questa fase un propagatore possa effettuare validazioni globali e generare lazy no-good, l'implementazione attuale di `HeuristicPropagator` non sovrascrive il metodo `check`. Il mantenimento degli stati euristici è delegato a `init`, `propagate`, `undo` e `decide`, mentre la validazione formale dei modelli rimane in carico ai vincoli di integrità dell'encoding ASP.
+4) Raggiunto un assegnamento totale, o un fixpoint intermedio a seconda della configurazione, il solver può invocare il metodo check. 
+Sebbene in questa fase un propagatore possa effettuare validazioni globali e generare lazy no-good, l'implementazione attuale di `HeuristicPropagator` non sovrascrive il metodo `check`. 
+Il mantenimento degli stati euristici è delegato a `init`, `propagate`, `undo` e `decide`, mentre la validazione formale dei modelli rimane in carico ai vincoli di integrità dell'encoding ASP.
 
-5) Passaggio "extra": se durante la propagazione il solver falsifica una
-nogood, viene rilevato un conflitto. Il conflitto viene analizzato per
-costruire una nogood appresa e determinare il livello di backjumping, spesso
-rispetto al first unique implication point.
+5) Passaggio "extra": se durante la propagazione il solver falsifica un nogood, viene rilevato un conflitto. 
+Il conflitto viene analizzato per costruire un nogood appreso e determinare il livello di backjumping, spesso rispetto al first unique implication point.
 
-Il metodo undo non viene chiamato solo in presenza di un conflitto, ma in
-generale durante il backtracking, incluso il backjumping guidato dai conflitti.
-Clasp gli passa i letterali che stanno per essere de-assegnati, permettendo al
-propagatore euristico di disfare le modifiche di stato esattamente nell'ordine
-inverso rispetto a propagate e di riportare AggregateState e trigger attivi
-allo stato coerente con il nuovo assegnamento parziale.
-
+Il metodo undo non viene chiamato solo in presenza di un conflitto, ma in generale durante il backtracking, incluso il backjumping guidato dai conflitti.
+Clasp gli passa i letterali che stanno per essere de-assegnati, permettendo al propagatore euristico di disfare le modifiche di stato esattamente nell'ordine inverso rispetto a propagate e di riportare AggregateState e trigger attivi allo stato coerente con il nuovo assegnamento parziale.
 
 
 %% ------------------------------------------------------
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 10) Ottimizzazione vincolo in vincolo lineare BSP
+%     Dettaglio fine, per scopo di uniformità nella tesi è meglio testare gli encoding allo stesso modo
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 Il vincolo 
 
@@ -402,7 +413,7 @@ x(3).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 15) Definizione formale della sintassi (__heuristic/N)
+% 11) Definizione formale della sintassi (__heuristic/N)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Per rendere la specifica rigorosa, la sintassi accettata dal costrutto
@@ -543,44 +554,6 @@ In sintesi, il contributo del propagatore rimane lineare nel numero di eventi
 effettivamente attivati dall'assegnamento parziale, evitando il costo
 combinatorio a monte dovuto al grounding esaustivo delle euristiche aggregate.
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 17) Estensione benchmark su domini non sintetici (protocollo)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-Per consolidare la validita' esterna, e' necessario aggiungere almeno un
-benchmark su dominio reale con dipendenze causali irregolari. Protocollo
-proposto:
-
-Dataset minimo:
-1) Planning: istanze Blocks/Logistics/PDDL gia' convertite in ASP.
-2) Scheduling: job-shop o course timetabling con vincoli multipli.
-3) Routing: VRP/TSP con capacita' e finestre temporali (almeno una famiglia).
-
-Configurazione sperimentale:
-1) stessa versione di Clingo/Clasp e stessi flag tra baseline e lazy;
-2) timeout fisso (es. 600s) e limite memoria fisso (es. 8GB);
-3) almeno 5 run per istanza con media e deviazione standard;
-4) metriche: grounding time, solving time, totale, RSS max, conflicts,
-  choices, propagations, numero regole groundate.
-
-Nel benchmark corrente, `test_folder/benchmarks/benchmark_bsp.sh` e
-`test_folder/benchmarks/benchmark_pup.sh` sono iteratori sottili, mentre
-`test_folder/benchmarks/benchmark_runner.py` esegue il singolo run con
-`--outf=2 --stats=2` e parsa le metriche solver dal JSON. I CSV finiscono in
-`test_folder/results/`. Rimane un pass `--text` separato solo per contare
-righe/fatti del programma ground, perché quei conteggi non sono esposti
-direttamente nel JSON di Clingo.
-
-Obiettivo analitico:
-1) verificare se il beneficio persiste oltre BSP quando la ricerca non e'
-  deterministica;
-2) misurare trade-off tra overhead runtime del propagatore e riduzione del
-  grounding;
-3) identificare classi di istanze in cui la strategia lazy e' neutra o peggiora
-  (analisi di robustezza, non solo best-case).
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 18) Confronto con letteratura e sistemi concorrenti
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -615,24 +588,6 @@ copertura parziale degli aggregati supportati, costo logaritmico per min/max,
 e necessita' di ulteriore validazione cross-domain.
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 19) Normalizzazione strutturale e Knowledge Compilation degli Encoding
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-L'integrazione delle euristiche native nel framework lazy richiede una fase preliminare di normalizzazione sintattica degli encoding originali.
-Gli encoding nativi del PUP presentano spesso aggregati con corpi congiuntivi complessi e variabili logiche intermedie utilizzate per il calcolo dei pesi. 
-Per garantire la compatibilità con il parser C++ e il convertitore Python, i file originali subiscono due trasformazioni architetturali rigorose.
-
-In primo luogo, si applica l'estrazione dei corpi complessi. 
-Le congiunzioni all'interno degli aggregati originali vengono isolate e appiattite in predicati ausiliari dinamici dedicati (ad esempio, definendo un dyn_deg_sensor). 
-Questo garantisce che l'aggregato lazy dipenda da un singolo letterale trigger valutabile in tempo reale dal propagatore custom, soddisfacendo i requisiti di linearità sintattica del costrutto __bind.
-
-In secondo luogo, si procede con l'inlining delle espressioni matematiche. 
-Le variabili intermedie definite nel corpo dell'euristica per scomporre il calcolo di peso e priorità vengono eliminate. 
-L'intera logica aritmetica viene collassata direttamente all'interno dei modificatori della direttiva finale. Questa espansione permette all'Abstract Syntax Tree (AST) precompilato nella fase di `init_lazy_mode` di mappare direttamente le variabili di aggregazione e di body sull'ambiente di valutazione costruito con chiavi `Clingo::Symbol`.
-Ciò elimina la necessità di eseguire parsing testuale di dipendenze annidate a runtime. Il propagatore introduce comunque un overhead controllato durante `propagate`, `undo` e `decide`, dovuto all'aggiornamento incrementale degli aggregati e alla rivalidazione dei candidati, ma evita la materializzazione combinatoria delle direttive euristiche nel grounding.
-Queste modifiche mantengono intatta la semantica logica del problema originale.
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 20) I quattro approcci BSP usati nei benchmark
@@ -646,10 +601,11 @@ Usa direttamente le direttive native:
 #heuristic b(X): x(X), not c(X), S = #sum{Y : c(Y)}. [X@S,true]
 #heuristic c(X): x(X), not b(X), S = #sum{Y : b(Y)}. [X@S,true]
 
-Qui Gringo deve produrre euristiche ground native. Il vantaggio e' che questa
-e' la semantica standard di Clingo; lo svantaggio e' il grounding bottleneck
-quando peso o priorita' dipendono da aggregati.
+Qui Gringo deve produrre euristiche ground native. 
+Il vantaggio è che questa è la semantica standard di Clingo; 
+Lo svantaggio è il grounding bottleneck quando peso o priorità dipendono da aggregati.
 
+//TODO questa parte è importantissima, vorrei che spiegassi bene perchè e come cerchiamo di emulare le alpha semantics nel ground and solve, spiega molto bene la logica applicata, esempi di funzionamento della logica ecc.
 2) Alpha semantics ground-and-solve (`ga`, file `test_folder/encodings/BSP/BSP_ga.lp`).
 Questa variante emula la logica dinamica di Alpha all'interno della semantica
 ground standard di Clingo, introducendo il predicato ausiliario `sum_value(0..tot)`:
@@ -658,15 +614,11 @@ sum_value(0..tot).
 #heuristic b(X): x(X), sum_value(S), S <= #sum{Y : c(Y)}. [X@S,true]
 #heuristic c(X): x(X), sum_value(S), S <= #sum{Y : b(Y)}. [X@S,true]
 
-Poiché il grounder deve precompilare i possibili valori runtime, una singola
-euristica concettuale si frammenta in una moltitudine di soglie statiche. Non si
-aggiorna una priorità singola, ma diventano progressivamente applicabili diverse
-direttive monotone (`S <= #sum{...}`). Questa precompilazione statica altera
-profondamente la guidance del CDNL rispetto a una valutazione runtime puntuale:
-il solver affronta una struttura euristica artificialmente complessa, che può
-generare ordini di grandezza superiori in conflitti e scelte. Questo encoding
-funge da baseline sperimentale per dimostrare le inefficienze della simulazione
-logica rispetto a una reale iniezione lazy nello stack decisionale.
+Poiché il grounder deve precompilare i possibili valori runtime, una singola euristica concettuale si frammenta in una moltitudine di soglie statiche. 
+Non si aggiorna una priorità singola, ma diventano progressivamente applicabili diverse direttive monotone (`S <= #sum{...}`). 
+Questa precompilazione statica altera profondamente la guidance del CDNL rispetto a una valutazione runtime puntuale:
+il solver affronta una struttura euristica artificialmente complessa, che può generare ordini di grandezza superiori in conflitti e scelte. 
+Questo encoding funge da baseline sperimentale per dimostrare le inefficienze della simulazione logica rispetto a una reale iniezione lazy nello stack decisionale.
 
 3) Alpha semantics lazy (`la`, file `test_folder/encodings/BSP/BSP_la.lp`).
 Le euristiche sono template statici:
@@ -674,13 +626,13 @@ Le euristiche sono template statici:
 __heuristic(__target(b),x,__n_c,__bind(s,__sum(c,0)),__weight(self),__priority(s),true).
 __heuristic(__target(c),x,__n_b,__bind(s,__sum(b,0)),__weight(self),__priority(s),true).
 
-Il propagatore valuta tutto durante il solving. In semantica Alpha, `not c(X)`
-significa "c(X) non e' vero": quindi l'euristica puo' attivarsi anche se c(X)
-e' ancora libero. Gli aggregati sono incrementali: sommano/contano gli atomi
-attualmente veri e non aspettano che tutti gli atomi del dominio siano decisi.
+Il propagatore valuta tutto durante il solving. 
+In semantica Alpha, `not c(X)` significa "c(X) non e' vero": 
+quindi l'euristica puo' attivarsi anche se c(X) è ancora libero. 
+Gli aggregati sono incrementali: sommano/contano gli atomi attualmente veri e non aspettano che tutti gli atomi del dominio siano decisi.
 
 4) Clingo semantics lazy (`lc`, file `test_folder/encodings/BSP/BSP_lc.lp`).
-E' identica alla variante lazy, ma aggiunge:
+È identica alla variante lazy, ma aggiunge:
 
 __semantics(clingo)
 
@@ -702,28 +654,3 @@ quando il corpo complesso dell'euristica viene materializzato in un predicato
 intermedio.
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 21) Nota sul suggerimento del professore: __h(...)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-La forma annotata dal professore:
-
-__h(b(x), x(x), not_a(x), s=a(y)).
-
-va letta come notazione compatta, non necessariamente come sintassi finale del
-nostro implementativo. L'idea e' rappresentare una direttiva euristica come un
-fatto strutturale invece che come `#heuristic` nativa:
-- `b(x)` e' il target dell'euristica;
-- `x(x)` e' un trigger positivo del body;
-- `not_a(x)` rappresenta il body negativo `not a(X)`;
-- `s=a(y)` rappresenta il binding di una variabile locale `s` a un aggregato
-  calcolato sugli atomi `a(Y)`.
-
-Nel nostro codice la stessa idea e' espressa con la sintassi piu' esplicita:
-
-__heuristic(__target(b), x, __n_a, __bind(s, __sum(a,0)), __weight(...), __priority(s), true).
-
-Quindi il punto del professore non e' "dimostrare" un nuovo vincolo logico, ma
-separare la descrizione dell'euristica dalla sua istanziazione. In questo modo
-Gringo grounda un fatto piccolo e il propagatore decide a runtime quando
-applicarlo e con quali valori di peso/priorita'.
