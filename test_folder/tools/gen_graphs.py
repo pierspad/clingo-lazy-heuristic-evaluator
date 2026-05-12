@@ -1,5 +1,72 @@
+"""
+DESCRIZIONE E ORIGINE DEI DATI DEI GRAFICI
+==========================================
+Questo script genera grafici e tabelle a partire da file CSV contenenti i risultati 
+dei benchmark. I dati presenti nei CSV non vengono inventati qui, ma sono estratti 
+(tramite gli script bash di test) dagli output di Clingo e da altri comandi di sistema.
 
+Di seguito è spiegato dove e come vengono prese le metriche per ogni singolo grafico:
 
+1. Grounding Time (Tempo di Grounding)
+   - Origine: Output di Clingo, riga "Time         : ... (Solving: ...)".
+   - Come si calcola: Generalmente si ottiene sottraendo il "Solving time" al tempo 
+     totale ("Total time"). Rappresenta il tempo speso per istanziare il programma.
+
+2. Solving Time (Tempo di Ricerca)
+   - Origine: Output di Clingo, riga "Time         : ... (Solving: X.XXXs ...)".
+   - Come si prende: Il numero X.XXX affianco alla voce "Solving:" corrisponde al tempo 
+     netto impiegato dal solver per la ricerca CDNL.
+
+3. Choices (Decisioni)
+   - Origine: Output di Clingo (con opzione --stats), riga "Choices      : X".
+   - Come si prende: Il numero affianco alla voce "Choices" corrisponde al numero 
+     di decisioni o scelte prese dal solver durante la ricerca.
+
+4. Conflicts (Conflitti)
+   - Origine: Output di Clingo (con opzione --stats), riga "Conflicts    : X".
+   - Come si prende: Il numero affianco alla voce "Conflicts" indica i conflitti 
+     incontrati, che causano il backtracking del solver.
+
+5. Restarts (Riavvii)
+   - Origine: Output di Clingo (con opzione --stats), riga "Restarts     : X".
+   - Come si prende: Il numero affianco alla voce "Restarts" corrisponde a quante 
+     volte la ricerca è stata riavviata per uscire da zone infruttuose.
+
+6. Ground Program Lines (Linee del Programma Ground)
+   - Origine: Comando `clingo --text` (o equivalente per stampare l'output).
+   - Come si prende: Corrisponde al conteggio delle righe totali dell'output testuale 
+     (ad esempio usando il comando bash `wc -l`).
+
+7. Propositional Variables (Variabili Proposizionali)
+   - Origine: Output di Clingo (con opzione --stats), riga "Variables    : X".
+   - Come si prende: Il numero affianco alla voce "Variables" corrisponde alla grandezza 
+     dello spazio di ricerca interno in termini di variabili booleane.
+
+8. RSS Memory (Memoria RAM Utilizzata)
+   - Origine: Output del comando di sistema `/usr/bin/time -v clingo ...`.
+   - Come si prende: Il comando ha la voce "Maximum resident set size (kbytes): X". 
+     Il numero affianco corrisponde ai Kilobytes di picco usati, che vengono poi divisi 
+     per 1024 per ottenere il valore in Megabytes (MB).
+
+9. Heuristics Grounding (Euristiche Istanziate)
+   - Origine: Output testuale del grounder (`clingo --text`).
+   - Come si prende: Il dato nel grafico è la somma di due voci:
+     - Le euristiche "standard" (direttive come `#heuristic`), contate analizzando il testo.
+     - Le euristiche "lazy" (fatti speciali come `__heuristic(...)`), contate sempre nel testo.
+
+10. Ground Facts (Fatti Istanziati)
+    - Origine: Output testuale del grounder (`clingo --text`).
+    - Come si prende: Corrisponde al numero di fatti base (righe senza condizioni/corpo) 
+      presenti nel programma istanziato.
+
+Altre metriche utilizzate per i grafici di comparazione (es. riduzioni e speedup):
+- Total Time: si prende dall'output di Clingo, voce "Time         : X.XXXs".
+- Rules: si prende dall'output di Clingo, voce "Rules        : X". Indica il numero 
+  di regole interne generate per il risolutore SAT.
+
+(Le espressioni regolari e la logica precisa di estrazione di tutte queste voci si 
+trovano negli script Bash esterni che eseguono i test e generano i file CSV.)
+"""
 
 import argparse
 import csv

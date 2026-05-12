@@ -376,30 +376,49 @@ __heuristic(x, __priority(s), true, __target(b),
 
 %% ------------------------------------------------------
 
-Il propagatore implementato è `HeuristicPropagator`, che eredita da `Clingo::Heuristic`. Questa interfaccia estende `Clingo::Propagator`: oltre a `init`, `propagate` e `undo`, espone il metodo `decide`, cioè il punto in cui il solver chiede al propagatore se vuole suggerire il prossimo letterale di decisione.
+Il propagatore implementato è `HeuristicPropagator`, che eredita da `Clingo::Heuristic`. 
+Questa interfaccia estende `Clingo::Propagator`: oltre a `init`, `propagate` e `undo`, espone il metodo `decide`, cioè il punto in cui il solver chiede al propagatore se vuole suggerire il prossimo letterale di decisione.
 
 1) `init`: parsing dei template e costruzione dei candidati.
 
 All'inizio `init` pulisce tutte le strutture interne:
-`aggregate_states_`, `watched_atoms_`, `rule_templates_`, `candidates_`, `candidate_queue_`, `candidate_refresh_lits_`, `aggregate_candidates_`, `aggregate_source_lits_` e `registered_watches_`. Poi scansiona gli atomi simbolici del programma ground: se non trova alcun fatto `__heuristic(...)`, il propagatore rimane inattivo.
 
-Se invece trova template lazy (__heuristic), entra in `init_lazy_mode`. Qui avvengono quattro passaggi.
+`aggregate_states_`, `watched_atoms_`, `rule_templates_`, 
+`candidates_`, `candidate_queue_`, `candidate_refresh_lits_`, 
+`aggregate_candidates_`, `aggregate_source_lits_` e `registered_watches_`. 
 
-Primo: `parse_lazy_heuristic_templates(atoms)` trasforma i fatti `__heuristic/N` in `HeuristicRuleTemplate`. Il parser classifica gli argomenti in target, body positivi, body negativi, binding aggregati, peso, priorità, segno e semantica. Le espressioni aritmetiche non rimangono stringhe: vengono compilate in un piccolo AST (`ArithmeticExpression`) che verrà valutato durante la ricerca.
+Poi scansiona gli atomi simbolici del programma ground e:
 
-Secondo: `build_lazy_predicate_literal_map` costruisce una mappa:
+Se non trova alcun fatto `__heuristic(...)`, il propagatore rimane inattivo.
+Se invece trova template lazy (__heuristic), entra in `init_lazy_mode`. 
+
+In `init_lazy_mode` avvengono quattro passaggi.
+
+Primo: 
+`parse_lazy_heuristic_templates(atoms)` trasforma i fatti `__heuristic/N` in `HeuristicRuleTemplate`. 
+Il parser classifica gli argomenti in target, body positivi, body negativi, binding aggregati, peso, priorità, segno e semantica. 
+Le espressioni aritmetiche non rimangono stringhe: vengono compilate in un piccolo AST (`ArithmeticExpression`) che verrà valutato durante la ricerca.
+
+Secondo: 
+`build_lazy_predicate_literal_map` costruisce una mappa:
 
 Predicato -> tupla numerica -> solver literal
 
-Per esempio, se nel programma ground esistono `x(1)`, `x(2)`, `b(1)`, `b(2)`
+Per esempio, se nel programma ground esistono 
+`x(1)` = slit 35, 
+`x(2)` = slit 36
+`b(1)` = slit 102
+`b(2)` = slit 103
 
 la mappa conterrà voci del tipo
-`x -> [1] -> lit(x(1))` 
-`b -> [1] -> lit(b(1))` 
+Clingo::literal_t slit = pred_lit_map[Clingo::Id("x")][AtomKey{{1}}]; // Restituisce 35
+Clingo::literal_t slit = pred_lit_map[Clingo::Id("b")][AtomKey{{2}}]; // Restituisce 103
 
 Il propagatore considera solo atomi funzione con argomenti numerici, perché `AtomKey` è una tupla di interi.
 
-Terzo: `register_lazy_body_triggers` materializza i `CandidateState`. Un template non è ancora una singola decisione concreta: rappresenta una famiglia di possibili target. Per ogni atomo target ground compatibile, il propagatore prova ad abbinare i body positivi:
+Terzo: 
+`register_lazy_body_triggers` materializza i `CandidateState`. 
+Un template non è ancora una singola decisione concreta: rappresenta una famiglia di possibili target. Per ogni atomo target ground compatibile, il propagatore prova ad abbinare i body positivi:
 
 - body implicito, come `x`, significa stessa tupla del target;
 - body esplicito, come `__body(body, __match(0,0), __bind_arg(w,1))`, costruisce un indice sui body e permette mapping non banali;
