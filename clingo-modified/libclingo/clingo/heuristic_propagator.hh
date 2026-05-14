@@ -91,6 +91,9 @@ private:
                                                                  LazyTemplatePredicateSets const &predicates) const;
     void materialize_lazy_candidates_and_register_watches(Clingo::PropagateInit &init,
                                                           GroundLiteralIndex const &ground_literal_index);
+    void materialize_candidates_for_template(Clingo::PropagateInit &init,
+                                             size_t rule_idx,
+                                             GroundLiteralIndex const &ground_literal_index);
     void register_lazy_aggregate_watches(Clingo::PropagateInit &init, Clingo::SymbolicAtoms const &atoms);
     AggregateState *ensure_aggregate_state(RuntimeAggregateKey const &runtime_key);
     void add_solver_watch(Clingo::PropagateInit &init, Clingo::literal_t lit);

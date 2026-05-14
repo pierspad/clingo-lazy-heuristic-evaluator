@@ -1,0 +1,36 @@
+Sono disperato perchè devo sapere bene il funzionamento di tutto questo alla perfezione dato che riguarda la mia tesi, devo conoscerebene il codice c e tutto il suo flusso mi sai guidare mano a mano? è il modo migliore con cui imparo, studiao insieme dalla trasformazione di un euristica normale in __heursitic a tutto il processo di risoluzione in dettaglio man mano che incontriamo strutture dati o altro Se vuoi possiamo analizzare anche solo un pezzo alla volta, partiamo dai
+
+mi è necessarioa vere una panoramica del funzionamento del flusso e di come si passa da una funzine all'altra
+
+fino ad ora so che:
+
+
+
+
+
+Il flusso dell'esecuzione del programma fino ad ora è che abbiamo un heuristica classica di clingo, la traduciamo secondo n formato standard in __heuristic oppure usiamo il convertitore python per farlo al posto nostro (anche se alcune istanze di PUP forse hanno bisogno di ritocchi manuali)
+
+Viene passato a gringo, gringo grounda come al suo solito ma, dato che non c'è più un aggregato nel peso/priorità non è più forzato dal vincolo di groundare tutto per avere assignment completi e quindi può evitare di groundare l'altissimo numero di heuristiche che ne sarebbero risultate e piuttosto grounda giusto 1 "template/placeholder" per ogni euristica presente nel programma originale
+
+Una volta arrivato al solver il solver si chiede prima se ci sono o meno degli atomi chiamati __heuristic, se no allora ignora il propagatore euristico, se si allora procediamo
+
+Parse euristic template inserisce all'interno di un vettore di HeuristicRuleTemplate tutti i predicati che ha trovato, ma anche eventuali informazioni di supporto come il tipo di peso, priorità, semantica desiderata (clingo/alpha) ecc. 
+È una sorta di trascrizione diretta in un formato intermedio.
+
+LazyTemplatePredicateSets è una struttura dati che contiene 3 unordered set (puoi spiegarmi la differenza tra unordered set e altri?) dove inseriamo rispettivamente i predicati: positivi, negativi e l'atomo obiettivo ell'euristica.
+
+ground literal index è una mappa clingo::symbol -> LitByTuple
+ovvero, per ogni atomo negativo, positivo o target che sia, e solo per loro (il resto viene ignorato) viene inserita in questa mappa un entry del tipo
+mappa[predicato][valori_tupla] = slit 
+
+una volta fatto questo passiamo alla concretizzazione dei CandidateState.
+Viene presa la regola HeuristicRuleTemplate (1 per ogni direttiva euristica) e viene creato un candidate state per ogni istanza target e per ogni direttiva erusitca
+
+nel caso del bsp ad esempio, 1000 istanze target, 2 direttive euristiche, vengono creati 2000 CandidateState.
+
+il candidate state è molto simile all'heuristic rule template ma stavolta non è appunto un "template" non contiene i nomi dei predicati target o i nomi dei letterali positivi/negativi del corpo, contiene i solver literal che sta usando clasp durante la risoluzione.
+
+in più contiene, se presenti aggregati, contiene un riferimento all'aggregato. 
+Questo punta all vettore *inserire nome* che viene aggiornato nel propagate() e valutato nel decide()
+
+
