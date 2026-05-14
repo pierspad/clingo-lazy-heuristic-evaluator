@@ -418,7 +418,8 @@ Il propagatore considera solo atomi funzione con argomenti numerici, perché `At
 
 Terzo: 
 `register_lazy_body_triggers` materializza i `CandidateState`. 
-Un template non è ancora una singola decisione concreta: rappresenta una famiglia di possibili target. Per ogni atomo target ground compatibile, il propagatore prova ad abbinare i body positivi:
+Un template non è ancora una singola decisione concreta: rappresenta una famiglia di possibili target. 
+Per ogni atomo target ground compatibile, il propagatore prova ad abbinare i body positivi:
 
 - body implicito, come `x`, significa stessa tupla del target;
 - body esplicito, come `__body(body, __match(0,0), __bind_arg(w,1))`, costruisce un indice sui body e permette mapping non banali;
