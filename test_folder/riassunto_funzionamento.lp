@@ -400,7 +400,8 @@ Il parser classifica gli argomenti in target, body positivi, body negativi, bind
 Le espressioni aritmetiche non rimangono stringhe: vengono compilate in un piccolo AST (`ArithmeticExpression`) che verrà valutato durante la ricerca.
 
 Secondo: 
-`build_lazy_predicate_literal_map` costruisce una mappa:
+`collect_predicates_used_by_lazy_templates` raccoglie i predicati citati dai template lazy, poi
+`build_ground_literal_index_for_predicates` costruisce una mappa:
 
 Predicato -> tupla numerica -> solver literal
 
@@ -411,13 +412,14 @@ Per esempio, se nel programma ground esistono
 `b(2)` = slit 103
 
 la mappa conterrà voci del tipo
-Clingo::literal_t slit = pred_lit_map[Clingo::Id("x")][AtomKey{{1}}]; // Restituisce 35
-Clingo::literal_t slit = pred_lit_map[Clingo::Id("b")][AtomKey{{2}}]; // Restituisce 103
+Clingo::literal_t slit = ground_literal_index[Clingo::Id("x")][AtomKey{{1}}]; // Restituisce 35
+Clingo::literal_t slit = ground_literal_index[Clingo::Id("b")][AtomKey{{2}}]; // Restituisce 103
 
 Il propagatore considera solo atomi funzione con argomenti numerici, perché `AtomKey` è una tupla di interi.
 
 Terzo: 
-`register_lazy_body_triggers` materializza i `CandidateState`. 
+`materialize_lazy_candidates_and_register_watches` materializza i `CandidateState`
+e registra i watch necessari a rivalutarli. 
 Un template non è ancora una singola decisione concreta: rappresenta una famiglia di possibili target. 
 Per ogni atomo target ground compatibile, il propagatore prova ad abbinare i body positivi:
 

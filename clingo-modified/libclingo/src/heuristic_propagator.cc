@@ -176,54 +176,53 @@ void HeuristicPropagator::init(Clingo::PropagateInit &init) {
     }
 }
 
-HeuristicPropagator::RulePredicateSets HeuristicPropagator::extract_lazy_predicate_sets() const {
-    RulePredicateSets predicates;
+HeuristicPropagator::LazyTemplatePredicateSets HeuristicPropagator::collect_predicates_used_by_lazy_templates() const {
+    LazyTemplatePredicateSets predicates;
 
     for (auto const &tmpl : rule_templates_) {
         predicates.target_preds.insert(tmpl.target_pred);
 
         for (auto const &pos_pred : tmpl.pos_body_preds) {
-            predicates.body_preds.insert(pos_pred.pred_name);
+            predicates.pos_body_preds.insert(pos_pred.pred_name);
         }
 
         for (auto const &neg_pred : tmpl.neg_body_preds) {
             predicates.neg_preds.insert(neg_pred);
         }
-
     }
 
     return predicates;
 }
 
-HeuristicPropagator::PredLitMap HeuristicPropagator::build_lazy_predicate_literal_map(
+HeuristicPropagator::GroundLiteralIndex HeuristicPropagator::build_ground_literal_index_for_predicates(
     Clingo::PropagateInit &init,
     Clingo::SymbolicAtoms const &atoms,
-    RulePredicateSets const &predicates
+    LazyTemplatePredicateSets const &predicates
 ) const {
-    PredLitMap pred_lit_map;
+    GroundLiteralIndex ground_literal_index;
 
     std::unordered_set<Clingo::Symbol> all_preds;
-    all_preds.insert(predicates.body_preds.begin(), predicates.body_preds.end());
+    all_preds.insert(predicates.pos_body_preds.begin(), predicates.pos_body_preds.end());
     all_preds.insert(predicates.target_preds.begin(), predicates.target_preds.end());
     all_preds.insert(predicates.neg_preds.begin(), predicates.neg_preds.end());
 
     for (auto it = atoms.begin(); it != atoms.end(); ++it) {
         auto const symbol = it->symbol();
-        if (!is_clingo_symbol_function(symbol)) continue;
+        if (!is_clingo_symbol_function(symbol)) continue; // se non è una funzione esci
 
         auto const pname = predicate_name_symbol(symbol);
-        if (all_preds.find(pname) == all_preds.end()) continue;
+        if (all_preds.find(pname) == all_preds.end()) continue; // se non c'è la funzione nei predicati esci
 
         auto const sym_args = symbol.arguments();
-        if (sym_args.empty()) continue;
+        if (sym_args.empty()) continue; // se non ha argomenti il predicato esci
 
         std::vector<int> tuple_values;
-        if (!extract_numeric_arguments(symbol, tuple_values)) continue;
+        if (!extract_numeric_arguments(symbol, tuple_values)) continue; // ????? sono confuso con quello di prima ora
 
         Clingo::literal_t slit = init.solver_literal(it->literal());
-        if (slit != 0) pred_lit_map[pname][AtomKey{std::move(tuple_values)}] = slit;
+        if (slit != 0) ground_literal_index[pname][AtomKey{std::move(tuple_values)}] = slit;
     }
-    return pred_lit_map;
+    return ground_literal_index;
 }
 
 AggregateState *HeuristicPropagator::ensure_aggregate_state(RuntimeAggregateKey const &runtime_key) {
@@ -253,13 +252,15 @@ void HeuristicPropagator::register_candidate_refresh_watch(Clingo::PropagateInit
     add_solver_watch(init, lit);
 }
 
-void HeuristicPropagator::add_candidate(Clingo::PropagateInit &init,
-                                        size_t rule_idx,
-                                        Clingo::literal_t target_lit,
-                                        std::vector<int> const &tuple_values,
-                                        std::vector<Clingo::literal_t> pos_body_lits,
-                                        std::vector<Clingo::literal_t> neg_body_lits,
-                                        std::unordered_map<Clingo::Symbol, int> body_var_values) {
+void HeuristicPropagator::add_candidate_and_register_refresh_watches(
+    Clingo::PropagateInit &init,
+    size_t rule_idx,
+    Clingo::literal_t target_lit,
+    std::vector<int> const &tuple_values,
+    std::vector<Clingo::literal_t> pos_body_lits,
+    std::vector<Clingo::literal_t> neg_body_lits,
+    std::unordered_map<Clingo::Symbol, int> body_var_values
+) {
     if (target_lit == 0 || rule_idx >= rule_templates_.size()) return;
 
     auto const candidate_id = candidates_.size();
@@ -451,8 +452,10 @@ void HeuristicPropagator::refresh_all_candidates(Clingo::Assignment const &assig
     }
 }
 
-void HeuristicPropagator::register_lazy_body_triggers(Clingo::PropagateInit &init,
-                                                      PredLitMap const &pred_lit_map) {
+void HeuristicPropagator::materialize_lazy_candidates_and_register_watches(
+    Clingo::PropagateInit &init,
+    GroundLiteralIndex const &ground_literal_index
+) {
     struct BodyMatchSource {
         BodyPredicateSpec const *spec = nullptr;
         std::unordered_map<AtomKey, Clingo::literal_t, AtomKeyHash> const *body_map = nullptr;
@@ -462,16 +465,16 @@ void HeuristicPropagator::register_lazy_body_triggers(Clingo::PropagateInit &ini
     for (size_t ri = 0; ri < rule_templates_.size(); ++ri) {
         auto const &tmpl = rule_templates_[ri];
 
-        auto target_map_it = pred_lit_map.find(tmpl.target_pred);
-        if (target_map_it == pred_lit_map.end()) continue;
+        auto target_map_it = ground_literal_index.find(tmpl.target_pred);
+        if (target_map_it == ground_literal_index.end()) continue;
 
         std::vector<BodyMatchSource> body_sources;
         body_sources.reserve(tmpl.pos_body_preds.size());
 
         bool missing_body_predicate = false;
         for (auto const &spec : tmpl.pos_body_preds) {
-            auto pos_map_it = pred_lit_map.find(spec.pred_name);
-            if (pos_map_it == pred_lit_map.end()) {
+            auto pos_map_it = ground_literal_index.find(spec.pred_name);
+            if (pos_map_it == ground_literal_index.end()) {
                 missing_body_predicate = true;
                 break;
             }
@@ -494,8 +497,8 @@ void HeuristicPropagator::register_lazy_body_triggers(Clingo::PropagateInit &ini
 
             std::vector<Clingo::literal_t> neg_lits;
             for (auto const &neg_pred : tmpl.neg_body_preds) {
-                auto neg_map_it = pred_lit_map.find(neg_pred);
-                if (neg_map_it != pred_lit_map.end()) {
+                auto neg_map_it = ground_literal_index.find(neg_pred);
+                if (neg_map_it != ground_literal_index.end()) {
                     auto nit = neg_map_it->second.find(target_key);
                     if (nit != neg_map_it->second.end()) neg_lits.push_back(nit->second);
                 }
@@ -554,13 +557,13 @@ void HeuristicPropagator::register_lazy_body_triggers(Clingo::PropagateInit &ini
             }
 
             for (auto &partial : partials) {
-                add_candidate(init,
-                              ri,
-                              target_lit,
-                              target_key.values,
-                              std::move(partial.pos_lits),
-                              neg_lits,
-                              std::move(partial.body_var_values));
+                add_candidate_and_register_refresh_watches(init,
+                                                           ri,
+                                                           target_lit,
+                                                           target_key.values,
+                                                           std::move(partial.pos_lits),
+                                                           neg_lits,
+                                                           std::move(partial.body_var_values));
             }
         }
     }
@@ -640,11 +643,11 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
     rule_templates_ = parse_lazy_heuristic_templates(atoms);
     if (rule_templates_.empty()) return;
 
-    RulePredicateSets predicates = extract_lazy_predicate_sets();
+    LazyTemplatePredicateSets predicates = collect_predicates_used_by_lazy_templates();
 
-    PredLitMap pred_lit_map = build_lazy_predicate_literal_map(init, atoms, predicates);
+    GroundLiteralIndex ground_literal_index = build_ground_literal_index_for_predicates(init, atoms, predicates);
 
-    register_lazy_body_triggers(init, pred_lit_map);
+    materialize_lazy_candidates_and_register_watches(init, ground_literal_index);
 
     register_lazy_aggregate_watches(init, atoms);
 

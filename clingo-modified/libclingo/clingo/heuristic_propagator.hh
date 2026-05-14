@@ -65,14 +65,14 @@ private:
         CandidateQueueEntry queue_entry;
     };
 
-    struct RulePredicateSets {
-        std::unordered_set<Clingo::Symbol> body_preds;
+    struct LazyTemplatePredicateSets {
+        std::unordered_set<Clingo::Symbol> pos_body_preds;
         std::unordered_set<Clingo::Symbol> target_preds;
         std::unordered_set<Clingo::Symbol> neg_preds;
     };
 
     using LitByTuple = std::unordered_map<AtomKey, Clingo::literal_t, AtomKeyHash>;
-    using PredLitMap = std::unordered_map<Clingo::Symbol, LitByTuple>;
+    using GroundLiteralIndex = std::unordered_map<Clingo::Symbol, LitByTuple>;
 
     std::unordered_map<Clingo::literal_t, WatchedAtomInfo> watched_atoms_;
     std::vector<HeuristicRuleTemplate> rule_templates_;
@@ -85,22 +85,23 @@ private:
     std::unordered_set<Clingo::literal_t> registered_watches_;
 
     void init_lazy_mode(Clingo::PropagateInit &init);
-    RulePredicateSets extract_lazy_predicate_sets() const;
-    PredLitMap build_lazy_predicate_literal_map(Clingo::PropagateInit &init,
-                                                Clingo::SymbolicAtoms const &atoms,
-                                                RulePredicateSets const &predicates) const;
-    void register_lazy_body_triggers(Clingo::PropagateInit &init, PredLitMap const &pred_lit_map);
+    LazyTemplatePredicateSets collect_predicates_used_by_lazy_templates() const;
+    GroundLiteralIndex build_ground_literal_index_for_predicates(Clingo::PropagateInit &init,
+                                                                 Clingo::SymbolicAtoms const &atoms,
+                                                                 LazyTemplatePredicateSets const &predicates) const;
+    void materialize_lazy_candidates_and_register_watches(Clingo::PropagateInit &init,
+                                                          GroundLiteralIndex const &ground_literal_index);
     void register_lazy_aggregate_watches(Clingo::PropagateInit &init, Clingo::SymbolicAtoms const &atoms);
     AggregateState *ensure_aggregate_state(RuntimeAggregateKey const &runtime_key);
     void add_solver_watch(Clingo::PropagateInit &init, Clingo::literal_t lit);
     void register_candidate_refresh_watch(Clingo::PropagateInit &init, Clingo::literal_t lit, size_t candidate_id);
-    void add_candidate(Clingo::PropagateInit &init,
-                       size_t rule_idx,
-                       Clingo::literal_t target_lit,
-                       std::vector<int> const &tuple_values,
-                       std::vector<Clingo::literal_t> pos_body_lits,
-                       std::vector<Clingo::literal_t> neg_body_lits,
-                       std::unordered_map<Clingo::Symbol, int> body_var_values);
+    void add_candidate_and_register_refresh_watches(Clingo::PropagateInit &init,
+                                                    size_t rule_idx,
+                                                    Clingo::literal_t target_lit,
+                                                    std::vector<int> const &tuple_values,
+                                                    std::vector<Clingo::literal_t> pos_body_lits,
+                                                    std::vector<Clingo::literal_t> neg_body_lits,
+                                                    std::unordered_map<Clingo::Symbol, int> body_var_values);
     void erase_candidate_from_queue(size_t candidate_id) noexcept;
     bool compute_candidate_entry(size_t candidate_id, Clingo::Assignment const &assignment,
                                  CandidateQueueEntry &entry) const;
