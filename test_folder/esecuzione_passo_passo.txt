@@ -17,7 +17,7 @@ Una volta arrivato al solver il solver si chiede prima se ci sono o meno degli a
 Parse euristic template inserisce all'interno di un vettore di HeuristicRuleTemplate tutti i predicati che ha trovato, ma anche eventuali informazioni di supporto come il tipo di peso, priorità, semantica desiderata (clingo/alpha) ecc. 
 È una sorta di trascrizione diretta in un formato intermedio.
 
-LazyTemplatePredicateSets è una struttura dati che contiene 3 unordered set (puoi spiegarmi la differenza tra unordered set e altri?) dove inseriamo rispettivamente i predicati: positivi, negativi e l'atomo obiettivo ell'euristica.
+LazyTemplatePredicateSets è una struttura dati che contiene 3 unordered set (puoi spiegarmi la differenza tra unordered set e altri?) dove inseriamo rispettivamente i predicati: positivi, negativi e il predicato target dell'euristica.
 
 ground literal index è una mappa clingo::symbol -> LitByTuple
 ovvero, per ogni atomo negativo, positivo o target che sia, e solo per loro (il resto viene ignorato) viene inserita in questa mappa un entry del tipo
