@@ -70,16 +70,16 @@ struct RuntimeAggregateKeyHash {
     }
 };
 
-struct AtomKey {
+struct NumericTupleKey {
     std::vector<int> values;
 
-    bool operator==(AtomKey const &o) const {
+    bool operator==(NumericTupleKey const &o) const {
         return values == o.values;
     }
 };
 
-struct AtomKeyHash {
-    std::size_t operator()(AtomKey const &k) const {
+struct NumericTupleKeyHash {
+    std::size_t operator()(NumericTupleKey const &k) const {
         std::size_t h = 17;
         for (int value : k.values) {
             h = h * 31 + std::hash<int>{}(value);
