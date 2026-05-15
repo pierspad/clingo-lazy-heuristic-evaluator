@@ -1,290 +1,1349 @@
-Sono disperato perchè devo sapere bene il funzionamento di tutto questo alla perfezione dato che riguarda la mia tesi, devo conoscerebene il codice c e tutto il suo flusso mi sai guidare mano a mano? è il modo migliore con cui imparo, studiao insieme dalla trasformazione di un euristica normale in __heursitic a tutto il processo di risoluzione in dettaglio man mano che incontriamo strutture dati o altro Se vuoi possiamo analizzare anche solo un pezzo alla volta, partiamo dai
+Link pup
+https://github.com/tilmanni/Alpha/tree/domspec_heuristics_extended_prolog/Evaluation/PUP
 
-mi è necessarioa vere una panoramica del funzionamento del flusso e di come si passa da una funzine all'altra
 
-fino ad ora so che:
+clingo-modified/libclingo/src/heuristic_propagator.cc
+clingo-modified/libclingo/src/heuristic_parser.cc
+clingo-modified/libclingo/clingo/heuristic_symbol.hh
+clingo-modified/libclingo/clingo/heuristic_types.hh
+clingo-modified/libclingo/clingo/heuristic_aggregate.hh
+clingo-modified/libclingo/clingo/heuristic_parser.hh
+clingo-modified/libclingo/clingo/heuristic_propagator.hh
+clingo-modified/libclingo/tests/heuristic_propagator.cc
 
+======================================================
 
 
+ESECUZIONE PASSO PASSO DEL PROPAGATORE EURISTICO LAZY
+======================================================
 
+Questo documento spiega il flusso completo del propagatore lazy per euristiche
+ASP con aggregati dinamici. L'obiettivo e' renderlo leggibile anche a una
+persona che non conosce ancora ASP, Clingo o il codice della tesi.
 
-Il flusso dell'esecuzione del programma fino ad ora è che abbiamo un heuristica classica di clingo, la traduciamo secondo n formato standard in __heuristic oppure usiamo il convertitore python per farlo al posto nostro (anche se alcune istanze di PUP forse hanno bisogno di ritocchi manuali)
+L'idea centrale in una frase:
 
-Viene passato a gringo, gringo grounda come al suo solito ma, dato che non c'è più un aggregato nel peso/priorità non è più forzato dal vincolo di groundare tutto per avere assignment completi e quindi può evitare di groundare l'altissimo numero di heuristiche che ne sarebbero risultate e piuttosto grounda giusto 1 "template/placeholder" per ogni euristica presente nel programma originale
+    non groundiamo tutte le euristiche possibili;
+    groundiamo un template compatto e lo valutiamo durante il solving.
 
-Una volta arrivato al solver il solver si chiede prima se ci sono o meno degli atomi chiamati __heuristic, se no allora ignora il propagatore euristico, se si allora procediamo
 
-Parse euristic template inserisce all'interno di un vettore di HeuristicRuleTemplate tutti i predicati che ha trovato, ma anche eventuali informazioni di supporto come il tipo di peso, priorità, semantica desiderata (clingo/alpha) ecc. 
-È una sorta di trascrizione diretta in un formato intermedio.
+1. Il problema che si vuole risolvere
+------------------------------------
 
-LazyTemplatePredicateSets è una struttura dati che contiene 3 unordered set (puoi spiegarmi la differenza tra unordered set e altri?) dove inseriamo rispettivamente i predicati: positivi, negativi e il predicato target dell'euristica.
+ASP, Answer Set Programming, e' un paradigma dichiarativo: invece di scrivere
+come costruire una soluzione passo per passo, si descrivono regole e vincoli che
+una soluzione deve soddisfare.
 
-GroundLiteralIndex è una mappa clingo::symbol -> LitByTuple
-ovvero, per ogni atomo negativo, positivo o target che sia, e solo per loro (il resto viene ignorato) viene inserita in questa mappa un entry del tipo
-mappa[predicato][valori_tupla] = slit 
+Clingo lavora in due fasi principali:
 
-una volta fatto questo passiamo alla concretizzazione dei CandidateState.
-Viene presa la regola HeuristicRuleTemplate (1 per ogni direttiva euristica) e viene creato un candidate state per ogni target ground per le combinazioni dei body positivi espliciti
+1. Gringo, il grounder, elimina le variabili e produce un programma proposizionale.
+2. Clasp, il solver, cerca un modello usando un algoritmo CDNL, simile a SAT.
 
-nel caso del bsp ad esempio, 1000 istanze target, 2 direttive euristiche, vengono creati 2000 CandidateState.
+Il problema nasce quando una direttiva euristica usa un aggregato nel peso o
+nella priorita'. Per esempio, nel Balanced Sum Problem:
 
-il candidate state è molto simile all'heuristic rule template ma stavolta non è appunto un "template" non contiene i nomi dei predicati target o i nomi dei letterali positivi/negativi del corpo, contiene i solver literal che sta usando clasp durante la risoluzione.
+    #heuristic b(X) : x(X), not c(X), S = #sum { Y : c(Y) }. [X@S, true]
+    #heuristic c(X) : x(X), not b(X), S = #sum { Y : b(Y) }. [X@S, true]
 
-in più contiene, se presenti aggregati, contiene un CandidateAggregateBinding che contiene una chiave che viene usata per cercare dentro la mappa aggregate_states che associa ad ogni RuntimeAggregateKey un AggregateState (il valore dinamico dell'aggregato durante la risoluzione)
+Qui la priorita' della scelta `b(X)` dipende dalla somma corrente degli elementi
+gia' messi in `c`. Il punto delicato e' che una direttiva `#heuristic` nativa di
+Clingo, dopo il grounding, vuole peso e priorita' come interi gia' fissati.
 
+Quindi Gringo non puo' lasciare `S` come "somma corrente durante il solving".
+Per preservare la semantica standard dovrebbe generare molte direttive ground,
+una per ogni possibile valore di `S`.
 
+Per `n = 3` la somma puo' andare da 0 a 6, quindi il grounder puo' produrre:
 
+    #heuristic b(1) : ..., #sum{...} = 0. [1@0, true]
+    #heuristic b(1) : ..., #sum{...} = 1. [1@1, true]
+    ...
+    #heuristic b(1) : ..., #sum{...} = 6. [1@6, true]
 
-questa cosa mi è stato detto di scriverla ma non so se è opportuno scriverla qui o da qualche altra parte durante il flusso di esecuzione
+Per istanze grandi questa espansione diventa un collo di bottiglia di memoria e
+tempo. Il propagatore lazy evita proprio questa precompilazione esaustiva.
 
-watched_atoms è una mappa: 
-Clingo::literal_t, WatchedAtomInfo
 
-ci dice quando uno specifico solver literal diventa vero/falso quale atomo va aggiornato e con quale contributo 
+2. Soluzione generale
+---------------------
 
-watched_atoms_[lit_c1] -> aggiungi/rimuovi 1 allo stato sum(c)
-watched_atoms_[lit_c2] -> aggiungi/rimuovi 2 allo stato sum(c)
-watched_atoms_[lit_c3] -> aggiungi/rimuovi 3 allo stato sum(c)
+La direttiva euristica viene riscritta in un fatto speciale `__heuristic(...)`.
+Per esempio:
 
-e viene chiamata in propagate e undo
+    __heuristic(__target(b), x, __n_c,
+                __bind(s, __sum(c, 0)),
+                __weight(self), __priority(s), true).
 
+Questo fatto e' innocuo per Gringo: viene groundato come un template statico,
+senza espandere tutti i valori possibili della somma.
 
+Poi, durante il solving, il codice C++ riconosce questi fatti `__heuristic`,
+costruisce strutture dati runtime e valuta peso/priorita' sull'assegnamento
+parziale corrente.
 
+Il flusso mentale e':
 
-aggregate_candidates è una mappa:
-RuntimeAggregateKey, std::vector<size_t>, RuntimeAggregateKeyHash
+    template __heuristic
+        -> CandidateState runtime
+        -> AggregateState incrementali
+        -> CandidateQueueEntry ordinate
+        -> decide() propone il prossimo literal
 
-ci dice quando quell'aggregato cambia valore, quali candidate devo ricalcolare
 
-aggregate_candidates_[sum(c)] = [candidate_b1, candidate_b2, candidate_b3]
+3. Vocabolario minimo
+---------------------
 
+Atomo:
+    Un predicato ground, per esempio `b(3)`, `x(1)`, `assigned_zone_unit(2,5)`.
 
+Literal:
+    Un atomo o la sua negazione. Nel solver C++ viene rappresentato da un intero.
+    Se `lit` rappresenta `b(3)`, allora `-lit` rappresenta `not b(3)` a livello
+    proposizionale.
 
-aggregate_source_lits è una mappa:
-RuntimeAggregateKey, std::vector<Clingo::literal_t>, RuntimeAggregateKeyHash
+Solver literal:
+    L'intero usato da Clasp per rappresentare un literal ground.
 
-non ho capito la differenza reale, dicono che serva per clingo però boh...
+Assignment:
+    L'assegnamento parziale corrente del solver. Un literal puo' essere:
+    `True`, `False` oppure `Free`.
 
+Target:
+    L'atomo che l'euristica vorrebbe suggerire come decisione, per esempio `b(X)`.
 
-Il valore dell'euristica viene valutato nella funzione compute_candidate_entry() che viene richiamata sia nel refresh, quando un candidate viene aggiornato, che nel decide() prima di restituire una decisione euristica
+Body positivo:
+    Condizioni che devono essere vere, per esempio `x(X)`.
 
+Body negativo:
+    Condizioni del tipo `not c(X)`. La loro interpretazione dipende dalla
+    semantica scelta, Alpha o Clingo.
 
-mi hanno detto di aggiungere candidatequeue ma non so dove e come
+Aggregato:
+    Una funzione su un insieme di atomi, per esempio `#sum`, `#count`, `#min`,
+    `#max`.
 
-CandidateQueue è un insieme:
-CandidateQueueEntry, CandidateQueueEntryLess
+Candidate:
+    Una possibile applicazione concreta di un template euristico a un target
+    ground. Per esempio il template su `b(X)` genera i candidate `b(1)`, `b(2)`,
+    `b(3)`, ...
 
-che contiene gi, ordinati secondo:
-if (a.priority != b.priority) return a.priority > b.priority;
-if (a.weight != b.weight) return a.weight > b.weight;
-if (a.target_lit != b.target_lit) return a.target_lit < b.target_lit;
-return a.candidate_id < b.candidate_id;
+`std::unordered_map`:
+    Una mappa hash: associa chiavi a valori con lookup medio O(1). Nel codice
+    viene usata per trovare rapidamente dipendenze del tipo "questo literal
+    aggiorna questo aggregato".
 
-gli atomi candidati più promettenti e restituisce sempre il primo o 0
+`std::unordered_set`:
+    Un insieme hash: contiene elementi senza ordine e senza duplicati. Nel codice
+    viene usato per evitare registrazioni ripetute.
 
+`std::set`:
+    Un insieme ordinato. Qui serve per mantenere i candidate applicabili ordinati
+    per priorita' e peso.
 
-Alla fine di init_lazy_mode, il propagatore ha costruito tutte le strutture necessarie per simulare dinamicamente le direttive euristiche durante il solving.
 
-In particolare:
-- rule_templates_ contiene la rappresentazione astratta delle direttive __heuristic
+4. Strutture dati principali
+----------------------------
 
-- candidates_ contiene le possibili istanze euristiche applicabili ai target ground
+`rule_templates_`
+    Vettore di `HeuristicRuleTemplate`.
+    Contiene la forma astratta delle direttive `__heuristic`.
+    Non contiene ancora literal solver concreti per i target.
 
-- aggregate_states_ mantiene il valore corrente degli aggregati
+`candidates_`
+    Vettore di `CandidateState`.
+    Ogni elemento e' una possibile applicazione ground di un template.
+    Contiene target literal, body literal, valori della tupla e binding aggregati.
 
-- watched_atoms_ permette di sapere quali aggregati aggiornare quando un literal diventa vero o viene rimosso durante il backtracking
+`aggregate_states_`
+    Mappa:
 
-- aggregate_candidates_ permette di sapere quali candidate ricalcolare quando cambia un aggregato
+        RuntimeAggregateKey -> AggregateState
 
-- candidate_refresh_lits_ permette di sapere quali candidate ricalcolare quando cambia il valore di verità di un literal rilevante
+    Mantiene il valore corrente degli aggregati dinamici.
+    Per esempio `sum(c)` ha uno stato che cresce quando un `c(Y)` diventa vero
+    e si riduce quando il solver fa backtracking.
 
-- candidate_queue_ contiene i candidate attualmente applicabili, ordinati per priorità e peso.
+`aggregate_contributions_by_lit_`
+    Mappa:
 
-In questa fase il propagatore non sta ancora “risolvendo” il problema e non sta ancora scegliendo i literal. 
-Sta solo preparando una rete di dipendenze tra literal, aggregati e candidate euristici.
-Il solving vero e proprio avverrà successivamente tramite propagate, undo e decide.
+        solver literal vero -> contributi aggregati
 
+    Esempio:
 
-candidate_refresh_list è una mappa:
-<Clingo::literal_t, std::vector<size_t>>
+        aggregate_contributions_by_lit_[lit_c1] -> sum(c) += 1
+        aggregate_contributions_by_lit_[lit_c2] -> sum(c) += 2
+        aggregate_contributions_by_lit_[lit_c3] -> sum(c) += 3
 
-È necessaria perché l’applicabilità di un’euristica non dipende solo dagli aggregati, ma anche dal target, dai body positivi e dai body negativi. Quando un literal osservato cambia valore, propagate o undo possono usare questa mappa per aggiornare solo i candidate interessati, evitando di ricalcolare tutti i candidate del programma.
+    Questa struttura serve a `propagate` e `undo` per aggiornare gli aggregati in
+    modo incrementale.
 
-registered_watches_ è un insieme ausiliario usato per evitare di registrare più volte lo stesso watch presso clasp. Non contiene informazioni semantiche sull’euristica; serve solo a garantire che ogni solver literal venga osservato al massimo una volta.
+`candidates_by_aggregate_`
+    Mappa:
 
-aggregate_source_lits_ mantiene, per ogni aggregato runtime, l’elenco dei solver literal che possono contribuire al suo valore. Questa struttura è particolarmente importante per la semantica clingo: in tale modalità, un candidate che dipende da un aggregato viene considerato applicabile solo quando tutti i literal sorgente dell’aggregato sono già determinati, cioè non sono più Free. In semantica alpha, invece, l’aggregato viene valutato in modo più ottimistico usando i contributi attualmente veri.
+        RuntimeAggregateKey -> lista di candidate id
 
-candidate_queue_ non contiene direttamente i CandidateState, ma oggetti CandidateQueueEntry. Ogni entry rappresenta la valutazione corrente di un candidate: priorità, peso, literal target e id del candidate. Questa separazione è utile perché il CandidateState contiene le dipendenze strutturali dell’euristica, mentre CandidateQueueEntry contiene il risultato corrente della sua valutazione rispetto all’assegnamento attuale.
+    Esempio:
 
+        candidates_by_aggregate_[sum(c)] = [candidate_b1, candidate_b2, candidate_b3]
 
-Dopo l’inizializzazione, il propagatore entra nella fase dinamica del solving. In questa fase clasp costruisce progressivamente un assegnamento parziale dei solver literal. Ogni volta che un literal osservato diventa vero, clasp richiama propagate. Ogni volta che il solver fa backtracking e rimuove assegnamenti precedenti, richiama undo. Quando invece clasp deve scegliere un nuovo literal decisionale, richiama decide.
+    Serve per sapere quali candidate vanno ricalcolati quando cambia un aggregato.
 
-Il propagatore usa quindi tre callback principali:
+`clingo_aggregates_`
+    Insieme degli aggregati runtime usati da almeno un candidate in semantica
+    Clingo. Serve durante la registrazione degli atomi sorgente: se un aggregato
+    non compare in questo insieme, non bisogna registrare refresh sui literal
+    negativi dei suoi sorgenti.
 
-- propagate, per aggiornare aggregati e candidate quando nuovi literal diventano veri;
-- undo, per annullare gli aggiornamenti quando il solver torna indietro;
-- decide, per proporre a clasp il miglior literal secondo le euristiche lazy attualmente applicabili.
+`candidates_to_refresh_by_lit_`
+    Mappa:
 
+        solver literal -> lista di candidate id
 
-Dopo l'init si parte con la fase di solving:
-propagate viene chiamata da clasp quando uno o più literal osservati diventano veri. 
-L’argomento changesè uno span sui literal appena assegnati a vero tra quelli registrati con add_watch.
+    Serve per dipendenze dirette: target, body positivo e body negativo.
+    Per esempio, se cambia `x(2)`, bisogna rivalutare i candidate che hanno
+    `x(2)` nel body.
 
-Per ogni literal lit in changes, il propagatore fa due cose.
+`aggregates_to_refresh_by_lit_`
+    Mappa:
 
-Prima controlla se lit è presente in watched_atoms_, se è presente, significa che quel literal contribuisce a uno o più aggregati lazy. 
-Per ogni contributo associato a lit, il propagatore recupera o crea lo stato aggregato corrispondente tramite ensure_aggregate_state e aggiunge il valore del contributo con state->add(value). Dopo aver aggiornato l’aggregato, ricalcola i candidate che dipendono da quell’aggregato usando refresh_candidates_for_aggregate.
+        solver literal -> lista di RuntimeAggregateKey
 
-Poi, indipendentemente dagli aggregati, il propagatore chiama refresh_candidates_for_literal(lit, assignment). Questo serve a ricalcolare i candidate la cui applicabilità dipende direttamente dal literal appena cambiato, per esempio perché quel literal è un body positivo, un body negativo o il target dell’euristica.
+    Serve per la semantica Clingo degli aggregati. Quando un sorgente aggregato
+    diventa falso, cioe' quando diventa vero `-source_lit`, il valore numerico
+    dell'aggregato non cambia, ma cambia il fatto che quel sorgente non sia piu'
+    `Free`. In semantica Clingo questo puo' rendere un aggregato finalmente
+    utilizzabile.
 
+    Questa mappa evita la vecchia forma pesante:
 
-undo è il complemento di propagate. Viene chiamata quando clasp fa backtracking e rimuove dall’assegnamento alcuni literal precedentemente veri. Per ogni literal rimosso, il propagatore controlla se esso contribuiva a qualche aggregato. Se sì, rimuove il contributo dallo stato aggregato tramite state->remove(value). Successivamente ricalcola i candidate che dipendono dall’aggregato modificato.
+        -source_lit -> tutti i candidate dipendenti dall'aggregato
 
-Infine, come in propagate, ricalcola anche i candidate che dipendono direttamente dal literal rimosso. Le funzioni usate in undo sono versioni noexcept perché undo non deve propagare eccezioni verso clasp durante il backtracking.
+    e usa invece:
 
+        -source_lit -> aggregato runtime
+        aggregato runtime -> candidate
 
-compute_candidate_entry è la funzione centrale per valutare un candidate rispetto all’assegnamento corrente. Essa prende un CandidateState, controlla se la relativa euristica è attualmente applicabile, e se lo è produce una CandidateQueueEntry contenente priorità, peso, target literal e candidate id.
+    Nel BSP questo evita una memoria O(n^2) per i refresh negativi degli aggregati.
 
-Il primo controllo riguarda il target: l’euristica può essere applicata solo se il target è ancora Free. Se il target è già True o False, non ha senso proporlo come decisione euristica.
+`aggregate_source_lits_`
+    Mappa:
 
-Poi vengono controllati i body positivi: ogni literal positivo del body deve essere True. Se anche uno solo non è True, il candidate non è applicabile.
+        RuntimeAggregateKey -> lista dei literal sorgente dell'aggregato
 
-Successivamente vengono controllati i body negativi. Qui il comportamento dipende dalla semantica scelta. In semantica Alpha, not p è soddisfatto se p non è True, quindi anche se p è ancora Free. In semantica Clingo, invece, not p è soddisfatto solo se p è False.
+    Non serve principalmente a calcolare la somma. La somma e' mantenuta in
+    `aggregate_states_`.
 
-Dopo i controlli sul body, la funzione costruisce un ambiente di variabili, var_env. Questo ambiente contiene sia i valori estratti dai body espliciti tramite __bind_arg, sia i valori correnti degli aggregati collegati tramite __bind. Tali valori vengono poi usati per valutare le espressioni aritmetiche di peso e priorità.
+    Serve soprattutto per la semantica Clingo: un candidate che dipende da un
+    aggregato viene considerato applicabile solo se tutti i sorgenti di
+    quell'aggregato sono determinati, cioe' non sono piu' `Free`.
 
-Infine, se tutti i controlli hanno successo, compute_candidate_entry produce una CandidateQueueEntry. Questa entry rappresenta il valore attuale dell’euristica ed è ciò che viene inserito in candidate_queue_.
+`candidate_queue_`
+    `std::set<CandidateQueueEntry, CandidateQueueEntryLess>`.
+    Contiene le valutazioni correnti dei candidate applicabili.
 
-refresh_candidate aggiorna la presenza di un candidate nella queue. Prima rimuove l’eventuale vecchia entry del candidate da candidate_queue_, perché potrebbe essere diventata obsoleta. Poi richiama compute_candidate_entry. Se il candidate è ancora applicabile, viene calcolata una nuova CandidateQueueEntry e inserita nella queue. Se invece il candidate non è più applicabile, non viene reinserito.
+    Ogni entry contiene:
 
-In questo modo candidate_queue_ contiene, almeno concettualmente, solo le euristiche attualmente utilizzabili rispetto all’assegnamento corrente.
+        priority
+        weight
+        target_lit
+        candidate_id
 
-decide viene chiamata quando clasp deve scegliere un nuovo literal decisionale. Il propagatore controlla candidate_queue_, che contiene i candidate attualmente applicabili ordinati per priorità decrescente e poi per peso decrescente.
+    L'ordinamento e':
 
-Il primo elemento della queue rappresenta quindi il miglior candidate euristico disponibile. Tuttavia decide non si fida ciecamente della queue: prima di restituire una decisione, ricalcola il candidate tramite compute_candidate_entry. Questo controllo serve a eliminare entry obsolete, candidate non più applicabili o candidate il cui peso o priorità sono cambiati.
+        priorita' decrescente
+        peso decrescente
+        target_lit crescente
+        candidate_id crescente
 
-Se il candidate è ancora valido e la sua entry ricalcolata coincide con quella presente nella queue, decide restituisce il target literal, eventualmente modificato dal segno dell’euristica tramite apply_sign. Se invece la queue è vuota, o nessun candidate è valido, decide restituisce 0. In questo caso il propagatore non suggerisce alcuna decisione e clasp continua con la propria euristica interna.
+    Il primo elemento della coda e' quindi il miglior candidate disponibile.
 
+`registered_watches_`
+    Insieme ausiliario di literal gia' registrati presso Clasp.
+    Serve a non chiamare `add_watch` piu' volte sullo stesso literal.
 
-Il lazy grounding non elimina completamente la materializzazione runtime delle possibili applicazioni euristiche. Elimina però la materializzazione ground di tutte le combinazioni dipendenti dai valori degli aggregati. Nel BSP, invece di generare euristiche per ogni coppia target-valore della somma, il propagatore crea un candidate per ogni target e mantiene il valore della somma dinamicamente durante il solving.
 
+5. Inizializzazione: da __heuristic alle strutture runtime
+----------------------------------------------------------
 
+La prima callback importante e':
 
+    HeuristicPropagator::init(Clingo::PropagateInit &init)
 
-Input ASP con __heuristic
-        ↓
-Gringo grounda il programma
-        ↓
-init trova __heuristic
-        ↓
-parse_lazy_heuristic_templates
-        ↓
-HeuristicRuleTemplate
-        ↓
-collect_predicates_used_by_lazy_templates
-        ↓
-build_ground_literal_index_for_predicates
-        ↓
-GroundLiteralIndex
-        ↓
-materialize_candidates_for_template
-        ↓
-CandidateState
-        ↓
-register_candidate_refresh_watch
-        ↓
-candidate_refresh_lits_
-        ↓
-register_lazy_aggregate_watches
-        ↓
-watched_atoms_
-aggregate_source_lits_
-aggregate_states_
-aggregate_candidates_
-        ↓
-refresh_all_candidates
-        ↓
-candidate_queue_
-        ↓
-SOLVING
-        ↓
-propagate: literal vero → aggiorna aggregati → refresh candidate
-undo: backtracking → rimuovi contributi → refresh candidate
-decide: prendi miglior candidate → ritorna literal target
+All'inizio `init` pulisce tutte le strutture interne. Poi scansiona gli atomi
+simbolici del programma ground:
 
+    se non trova `__heuristic(...)`
+        il propagatore resta inattivo
 
+    se trova almeno un `__heuristic(...)`
+        chiama `init_lazy_mode`
 
 
-opo la teoria, fai un esempio semplice con n=3.
+5.1 Parsing dei template
+------------------------
 
-Hai:
+La funzione:
 
-x(1..3).
+    parse_lazy_heuristic_templates(atoms)
 
-b(X) :- x(X), not c(X).
-c(X) :- x(X), not b(X).
+trasforma i fatti `__heuristic(...)` in oggetti `HeuristicRuleTemplate`.
 
-__heuristic(__target(b), x, __n_c, __bind(s, __sum(c, 0)), __weight(self), __priority(s), true).
-__heuristic(__target(c), x, __n_b, __bind(s, __sum(b, 0)), __weight(self), __priority(s), true).
+Un template contiene:
 
-Candidate creati:
+    target_pred        -> predicato target, per esempio b
+    pos_body_preds     -> body positivi
+    neg_body_preds     -> body negativi
+    var_bindings       -> variabili legate ad aggregati
+    weight_expr        -> AST aritmetico del peso
+    priority_expr      -> AST aritmetico della priorita'
+    sign               -> true, false oppure sign
+    semantics          -> alpha oppure clingo
 
-candidate b(1): target=b(1), body positivo=x(1), body negativo=not c(1), priority=sum(c), weight=1
-candidate b(2): target=b(2), body positivo=x(2), body negativo=not c(2), priority=sum(c), weight=2
-candidate b(3): target=b(3), body positivo=x(3), body negativo=not c(3), priority=sum(c), weight=3
+Le espressioni di peso/priorita' non restano stringhe: il parser costruisce un
+piccolo AST aritmetico. Durante il solving si valuta l'AST, non si fa parsing
+testuale.
 
-candidate c(1): target=c(1), body positivo=x(1), body negativo=not b(1), priority=sum(b), weight=1
-candidate c(2): target=c(2), body positivo=x(2), body negativo=not b(2), priority=sum(b), weight=2
-candidate c(3): target=c(3), body positivo=x(3), body negativo=not b(3), priority=sum(b), weight=3
 
-Aggregati dinamici:
+5.2 Raccolta dei predicati rilevanti
+------------------------------------
 
-sum(c) = somma degli Y tali che c(Y) è vero
-sum(b) = somma degli Y tali che b(Y) è vero
+La funzione:
 
-All’inizio, se nessun b(X) o c(X) è ancora vero:
+    collect_predicates_used_by_lazy_templates()
 
-sum(b) = 0
-sum(c) = 0
+costruisce tre insiemi:
 
-Quindi le priorità sono inizialmente zero. I pesi sono:
+    target_preds
+    pos_body_preds
+    neg_preds
 
-b(1) weight=1
-b(2) weight=2
-b(3) weight=3
-c(1) weight=1
-c(2) weight=2
-c(3) weight=3
+Questa fase serve a evitare di indicizzare tutto il programma ground. Il
+propagatore guarda solo gli atomi che possono influenzare le euristiche lazy.
 
-La queue preferirà i candidate con peso più alto tra quelli a pari priorità.
 
-Se poi diventa vero:
+5.3 GroundLiteralIndex
+----------------------
 
-c(3)
+La funzione:
 
-allora:
+    build_ground_literal_index_for_predicates(init, atoms, predicates)
 
-sum(c) = 3
+costruisce una mappa:
 
-e i candidate b(X) avranno priorità 3, perché dipendono da sum(c).
+    predicato -> tupla numerica -> solver literal
 
-Quindi la strategia tende a favorire il lato opposto alla somma già accumulata.
+Esempio:
 
-Questa è una spiegazione molto buona del comportamento euristico.
+    x(1)  -> lit 35
+    x(2)  -> lit 36
+    b(1)  -> lit 102
+    b(2)  -> lit 103
 
+diventa concettualmente:
 
-15. Cosa manca davvero dal punto di vista concettuale
+    ground_literal_index[x][{1}] = 35
+    ground_literal_index[x][{2}] = 36
+    ground_literal_index[b][{1}] = 102
+    ground_literal_index[b][{2}] = 103
 
-Secondo me ti mancano ancora 5 blocchi:
+Limite importante del prototipo:
 
-1. propagate/undo come manutenzione incrementale degli aggregati.
-2. compute_candidate_entry come validatore/evaluatore dei candidate.
-3. candidate_queue_ come struttura ordinata delle euristiche attive.
-4. decide come punto in cui l’euristica influenza davvero clasp.
-5. esempio BSP passo-passo con assegnamenti concreti.
+    vengono indicizzati solo atomi funzione con argomenti numerici.
 
-Non ti mancano tante strutture dati. Ti manca soprattutto collegarle al ciclo:
+Quindi funzionano bene atomi come:
 
-literal cambia → aggiorna stato → ricalcola candidate → queue cambia → decide sceglie
+    b(1)
+    p(1,2)
+    edge(3,7)
 
-Questa è la frase più compatta del runtime.
+ma non atomi come:
+
+    color(red)
+    edge(a,b)
+    choose
+
+Questo e' un limite da documentare nella tesi.
+
+
+5.4 Materializzazione dei CandidateState
+----------------------------------------
+
+La funzione:
+
+    materialize_lazy_candidates_and_register_watches(...)
+
+scorre i template e chiama:
+
+    materialize_candidates_for_template(...)
+
+Per ogni target ground compatibile viene creato un `CandidateState`.
+
+Esempio BSP con `n = 3`:
+
+    x(1..3).
+
+    b(X) :- x(X), not c(X).
+    c(X) :- x(X), not b(X).
+
+    __heuristic(__target(b), x, __n_c,
+                __bind(s, __sum(c, 0)),
+                __weight(self), __priority(s), true).
+
+    __heuristic(__target(c), x, __n_b,
+                __bind(s, __sum(b, 0)),
+                __weight(self), __priority(s), true).
+
+Il template su `b` produce:
+
+    candidate b(1):
+        target = b(1)
+        body positivo = x(1)
+        body negativo = not c(1)
+        priority = sum(c)
+        weight = 1
+
+    candidate b(2):
+        target = b(2)
+        body positivo = x(2)
+        body negativo = not c(2)
+        priority = sum(c)
+        weight = 2
+
+    candidate b(3):
+        target = b(3)
+        body positivo = x(3)
+        body negativo = not c(3)
+        priority = sum(c)
+        weight = 3
+
+Il template su `c` produce:
+
+    candidate c(1), c(2), c(3)
+
+In totale:
+
+    3 candidate per b
+    3 candidate per c
+    6 CandidateState
+
+Con `n = 1000`, diventano circa:
+
+    1000 candidate per b
+    1000 candidate per c
+    2000 CandidateState
+
+Questa materializzazione runtime e' lineare in `n`. La parte evitata e' la
+materializzazione ground di tutte le coppie target-valore-aggregato.
+
+
+5.5 Costruzione di un CandidateState
+------------------------------------
+
+La funzione:
+
+    build_candidate_state(...)
+
+costruisce un candidato concreto.
+
+Un `CandidateState` contiene:
+
+    rule_idx
+        indice del template che lo ha generato
+
+    target_lit
+        solver literal del target, per esempio b(3)
+
+    self_value
+        primo valore numerico della tupla target
+        per b(3), self_value = 3
+
+    tuple_values
+        tutta la tupla numerica del target
+
+    body_var_values
+        variabili estratte da body espliciti tramite __bind_arg
+
+    pos_body_lits
+        literal del body positivo
+
+    neg_body_lits
+        literal del body negativo
+
+    aggregate_bindings
+        collegamenti tra variabili locali e aggregati runtime
+
+Per esempio:
+
+    __bind(s, __sum(c, 0))
+
+produce un binding:
+
+    variabile locale s -> RuntimeAggregateKey(sum(c))
+
+
+5.6 Registrazione delle dipendenze del candidate
+------------------------------------------------
+
+Dopo aver inserito il `CandidateState` in `candidates_`, il propagatore registra
+due tipi di dipendenze.
+
+Primo:
+
+    register_candidate_aggregate_dependencies(candidate_id)
+
+collega gli aggregati ai candidate:
+
+    candidates_by_aggregate_[sum(c)] = [candidate_b1, candidate_b2, candidate_b3]
+    candidates_by_aggregate_[sum(b)] = [candidate_c1, candidate_c2, candidate_c3]
+
+Questa mappa serve quando cambia il valore di un aggregato.
+Se il candidate usa semantica Clingo, la stessa funzione inserisce anche la sua
+chiave aggregata in `clingo_aggregates_`.
+
+Secondo:
+
+    register_candidate_literal_refresh_watches(init, candidate_id)
+
+registra i literal che possono cambiare l'applicabilita' diretta del candidate:
+
+    target_lit
+    -target_lit
+    body positivi
+    body negativi
+    -body negativi
+
+Queste dipendenze finiscono in:
+
+    candidates_to_refresh_by_lit_
+
+
+5.7 Registrazione degli aggregati lazy
+--------------------------------------
+
+Dopo aver creato i candidate, `init_lazy_mode` chiama:
+
+    register_lazy_aggregate_watches(init, atoms)
+
+Questa fase prepara il mantenimento incrementale degli aggregati.
+
+Prima viene costruita:
+
+    collect_aggregate_keys_by_source_predicate()
+
+che raggruppa gli aggregati per predicato sorgente.
+
+Esempio:
+
+    __sum(c, 0) -> sorgente c
+    __sum(b, 0) -> sorgente b
+
+Poi il propagatore scansiona gli atomi simbolici. Quando trova un atomo sorgente
+compatibile, per esempio `c(3)`, chiama:
+
+    register_aggregate_source_atom(...)
+
+Questa funzione fa quattro cose.
+
+1. Costruisce la chiave runtime dell'aggregato.
+
+    Per un aggregato globale:
+
+        __sum(c, 0)
+
+    la chiave rappresenta semplicemente `sum(c)`.
+
+    Per un aggregato filtrato:
+
+        __count(assigned_zone_unit, 0, __filter(1, 1))
+
+    la chiave include anche il valore del filtro. Quindi ci possono essere stati
+    diversi per `U = 1`, `U = 2`, `U = 3`, ...
+
+2. Registra il contributo del literal sorgente.
+
+    Esempio:
+
+        aggregate_contributions_by_lit_[lit_c3] contiene:
+            runtime_key = sum(c)
+            value = 3
+
+    Quando `lit_c3` diventa vero, il propagatore sapra' fare:
+
+        sum(c) += 3
+
+3. Aggiunge il literal alla lista dei sorgenti dell'aggregato.
+
+    Esempio:
+
+        aggregate_source_lits_[sum(c)] = [lit_c1, lit_c2, lit_c3]
+
+    Questa lista serve a sapere, in semantica Clingo, se tutti i sorgenti sono
+    determinati.
+
+4. Registra il refresh su literal negativo solo dove serve.
+
+    In semantica Alpha, se `c(3)` diventa falso, la somma corrente degli atomi
+    veri non cambia: `c(3)` prima era Free, ora e' False, ma in entrambi i casi
+    non contribuisce a `sum(c)`.
+
+    In semantica Clingo, invece, il passaggio Free -> False e' rilevante:
+    l'aggregato potrebbe diventare finalmente completamente determinato.
+
+    Per questo il codice registra:
+
+        aggregates_to_refresh_by_lit_[-lit_c3] = [sum(c)]
+
+    ma solo se esiste almeno un candidate in semantica Clingo che dipende da
+    quell'aggregato.
+
+    Questo e' il refactor importante rispetto alla versione precedente: non si
+    registra piu'
+
+        -lit_c3 -> tutti i candidate b(1..n)
+
+    ma:
+
+        -lit_c3 -> sum(c)
+        sum(c) -> candidate b(1..n)
+
+    La memoria passa da O(sorgenti * candidate) a O(sorgenti * aggregati runtime).
+
+
+5.8 Prima valutazione dei candidate
+-----------------------------------
+
+Alla fine di `init_lazy_mode` viene chiamata:
+
+    refresh_all_candidates(init.assignment())
+
+Questa funzione valuta tutti i candidate una prima volta con:
+
+    compute_candidate_entry(...)
+
+Se un candidate e' gia' applicabile, viene inserito in:
+
+    candidate_queue_
+
+Da questo punto in poi il propagatore e' pronto per il solving.
+
+
+6. Stato finale dopo init_lazy_mode
+----------------------------------
+
+Dopo l'inizializzazione, il propagatore ha preparato una rete di dipendenze.
+Non sta ancora decidendo literal: ha solo costruito il materiale runtime.
+
+In sintesi:
+
+    rule_templates_
+        template astratti letti da __heuristic
+
+    candidates_
+        applicazioni ground possibili dei template
+
+    aggregate_states_
+        valori dinamici di sum/count/min/max
+
+    aggregate_contributions_by_lit_
+        literal vero -> contributi aggregati da aggiungere/rimuovere
+
+    candidates_by_aggregate_
+        aggregato -> candidate da rivalutare
+
+    candidates_to_refresh_by_lit_
+        literal target/body -> candidate da rivalutare
+
+    aggregates_to_refresh_by_lit_
+        literal, tipicamente -source_lit in semantica Clingo -> aggregati da rivalutare
+
+    clingo_aggregates_
+        aggregati che hanno davvero bisogno del refresh su sorgenti falsi
+
+    aggregate_source_lits_
+        aggregato -> literal sorgente, per controllare completezza in semantica Clingo
+
+    candidate_queue_
+        candidate applicabili ordinati per priorita' e peso
+
+La frase da ricordare:
+
+    il propagatore non ricalcola tutto;
+    aggiorna solo cio' che dipende dal literal appena cambiato.
+
+
+7. Fase dinamica del solving
+----------------------------
+
+Dopo `init`, Clasp entra nel normale ciclo di ricerca.
+
+Il propagatore partecipa tramite tre callback principali:
+
+    propagate
+        chiamata quando literal osservati diventano veri
+
+    undo
+        chiamata durante backtracking/backjumping
+
+    decide
+        chiamata quando il solver chiede un suggerimento per il prossimo literal
+
+
+7.1 propagate
+-------------
+
+Firma:
+
+    propagate(Clingo::PropagateControl &control, Clingo::LiteralSpan changes)
+
+`changes` contiene i watched literal appena diventati veri.
+
+Per ogni `lit` in `changes`, il propagatore fa tre controlli.
+
+Primo: `lit` contribuisce a qualche aggregato?
+
+    aggregate_contributions_by_lit_.find(lit)
+
+Se si', per ogni contributo:
+
+    state->add(value)
+    refresh_candidates_for_aggregate(runtime_key, assignment)
+
+Esempio:
+
+    lit = lit_c3
+    contributo = sum(c) += 3
+
+Allora:
+
+    sum(c) passa da 0 a 3
+    tutti i candidate che dipendono da sum(c) vengono rivalutati
+
+Secondo: `lit` segnala che un aggregato Clingo ha un sorgente non piu' Free?
+
+    aggregates_to_refresh_by_lit_.find(lit)
+
+Questo caso riguarda soprattutto literal del tipo `-source_lit`.
+
+Esempio:
+
+    lit = -lit_c3
+
+Il valore di `sum(c)` non cambia, ma `c(3)` ora e' determinato falso.
+In semantica Clingo questo puo' rendere l'aggregato completamente determinato,
+quindi si rivalutano i candidate che dipendono da `sum(c)`.
+
+Terzo: `lit` cambia direttamente target o body di qualche candidate?
+
+    candidates_to_refresh_by_lit_.find(lit)
+
+Se si', vengono rivalutati solo quei candidate.
+
+
+7.2 undo
+--------
+
+Firma:
+
+    undo(Clingo::PropagateControl const &control, Clingo::LiteralSpan changes)
+
+`undo` e' il complemento di `propagate`.
+
+Quando il solver torna indietro, alcuni literal escono dal trail. Per ogni
+literal rimosso, il propagatore disfa gli aggiornamenti.
+
+Se `lit` aveva aggiunto un contributo aggregato:
+
+    state->remove(value)
+    refresh_candidates_for_aggregate_noexcept(runtime_key, assignment)
+
+Se `lit` era un refresh aggregato, per esempio `-source_lit`:
+
+    refresh_aggregates_for_literal_noexcept(lit, assignment)
+
+Se `lit` era collegato direttamente a target/body:
+
+    refresh_candidates_for_literal_noexcept(lit, assignment)
+
+Le versioni `noexcept` sono usate perche' `undo` non deve lasciare propagare
+eccezioni verso Clasp durante il backtracking.
+
+
+7.3 refresh_candidate
+---------------------
+
+La funzione:
+
+    refresh_candidate(candidate_id, assignment)
+
+mantiene coerente la `candidate_queue_`.
+
+Passi:
+
+1. Rimuove dalla queue l'eventuale vecchia entry del candidate.
+2. Chiama `compute_candidate_entry`.
+3. Se il candidate e' applicabile, inserisce la nuova entry nella queue.
+4. Se non e' applicabile, lo lascia fuori.
+
+In questo modo la queue contiene, concettualmente, solo candidate attualmente
+utilizzabili.
+
+
+7.4 compute_candidate_entry
+---------------------------
+
+Questa e' la funzione centrale del propagatore.
+
+Firma:
+
+    compute_candidate_entry(candidate_id, assignment, entry)
+
+Prende un `CandidateState`, controlla se l'euristica e' applicabile nello stato
+corrente e, se lo e', produce una `CandidateQueueEntry`.
+
+Il flusso e' quasi uno pseudocodice:
+
+    1. il target e' ancora Free?
+    2. i body positivi sono True?
+    3. i body negativi sono soddisfatti?
+    4. posso costruire l'ambiente delle variabili?
+    5. valuto priorita' e peso
+    6. produco CandidateQueueEntry
+
+Controllo del target:
+
+    il target deve essere Free
+
+Se il target e' gia' True o False, non ha senso proporlo come decisione.
+
+Controllo dei body positivi:
+
+    ogni literal positivo deve essere True
+
+Controllo dei body negativi:
+
+    in semantica Alpha:
+        not p e' soddisfatto se p non e' True
+        quindi p puo' essere False oppure Free
+
+    in semantica Clingo:
+        not p e' soddisfatto solo se p e' False
+
+Costruzione dell'ambiente delle variabili:
+
+    build_variable_environment(...)
+
+Questa funzione mette in `var_env`:
+
+    variabili da __bind_arg
+    variabili da __bind aggregate
+
+Esempio:
+
+    __bind(s, __sum(c, 0))
+    __priority(s)
+
+Durante la valutazione:
+
+    var_env["s"] = valore corrente di sum(c)
+
+In semantica Clingo c'e' un controllo in piu':
+
+    se anche un solo sorgente dell'aggregato e' ancora Free,
+    il candidate non e' applicabile
+
+Questo controllo usa:
+
+    aggregate_source_lits_
+
+Infine vengono valutati:
+
+    priority_expr
+    weight_expr
+
+e viene prodotta:
+
+    CandidateQueueEntry {
+        priority,
+        weight,
+        target_lit,
+        candidate_id
+    }
+
+
+7.5 decide
+----------
+
+Firma:
+
+    decide(thread_id, assignment, fallback)
+
+Quando Clasp deve scegliere un nuovo literal decisionale, chiama `decide`.
+
+Il propagatore guarda il primo elemento di:
+
+    candidate_queue_
+
+Questo e' il candidate migliore secondo priorita' e peso.
+
+Pero' `decide` non si fida ciecamente della queue. Prima di restituire una
+decisione, rivaluta il candidate con `compute_candidate_entry`.
+
+Ci sono tre casi.
+
+Caso 1: il candidate non e' piu' applicabile.
+
+    viene rimosso dalla queue
+    si passa al prossimo candidate
+
+Caso 2: il candidate e' applicabile ma peso/priorita' sono cambiati.
+
+    viene rimosso
+    viene reinserito nella posizione corretta
+    si ricomincia dalla testa della queue
+
+Caso 3: il candidate e' ancora applicabile e la entry coincide.
+
+    decide restituisce il target literal,
+    eventualmente modificato dal segno dell'euristica
+
+Il segno viene applicato da:
+
+    apply_sign(tmpl.sign, entry.target_lit, fallback)
+
+Significato:
+
+    true
+        restituisce target_lit
+
+    false
+        restituisce -target_lit
+
+    sign
+        segue il segno del fallback scelto dalla euristica interna di Clasp
+
+Se la queue e' vuota, oppure nessun candidate rimane valido:
+
+    decide restituisce 0
+
+Questo significa:
+
+    il propagatore non propone nulla;
+    Clasp continua con la propria euristica interna.
+
+
+8. Esempio BSP n = 3
+--------------------
+
+Programma concettuale:
+
+    x(1..3).
+
+    1 { b(X); c(X) } 1 :- x(X).
+
+    __heuristic(__target(b), x, __n_c,
+                __bind(s, __sum(c, 0)),
+                __weight(self), __priority(s), true).
+
+    __heuristic(__target(c), x, __n_b,
+                __bind(s, __sum(b, 0)),
+                __weight(self), __priority(s), true).
+
+Obiettivo intuitivo:
+
+    se la somma di c cresce, aumenta la priorita' di scegliere b;
+    se la somma di b cresce, aumenta la priorita' di scegliere c.
+
+Questo tende a bilanciare le due somme.
+
+
+8.1 Candidate creati
+--------------------
+
+Candidate su b:
+
+    b(1): target b(1), body x(1), not c(1), priority sum(c), weight 1
+    b(2): target b(2), body x(2), not c(2), priority sum(c), weight 2
+    b(3): target b(3), body x(3), not c(3), priority sum(c), weight 3
+
+Candidate su c:
+
+    c(1): target c(1), body x(1), not b(1), priority sum(b), weight 1
+    c(2): target c(2), body x(2), not b(2), priority sum(b), weight 2
+    c(3): target c(3), body x(3), not b(3), priority sum(b), weight 3
+
+
+8.2 Aggregati dinamici
+----------------------
+
+Stati aggregati:
+
+    sum(b) = somma degli Y tali che b(Y) e' vero
+    sum(c) = somma degli Y tali che c(Y) e' vero
+
+All'inizio:
+
+    sum(b) = 0
+    sum(c) = 0
+
+Dipendenze:
+
+    c(1) contribuisce +1 a sum(c)
+    c(2) contribuisce +2 a sum(c)
+    c(3) contribuisce +3 a sum(c)
+
+    b(1) contribuisce +1 a sum(b)
+    b(2) contribuisce +2 a sum(b)
+    b(3) contribuisce +3 a sum(b)
+
+Candidate dipendenti dagli aggregati:
+
+    sum(c) -> b(1), b(2), b(3)
+    sum(b) -> c(1), c(2), c(3)
+
+
+8.3 Stato iniziale in semantica Alpha
+-------------------------------------
+
+Nel default Alpha:
+
+    not c(X) e' soddisfatto finche' c(X) non e' True
+    not b(X) e' soddisfatto finche' b(X) non e' True
+
+Quindi, se gli `x(X)` sono veri e b/c sono ancora liberi, tutti i candidate sono
+inizialmente applicabili.
+
+Le priorita' iniziali sono:
+
+    priority b(X) = sum(c) = 0
+    priority c(X) = sum(b) = 0
+
+I pesi sono:
+
+    weight b(1) = 1
+    weight b(2) = 2
+    weight b(3) = 3
+
+    weight c(1) = 1
+    weight c(2) = 2
+    weight c(3) = 3
+
+La queue mette in testa i candidate con priorita' massima e poi peso massimo.
+Tra `b(3)` e `c(3)` il pareggio finale dipende dall'ordine dei solver literal e
+dal `candidate_id`, quindi non conviene basare una spiegazione teorica su quale
+dei due venga prima. L'importante e' che entrambi hanno priorita' 0 e peso 3.
+
+
+8.4 Primo passo dinamico
+------------------------
+
+Supponiamo che `decide` suggerisca `c(3)` e che il solver lo assegni vero.
+
+Clasp richiama:
+
+    propagate(changes = [lit_c3])
+
+Il propagatore trova:
+
+    aggregate_contributions_by_lit_[lit_c3] = sum(c) += 3
+
+Quindi aggiorna:
+
+    sum(c): 0 -> 3
+
+Poi richiama:
+
+    refresh_candidates_for_aggregate(sum(c))
+
+Tutti i candidate `b(X)` vengono rivalutati:
+
+    priority b(1) = 3
+    priority b(2) = 3
+    priority b(3) = 3
+
+Pero' `b(3)` potrebbe non essere piu' proponibile, perche' il programma impone
+una scelta esclusiva tra `b(3)` e `c(3)`. In ogni caso, i candidate ancora liberi
+su `b` hanno ora priorita' piu' alta.
+
+Effetto intuitivo:
+
+    dato che c ha gia' ricevuto 3,
+    l'euristica spinge a scegliere b.
+
+
+8.5 Secondo passo dinamico
+--------------------------
+
+Supponiamo che ora venga scelto `b(2)`.
+
+Clasp richiama:
+
+    propagate(changes = [lit_b2])
+
+Il propagatore aggiorna:
+
+    sum(b): 0 -> 2
+
+Poi rivaluta i candidate che dipendono da `sum(b)`:
+
+    priority c(1) = 2
+    priority c(2) = 2
+    priority c(3) = 2
+
+Effetto intuitivo:
+
+    dato che b ha accumulato 2,
+    l'euristica aumenta la priorita' del lato c.
+
+Il ciclo continua cosi':
+
+    literal cambia
+        -> aggregato cambia
+        -> candidate dipendenti si aggiornano
+        -> queue cambia
+        -> decide propone il miglior target
+
+
+8.6 Cosa cambia in semantica Clingo
+-----------------------------------
+
+Se il template contiene:
+
+    __semantics(clingo)
+
+allora la lettura e' piu' prudente.
+
+Per i body negativi:
+
+    not c(X) e' soddisfatto solo quando c(X) e' False
+
+Per gli aggregati:
+
+    sum(c) viene usato da un candidate solo quando tutti i literal c(Y)
+    sorgente sono determinati, cioe' True oppure False, ma non Free
+
+Per questo servono:
+
+    aggregate_source_lits_
+    aggregates_to_refresh_by_lit_
+
+Esempio:
+
+    c(1) = False
+    c(2) = False
+    c(3) = Free
+
+In semantica Clingo, `sum(c)` non e' ancora usabile per il candidate, perche'
+`c(3)` e' ancora Free.
+
+Quando poi `c(3)` diventa False, diventa vero `-lit_c3`.
+Il valore numerico della somma resta 0, ma ora tutti i sorgenti sono determinati.
+Il propagatore usa:
+
+    aggregates_to_refresh_by_lit_[-lit_c3] -> sum(c)
+
+e rivaluta i candidate dipendenti da `sum(c)`.
+
+
+9. Diagramma completo del flusso
+--------------------------------
+
+    Input ASP con #heuristic
+        |
+        v
+    conversione in __heuristic(...)
+        |
+        v
+    Gringo grounda il programma
+        |
+        v
+    init trova __heuristic
+        |
+        v
+    parse_lazy_heuristic_templates
+        |
+        v
+    rule_templates_
+        |
+        v
+    collect_predicates_used_by_lazy_templates
+        |
+        v
+    build_ground_literal_index_for_predicates
+        |
+        v
+    GroundLiteralIndex
+        |
+        v
+    materialize_candidates_for_template
+        |
+        v
+    CandidateState in candidates_
+        |
+        v
+    register_candidate_aggregate_dependencies
+        |
+        v
+    candidates_by_aggregate_
+    clingo_aggregates_
+        |
+        v
+    register_candidate_literal_refresh_watches
+        |
+        v
+    candidates_to_refresh_by_lit_
+        |
+        v
+    register_lazy_aggregate_watches
+        |
+        v
+    aggregate_contributions_by_lit_
+    aggregate_source_lits_
+    aggregates_to_refresh_by_lit_
+    aggregate_states_
+        |
+        v
+    refresh_all_candidates
+        |
+        v
+    candidate_queue_
+        |
+        v
+    SOLVING
+        |
+        +--> propagate:
+        |       literal vero
+        |       -> aggiorna aggregati
+        |       -> refresh candidate
+        |
+        +--> undo:
+        |       backtracking
+        |       -> rimuove contributi
+        |       -> refresh candidate
+        |
+        +--> decide:
+                prende il miglior candidate valido
+                -> restituisce il target literal
+
+
+10. Complessita' e motivo del refactor
+--------------------------------------
+
+Le strutture principali sono liste di dipendenza.
+
+Nel BSP con `n` elementi:
+
+    sorgenti di sum(c): n literal c(Y)
+    sorgenti di sum(b): n literal b(Y)
+
+    candidate dipendenti da sum(c): n candidate b(X)
+    candidate dipendenti da sum(b): n candidate c(X)
+
+Quindi:
+
+    aggregate_contributions_by_lit_
+        O(2n)
+
+    candidates_by_aggregate_
+        O(2n)
+
+    aggregate_source_lits_
+        O(2n)
+
+La parte pericolosa era registrare, per ogni sorgente falso, tutti i candidate
+dipendenti:
+
+    -c(1) -> b(1), b(2), ..., b(n)
+    -c(2) -> b(1), b(2), ..., b(n)
+    ...
+    -c(n) -> b(1), b(2), ..., b(n)
+
+Questo produce O(n^2) entry.
+
+Il codice aggiornato registra invece:
+
+    -c(1) -> sum(c)
+    -c(2) -> sum(c)
+    ...
+    -c(n) -> sum(c)
+
+e poi usa gia':
+
+    sum(c) -> b(1), b(2), ..., b(n)
+
+La memoria torna lineare rispetto al numero di sorgenti osservati per aggregato.
+
+In piu', questo refresh su `-source_lit` viene registrato solo se esiste almeno
+un candidate in semantica Clingo che dipende da quell'aggregato. In semantica
+Alpha non serve. Il controllo e' O(1), perche' usa l'insieme `clingo_aggregates_`
+costruito durante la registrazione dei candidate.
+
+
+11. Limiti attuali da documentare
+---------------------------------
+
+1. Solo tuple numeriche.
+
+    `extract_numeric_tuple` accetta solo atomi i cui argomenti sono tutti numeri.
+    Atomi con simboli non numerici vengono ignorati dall'indice dei literal.
+
+2. Predicati distinti per nome, non per arita'.
+
+    La funzione `predicate_name_symbol` usa solo il nome del predicato.
+    ASP distingue concettualmente `p/1` e `p/2`, ma il prototipo raggruppa per
+    nome `p`. Le tuple di lunghezza diversa riducono il rischio di collisioni
+    pratiche, ma il limite va dichiarato.
+
+3. Target nullari non supportati.
+
+    Un atomo come `choose.` non ha argomenti numerici, quindi non entra in
+    `GroundLiteralIndex`.
+
+4. `__min` e `__max` su insieme vuoto restituiscono 0.
+
+    E' una convenzione implementativa del prototipo, utile per mantenere totale
+    la valutazione degli AST aritmetici. Non va confusa con il minimo/massimo
+    matematico dell'insieme vuoto.
+
+5. `compute_candidate_entry` alloca ancora una piccola `unordered_map`.
+
+    L'ambiente `var_env` viene ricostruito a ogni valutazione. Funziona ed e'
+    semplice, ma un'ottimizzazione futura potrebbe usare un buffer preallocato.
+
+6. Il lazy grounding non elimina tutti i candidate runtime.
+
+    Il propagatore crea comunque un `CandidateState` per ogni target ground e
+    per ogni combinazione coerente dei body positivi. Quello che evita e' la
+    moltiplicazione per tutti i possibili valori degli aggregati.
+
+
+12. Riassunto finale
+--------------------
+
+Il propagatore implementa una rete di dipendenze incrementali:
+
+    literal sorgente vero
+        -> aggiorna AggregateState
+        -> ricalcola solo i candidate che dipendono da quell'aggregato
+
+    literal target/body cambiato
+        -> ricalcola solo i candidate che dipendono direttamente da quel literal
+
+    literal sorgente falso in semantica Clingo
+        -> segnala che un aggregato potrebbe essere completamente determinato
+        -> ricalcola i candidate collegati all'aggregato
+
+    candidate applicabile
+        -> entra in candidate_queue_
+
+    decide
+        -> prende il miglior candidate valido
+        -> suggerisce un literal a Clasp
+
+La differenza fondamentale rispetto al grounding standard e':
+
+    Clingo standard deve fissare peso e priorita' prima del solving.
+    Il propagatore lazy li calcola durante il solving, usando lo stato corrente.
+
+La frase piu' compatta da ricordare:
+
+    literal cambia -> aggregato/candidate si aggiornano -> queue cambia -> decide sceglie.
