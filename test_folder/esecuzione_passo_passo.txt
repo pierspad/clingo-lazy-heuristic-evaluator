@@ -165,14 +165,14 @@ Gli esempi sotto usano il BSP con `n = 3`:
                 __bind(s, __sum(b, 0)),
                 __weight(self), __priority(s), true).
 
-`rule_templates_`
+`heuristic_rule_templates_`
     Vettore di `HeuristicRuleTemplate`.
     Contiene la forma astratta delle direttive `__heuristic`.
     Non contiene ancora literal solver concreti per i target.
 
     Esempio:
 
-        rule_templates_[0]:
+        heuristic_rule_templates_[0]:
             target_pred = b
             pos_body_preds = [x]
             neg_body_preds = [c]
@@ -454,14 +454,15 @@ La prima callback importante è:
 
     HeuristicPropagator::init(Clingo::PropagateInit &init)
 
-All'inizio `init` pulisce tutte le strutture interne. Poi scansiona gli atomi
-simbolici del programma ground:
+All'inizio `init` pulisce tutte le strutture interne. Poi scansiona una sola
+volta gli atomi simbolici del programma ground:
 
     se non trova `__heuristic(...)`
         il propagatore resta inattivo
 
     se trova almeno un `__heuristic(...)`
-        chiama `init_lazy_mode`
+        raccoglie quei simboli, costruisce subito `heuristic_rule_templates_`
+        e chiama `init_lazy_mode` passando i template gia' pronti
 
 
 5.1 Parsing dei template
@@ -469,9 +470,10 @@ simbolici del programma ground:
 
 La funzione:
 
-    parse_lazy_heuristic_templates(atoms)
+    parse_lazy_heuristic_templates(heuristic_symbols)
 
-trasforma i fatti `__heuristic(...)` in oggetti `HeuristicRuleTemplate`.
+trasforma solo i simboli `__heuristic(...)` gia' filtrati da `init` in oggetti
+`HeuristicRuleTemplate`. Non riscorre tutti gli atomi simbolici.
 
 Un template contiene:
 
@@ -484,9 +486,7 @@ Un template contiene:
     sign               -> true, false oppure sign
     semantics          -> alpha oppure clingo
 
-Le espressioni di peso/priorità non restano stringhe: il parser costruisce un
-piccolo AST aritmetico. Durante il solving si valuta l'AST, non si fa parsing
-testuale.
+Le espressioni di peso/priorità non restano stringhe: il parser costruisce un piccolo AST aritmetico. Durante il solving si valuta l'AST, non si fa parsing testuale.
 
 
 5.2 Raccolta dei predicati rilevanti
@@ -601,9 +601,7 @@ Il template su `b` produce:
         priority = sum(c)
         weight = 3
 
-Il template su `c` produce:
-
-    candidate c(1), c(2), c(3)
+Il template su `c` produce gli equivalenti candidate c(1), c(2), c(3)
 
 In totale:
 
@@ -617,8 +615,8 @@ Con `n = 1000`, diventano circa:
     1000 candidate per c
     2000 RuntimeHeuristicCandidate
 
-Questa materializzazione runtime è lineare in `n`. La parte evitata è la
-materializzazione ground di tutte le coppie target-valore-aggregato.
+Questa materializzazione runtime è lineare in `n`. 
+La parte evitata è la materializzazione ground di tutte le coppie target-valore-aggregato.
 
 
 5.5 Costruzione di un RuntimeHeuristicCandidate
@@ -669,8 +667,7 @@ produce un binding:
 5.6 Registrazione delle dipendenze del candidate
 ------------------------------------------------
 
-Dopo aver inserito il `RuntimeHeuristicCandidate` in `heuristic_candidates_`, il propagatore registra
-due tipi di dipendenze.
+Dopo aver inserito il `RuntimeHeuristicCandidate` in `heuristic_candidates_`, il propagatore registra due tipi di dipendenze.
 
 Primo:
 
@@ -820,7 +817,7 @@ Non sta ancora decidendo literal: ha solo costruito il materiale runtime.
 
 In sintesi:
 
-    rule_templates_
+    heuristic_rule_templates_
         template astratti letti da __heuristic
 
     heuristic_candidates_
@@ -1341,13 +1338,13 @@ e rivaluta i candidate dipendenti da `sum(c)`.
     Gringo grounda il programma
         |
         v
-    init trova __heuristic
+    init filtra i simboli __heuristic
         |
         v
     parse_lazy_heuristic_templates
         |
         v
-    rule_templates_
+    heuristic_rule_templates_
         |
         v
     collect_predicates_used_by_lazy_templates

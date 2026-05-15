@@ -268,7 +268,7 @@ static bool build_runtime_key_from_target_tuple(AggregateKey const &agg_key,
 void HeuristicPropagator::init(Clingo::PropagateInit &init) {
     runtime_aggregate_states_.clear();
     aggregate_contributions_by_lit_.clear();
-    rule_templates_.clear();
+    heuristic_rule_templates_.clear();
     heuristic_candidates_.clear();
     active_candidate_queue_.clear();
     candidate_ids_to_refresh_by_lit_.clear();
@@ -278,28 +278,32 @@ void HeuristicPropagator::init(Clingo::PropagateInit &init) {
     aggregate_source_lits_.clear();
     registered_watch_lits_.clear();
 
-    auto atoms = init.symbolic_atoms();
-    // Index only atoms whose predicates are referenced by lazy heuristic templates.
+    std::vector<Clingo::Symbol> heuristic_symbols;
+    auto const atoms = init.symbolic_atoms();
     for (auto it = atoms.begin(); it != atoms.end(); ++it) {
         if (is_named_function(it->symbol(), "__heuristic")) {
-            init_lazy_mode(init);
-            return;
+            heuristic_symbols.push_back(it->symbol());
         }
     }
+
+    auto rule_templates = parse_lazy_heuristic_templates(heuristic_symbols);
+    if (rule_templates.empty()) return;
+
+    init_lazy_mode(init, atoms, std::move(rule_templates));
 }
 
-HeuristicPropagator::LazyTemplatePredicateSets HeuristicPropagator::collect_predicates_used_by_lazy_templates() const {
-    LazyTemplatePredicateSets predicates;
+std::unordered_set<Clingo::Symbol> HeuristicPropagator::collect_predicates_used_by_lazy_templates() const {
+    std::unordered_set<Clingo::Symbol> predicates;
 
-    for (auto const &tmpl : rule_templates_) {
-        predicates.target_preds.insert(tmpl.target_pred);
+    for (auto const &tmpl : heuristic_rule_templates_) {
+        predicates.insert(tmpl.target_pred);
 
         for (auto const &pos_pred : tmpl.pos_body_preds) {
-            predicates.pos_body_preds.insert(pos_pred.pred_name);
+            predicates.insert(pos_pred.pred_name);
         }
 
         for (auto const &neg_pred : tmpl.neg_body_preds) {
-            predicates.neg_preds.insert(neg_pred);
+            predicates.insert(neg_pred);
         }
     }
 
@@ -309,21 +313,16 @@ HeuristicPropagator::LazyTemplatePredicateSets HeuristicPropagator::collect_pred
 HeuristicPropagator::GroundLiteralIndex HeuristicPropagator::build_ground_literal_index_for_predicates(
     Clingo::PropagateInit &init,
     Clingo::SymbolicAtoms const &atoms,
-    LazyTemplatePredicateSets const &predicates
+    std::unordered_set<Clingo::Symbol> const &predicates
 ) const {
     GroundLiteralIndex ground_literal_index;
-
-    std::unordered_set<Clingo::Symbol> relevant_predicates;
-    relevant_predicates.insert(predicates.pos_body_preds.begin(), predicates.pos_body_preds.end());
-    relevant_predicates.insert(predicates.target_preds.begin(), predicates.target_preds.end());
-    relevant_predicates.insert(predicates.neg_preds.begin(), predicates.neg_preds.end());
 
     for (auto it = atoms.begin(); it != atoms.end(); ++it) {
         auto const symbol = it->symbol();
         if (!is_clingo_symbol_function(symbol)) continue;
 
         auto const predicate_name = predicate_name_symbol(symbol);
-        if (relevant_predicates.find(predicate_name) == relevant_predicates.end()) continue;
+        if (predicates.find(predicate_name) == predicates.end()) continue;
 
         std::vector<int> numeric_tuple;
         if (!extract_numeric_tuple(symbol, numeric_tuple)) continue;
@@ -383,7 +382,7 @@ HeuristicPropagator::RuntimeHeuristicCandidate HeuristicPropagator::build_runtim
     std::vector<Clingo::literal_t> neg_body_lits,
     std::unordered_map<Clingo::Symbol, int> body_var_values
 ) const {
-    auto const &tmpl = rule_templates_[rule_idx];
+    auto const &tmpl = heuristic_rule_templates_[rule_idx];
 
     RuntimeHeuristicCandidate candidate;
     candidate.rule_idx = rule_idx;
@@ -413,8 +412,8 @@ void HeuristicPropagator::register_candidate_aggregate_dependencies(size_t candi
     if (candidate_id >= heuristic_candidates_.size()) return;
 
     auto const &candidate = heuristic_candidates_[candidate_id];
-    bool const uses_clingo_semantics = candidate.rule_idx < rule_templates_.size() &&
-        rule_templates_[candidate.rule_idx].semantics == HeuristicSemantics::Clingo;
+    bool const uses_clingo_semantics = candidate.rule_idx < heuristic_rule_templates_.size() &&
+        heuristic_rule_templates_[candidate.rule_idx].semantics == HeuristicSemantics::Clingo;
 
     for (auto const &aggregate_binding : candidate.aggregate_bindings) {
         if (!aggregate_binding.has_valid_runtime_key) continue;
@@ -457,7 +456,7 @@ void HeuristicPropagator::add_candidate_and_register_refresh_watches(
     std::vector<Clingo::literal_t> neg_body_lits,
     std::unordered_map<Clingo::Symbol, int> body_var_values
 ) {
-    if (target_lit == 0 || rule_idx >= rule_templates_.size()) return;
+    if (target_lit == 0 || rule_idx >= heuristic_rule_templates_.size()) return;
 
     auto candidate = build_runtime_candidate(rule_idx,
                                              target_lit,
@@ -566,7 +565,7 @@ bool HeuristicPropagator::evaluate_candidate_for_queue(size_t candidate_id,
     if (candidate_id >= heuristic_candidates_.size()) return false;
 
     auto const &candidate = heuristic_candidates_[candidate_id];
-    auto const &tmpl = rule_templates_[candidate.rule_idx];
+    auto const &tmpl = heuristic_rule_templates_[candidate.rule_idx];
 
     if (!candidate_target_is_free(candidate, assignment)) return false;
     if (!positive_body_is_satisfied(candidate, assignment)) return false;
@@ -679,7 +678,7 @@ void HeuristicPropagator::materialize_lazy_candidates_and_register_watches(
     Clingo::PropagateInit &init,
     GroundLiteralIndex const &ground_literal_index
 ) {
-    for (size_t rule_idx = 0; rule_idx < rule_templates_.size(); ++rule_idx) {
+    for (size_t rule_idx = 0; rule_idx < heuristic_rule_templates_.size(); ++rule_idx) {
         materialize_candidates_for_template(init, rule_idx, ground_literal_index);
     }
 }
@@ -689,7 +688,7 @@ void HeuristicPropagator::materialize_candidates_for_template(
     size_t rule_idx,
     GroundLiteralIndex const &ground_literal_index
 ) {
-    auto const &tmpl = rule_templates_[rule_idx];
+    auto const &tmpl = heuristic_rule_templates_[rule_idx];
 
     auto target_map_it = ground_literal_index.find(tmpl.target_pred);
     if (target_map_it == ground_literal_index.end()) return;
@@ -722,7 +721,7 @@ std::unordered_map<Clingo::Symbol, std::vector<AggregateKey>>
 HeuristicPropagator::collect_aggregate_keys_by_source_predicate() const {
     std::unordered_map<Clingo::Symbol, std::vector<AggregateKey>> aggregate_keys_by_pred;
 
-    for (auto const &tmpl : rule_templates_) {
+    for (auto const &tmpl : heuristic_rule_templates_) {
         for (auto const &vb : tmpl.var_bindings) {
             AggregateKey const &agg_key = vb.second;
             auto &keys = aggregate_keys_by_pred[agg_key.pred_symbol];
@@ -804,13 +803,13 @@ void HeuristicPropagator::register_lazy_aggregate_watches(Clingo::PropagateInit 
     }
 }
 
-void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init) {
-    auto atoms = init.symbolic_atoms();
+void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init,
+                                         Clingo::SymbolicAtoms const &atoms,
+                                         std::vector<HeuristicRuleTemplate> rule_templates) {
+    heuristic_rule_templates_ = std::move(rule_templates);
+    if (heuristic_rule_templates_.empty()) return;
 
-    rule_templates_ = parse_lazy_heuristic_templates(atoms);
-    if (rule_templates_.empty()) return;
-
-    LazyTemplatePredicateSets predicates = collect_predicates_used_by_lazy_templates();
+    auto predicates = collect_predicates_used_by_lazy_templates();
 
     GroundLiteralIndex ground_literal_index = build_ground_literal_index_for_predicates(init, atoms, predicates);
 
@@ -897,7 +896,7 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
                 continue;
             }
 
-            auto const &tmpl = rule_templates_[heuristic_candidates_[candidate_id].rule_idx];
+            auto const &tmpl = heuristic_rule_templates_[heuristic_candidates_[candidate_id].rule_idx];
             return apply_sign(tmpl.sign, entry.target_lit, fallback);
         }
     }

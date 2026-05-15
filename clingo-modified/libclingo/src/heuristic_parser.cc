@@ -277,21 +277,15 @@ static AggregateOperator parse_aggregate_op(std::string const &op_name) {
     return AggregateOperator::Unknown;
 }
 
-std::vector<HeuristicRuleTemplate> parse_lazy_heuristic_templates(Clingo::SymbolicAtoms const &atoms) {
+std::vector<HeuristicRuleTemplate> parse_lazy_heuristic_templates(std::vector<Clingo::Symbol> const &heuristic_symbols) {
     std::vector<HeuristicRuleTemplate> templates;
+    templates.reserve(heuristic_symbols.size());
 
-    // scorre gli atomi e ignora quelli che non sono __heuristic
-    for (auto it = atoms.begin(); it != atoms.end(); ++it) {
-        auto const symbol = it->symbol();
-        if (!is_named_function(symbol, "__heuristic")) {
-            continue;
-        }
-
+    for (auto const &symbol : heuristic_symbols) {
         auto const args = symbol.arguments();
         if (args.empty()) {
             throw std::runtime_error("Sintassi euristica malformata: __heuristic richiede argomenti.");
         }
-
 
         HeuristicRuleTemplate tmpl;
         tmpl.sign = HeuristicSign::True;

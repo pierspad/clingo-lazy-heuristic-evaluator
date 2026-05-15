@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
-std::vector<HeuristicRuleTemplate> parse_lazy_heuristic_templates(Clingo::SymbolicAtoms const &atoms);
+std::vector<HeuristicRuleTemplate> parse_lazy_heuristic_templates(std::vector<Clingo::Symbol> const &heuristic_symbols);
 
 int evaluate_arithmetic_expression(ArithmeticExpression const &expr,
                                    int self_value,

@@ -65,17 +65,11 @@ private:
         CandidateQueueEntry queue_entry;
     };
 
-    struct LazyTemplatePredicateSets {
-        std::unordered_set<Clingo::Symbol> pos_body_preds;
-        std::unordered_set<Clingo::Symbol> target_preds;
-        std::unordered_set<Clingo::Symbol> neg_preds;
-    };
-
     using LitByTuple = std::unordered_map<NumericTupleKey, Clingo::literal_t, NumericTupleKeyHash>;
     using GroundLiteralIndex = std::unordered_map<Clingo::Symbol, LitByTuple>;
 
     std::unordered_map<Clingo::literal_t, AggregateContributions> aggregate_contributions_by_lit_;
-    std::vector<HeuristicRuleTemplate> rule_templates_;
+    std::vector<HeuristicRuleTemplate> heuristic_rule_templates_;
     std::vector<RuntimeHeuristicCandidate> heuristic_candidates_;
     std::set<CandidateQueueEntry, CandidateQueueEntryLess> active_candidate_queue_;
     std::unordered_map<Clingo::literal_t, std::vector<size_t>> candidate_ids_to_refresh_by_lit_;
@@ -86,11 +80,13 @@ private:
     std::unordered_map<RuntimeAggregateKey, std::vector<Clingo::literal_t>, RuntimeAggregateKeyHash> aggregate_source_lits_;
     std::unordered_set<Clingo::literal_t> registered_watch_lits_;
 
-    void init_lazy_mode(Clingo::PropagateInit &init);
-    LazyTemplatePredicateSets collect_predicates_used_by_lazy_templates() const;
+    void init_lazy_mode(Clingo::PropagateInit &init,
+                        Clingo::SymbolicAtoms const &atoms,
+                        std::vector<HeuristicRuleTemplate> rule_templates);
+    std::unordered_set<Clingo::Symbol> collect_predicates_used_by_lazy_templates() const;
     GroundLiteralIndex build_ground_literal_index_for_predicates(Clingo::PropagateInit &init,
                                                                  Clingo::SymbolicAtoms const &atoms,
-                                                                 LazyTemplatePredicateSets const &predicates) const;
+                                                                 std::unordered_set<Clingo::Symbol> const &predicates) const;
     void materialize_lazy_candidates_and_register_watches(Clingo::PropagateInit &init,
                                                           GroundLiteralIndex const &ground_literal_index);
     void materialize_candidates_for_template(Clingo::PropagateInit &init,
