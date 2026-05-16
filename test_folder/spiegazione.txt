@@ -8,7 +8,7 @@ viene dato in pasto a questa versione modificata di clingo un encoding dove le e
 ad un formato diverso:
 __heuristic(blabla)
 
-questo fa si che, nel caso in cui l'euristica utilizzava degli aggregati scritti come __*aggregato* gringo non interpreti la direttiva e non si occupi di groundare tutte le combinazioni possibili di aggregato facendo esplodere la memoria necessaria, ma grounda atomi __heuristic() come fatti normali che verranno, solo in un secondo momento, interpretati da clasp.
+questo fa si che, nel caso in cui l'euristica utilizzava degli aggregati scritti come __*aggregato* Gringo non interpreti la direttiva e non si occupi di groundare tutte le combinazioni possibili di aggregato facendo esplodere la memoria necessaria, ma groundi atomi __heuristic() come fatti normali che verranno, solo in un secondo momento, interpretati, durante il processo di solving di clasp, dal propagatore euristico richiamato dai callback del solver
 L’aggregato scritto come __sum(...), __count(...), ecc. è solo un termine, non un aggregato ASP valutato da Gringo.
 
 Dopo il grounding e prima della ricerca vera e propria, Clingo richiama la
@@ -20,7 +20,7 @@ essere rivalutati molte volte durante il solving, usando valori runtime come
 self o variabili legate ad aggregati. Il parsing viene fatto una sola volta
 durante init; durante il solving si esegue solo la valutazione dell'AST.
 
-Se non ne trova nessuno allora esce e lascia al classico clasp il processo di risoluzione, altrimenti interviene facendo le seguenti cose:
+Se non ne trova nessuno allora il propagatore non installa nessun watch e non verrà quindi richiamato durante il processo di risoluzione, altrimenti interviene facendo le seguenti cose:
 
 Viene chiamato init lazy passandogli già il vettore con gli HeuristicRuleTemplate trovati
 
@@ -34,10 +34,18 @@ GroundLiteralIndex:
 
 
 Poi viene chiamato materialize_lazy_candidates_and_register_watches() che cicla su tutti gli HeuristicRuleTemplate e su ciascuno di essi chiama:
-materialize_candidates_for_template() che itera sui target ground compatibili con il template e costruisce tutte le combinazioni di body positivi/negativi che corrispondono a quel target, usando matching implicito sulla stessa tupla oppure matching esplicito tramite __match/__bind_arg.
+materialize_candidates_for_template(), per ogni combinazione compatibile target/body,
+chiama add_runtime_candidate(). 
+Questa funzione costruisce il RuntimeHeuristicCandidate
+tramite build_runtime_candidate(), lo salva nel vettore heuristic_candidates_,
+indicizza le dipendenze dagli aggregati e registra i watch sui literal rilevanti.
 
 
-chiama build_runtime_candidate() per creare concretamente un RuntimeHeuristicCandidate, una sorta di istanziazione concreta dell'HeuristicRuleTemplate (tuttavia senza istanziare l'aggregato), lo aggiunge al vettore heuristic_candidates_ 
+chiama build_runtime_candidate() per creare concretamente un RuntimeHeuristicCandidate, l’istanza concreta del template per uno specifico target/body.
+Gli aggregati non vengono valutati né espansi in tutti i possibili valori: il candidate salva solo
+un CandidateAggregateBinding verso una RuntimeAggregateKey, che verrà usata durante il solving
+per leggere il valore corrente dell’AggregateState.
+
 RuntimeHeuristicCandidate:
     rule_idx = template di b
     target_lit = lit_b2
@@ -56,7 +64,7 @@ poi chiama
 
 serve per vedere quali candidate aggiornare quando durante il solving un valore di un atomo, contenuto in un aggregato, cambia facendo quindi cambiare il valore dell'aggregato
 
-- watch_candidate_refresh_literals() che costruisce una mappa <Clingo::literal_t, std::vector<size_t>> che associa ad ogni solver literal i RuntimeHeuristicCandidate (usando size_T, ovvero un intero che rappresenta l'indice numeri del RuntimeHeuristicCandidate all'interno del vettore heuristic_candidates_) che vanno aggiornati quando quell'atomo cambia 
+- watch_candidate_refresh_literals() che costruisce una mappa <Clingo::literal_t, std::vector<size_t>> (candidate_ids_to_refresh_by_lit_) che associa ad ogni solver literal i RuntimeHeuristicCandidate (usando size_T, ovvero un intero che rappresenta l'indice numeri del RuntimeHeuristicCandidate all'interno del vettore heuristic_candidates_) che vanno aggiornati quando quell'atomo cambia 
 
 inoltre per ogni literal chiede a clasp di registrare un watch tramite init.add_Watch(slit) così da essere notificato durante il processo di risoluzione
 
@@ -89,36 +97,51 @@ e infine chiamiamo
 
 evaluate_candidate_rank() dove viene controllato che il target sia free, il body rispettato e vengono valutati gli AST degli aggregati e a questo punto viene creato un CandidateRankKey e viene inserito nell'insieme active_candidate_ranks_ che sotto al cofano è un albero binario ordinato con CandidateRankGreater: prima priorità maggiore, poi peso maggiore, poi i tie-break su literal e candidate id
 
-Se il candidate risulta applicabile (target Free e body valido) aggiorniamo il RuntimeHeuristicCandidate non so come 
+Se il candidate risulta applicabile, non viene ricostruito. Viene creata una nuova
+CandidateQueueEntry con priority, weight, target_lit e candidate_id. Questa entry viene
+inserita in active_candidate_queue_ e viene salvata anche dentro il RuntimeHeuristicCandidate
+nei campi queue_entry e queued=true. Se invece il candidate non è applicabile, resta fuori
+dalla coda e queued=false.
 
 una volta finito il processo di inizializzazione è terminato e possiamo passare alla fase di risoluzione.
 
-in questa fase clasp procederà a notificare il propagatore dei cambiamenti di stato attraverso 2 callback: propagate, undo e decide.
-
+Durante la ricerca, Clingo/Clasp interagisce con l’euristica lazy tramite tre metodi principali:
+propagate(), chiamato quando literal osservati vengono assegnati;
+undo(), chiamato durante il backtracking per annullare cambiamenti;
+decide(), chiamato quando il solver ha bisogno di una nuova decisione euristica.
 
 propagate(changes) -> 
 
-Quando i solver literal osservati diventano veri nel trail Clasp li passa al propagatore.
+Quando un literal osservato viene assegnato a vero nel trail, Clingo lo passa a propagate().
+Se il propagatore ha registrato anche il literal negato -lit, allora anche l’assegnazione
+a falso dell’atomo può essere osservata come comparsa di -lit nel trail.
+
 Controlla in aggregate_contributions_by_lit_ se il literal apporta un contributo numerico a un aggregato e in tal caso aggiorna l'incrementatore associato.
 
 Consulta aggregate_keys_to_refresh_by_lit_ e candidate_ids_to_refresh_by_lit_ per capire quali aggregati e candidati sono stati invalidati dal cambiamento e quindi chiama il refresh_candidate() solo su quegli indici, ricalcolandone l'applicabilità e riposizionando il loro CandidateRankKey nell'insieme ordinato attivo
 
 
 
-undo(changes)
+undo(changes) 
 
-Se clasp rileva un conflitto allora deve far backjumping al 1st UIP e svolge esattamente il contrario di propagate rimuovendo i contributi numerici degli aggregati e ripristinando le dipendenze nell'insieme ordinato attivo
-
-
-
-decide(fallback)
-Quando la BCP si esaurisce senza conflitti e l'assegnamento non è completo clasp chiede una decisione.
-A questo punto viene semplicemente prelevato il primo elemento dall'albero active_candidate_ranks_.
-
-se l'insieme è vuoto o nessun candidato sopravvive al controllo allora viene restituito 0 e ci pensa clasp (tipicamente col VSIDS)
+Quando il solver torna indietro e rimuove dal trail
+literal precedentemente assegnati. Il propagatore deve allora annullare gli effetti
+runtime di quei literal: rimuove le contribuzioni dagli AggregateState e rinfresca
+i candidati che dipendono dagli aggregati o dai literal coinvolti.
 
 
 
+decide() 
+
+Prende la migliore CandidateQueueEntry da active_candidate_queue_, ma non si fida ciecamente:
+verifica che il candidate esista ancora, che sia ancora queued e che la queue_entry salvata
+nel candidate coincida con quella letta dalla coda. Poi rivaluta il candidate; se non è più valido,
+lo rimuove; se è valido ma con priority/weight cambiati, lo reinserisce aggiornato.
+Solo quando l’entry è stabile, restituisce il target literal modificato da apply_sign().
+
+
+Se non ci sono candidate applicabili, decide() restituisce 0; in questo caso il solver
+usa la propria euristica/fallback interna.
 
 
 
