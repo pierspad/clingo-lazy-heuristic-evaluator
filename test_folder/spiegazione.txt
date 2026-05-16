@@ -1,0 +1,95 @@
+
+Giusto per ricapitolare a parole mie così vediamo se reisco a spiegare le cose per bene e quindi se le ho capite (sii "severo" nella correzione ed esigente, devo conoscere questo progetto come le mie tasche)
+
+viene dato in pasto a questa versione modificata di clingo un encoding dove le euristiche sono state trascritte dal classico formato
+
+#heuristic... blabla
+
+ad un formato diverso:
+__heuristic(blabla)
+
+questo fa si che, nel caso in cui l'euristica utilizzava degli aggregati scritti come __*aggregato* gringo non interpreti la direttiva e non si occupi di groundare tutte le combinazioni possibili di aggregato facendo esplodere la memoria necessaria, ma grounda soltanto un fatto "template" (o "stampino") per ogni direttiva euristica scritta nell'encoding.
+L’aggregato scritto come __sum(...), __count(...), ecc. è solo un termine, non un aggregato ASP valutato da Gringo.
+
+Dopo il grounding e prima della ricerca vera e propria, Clingo richiama la
+callback init del propagatore/euristica registrato. In questa fase il codice riceve accesso i symbolic_atoms dopo il grounding, legge i fatti e scannerizza tutti gli atomi per vedere solo quali sono gli __heuristic e li salva sottoforma di un HeuristicRuleTemplate;
+di queste c'è una piccola "trasformazione"
+Peso e priorità vengono trasformati in piccoli AST aritmetici perché devono
+essere rivalutati molte volte durante il solving, usando valori runtime come
+self o variabili legate ad aggregati. Il parsing viene fatto una sola volta
+durante init; durante il solving si esegue solo la valutazione dell'AST.
+
+Se non ne trova nessuno allora esce e lascia al classico clasp il processo di risoluzione, altrimenti interviene facendo le seguenti cose:
+
+Viene chiamato init lazy passandogli già il vettore con gli HeuristicRuleTemplate trovati
+
+Viene chiamato build_ground_literal_index_for_predicates che costruisce un set con al suo interno i predicati usati dentro gli HeuristicRuleTemplate e successivamente viene usato per cercare quali sono i predicati che ci interessano ignorando tutto il resto e costruire una mappa predicato[atomkey] -> solverLiteral
+
+GroundLiteralIndex:
+  b -> { [1] -> lit_b1, [2] -> lit_b2, ... }
+  c -> { [1] -> lit_c1, [2] -> lit_c2, ... }
+  x -> { [1] -> lit_x1, [2] -> lit_x2, ... }
+
+
+Poi viene chiamato materialize_lazy_candidates_and_register_watches() che cicla su tutti gli HeuristicRuleTemplate e su ciascuno di essi chiama:
+materialize_candidates_for_template() che per un singolo template estrae il predicato target, gli atomi positivi e negativi del corpo e cerca il loro equivalente solver literal nella mappa GroundLiteralIndex e chiama add_runtime_candidate() che:
+
+chiama build_runtime_candidate() per creare concretamente un RuntimeHeuristicCandidate, una sorta di istanziazione concreta dell'HeuristicRuleTemplate, lo aggiunge al vettore heuristic_candidates_ 
+RuntimeHeuristicCandidate:
+    rule_idx = template di b
+    target_lit = lit_b2
+    self_value = 2
+    tuple_values = [2]
+
+    pos_body_lits = [lit_x2]
+    neg_body_lits = [lit_c2]
+
+    aggregate_bindings:
+        s -> runtime key di sum(c)
+
+poi chiama 
+- index_candidate_aggregate_dependencies() che costruisce una mappa <RuntimeAggregateKey, std::vector<size_t>> che lega un aggregato ai RuntimeHeuristicCandidate (usando size_T, ovvero un intero che rappresenta l'indice numeri del RuntimeHeuristicCandidate all'interno del vettore heuristic_candidates_) che dipendono da quell'aggregato
+
+serve per vedere quali candidate aggiornare quando durante il solving un valore di un atomo, contenuto in un aggregato, cambia facendo quindi cambiare il valore dell'aggregato
+
+- watch_candidate_refresh_literals() che costruisce una mappa <Clingo::literal_t, std::vector<size_t>> che associa ad ogni solver literal i RuntimeHeuristicCandidate (usando size_T, ovvero un intero che rappresenta l'indice numeri del RuntimeHeuristicCandidate all'interno del vettore heuristic_candidates_) che vanno aggiornati quando quell'atomo cambia 
+
+inoltre per ogni literal chiede a clash di mettere un watch così da essere notificato durante il processo di risoluzione
+
+
+
+Una volta usciti da materialize_lazy_candidates_and_register_watches() si passa a 
+- initialize_aggregate_sources() che crea una mappa che associa ad ogni solver literal gli aggregati che va ad influenzare
+
+aggregate_contributions_by_lit_[101] = {
+    values: [ { runtime_key: KEY_SUM_C, value: 1 } ]
+}
+aggregate_contributions_by_lit_[102] = {
+    values: [ { runtime_key: KEY_SUM_C, value: 2 } ]
+}
+aggregate_contributions_by_lit_[103] = {
+    values: [ { runtime_key: KEY_SUM_C, value: 3 } ]
+}
+
+e una mappa aggregato literal che invece fa il contrario
+
+aggregate_source_lits_[KEY_SUM_C] = [ 101, 102, 103 ]
+aggregate_source_lits_[KEY_SUM_B] = [ 201, 202, 203 ]
+
+
+// TODO continua da qui in poi
+
+e infine chiamiamo 
+- refresh_all_candidates() che scorre il vettore heuristic_candidates_ e per ciascun RuntimeHeuristicCandidate chiama evaluate_candidate_for_queue()
+
+Se il candidate risulta applicabile (target Free e body valido) aggiorniamo il RuntimeHeuristicCandidate non so come 
+
+
+
+una volta finito il processo di inizializzazione è terminato e possiamo passare alla fase di risoluzione.
+
+in questa fase clasp procederà eseguendo il metodo propagate() la bcp fino a quando gli è possibile, se trova dei conflitti subito termina il programma come UNSAT, altrimenti procede e se non ha un assegnamento completo e non può più proseguire con la bcp allora esegue il metodo decide() per decidere a quale atomo quale valore di verità dovrà dare 
+
+
+
+

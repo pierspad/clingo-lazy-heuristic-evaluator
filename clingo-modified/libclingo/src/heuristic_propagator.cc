@@ -350,9 +350,9 @@ void HeuristicPropagator::add_solver_watch(Clingo::PropagateInit &init, Clingo::
     }
 }
 
-void HeuristicPropagator::register_candidate_refresh_watch(Clingo::PropagateInit &init,
-                                                           Clingo::literal_t lit,
-                                                           size_t candidate_id) {
+void HeuristicPropagator::watch_literal_for_candidate_refresh(Clingo::PropagateInit &init,
+                                                              Clingo::literal_t lit,
+                                                              size_t candidate_id) {
     if (lit == 0) return;
 
     auto &ids = candidate_ids_to_refresh_by_lit_[lit];
@@ -362,9 +362,9 @@ void HeuristicPropagator::register_candidate_refresh_watch(Clingo::PropagateInit
     add_solver_watch(init, lit);
 }
 
-void HeuristicPropagator::register_aggregate_refresh_watch(Clingo::PropagateInit &init,
-                                                           Clingo::literal_t lit,
-                                                           RuntimeAggregateKey const &runtime_key) {
+void HeuristicPropagator::watch_literal_for_aggregate_refresh(Clingo::PropagateInit &init,
+                                                              Clingo::literal_t lit,
+                                                              RuntimeAggregateKey const &runtime_key) {
     if (lit == 0) return;
 
     auto &runtime_keys = aggregate_keys_to_refresh_by_lit_[lit];
@@ -408,7 +408,13 @@ HeuristicPropagator::RuntimeHeuristicCandidate HeuristicPropagator::build_runtim
     return candidate;
 }
 
-void HeuristicPropagator::register_candidate_aggregate_dependencies(size_t candidate_id) {
+size_t HeuristicPropagator::store_runtime_candidate(RuntimeHeuristicCandidate candidate) {
+    size_t const candidate_id = heuristic_candidates_.size();
+    heuristic_candidates_.push_back(std::move(candidate));
+    return candidate_id;
+}
+
+void HeuristicPropagator::index_candidate_aggregate_dependencies(size_t candidate_id) {
     if (candidate_id >= heuristic_candidates_.size()) return;
 
     auto const &candidate = heuristic_candidates_[candidate_id];
@@ -428,26 +434,26 @@ void HeuristicPropagator::register_candidate_aggregate_dependencies(size_t candi
     }
 }
 
-void HeuristicPropagator::register_candidate_literal_refresh_watches(Clingo::PropagateInit &init,
-                                                                     size_t candidate_id) {
+void HeuristicPropagator::watch_candidate_refresh_literals(Clingo::PropagateInit &init,
+                                                           size_t candidate_id) {
     if (candidate_id >= heuristic_candidates_.size()) return;
 
     auto const &candidate = heuristic_candidates_[candidate_id];
 
-    register_candidate_refresh_watch(init, candidate.target_lit, candidate_id);
-    register_candidate_refresh_watch(init, -candidate.target_lit, candidate_id);
+    watch_literal_for_candidate_refresh(init, candidate.target_lit, candidate_id);
+    watch_literal_for_candidate_refresh(init, -candidate.target_lit, candidate_id);
 
     for (auto neg_lit : candidate.neg_body_lits) {
-        register_candidate_refresh_watch(init, neg_lit, candidate_id);
-        register_candidate_refresh_watch(init, -neg_lit, candidate_id);
+        watch_literal_for_candidate_refresh(init, neg_lit, candidate_id);
+        watch_literal_for_candidate_refresh(init, -neg_lit, candidate_id);
     }
 
     for (auto body_lit : candidate.pos_body_lits) {
-        register_candidate_refresh_watch(init, body_lit, candidate_id);
+        watch_literal_for_candidate_refresh(init, body_lit, candidate_id);
     }
 }
 
-void HeuristicPropagator::add_candidate_and_register_refresh_watches(
+void HeuristicPropagator::add_runtime_candidate(
     Clingo::PropagateInit &init,
     size_t rule_idx,
     Clingo::literal_t target_lit,
@@ -465,11 +471,10 @@ void HeuristicPropagator::add_candidate_and_register_refresh_watches(
                                              std::move(neg_body_lits),
                                              std::move(body_var_values));
 
-    size_t const candidate_id = heuristic_candidates_.size();
-    heuristic_candidates_.push_back(std::move(candidate));
+    size_t const candidate_id = store_runtime_candidate(std::move(candidate));
 
-    register_candidate_aggregate_dependencies(candidate_id);
-    register_candidate_literal_refresh_watches(init, candidate_id);
+    index_candidate_aggregate_dependencies(candidate_id);
+    watch_candidate_refresh_literals(init, candidate_id);
 }
 
 void HeuristicPropagator::erase_candidate_from_queue(size_t candidate_id) noexcept {
@@ -705,13 +710,13 @@ void HeuristicPropagator::materialize_candidates_for_template(
         auto partials = collect_positive_body_partials_for_target(body_sources, target_key);
 
         for (auto &partial : partials) {
-            add_candidate_and_register_refresh_watches(init,
-                                                       rule_idx,
-                                                       target_lit,
-                                                       target_key.values,
-                                                       std::move(partial.pos_lits),
-                                                       neg_lits,
-                                                       std::move(partial.body_var_values));
+            add_runtime_candidate(init,
+                                  rule_idx,
+                                  target_lit,
+                                  target_key.values,
+                                  std::move(partial.pos_lits),
+                                  neg_lits,
+                                  std::move(partial.body_var_values));
         }
     }
 }
@@ -737,7 +742,7 @@ bool HeuristicPropagator::aggregate_requires_complete_sources(RuntimeAggregateKe
     return aggregates_requiring_complete_sources_.find(runtime_key) != aggregates_requiring_complete_sources_.end();
 }
 
-void HeuristicPropagator::register_aggregate_source_atom(
+void HeuristicPropagator::initialize_aggregate_source_atom(
     Clingo::PropagateInit &init,
     Clingo::Assignment const &assignment,
     Clingo::Symbol const &source_symbol,
@@ -758,7 +763,7 @@ void HeuristicPropagator::register_aggregate_source_atom(
     add_solver_watch(init, source_lit);
 
     if (aggregate_requires_complete_sources(runtime_key)) {
-        register_aggregate_refresh_watch(init, -source_lit, runtime_key);
+        watch_literal_for_aggregate_refresh(init, -source_lit, runtime_key);
     }
 
     auto &contributions = aggregate_contributions_by_lit_[source_lit].values;
@@ -779,8 +784,8 @@ void HeuristicPropagator::register_aggregate_source_atom(
     contributions.push_back(std::move(contribution));
 }
 
-void HeuristicPropagator::register_lazy_aggregate_watches(Clingo::PropagateInit &init,
-                                                          Clingo::SymbolicAtoms const &atoms) {
+void HeuristicPropagator::initialize_aggregate_sources(Clingo::PropagateInit &init,
+                                                       Clingo::SymbolicAtoms const &atoms) {
     auto assignment = init.assignment();
     auto aggregate_keys_by_pred = collect_aggregate_keys_by_source_predicate();
 
@@ -797,7 +802,7 @@ void HeuristicPropagator::register_lazy_aggregate_watches(Clingo::PropagateInit 
         if (slit == 0) continue;
 
         for (auto const &agg_key : key_it->second) {
-            register_aggregate_source_atom(init, assignment, sym, slit, agg_key);
+            initialize_aggregate_source_atom(init, assignment, sym, slit, agg_key);
         }
     }
 }
@@ -812,7 +817,7 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init,
 
     materialize_lazy_candidates_and_register_watches(init, ground_literal_index);
 
-    register_lazy_aggregate_watches(init, atoms);
+    initialize_aggregate_sources(init, atoms);
 
     refresh_all_candidates(init.assignment());
 }

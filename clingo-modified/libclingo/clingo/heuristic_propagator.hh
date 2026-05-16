@@ -68,10 +68,10 @@ private:
     using LitByTuple = std::unordered_map<NumericTupleKey, Clingo::literal_t, NumericTupleKeyHash>;
     using GroundLiteralIndex = std::unordered_map<Clingo::Symbol, LitByTuple>;
 
-    std::unordered_map<Clingo::literal_t, AggregateContributions> aggregate_contributions_by_lit_;
     std::vector<HeuristicRuleTemplate> heuristic_rule_templates_;
     std::vector<RuntimeHeuristicCandidate> heuristic_candidates_;
     std::set<CandidateQueueEntry, CandidateQueueEntryLess> active_candidate_queue_;
+    std::unordered_map<Clingo::literal_t, AggregateContributions> aggregate_contributions_by_lit_;
     std::unordered_map<Clingo::literal_t, std::vector<size_t>> candidate_ids_to_refresh_by_lit_;
     std::unordered_map<Clingo::literal_t, std::vector<RuntimeAggregateKey>> aggregate_keys_to_refresh_by_lit_;
     std::unordered_map<RuntimeAggregateKey, std::vector<size_t>, RuntimeAggregateKeyHash> candidate_ids_by_aggregate_;
@@ -92,34 +92,35 @@ private:
                                              size_t rule_idx,
                                              GroundLiteralIndex const &ground_literal_index);
     std::unordered_map<Clingo::Symbol, std::vector<AggregateKey>> collect_aggregate_keys_by_source_predicate() const;
-    void register_lazy_aggregate_watches(Clingo::PropagateInit &init, Clingo::SymbolicAtoms const &atoms);
-    void register_aggregate_source_atom(Clingo::PropagateInit &init,
-                                        Clingo::Assignment const &assignment,
-                                        Clingo::Symbol const &source_symbol,
-                                        Clingo::literal_t source_lit,
-                                        AggregateKey const &aggregate_key);
-    void register_aggregate_refresh_watch(Clingo::PropagateInit &init,
-                                          Clingo::literal_t lit,
-                                          RuntimeAggregateKey const &runtime_key);
+    void initialize_aggregate_sources(Clingo::PropagateInit &init, Clingo::SymbolicAtoms const &atoms);
+    void initialize_aggregate_source_atom(Clingo::PropagateInit &init,
+                                          Clingo::Assignment const &assignment,
+                                          Clingo::Symbol const &source_symbol,
+                                          Clingo::literal_t source_lit,
+                                          AggregateKey const &aggregate_key);
+    void watch_literal_for_aggregate_refresh(Clingo::PropagateInit &init,
+                                             Clingo::literal_t lit,
+                                             RuntimeAggregateKey const &runtime_key);
     bool aggregate_requires_complete_sources(RuntimeAggregateKey const &runtime_key) const;
     AggregateState *ensure_aggregate_state(RuntimeAggregateKey const &runtime_key);
     void add_solver_watch(Clingo::PropagateInit &init, Clingo::literal_t lit);
-    void register_candidate_refresh_watch(Clingo::PropagateInit &init, Clingo::literal_t lit, size_t candidate_id);
+    void watch_literal_for_candidate_refresh(Clingo::PropagateInit &init, Clingo::literal_t lit, size_t candidate_id);
     RuntimeHeuristicCandidate build_runtime_candidate(size_t rule_idx,
                                                       Clingo::literal_t target_lit,
                                                       std::vector<int> const &tuple_values,
                                                       std::vector<Clingo::literal_t> pos_body_lits,
                                                       std::vector<Clingo::literal_t> neg_body_lits,
                                                       std::unordered_map<Clingo::Symbol, int> body_var_values) const;
-    void register_candidate_aggregate_dependencies(size_t candidate_id);
-    void register_candidate_literal_refresh_watches(Clingo::PropagateInit &init, size_t candidate_id);
-    void add_candidate_and_register_refresh_watches(Clingo::PropagateInit &init,
-                                                    size_t rule_idx,
-                                                    Clingo::literal_t target_lit,
-                                                    std::vector<int> const &tuple_values,
-                                                    std::vector<Clingo::literal_t> pos_body_lits,
-                                                    std::vector<Clingo::literal_t> neg_body_lits,
-                                                    std::unordered_map<Clingo::Symbol, int> body_var_values);
+    size_t store_runtime_candidate(RuntimeHeuristicCandidate candidate);
+    void index_candidate_aggregate_dependencies(size_t candidate_id);
+    void watch_candidate_refresh_literals(Clingo::PropagateInit &init, size_t candidate_id);
+    void add_runtime_candidate(Clingo::PropagateInit &init,
+                               size_t rule_idx,
+                               Clingo::literal_t target_lit,
+                               std::vector<int> const &tuple_values,
+                               std::vector<Clingo::literal_t> pos_body_lits,
+                               std::vector<Clingo::literal_t> neg_body_lits,
+                               std::unordered_map<Clingo::Symbol, int> body_var_values);
     void erase_candidate_from_queue(size_t candidate_id) noexcept;
     bool candidate_target_is_free(RuntimeHeuristicCandidate const &candidate,
                                   Clingo::Assignment const &assignment) const;
