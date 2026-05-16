@@ -85,8 +85,7 @@ private:
                         std::vector<HeuristicRuleTemplate> rule_templates);
     std::unordered_set<Clingo::Symbol> collect_predicates_used_by_lazy_templates() const;
     GroundLiteralIndex build_ground_literal_index_for_predicates(Clingo::PropagateInit &init,
-                                                                 Clingo::SymbolicAtoms const &atoms,
-                                                                 std::unordered_set<Clingo::Symbol> const &predicates) const;
+                                                                 Clingo::SymbolicAtoms const &atoms) const;
     void materialize_lazy_candidates_and_register_watches(Clingo::PropagateInit &init,
                                                           GroundLiteralIndex const &ground_literal_index);
     void materialize_candidates_for_template(Clingo::PropagateInit &init,

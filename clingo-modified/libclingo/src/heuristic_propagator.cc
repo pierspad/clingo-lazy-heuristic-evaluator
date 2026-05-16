@@ -312,10 +312,10 @@ std::unordered_set<Clingo::Symbol> HeuristicPropagator::collect_predicates_used_
 
 HeuristicPropagator::GroundLiteralIndex HeuristicPropagator::build_ground_literal_index_for_predicates(
     Clingo::PropagateInit &init,
-    Clingo::SymbolicAtoms const &atoms,
-    std::unordered_set<Clingo::Symbol> const &predicates
+    Clingo::SymbolicAtoms const &atoms
 ) const {
     GroundLiteralIndex ground_literal_index;
+    auto const predicates = collect_predicates_used_by_lazy_templates();
 
     for (auto it = atoms.begin(); it != atoms.end(); ++it) {
         auto const symbol = it->symbol();
@@ -696,7 +696,6 @@ void HeuristicPropagator::materialize_candidates_for_template(
     auto body_sources = build_body_match_sources_for_template(tmpl, ground_literal_index);
     if (body_sources.size() != tmpl.pos_body_preds.size()) return;
 
-    // Expand each target atom into the body combinations that can refresh its candidate.
     for (auto const &target_entry : target_map_it->second) {
         NumericTupleKey const &target_key = target_entry.first;
         Clingo::literal_t const target_lit = target_entry.second;
@@ -809,9 +808,7 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init,
     heuristic_rule_templates_ = std::move(rule_templates);
     if (heuristic_rule_templates_.empty()) return;
 
-    auto predicates = collect_predicates_used_by_lazy_templates();
-
-    GroundLiteralIndex ground_literal_index = build_ground_literal_index_for_predicates(init, atoms, predicates);
+    GroundLiteralIndex ground_literal_index = build_ground_literal_index_for_predicates(init, atoms);
 
     materialize_lazy_candidates_and_register_watches(init, ground_literal_index);
 
