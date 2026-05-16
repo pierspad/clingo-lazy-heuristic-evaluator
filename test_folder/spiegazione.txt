@@ -83,11 +83,11 @@ serve soprattutto per la semantica clingo, dove un aggregato può essere usato s
 
 e infine chiamiamo 
 - refresh_all_candidates() che scorre il vettore heuristic_candidates_ e per ciascun RuntimeHeuristicCandidate chiama refresh_candidate() che:
-1) rimuove il candidate dalla coda
+1) rimuove il candidate dall'insieme ordinato dei rank attivi
 2) rivaluta il candidate
-3) inserice il CandidateQueueEntry risultante nella coda
+3) inserisce il CandidateRankKey risultante nell'insieme ordinato
 
-evaluate_candidate_for_queue() dove viene controllato che il target sia free, il body rispettato e vengono valutati gli AST degli aggregati e a questo punto viene creato un CandidateQueueEntry e viene inserito nell'insieme active_candidate_queue_ che sotto al cofano è un albero binario ordinato prima per priorità e poi per peso
+evaluate_candidate_rank() dove viene controllato che il target sia free, il body rispettato e vengono valutati gli AST degli aggregati e a questo punto viene creato un CandidateRankKey e viene inserito nell'insieme active_candidate_ranks_ che sotto al cofano è un albero binario ordinato con CandidateRankGreater: prima priorità maggiore, poi peso maggiore, poi i tie-break su literal e candidate id
 
 Se il candidate risulta applicabile (target Free e body valido) aggiorniamo il RuntimeHeuristicCandidate non so come 
 
@@ -101,22 +101,21 @@ propagate(changes) ->
 Quando i solver literal osservati diventano veri nel trail Clasp li passa al propagatore.
 Controlla in aggregate_contributions_by_lit_ se il literal apporta un contributo numerico a un aggregato e in tal caso aggiorna l'incrementatore associato.
 
-Consulta aggregate_keys_to_refresh_by_lit_ e candidate_ids_to_refresh_by_lit_ per capire quali aggregati e candidati sono stati invalidati dal cambiamento e quindi chiama il refresh_candidate() solo su quegli indici, ricalcolandone la l'applicabilità e riposizionado la loro CandidateQueueEntry nella coda attiva
+Consulta aggregate_keys_to_refresh_by_lit_ e candidate_ids_to_refresh_by_lit_ per capire quali aggregati e candidati sono stati invalidati dal cambiamento e quindi chiama il refresh_candidate() solo su quegli indici, ricalcolandone l'applicabilità e riposizionando il loro CandidateRankKey nell'insieme ordinato attivo
 
 
 
 undo(changes)
 
-Se clasp rileva un conflitto allora deve far backjumping al 1st UIP e svolge esattamente il contrario di propagate rimuovendo i contributi numerici degli aggregati e ripristinando le dipendenze nella coda
+Se clasp rileva un conflitto allora deve far backjumping al 1st UIP e svolge esattamente il contrario di propagate rimuovendo i contributi numerici degli aggregati e ripristinando le dipendenze nell'insieme ordinato attivo
 
 
 
 decide(fallback)
 Quando la BCP si esaurisce senza conflitti e l'assegnamento non è completo clasp chiede una decisione.
-A questo punto viene semplicemente prelevato il primo elemento dalla testa dell'albero active_candidate_queue.
+A questo punto viene semplicemente prelevato il primo elemento dall'albero active_candidate_ranks_.
 
-se la coda è vuota o nessun candidato sopravvive al controllo allora viene restituito 0 e ci pensa clasp (tipicamente col VSIDS)
-
+se l'insieme è vuoto o nessun candidato sopravvive al controllo allora viene restituito 0 e ci pensa clasp (tipicamente col VSIDS)
 
 
 

@@ -270,7 +270,7 @@ void HeuristicPropagator::init(Clingo::PropagateInit &init) {
     aggregate_contributions_by_lit_.clear();
     heuristic_rule_templates_.clear();
     heuristic_candidates_.clear();
-    active_candidate_queue_.clear();
+    active_candidate_ranks_.clear();
     candidate_ids_to_refresh_by_lit_.clear();
     aggregate_keys_to_refresh_by_lit_.clear();
     candidate_ids_by_aggregate_.clear();
@@ -477,13 +477,13 @@ void HeuristicPropagator::add_runtime_candidate(
     watch_candidate_refresh_literals(init, candidate_id);
 }
 
-void HeuristicPropagator::erase_candidate_from_queue(size_t candidate_id) noexcept {
+void HeuristicPropagator::erase_candidate_rank(size_t candidate_id) noexcept {
     if (candidate_id >= heuristic_candidates_.size()) return;
 
     auto &candidate = heuristic_candidates_[candidate_id];
-    if (candidate.queued) {
-        active_candidate_queue_.erase(candidate.queue_entry);
-        candidate.queued = false;
+    if (candidate.ranked) {
+        active_candidate_ranks_.erase(candidate.rank_key);
+        candidate.ranked = false;
     }
 }
 
@@ -564,9 +564,9 @@ bool HeuristicPropagator::build_variable_environment(
     return true;
 }
 
-bool HeuristicPropagator::evaluate_candidate_for_queue(size_t candidate_id,
-                                                       Clingo::Assignment const &assignment,
-                                                       CandidateQueueEntry &entry) const {
+bool HeuristicPropagator::evaluate_candidate_rank(size_t candidate_id,
+                                                  Clingo::Assignment const &assignment,
+                                                  CandidateRankKey &rank_key) const {
     if (candidate_id >= heuristic_candidates_.size()) return false;
 
     auto const &candidate = heuristic_candidates_[candidate_id];
@@ -579,23 +579,23 @@ bool HeuristicPropagator::evaluate_candidate_for_queue(size_t candidate_id,
     std::unordered_map<Clingo::Symbol, int> var_env;
     if (!build_variable_environment(tmpl, candidate, assignment, var_env)) return false;
 
-    entry.priority = evaluate_arithmetic_expression(tmpl.priority_expr, candidate.self_value, var_env);
-    entry.weight = evaluate_arithmetic_expression(tmpl.weight_expr, candidate.self_value, var_env);
-    entry.target_lit = candidate.target_lit;
-    entry.candidate_id = candidate_id;
+    rank_key.priority = evaluate_arithmetic_expression(tmpl.priority_expr, candidate.self_value, var_env);
+    rank_key.weight = evaluate_arithmetic_expression(tmpl.weight_expr, candidate.self_value, var_env);
+    rank_key.target_lit = candidate.target_lit;
+    rank_key.candidate_id = candidate_id;
     return true;
 }
 
 void HeuristicPropagator::refresh_candidate(size_t candidate_id, Clingo::Assignment const &assignment) {
     if (candidate_id >= heuristic_candidates_.size()) return;
 
-    erase_candidate_from_queue(candidate_id);
+    erase_candidate_rank(candidate_id);
 
-    CandidateQueueEntry entry;
-    if (evaluate_candidate_for_queue(candidate_id, assignment, entry)) {
-        active_candidate_queue_.insert(entry);
-        heuristic_candidates_[candidate_id].queue_entry = entry;
-        heuristic_candidates_[candidate_id].queued = true;
+    CandidateRankKey rank_key;
+    if (evaluate_candidate_rank(candidate_id, assignment, rank_key)) {
+        active_candidate_ranks_.insert(rank_key);
+        heuristic_candidates_[candidate_id].rank_key = rank_key;
+        heuristic_candidates_[candidate_id].ranked = true;
     }
 }
 
@@ -605,7 +605,7 @@ void HeuristicPropagator::refresh_candidate_noexcept(size_t candidate_id,
         refresh_candidate(candidate_id, assignment);
     }
     catch (...) {
-        erase_candidate_from_queue(candidate_id);
+        erase_candidate_rank(candidate_id);
     }
 }
 
@@ -868,38 +868,38 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
     static_cast<void>(thread_id);
 
     try {
-        while (!active_candidate_queue_.empty()) {
-            CandidateQueueEntry const entry = *active_candidate_queue_.begin();
-            size_t const candidate_id = entry.candidate_id;
+        while (!active_candidate_ranks_.empty()) {
+            CandidateRankKey const rank_key = *active_candidate_ranks_.begin();
+            size_t const candidate_id = rank_key.candidate_id;
 
             if (candidate_id >= heuristic_candidates_.size() ||
-                !heuristic_candidates_[candidate_id].queued ||
-                !(heuristic_candidates_[candidate_id].queue_entry == entry)) {
-                active_candidate_queue_.erase(active_candidate_queue_.begin());
+                !heuristic_candidates_[candidate_id].ranked ||
+                !(heuristic_candidates_[candidate_id].rank_key == rank_key)) {
+                active_candidate_ranks_.erase(active_candidate_ranks_.begin());
                 continue;
             }
 
-            CandidateQueueEntry refreshed;
-            if (!evaluate_candidate_for_queue(candidate_id, assignment, refreshed)) {
-                erase_candidate_from_queue(candidate_id);
+            CandidateRankKey refreshed;
+            if (!evaluate_candidate_rank(candidate_id, assignment, refreshed)) {
+                erase_candidate_rank(candidate_id);
                 continue;
             }
 
-            if (!(refreshed == entry)) {
+            if (!(refreshed == rank_key)) {
                 try {
-                    erase_candidate_from_queue(candidate_id);
-                    active_candidate_queue_.insert(refreshed);
-                    heuristic_candidates_[candidate_id].queue_entry = refreshed;
-                    heuristic_candidates_[candidate_id].queued = true;
+                    erase_candidate_rank(candidate_id);
+                    active_candidate_ranks_.insert(refreshed);
+                    heuristic_candidates_[candidate_id].rank_key = refreshed;
+                    heuristic_candidates_[candidate_id].ranked = true;
                 }
                 catch (...) {
-                    erase_candidate_from_queue(candidate_id);
+                    erase_candidate_rank(candidate_id);
                 }
                 continue;
             }
 
             auto const &tmpl = heuristic_rule_templates_[heuristic_candidates_[candidate_id].rule_idx];
-            return apply_sign(tmpl.sign, entry.target_lit, fallback);
+            return apply_sign(tmpl.sign, rank_key.target_lit, fallback);
         }
     }
     catch (...) {

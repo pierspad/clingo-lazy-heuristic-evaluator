@@ -29,13 +29,13 @@ private:
         bool has_valid_runtime_key = false;
     };
 
-    struct CandidateQueueEntry {
+    struct CandidateRankKey {
         int priority = 0;
         int weight = 0;
         Clingo::literal_t target_lit = 0;
         size_t candidate_id = 0;
 
-        bool operator==(CandidateQueueEntry const &o) const {
+        bool operator==(CandidateRankKey const &o) const {
             return priority == o.priority &&
                    weight == o.weight &&
                    target_lit == o.target_lit &&
@@ -43,8 +43,8 @@ private:
         }
     };
 
-    struct CandidateQueueEntryLess {
-        bool operator()(CandidateQueueEntry const &a, CandidateQueueEntry const &b) const {
+    struct CandidateRankGreater {
+        bool operator()(CandidateRankKey const &a, CandidateRankKey const &b) const {
             if (a.priority != b.priority) return a.priority > b.priority;
             if (a.weight != b.weight) return a.weight > b.weight;
             if (a.target_lit != b.target_lit) return a.target_lit < b.target_lit;
@@ -61,8 +61,8 @@ private:
         std::vector<Clingo::literal_t> pos_body_lits;
         std::vector<Clingo::literal_t> neg_body_lits;
         std::vector<CandidateAggregateBinding> aggregate_bindings;
-        bool queued = false;
-        CandidateQueueEntry queue_entry;
+        bool ranked = false;
+        CandidateRankKey rank_key;
     };
 
     using LitByTuple = std::unordered_map<NumericTupleKey, Clingo::literal_t, NumericTupleKeyHash>;
@@ -70,7 +70,7 @@ private:
 
     std::vector<HeuristicRuleTemplate> heuristic_rule_templates_;
     std::vector<RuntimeHeuristicCandidate> heuristic_candidates_;
-    std::set<CandidateQueueEntry, CandidateQueueEntryLess> active_candidate_queue_;
+    std::set<CandidateRankKey, CandidateRankGreater> active_candidate_ranks_;
     std::unordered_map<Clingo::literal_t, AggregateContributions> aggregate_contributions_by_lit_;
     std::unordered_map<Clingo::literal_t, std::vector<size_t>> candidate_ids_to_refresh_by_lit_;
     std::unordered_map<Clingo::literal_t, std::vector<RuntimeAggregateKey>> aggregate_keys_to_refresh_by_lit_;
@@ -121,7 +121,7 @@ private:
                                std::vector<Clingo::literal_t> pos_body_lits,
                                std::vector<Clingo::literal_t> neg_body_lits,
                                std::unordered_map<Clingo::Symbol, int> body_var_values);
-    void erase_candidate_from_queue(size_t candidate_id) noexcept;
+    void erase_candidate_rank(size_t candidate_id) noexcept;
     bool candidate_target_is_free(RuntimeHeuristicCandidate const &candidate,
                                   Clingo::Assignment const &assignment) const;
     bool positive_body_is_satisfied(RuntimeHeuristicCandidate const &candidate,
@@ -135,8 +135,8 @@ private:
                                     RuntimeHeuristicCandidate const &candidate,
                                     Clingo::Assignment const &assignment,
                                     std::unordered_map<Clingo::Symbol, int> &var_env) const;
-    bool evaluate_candidate_for_queue(size_t candidate_id, Clingo::Assignment const &assignment,
-                                      CandidateQueueEntry &entry) const;
+    bool evaluate_candidate_rank(size_t candidate_id, Clingo::Assignment const &assignment,
+                                 CandidateRankKey &rank_key) const;
     void refresh_candidate(size_t candidate_id, Clingo::Assignment const &assignment);
     void refresh_candidate_noexcept(size_t candidate_id, Clingo::Assignment const &assignment) noexcept;
     void refresh_aggregates_for_literal(Clingo::literal_t lit, Clingo::Assignment const &assignment);
