@@ -431,6 +431,17 @@ VARIANT_FILL_ALPHA = 0.15
 CAPTION_COLOR = "#5F6368"
 SEPARATOR_COLOR = "#D6D6D6"
 VERTICAL_SEPARATOR_GAP_FRACTION = 0.42
+OVERLAP_OFFSET_POINTS = 4.5
+OVERLAP_CAPTION = "Small visual offsets separate overlapping curves; values are unchanged."
+VARIANT_LINESTYLES = [
+    "-",
+    "--",
+    "-.",
+    ":",
+    (0, (5, 2)),
+    (0, (3, 1, 1, 1)),
+    (0, (1, 1)),
+]
 THOUSAND_FORMAT_METRICS = {
     "variables",
     "combined_heuristics",
@@ -458,6 +469,139 @@ def _add_axis_caption(ax, description: str, *, y: float, width: int, fontsize: i
         fontstyle="italic",
         clip_on=False,
     )
+
+
+def _finite_xy(x_values, y_values):
+
+    import math
+
+    points = []
+    for x, y in zip(x_values, y_values):
+        if math.isfinite(float(x)) and math.isfinite(float(y)):
+            points.append((float(x), float(y)))
+    return points
+
+
+def _series_signature(x_values, y_values):
+
+    return tuple((round(x, 10), round(y, 10)) for x, y in _finite_xy(x_values, y_values))
+
+
+def _display_offsets_for_series(series):
+
+    grouped = defaultdict(list)
+    for item in series:
+        signature = _series_signature(item["x"], item["y"])
+        if signature:
+            grouped[signature].append(item["key"])
+
+    offsets = {item["key"]: 0.0 for item in series}
+    for keys in grouped.values():
+        if len(keys) <= 1:
+            continue
+        center = (len(keys) - 1) / 2.0
+        for idx, key in enumerate(keys):
+            offsets[key] = (idx - center) * OVERLAP_OFFSET_POINTS
+    return offsets
+
+
+def _overlapped_series_keys(series) -> set:
+
+    grouped = defaultdict(list)
+    for item in series:
+        signature = _series_signature(item["x"], item["y"])
+        if signature:
+            grouped[signature].append(item["key"])
+
+    overlapped = set()
+    for keys in grouped.values():
+        if len(keys) > 1:
+            overlapped.update(keys)
+    return overlapped
+
+
+def _offset_data_transform(ax, y_points: float):
+
+    if not y_points:
+        return ax.transData
+
+    import matplotlib.transforms as transforms
+
+    return ax.transData + transforms.ScaledTranslation(
+        0,
+        y_points / 72.0,
+        ax.figure.dpi_scale_trans,
+    )
+
+
+def _has_visual_offsets(offsets: dict) -> bool:
+
+    return any(abs(offset) > 0 for offset in offsets.values())
+
+
+def _caption_with_overlap_note(description: str, offsets: dict) -> str:
+
+    if not _has_visual_offsets(offsets):
+        return description
+    return f"{description}\n{OVERLAP_CAPTION}"
+
+
+def _variant_linestyle(variant: str, theme: dict):
+
+    styles = theme.get("variant_linestyles", {})
+    if variant in styles:
+        return styles[variant]
+
+    ordered = theme.get("variant_order", [])
+    if variant in ordered:
+        return VARIANT_LINESTYLES[ordered.index(variant) % len(VARIANT_LINESTYLES)]
+    return "-"
+
+
+def _endpoint_label(theme: dict, variant: str) -> str:
+
+    return _variant_dir_identifier(theme, variant)
+
+
+def _annotate_overlap_endpoints(ax, series, offsets, *, label_fn):
+
+    if not _has_visual_offsets(offsets):
+        return
+
+    overlapped_keys = _overlapped_series_keys(series)
+
+    try:
+        import matplotlib.patheffects as path_effects
+    except ImportError:
+        path_effects = None
+
+    for item in series:
+        if item["key"] not in overlapped_keys:
+            continue
+        offset = offsets.get(item["key"], 0.0)
+        points = _finite_xy(item["x"], item["y"])
+        if not points:
+            continue
+
+        x, y = points[-1]
+        text = ax.annotate(
+            label_fn(item),
+            xy=(x, y),
+            xytext=(7, offset),
+            textcoords="offset points",
+            color=item.get("color"),
+            fontsize=item.get("fontsize", 7),
+            fontweight="bold",
+            va="center",
+            ha="left",
+            clip_on=False,
+            zorder=8,
+        )
+        if path_effects is not None:
+            text.set_path_effects([
+                path_effects.Stroke(linewidth=2.5, foreground="white"),
+                path_effects.Normal(),
+            ])
 
 
 def _format_compact_number(value, _pos=None):
@@ -854,6 +998,7 @@ def generate_graphs(
         ax = axes_flat[idx]
         metric = config["metric"]
         has_data = False
+        series = []
 
         for variant in variants:
             if metric not in stats[variant]:
@@ -863,19 +1008,44 @@ def generate_graphs(
             if not data["n"]:
                 continue
 
+            series.append({
+                "key": variant,
+                "variant": variant,
+                "x": np.array(data["n"]),
+                "y": np.array(data["mean"]),
+                "gc": np.array(data["gc"]),
+                "color": colors.get(variant, None),
+                "label": labels.get(variant, variant),
+                "marker": markers.get(variant, "o"),
+                "linestyle": _variant_linestyle(variant, theme),
+            })
+
+        offsets = _display_offsets_for_series(series)
+
+        for item in series:
             has_data = True
-            n = np.array(data["n"])
-            mean = np.array(data["mean"])
-            gc = np.array(data["gc"])
+            n = item["x"]
+            mean = item["y"]
+            gc = item["gc"]
+            color = item["color"]
+            transform = _offset_data_transform(ax, offsets.get(item["key"], 0.0))
 
-            color = colors.get(variant, None)
-            label = labels.get(variant, variant)
-            marker = markers.get(variant, "o")
-
-            ax.plot(n, mean, marker=marker, label=label, color=color,
-                    linewidth=1.8, markersize=5, zorder=3)
+            ax.plot(n, mean, marker=item["marker"], label=item["label"], color=color,
+                    linestyle=item["linestyle"], linewidth=1.8, markersize=5,
+                    markeredgecolor="white", markeredgewidth=0.7,
+                    transform=transform, zorder=3)
             ax.fill_between(n, mean - gc, mean + gc,
-                            alpha=VARIANT_FILL_ALPHA, color=color, zorder=2)
+                            alpha=VARIANT_FILL_ALPHA, color=color,
+                            transform=transform, zorder=2)
+
+        _annotate_overlap_endpoints(
+            ax,
+            series,
+            offsets,
+            label_fn=lambda item: _endpoint_label(theme, item["variant"]),
+        )
+        if _has_visual_offsets(offsets):
+            ax.margins(x=0.05)
 
         ax.set_title(_format_title(metric, config["title"]))
         ax.set_xlabel(xlabel)
@@ -885,7 +1055,13 @@ def generate_graphs(
 
         _apply_y_axis_format(ax, metric)
 
-        _add_axis_caption(ax, config["description"], y=-0.27, width=64, fontsize=7)
+        _add_axis_caption(
+            ax,
+            _caption_with_overlap_note(config["description"], offsets),
+            y=-0.27,
+            width=64,
+            fontsize=7,
+        )
 
         if not has_data:
             ax.text(0.5, 0.5, "No data", transform=ax.transAxes,
@@ -976,6 +1152,7 @@ def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, description
     fig, ax = plt.subplots(figsize=(8, 5))
     variants = _ordered_variants(stats, theme)
     has_data = False
+    series = []
 
     for variant in variants:
         if metric not in stats[variant]:
@@ -984,19 +1161,44 @@ def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, description
         if not data["n"]:
             continue
 
+        series.append({
+            "key": variant,
+            "variant": variant,
+            "x": np.array(data["n"]),
+            "y": np.array(data["mean"]),
+            "gc": np.array(data["gc"]),
+            "color": colors.get(variant, None),
+            "label": labels.get(variant, variant),
+            "marker": markers_map.get(variant, "o"),
+            "linestyle": _variant_linestyle(variant, theme),
+        })
+
+    offsets = _display_offsets_for_series(series)
+
+    for item in series:
         has_data = True
-        n = np.array(data["n"])
-        mean = np.array(data["mean"])
-        gc = np.array(data["gc"])
+        n = item["x"]
+        mean = item["y"]
+        gc = item["gc"]
+        color = item["color"]
+        transform = _offset_data_transform(ax, offsets.get(item["key"], 0.0))
 
-        color = colors.get(variant, None)
-        label = labels.get(variant, variant)
-        marker = markers_map.get(variant, "o")
-
-        ax.plot(n, mean, marker=marker, label=label, color=color,
-                linewidth=2, markersize=6, zorder=3)
+        ax.plot(n, mean, marker=item["marker"], label=item["label"], color=color,
+                linestyle=item["linestyle"], linewidth=2, markersize=6,
+                markeredgecolor="white", markeredgewidth=0.8,
+                transform=transform, zorder=3)
         ax.fill_between(n, mean - gc, mean + gc,
-                        alpha=VARIANT_FILL_ALPHA, color=color, zorder=2)
+                        alpha=VARIANT_FILL_ALPHA, color=color,
+                        transform=transform, zorder=2)
+
+    _annotate_overlap_endpoints(
+        ax,
+        series,
+        offsets,
+        label_fn=lambda item: _endpoint_label(theme, item["variant"]),
+    )
+    if _has_visual_offsets(offsets):
+        ax.margins(x=0.05)
 
     ax.set_title(title, fontsize=13, fontweight="bold")
     ax.set_xlabel(xlabel, fontsize=11)
@@ -1009,7 +1211,13 @@ def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, description
     ax.grid(True, alpha=0.3, linestyle="--")
     _apply_y_axis_format(ax, metric)
 
-    _add_axis_caption(ax, description, y=-0.20, width=88, fontsize=8)
+    _add_axis_caption(
+        ax,
+        _caption_with_overlap_note(description, offsets),
+        y=-0.20,
+        width=88,
+        fontsize=8,
+    )
 
     plt.tight_layout(rect=[0, 0.05, 1, 1])
     out_path = os.path.join(graphs_dir, filename)
@@ -1041,6 +1249,7 @@ def _generate_relative_vs_baseline_chart(stats, graphs_dir, baseline_variant, th
     fig, axes = plt.subplots(2, 1, figsize=(9, 8), sharex=True)
     ax_speedup, ax_reduction = axes
     has_positive_speedup = False
+    speedup_series = []
 
 
     for variant in variants:
@@ -1058,11 +1267,33 @@ def _generate_relative_vs_baseline_chart(stats, graphs_dir, baseline_variant, th
                 if s > 0:
                     has_positive_speedup = True
 
-        color = colors.get(variant)
-        marker = markers_map.get(variant, "o")
-        label = labels.get(variant, variant)
-        ax_speedup.plot(n_vals, speedup, marker=marker, linewidth=2,
-                        color=color, label=label)
+        speedup_series.append({
+            "key": ("speedup", variant),
+            "variant": variant,
+            "x": n_vals,
+            "y": speedup,
+            "color": colors.get(variant),
+            "label": labels.get(variant, variant),
+            "marker": markers_map.get(variant, "o"),
+            "linestyle": _variant_linestyle(variant, theme),
+        })
+
+    speedup_offsets = _display_offsets_for_series(speedup_series)
+    for item in speedup_series:
+        transform = _offset_data_transform(ax_speedup, speedup_offsets.get(item["key"], 0.0))
+        ax_speedup.plot(item["x"], item["y"], marker=item["marker"], linewidth=2,
+                        color=item["color"], linestyle=item["linestyle"],
+                        markeredgecolor="white", markeredgewidth=0.8,
+                        transform=transform, label=item["label"])
+
+    _annotate_overlap_endpoints(
+        ax_speedup,
+        speedup_series,
+        speedup_offsets,
+        label_fn=lambda item: _endpoint_label(theme, item["variant"]),
+    )
+    if _has_visual_offsets(speedup_offsets):
+        ax_speedup.margins(x=0.05)
 
     ax_speedup.axhline(1.0, color="#555", linewidth=1, linestyle="--")
     ax_speedup.set_title(f"Total Time Speedup vs {labels.get(baseline_variant, baseline_variant)}")
@@ -1074,6 +1305,7 @@ def _generate_relative_vs_baseline_chart(stats, graphs_dir, baseline_variant, th
     ax_speedup.grid(True, alpha=0.3, linestyle="--")
     ax_speedup.legend(fontsize=9)
 
+    reduction_series = []
 
     for variant in variants:
         color = colors.get(variant)
@@ -1086,15 +1318,50 @@ def _generate_relative_vs_baseline_chart(stats, graphs_dir, baseline_variant, th
             red_size = [100.0 * (b - v) / b if b != 0 else float("nan")
                         for b, v in zip(base_size, var_size)]
             size_label = "ground lines" if size_metric == "ground_lines" else "solver rules"
-            ax_reduction.plot(n_size, red_size, marker=marker, linewidth=2,
-                              color=color, linestyle="-", label=f"{pretty} - {size_label}")
+            reduction_series.append({
+                "key": ("size", variant),
+                "variant": variant,
+                "kind": "size",
+                "x": n_size,
+                "y": red_size,
+                "color": color,
+                "label": f"{pretty} - {size_label}",
+                "marker": marker,
+                "linestyle": "-",
+            })
 
         n_vars, base_vars, var_vars = _aligned_metric_pair(stats, baseline_variant, variant, "variables")
         if n_vars:
             red_vars = [100.0 * (b - v) / b if b != 0 else float("nan")
                         for b, v in zip(base_vars, var_vars)]
-            ax_reduction.plot(n_vars, red_vars, marker=marker, linewidth=2,
-                              color=color, linestyle=":", label=f"{pretty} - variables")
+            reduction_series.append({
+                "key": ("variables", variant),
+                "variant": variant,
+                "kind": "vars",
+                "x": n_vars,
+                "y": red_vars,
+                "color": color,
+                "label": f"{pretty} - variables",
+                "marker": marker,
+                "linestyle": ":",
+            })
+
+    reduction_offsets = _display_offsets_for_series(reduction_series)
+    for item in reduction_series:
+        transform = _offset_data_transform(ax_reduction, reduction_offsets.get(item["key"], 0.0))
+        ax_reduction.plot(item["x"], item["y"], marker=item["marker"], linewidth=2,
+                          color=item["color"], linestyle=item["linestyle"],
+                          markeredgecolor="white", markeredgewidth=0.8,
+                          transform=transform, label=item["label"])
+
+    _annotate_overlap_endpoints(
+        ax_reduction,
+        reduction_series,
+        reduction_offsets,
+        label_fn=lambda item: f"{_endpoint_label(theme, item['variant'])} {item['kind']}",
+    )
+    if _has_visual_offsets(reduction_offsets):
+        ax_reduction.margins(x=0.05)
 
     ax_reduction.axhline(0.0, color="#555", linewidth=1, linestyle="--")
     ax_reduction.set_title("Ground Program Size Reduction vs Baseline")
@@ -1140,6 +1407,7 @@ def _generate_heuristics_vs_facts_chart(stats, graphs_dir, theme, filename, xlab
 
     fig, ax = plt.subplots(figsize=(9, 5.4))
     has_data = False
+    series = []
 
     for variant in _ordered_variants(stats, theme):
         facts = _metric_mean_map(stats, variant, "ground_facts")
@@ -1164,12 +1432,47 @@ def _generate_heuristics_vs_facts_chart(stats, graphs_dir, theme, filename, xlab
 
         if any(v == v and v > 0 for v in native_ratio):
             has_data = True
-            ax.plot(common_n, native_ratio, marker=marker, linewidth=2,
-                    color=color, linestyle="-", label=f"{pretty} - #heuristic/other facts")
+            series.append({
+                "key": ("native", variant),
+                "variant": variant,
+                "kind": "#h",
+                "x": common_n,
+                "y": native_ratio,
+                "color": color,
+                "label": f"{pretty} - #heuristic/other facts",
+                "marker": marker,
+                "linestyle": "-",
+            })
         if any(v == v and v > 0 for v in lazy_ratio):
             has_data = True
-            ax.plot(common_n, lazy_ratio, marker=marker, linewidth=2,
-                    color=color, linestyle=":", label=f"{pretty} - __heuristic facts/other facts")
+            series.append({
+                "key": ("lazy", variant),
+                "variant": variant,
+                "kind": "lazy",
+                "x": common_n,
+                "y": lazy_ratio,
+                "color": color,
+                "label": f"{pretty} - __heuristic facts/other facts",
+                "marker": marker,
+                "linestyle": ":",
+            })
+
+    offsets = _display_offsets_for_series(series)
+    for item in series:
+        transform = _offset_data_transform(ax, offsets.get(item["key"], 0.0))
+        ax.plot(item["x"], item["y"], marker=item["marker"], linewidth=2,
+                color=item["color"], linestyle=item["linestyle"],
+                markeredgecolor="white", markeredgewidth=0.8,
+                transform=transform, label=item["label"])
+
+    _annotate_overlap_endpoints(
+        ax,
+        series,
+        offsets,
+        label_fn=lambda item: f"{_endpoint_label(theme, item['variant'])} {item['kind']}",
+    )
+    if _has_visual_offsets(offsets):
+        ax.margins(x=0.05)
 
     ax.set_title("Heuristic Grounding Weight vs Other Facts", fontsize=13, fontweight="bold")
     ax.set_xlabel(xlabel, fontsize=11)
@@ -1182,7 +1485,12 @@ def _generate_heuristics_vs_facts_chart(stats, graphs_dir, theme, filename, xlab
         ax.text(0.5, 0.5, "No heuristic/fact data", transform=ax.transAxes,
                 ha="center", va="center", fontsize=13, color="#AAA")
 
-    plt.tight_layout()
+    if _has_visual_offsets(offsets):
+        fig.text(0.5, 0.01, OVERLAP_CAPTION, ha="center", va="bottom",
+                 fontsize=8, color=CAPTION_COLOR, fontstyle="italic")
+        plt.tight_layout(rect=[0, 0.04, 1, 1])
+    else:
+        plt.tight_layout()
     out_path = os.path.join(graphs_dir, filename)
     plt.savefig(out_path, dpi=200, bbox_inches="tight")
     plt.close()
@@ -1207,6 +1515,7 @@ def _generate_heuristic_reduction_chart(stats, graphs_dir, baseline_variant, the
 
     fig, ax = plt.subplots(figsize=(8.5, 5))
     has_data = False
+    series = []
 
     for variant in [v for v in _ordered_variants(stats, theme) if v != baseline_variant]:
         current = _effective_heuristic_map(stats, variant)
@@ -1223,11 +1532,38 @@ def _generate_heuristic_reduction_chart(stats, graphs_dir, baseline_variant, the
             continue
 
         has_data = True
-        ax.plot(common_n, reduction,
-                marker=markers_map.get(variant, "o"),
+        series.append({
+            "key": variant,
+            "variant": variant,
+            "x": common_n,
+            "y": reduction,
+            "color": colors.get(variant),
+            "label": labels.get(variant, variant),
+            "marker": markers_map.get(variant, "o"),
+            "linestyle": _variant_linestyle(variant, theme),
+        })
+
+    offsets = _display_offsets_for_series(series)
+    for item in series:
+        transform = _offset_data_transform(ax, offsets.get(item["key"], 0.0))
+        ax.plot(item["x"], item["y"],
+                marker=item["marker"],
                 linewidth=2,
-                color=colors.get(variant),
-                label=labels.get(variant, variant))
+                color=item["color"],
+                linestyle=item["linestyle"],
+                markeredgecolor="white",
+                markeredgewidth=0.8,
+                transform=transform,
+                label=item["label"])
+
+    _annotate_overlap_endpoints(
+        ax,
+        series,
+        offsets,
+        label_fn=lambda item: _endpoint_label(theme, item["variant"]),
+    )
+    if _has_visual_offsets(offsets):
+        ax.margins(x=0.05)
 
     ax.axhline(0.0, color="#555", linewidth=1, linestyle="--")
     ax.set_title(f"Heuristic Grounding Reduction vs {labels.get(baseline_variant, baseline_variant)}",
@@ -1241,7 +1577,12 @@ def _generate_heuristic_reduction_chart(stats, graphs_dir, baseline_variant, the
         ax.text(0.5, 0.5, "No comparable heuristic counts", transform=ax.transAxes,
                 ha="center", va="center", fontsize=13, color="#AAA")
 
-    plt.tight_layout()
+    if _has_visual_offsets(offsets):
+        fig.text(0.5, 0.01, OVERLAP_CAPTION, ha="center", va="bottom",
+                 fontsize=8, color=CAPTION_COLOR, fontstyle="italic")
+        plt.tight_layout(rect=[0, 0.04, 1, 1])
+    else:
+        plt.tight_layout()
     out_path = os.path.join(graphs_dir, filename)
     plt.savefig(out_path, dpi=200, bbox_inches="tight")
     plt.close()
