@@ -171,13 +171,9 @@ test_folder/results/graphs/bsp/no_ga/
 Per ora la suite di default e' quella esplorativa da 60 secondi con una sola ripetizione:
 
 ```bash
-TIMEOUT_SECONDS=60
-REPEATS=1
-N_START=10
-N_END=50
-N_STEP=10
-BSP_VARIANTS="gc gc_aux ga la lc la_aux"
-STOP_VARIANT_ON_MEMORY=1
+TIMEOUT_SECONDS=60 REPEATS=1 N_START=10 N_END=50 N_STEP=10 \
+BSP_VARIANTS="gc gc_aux ga la lc la_aux" \
+bash test_folder/benchmarks/benchmark_bsp.sh
 ```
 
 Quindi dalla root del repository basta eseguire:
