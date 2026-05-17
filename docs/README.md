@@ -191,13 +191,14 @@ repeat:   1
 timeout:  60 secondi per singola run
 ```
 
-`STOP_VARIANT_ON_MEMORY=0` e' il default: il benchmark prova tutti i valori di
-`n` richiesti anche se una variante fallisce o raggiunge il limite memoria, in
-modo che il CSV registri una riga per ogni combinazione variante/N. Per fermare
-una variante dopo il primo limite memoria:
+`STOP_VARIANT_ON_MEMORY=1` e' attivo di default. Se una variante raggiunge il
+limite di memoria a un certo valore di `n`, lo script la ferma per i valori
+successivi e continua invece con le altre varianti. I timeout non fermano la
+variante: vengono registrati come `status=timeout` e il benchmark passa al
+valore di `n` successivo. Per disattivare lo stop su memoria:
 
 ```bash
-STOP_VARIANT_ON_MEMORY=1 \
+STOP_VARIANT_ON_MEMORY=0 \
 bash test_folder/benchmarks/benchmark_bsp.sh
 ```
 

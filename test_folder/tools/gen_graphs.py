@@ -1336,6 +1336,9 @@ def _generate_relative_vs_baseline_chart(stats, graphs_dir, baseline_variant, th
         ax_speedup.set_ylabel("Speedup (x)")
     ax_speedup.grid(True, alpha=0.3, linestyle="--")
     ax_speedup.legend(fontsize=9)
+    total_domain = _all_metric_ns(stats, ["total_s"])
+    if total_domain:
+        ax_speedup.set_xlim(min(total_domain), max(total_domain))
 
     reduction_series = []
 
@@ -1401,6 +1404,9 @@ def _generate_relative_vs_baseline_chart(stats, graphs_dir, baseline_variant, th
     ax_reduction.set_ylabel("Reduction (%)")
     ax_reduction.grid(True, alpha=0.3, linestyle="--")
     ax_reduction.legend(fontsize=8, ncol=2)
+    reduction_domain = _all_metric_ns(stats, ["ground_lines", "rules", "variables"])
+    if reduction_domain:
+        ax_reduction.set_xlim(min(reduction_domain), max(reduction_domain))
 
     plt.tight_layout()
     out_path = os.path.join(graphs_dir, filename)
@@ -1415,6 +1421,16 @@ def _metric_mean_map(stats, variant, metric):
         return {}
     data = stats[variant][metric]
     return dict(zip(data["n"], data["mean"]))
+
+
+def _all_metric_ns(stats, metrics):
+
+    ns = set()
+    for variant_data in stats.values():
+        for metric in metrics:
+            if metric in variant_data:
+                ns.update(variant_data[metric]["n"])
+    return sorted(ns)
 
 
 def _effective_heuristic_map(stats, variant):
@@ -1603,6 +1619,9 @@ def _generate_heuristic_reduction_chart(stats, graphs_dir, baseline_variant, the
     ax.set_xlabel(xlabel, fontsize=11)
     ax.set_ylabel("Reduction (%)")
     ax.grid(True, alpha=0.3, linestyle="--")
+    heuristic_domain = _all_metric_ns(stats, ["ground_heuristics", "ground_lazy_heuristic_facts"])
+    if heuristic_domain:
+        ax.set_xlim(min(heuristic_domain), max(heuristic_domain))
     if has_data:
         ax.legend(fontsize=9)
     else:

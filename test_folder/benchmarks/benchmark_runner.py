@@ -178,7 +178,19 @@ def _contains_memory_error(*texts: str) -> bool:
     return any(marker in joined for marker in memory_markers)
 
 
+def _contains_clingo_timeout(*texts: str) -> bool:
+    joined = "\n".join(text for text in texts if text).lower()
+    timeout_markers = (
+        "interrupted by signal",
+        "time limit",
+        "timelimit",
+    )
+    return any(marker in joined for marker in timeout_markers)
+
+
 def classify_process_failure(proc: subprocess.CompletedProcess[str]) -> tuple[str, str]:
+    if _contains_clingo_timeout(proc.stdout, proc.stderr):
+        return "timeout", "clingo_time_limit"
     if _contains_memory_error(proc.stdout, proc.stderr):
         return "memory", "memory_limit"
     if proc.returncode < 0 and -proc.returncode in (signal.SIGKILL, signal.SIGSEGV):
@@ -290,7 +302,12 @@ def run_benchmark(args) -> int:
                 exit_code = EXIT_TIMEOUT
             else:
                 status, failure_reason = classify_process_failure(proc)
-                exit_code = EXIT_MEMORY if status == "memory" else EXIT_ERROR
+                if status == "memory":
+                    exit_code = EXIT_MEMORY
+                elif status == "timeout":
+                    exit_code = EXIT_TIMEOUT
+                else:
+                    exit_code = EXIT_ERROR
             print(
                 f"    warning: clingo exited with status {proc.returncode}; solver metrics marked as NA",
                 file=sys.stderr,
