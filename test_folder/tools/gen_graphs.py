@@ -192,7 +192,7 @@ PLOT_CONFIGS = [
     {
         "metric": "memory_mb",
         "title": "RSS Memory",
-        "ylabel": "Memory (MB)",
+        "ylabel": "Memory (GB)",
         "description": "Peak resident memory usage",
         "filename": "memory_comparison.png",
     },
@@ -257,12 +257,21 @@ BSP_THEME = {
     },
     "variant_markers": {
         "gc":  "o",
-        "gc_aux": "x",
-        "ga": "v",
-        "la":   "s",
-        "lc": "D",
-        "la_aux": "P",
-        "la_co": "^",
+        "gc_aux": "s",
+        "ga": "^",
+        "la":   "o",
+        "lc": "s",
+        "la_aux": "^",
+        "la_co": "D",
+    },
+    "variant_linestyles": {
+        "gc": "--",
+        "gc_aux": "--",
+        "ga": "--",
+        "la": "-",
+        "lc": "-",
+        "la_aux": "-",
+        "la_co": "-.",
     },
     "variant_order": ["gc", "gc_aux", "ga", "la", "lc", "la_aux", "la_co"],
     "xlabel": "Problem size (N)",
@@ -348,6 +357,7 @@ def load_csv(csv_path: str):
             variant = row["variant"].strip()
             n = int(row["n"])
             row_values = {}
+            raw[variant][n]["attempted_runs"].append(1.0)
 
             for metric in METRIC_FIELDS:
                 val_str = row.get(metric, "").strip()
@@ -432,7 +442,18 @@ CAPTION_COLOR = "#5F6368"
 SEPARATOR_COLOR = "#D6D6D6"
 VERTICAL_SEPARATOR_GAP_FRACTION = 0.42
 OVERLAP_OFFSET_POINTS = 4.5
-OVERLAP_CAPTION = "Small visual offsets separate overlapping curves; values are unchanged."
+OVERLAP_CAPTION = (
+    "For readability, small vertical offsets are applied to overlapping curves "
+    "in count-based plots only; the offsets do not represent differences in "
+    "the measured values."
+)
+OFFSET_METRICS = {
+    "ground_lazy_heuristic_facts",
+    "ground_heuristics",
+    "combined_heuristics",
+    "ground_facts",
+    "variables",
+}
 VARIANT_LINESTYLES = [
     "-",
     "--",
@@ -487,7 +508,10 @@ def _series_signature(x_values, y_values):
     return tuple((round(x, 10), round(y, 10)) for x, y in _finite_xy(x_values, y_values))
 
 
-def _display_offsets_for_series(series):
+def _display_offsets_for_series(series, *, enabled: bool = True):
+
+    if not enabled:
+        return {item["key"]: 0.0 for item in series}
 
     grouped = defaultdict(list)
     for item in series:
@@ -503,6 +527,11 @@ def _display_offsets_for_series(series):
         for idx, key in enumerate(keys):
             offsets[key] = (idx - center) * OVERLAP_OFFSET_POINTS
     return offsets
+
+
+def _display_offsets_for_metric(metric: str, series):
+
+    return _display_offsets_for_series(series, enabled=metric in OFFSET_METRICS)
 
 
 def _overlapped_series_keys(series) -> set:
@@ -652,17 +681,19 @@ def _format_thousands(value, _pos=None):
     return f"{value:g}"
 
 
-def _format_memory_mb(value, _pos=None):
+def _format_memory_gb_from_mb(value, _pos=None):
 
-    abs_value = abs(value)
-    if abs_value >= 1_000:
-        scaled = value / 1_000
-        return f"{scaled:.1f}".rstrip("0").rstrip(".") + "k"
-    if abs_value >= 1:
-        return f"{value:.0f}"
+    gb_value = value / 1024
+    abs_value = abs(gb_value)
+    if abs_value >= 100 or gb_value.is_integer():
+        return f"{gb_value:.0f}"
+    if abs_value >= 10:
+        return f"{gb_value:.1f}".rstrip("0").rstrip(".")
+    if abs_value >= 0.01:
+        return f"{gb_value:.2f}".rstrip("0").rstrip(".")
     if value == 0:
         return "0"
-    return f"{value:g}"
+    return f"{gb_value:.3g}"
 
 
 def _apply_y_axis_format(ax, metric: str):
@@ -671,7 +702,7 @@ def _apply_y_axis_format(ax, metric: str):
 
     if metric == "memory_mb":
         ax.yaxis.set_major_locator(MaxNLocator(nbins=6))
-        ax.yaxis.set_major_formatter(FuncFormatter(_format_memory_mb))
+        ax.yaxis.set_major_formatter(FuncFormatter(_format_memory_gb_from_mb))
     elif metric in THOUSAND_FORMAT_METRICS:
         ax.yaxis.set_major_locator(MaxNLocator(nbins=6, integer=True))
         ax.yaxis.set_major_formatter(FuncFormatter(_format_thousands))
@@ -1020,7 +1051,7 @@ def generate_graphs(
                 "linestyle": _variant_linestyle(variant, theme),
             })
 
-        offsets = _display_offsets_for_series(series)
+        offsets = _display_offsets_for_metric(metric, series)
 
         for item in series:
             has_data = True
@@ -1055,13 +1086,14 @@ def generate_graphs(
 
         _apply_y_axis_format(ax, metric)
 
-        _add_axis_caption(
-            ax,
-            _caption_with_overlap_note(config["description"], offsets),
-            y=-0.27,
-            width=64,
-            fontsize=7,
-        )
+        if _has_visual_offsets(offsets):
+            _add_axis_caption(
+                ax,
+                OVERLAP_CAPTION,
+                y=-0.23,
+                width=66,
+                fontsize=7,
+            )
 
         if not has_data:
             ax.text(0.5, 0.5, "No data", transform=ax.transAxes,
@@ -1173,7 +1205,7 @@ def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, description
             "linestyle": _variant_linestyle(variant, theme),
         })
 
-    offsets = _display_offsets_for_series(series)
+    offsets = _display_offsets_for_metric(metric, series)
 
     for item in series:
         has_data = True
@@ -1278,7 +1310,7 @@ def _generate_relative_vs_baseline_chart(stats, graphs_dir, baseline_variant, th
             "linestyle": _variant_linestyle(variant, theme),
         })
 
-    speedup_offsets = _display_offsets_for_series(speedup_series)
+    speedup_offsets = _display_offsets_for_series(speedup_series, enabled=False)
     for item in speedup_series:
         transform = _offset_data_transform(ax_speedup, speedup_offsets.get(item["key"], 0.0))
         ax_speedup.plot(item["x"], item["y"], marker=item["marker"], linewidth=2,
@@ -1346,7 +1378,7 @@ def _generate_relative_vs_baseline_chart(stats, graphs_dir, baseline_variant, th
                 "linestyle": ":",
             })
 
-    reduction_offsets = _display_offsets_for_series(reduction_series)
+    reduction_offsets = _display_offsets_for_series(reduction_series, enabled=False)
     for item in reduction_series:
         transform = _offset_data_transform(ax_reduction, reduction_offsets.get(item["key"], 0.0))
         ax_reduction.plot(item["x"], item["y"], marker=item["marker"], linewidth=2,
@@ -1457,7 +1489,7 @@ def _generate_heuristics_vs_facts_chart(stats, graphs_dir, theme, filename, xlab
                 "linestyle": ":",
             })
 
-    offsets = _display_offsets_for_series(series)
+    offsets = _display_offsets_for_series(series, enabled=False)
     for item in series:
         transform = _offset_data_transform(ax, offsets.get(item["key"], 0.0))
         ax.plot(item["x"], item["y"], marker=item["marker"], linewidth=2,
@@ -1543,7 +1575,7 @@ def _generate_heuristic_reduction_chart(stats, graphs_dir, baseline_variant, the
             "linestyle": _variant_linestyle(variant, theme),
         })
 
-    offsets = _display_offsets_for_series(series)
+    offsets = _display_offsets_for_series(series, enabled=False)
     for item in series:
         transform = _offset_data_transform(ax, offsets.get(item["key"], 0.0))
         ax.plot(item["x"], item["y"],
@@ -1657,7 +1689,7 @@ def print_summary_table(stats, theme):
 
     variants = _ordered_variants(stats, theme)
     labels = theme["variant_labels"]
-    table_width = 8 + len(variants) * 78
+    table_width = 8 + len(variants) * 87
 
     print(f"\n{'='*table_width}")
     print(f"{'N':>5}  ", end="")
@@ -1667,7 +1699,7 @@ def print_summary_table(stats, theme):
     print()
     print(f"{'':>5}  ", end="")
     for _ in variants:
-        print(f"  {'Grnd(s)':>8} {'Solv(s)':>8} {'Tot(s)':>8} {'Choices':>8} {'Conf.':>8} {'Rst.':>6} {'Lines':>7} {'Rules':>7} {'Vars':>7} {'Heur':>7} {'LazyH':>7} {'Facts':>7}", end="")
+        print(f"  {'Grnd(s)':>8} {'Solv(s)':>8} {'Tot(s)':>8} {'Choices':>8} {'Conf.':>8} {'Rst.':>6} {'MemGB':>7} {'Lines':>7} {'Rules':>7} {'Vars':>7} {'Heur':>7} {'LazyH':>7} {'Facts':>7}", end="")
     print()
     print("-" * table_width)
 
@@ -1685,6 +1717,7 @@ def print_summary_table(stats, theme):
             choices = _get_mean_at_n(stats[v], "choices", n)
             conflicts = _get_mean_at_n(stats[v], "conflicts", n)
             restarts = _get_mean_at_n(stats[v], "restarts", n)
+            memory_mb = _get_mean_at_n(stats[v], "memory_mb", n)
             ground_lines = _get_mean_at_n(stats[v], "ground_lines", n)
             rules = _get_mean_at_n(stats[v], "rules", n)
             variables = _get_mean_at_n(stats[v], "variables", n)
@@ -1698,6 +1731,7 @@ def print_summary_table(stats, theme):
             c_str = f"{choices:.0f}" if choices is not None else "N/A"
             f_str = f"{conflicts:.0f}" if conflicts is not None else "N/A"
             rs_str = f"{restarts:.0f}" if restarts is not None else "N/A"
+            m_str = f"{memory_mb / 1024:.2f}" if memory_mb is not None else "N/A"
             gl_str = f"{ground_lines:.0f}" if ground_lines is not None else "N/A"
             r_str = f"{rules:.0f}" if rules is not None else "N/A"
             v_str = f"{variables:.0f}" if variables is not None else "N/A"
@@ -1705,7 +1739,7 @@ def print_summary_table(stats, theme):
             lh_str = f"{ground_lazy:.0f}" if ground_lazy is not None else "N/A"
             gf_str = f"{ground_facts:.0f}" if ground_facts is not None else "N/A"
 
-            row += f"  {g_str:>8} {s_str:>8} {t_str:>8} {c_str:>8} {f_str:>8} {rs_str:>6} {gl_str:>7} {r_str:>7} {v_str:>7} {h_str:>7} {lh_str:>7} {gf_str:>7}"
+            row += f"  {g_str:>8} {s_str:>8} {t_str:>8} {c_str:>8} {f_str:>8} {rs_str:>6} {m_str:>7} {gl_str:>7} {r_str:>7} {v_str:>7} {h_str:>7} {lh_str:>7} {gf_str:>7}"
         print(row)
 
     print(f"{'='*table_width}\n")

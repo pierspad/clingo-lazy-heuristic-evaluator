@@ -34,7 +34,7 @@ REPEATS="${REPEATS:-1}"
 N_START="${N_START:-10}"
 N_END="${N_END:-50}"
 N_STEP="${N_STEP:-10}"
-STOP_VARIANT_ON_MEMORY="${STOP_VARIANT_ON_MEMORY:-1}"
+STOP_VARIANT_ON_MEMORY="${STOP_VARIANT_ON_MEMORY:-0}"
 
 ENC_DIR="${TEST_ROOT}/encodings/BSP"
 INSTANCE_RANGE="${TEST_ROOT}/instances/BSP_instances/BSP_range.lp"
@@ -93,7 +93,8 @@ mkdir -p "${RESULTS_DIR}"
 rm -f "${CSV_FILE}"
 
 echo "Varianti BSP attive: ${ENABLED_VARIANTS[*]}"
-echo "Parametri: timeout=${TIMEOUT_SECONDS}s repeats=${REPEATS} n=${N_START}..${N_END} step=${N_STEP} mem=${MEM_LIMIT_BYTES} bytes"
+MEM_LIMIT_GB="$(python3 -c 'import sys; print(f"{int(sys.argv[1]) / (1024**3):.2f}")' "${MEM_LIMIT_BYTES}")"
+echo "Parametri: timeout=${TIMEOUT_SECONDS}s repeats=${REPEATS} n=${N_START}..${N_END} step=${N_STEP} mem=${MEM_LIMIT_GB} GB"
 if [ "${STOP_VARIANT_ON_MEMORY}" = "1" ]; then
     echo "Stop per variante su limite memoria: attivo"
 else

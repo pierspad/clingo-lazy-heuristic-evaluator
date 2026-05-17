@@ -142,7 +142,7 @@ def parse_solver_metrics(data: dict[str, Any], memory_mb: str) -> dict[str, str]
     }
 
 
-def failure_metrics() -> dict[str, str]:
+def failure_metrics(memory_mb: str = "NA") -> dict[str, str]:
     return {
         "solving_s": "NA",
         "total_s": "NA",
@@ -152,7 +152,7 @@ def failure_metrics() -> dict[str, str]:
         "restarts": "NA",
         "rules": "NA",
         "variables": "NA",
-        "memory_mb": "NA",
+        "memory_mb": memory_mb,
     }
 
 
@@ -232,6 +232,12 @@ def child_memory_mb() -> str:
     return f"{usage.ru_maxrss / 1024:.4f}"
 
 
+def memory_mb_to_gb(memory_mb: str) -> str:
+    if memory_mb == "NA":
+        return "NA"
+    return f"{float(memory_mb) / 1024:.2f}"
+
+
 def append_csv(csv_path: str, row: dict[str, str]):
     path = Path(csv_path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -256,7 +262,7 @@ def run_benchmark(args) -> int:
         proc = run_command(json_cmd, args.timeout + 5, args.memory_bytes)
     except subprocess.TimeoutExpired:
         print("    warning: timeout; solver metrics marked as NA", file=sys.stderr)
-        row.update(failure_metrics())
+        row.update(failure_metrics(child_memory_mb()))
         status = "timeout"
         failure_reason = "solver_timeout"
         exit_code = EXIT_TIMEOUT
@@ -291,7 +297,7 @@ def run_benchmark(args) -> int:
             )
             if proc.stderr:
                 print(proc.stderr.strip(), file=sys.stderr)
-            row.update(failure_metrics())
+            row.update(failure_metrics(memory_mb))
 
     ground_counts, ground_status = collect_ground_counts(args, clingo)
     row.update(ground_counts)
@@ -312,13 +318,14 @@ def run_benchmark(args) -> int:
     )
     append_csv(args.csv, row)
 
+    display_row = {**row, "memory_gb": memory_mb_to_gb(row.get("memory_mb", "NA"))}
     print(
         "    status={status} reason={failure_reason} "
         "    grounding={grounding_s}s solving={solving_s}s total={total_s}s "
         "choices={choices} conflicts={conflicts} restarts={restarts} "
-        "rules={rules} vars={variables} mem={memory_mb}MB "
+        "rules={rules} vars={variables} mem={memory_gb}GB "
         "heur={ground_heuristics} lazy_facts={ground_lazy_heuristic_facts} "
-        "facts={ground_facts} ground_lines={ground_lines}".format(**row)
+        "facts={ground_facts} ground_lines={ground_lines}".format(**display_row)
     )
     return exit_code
 

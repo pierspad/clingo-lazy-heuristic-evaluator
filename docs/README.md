@@ -191,10 +191,13 @@ repeat:   1
 timeout:  60 secondi per singola run
 ```
 
-`STOP_VARIANT_ON_MEMORY=1` e' attivo di default. Se una variante raggiunge il limite di memoria a un certo valore di `n`, lo script la ferma per i valori successivi e continua invece con le altre varianti. Per disattivare questo comportamento:
+`STOP_VARIANT_ON_MEMORY=0` e' il default: il benchmark prova tutti i valori di
+`n` richiesti anche se una variante fallisce o raggiunge il limite memoria, in
+modo che il CSV registri una riga per ogni combinazione variante/N. Per fermare
+una variante dopo il primo limite memoria:
 
 ```bash
-STOP_VARIANT_ON_MEMORY=0 \
+STOP_VARIANT_ON_MEMORY=1 \
 bash test_folder/benchmarks/benchmark_bsp.sh
 ```
 
@@ -306,6 +309,7 @@ restarts                      Clingo JSON, Stats.Core.Restarts
 rules                         Clingo JSON, Stats.LP.Rules.Final
 variables                     Clingo JSON, Stats.Problem.Variables
 memory_mb                     resource.getrusage(RUSAGE_CHILDREN).ru_maxrss / 1024
+                              salvata in MB nel CSV; log e grafici la mostrano in GB
 ground_heuristics             conteggio righe "#heuristic" in clingo --text
 ground_lazy_heuristic_facts   conteggio righe "__heuristic(" in clingo --text
 ground_facts                  conteggio fatti ground in clingo --text
@@ -353,12 +357,20 @@ ground_lazy_heuristic_facts.png
 combined_heuristics.png
 ground_program_lines.png
 ground_facts.png
-memory_comparison.png
+memory_comparison.png         memoria in GB
 choices_comparison.png
 conflicts_comparison.png
 restarts_comparison.png
 variables_comparison.png
 ```
+
+Nei grafici di conteggio dove curve identiche o quasi identiche si
+sovrappongono (`ground_heuristics.png`,
+`ground_lazy_heuristic_facts.png`, `combined_heuristics.png`,
+`ground_facts.png`, `variables_comparison.png`), il generatore puo'
+applicare piccoli offset verticali solo visuali. Gli offset sono dichiarati
+nella figura e non rappresentano differenze nei valori misurati. I grafici di
+tempo, memoria e statistiche di ricerca restano senza offset.
 
 ## Prossimi Test Appuntati
 
