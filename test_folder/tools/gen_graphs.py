@@ -1,71 +1,80 @@
 """
 DESCRIZIONE E ORIGINE DEI DATI DEI GRAFICI
 ==========================================
-Questo script genera grafici e tabelle a partire da file CSV contenenti i risultati 
-dei benchmark. I dati presenti nei CSV non vengono inventati qui, ma sono estratti 
-(tramite gli script bash di test) dagli output di Clingo e da altri comandi di sistema.
+Questo script genera grafici PNG a partire dai CSV in test_folder/results/.
+Per BSP, il file letto di default e':
 
-Di seguito è spiegato dove e come vengono prese le metriche per ogni singolo grafico:
+    test_folder/results/bsp_results.csv
 
-1. Grounding Time (Tempo di Grounding)
-   - Origine: Output di Clingo, riga "Time         : ... (Solving: ...)".
-   - Come si calcola: Generalmente si ottiene sottraendo il "Solving time" al tempo 
-     totale ("Total time"). Rappresenta il tempo speso per istanziare il programma.
+Il CSV viene prodotto da:
 
-2. Solving Time (Tempo di Ricerca)
-   - Origine: Output di Clingo, riga "Time         : ... (Solving: X.XXXs ...)".
-   - Come si prende: Il numero X.XXX affianco alla voce "Solving:" corrisponde al tempo 
-     netto impiegato dal solver per la ricerca CDNL.
+    test_folder/benchmarks/benchmark_bsp.sh
+    test_folder/benchmarks/benchmark_runner.py
 
-3. Choices (Decisioni)
-   - Origine: Output di Clingo (con opzione --stats), riga "Choices      : X".
-   - Come si prende: Il numero affianco alla voce "Choices" corrisponde al numero 
-     di decisioni o scelte prese dal solver durante la ricerca.
+Il generatore grafici non riesegue Clingo e non inventa metriche: legge le
+colonne numeriche gia' presenti nel CSV, raggruppa per (variant, n), calcola
+media e deviazione standard sui seed, e disegna le curve.
 
-4. Conflicts (Conflitti)
-   - Origine: Output di Clingo (con opzione --stats), riga "Conflicts    : X".
-   - Come si prende: Il numero affianco alla voce "Conflicts" indica i conflitti 
-     incontrati, che causano il backtracking del solver.
+Origine esatta delle colonne usate nei grafici BSP
+--------------------------------------------------
 
-5. Restarts (Riavvii)
-   - Origine: Output di Clingo (con opzione --stats), riga "Restarts     : X".
-   - Come si prende: Il numero affianco alla voce "Restarts" corrisponde a quante 
-     volte la ricerca è stata riavviata per uscire da zone infruttuose.
+1. total_s
+   - Comando sorgente: benchmark_runner.py esegue Clingo con
+     `--outf=2 --stats=2`.
+   - Campo JSON letto: `Time.Total`.
 
-6. Ground Program Lines (Linee del Programma Ground)
-   - Origine: Comando `clingo --text` (o equivalente per stampare l'output).
-   - Come si prende: Corrisponde al conteggio delle righe totali dell'output testuale 
-     (ad esempio usando il comando bash `wc -l`).
+2. solving_s
+   - Comando sorgente: stesso run JSON di Clingo.
+   - Campo JSON letto: `Time.Solve`.
 
-7. Propositional Variables (Variabili Proposizionali)
-   - Origine: Output di Clingo (con opzione --stats), riga "Variables    : X".
-   - Come si prende: Il numero affianco alla voce "Variables" corrisponde alla grandezza 
-     dello spazio di ricerca interno in termini di variabili booleane.
+3. grounding_s
+   - Comando sorgente: stesso run JSON di Clingo.
+   - Calcolo in benchmark_runner.py: `Time.Total - Time.Solve`, troncato a 0
+     se serve per evitare piccoli valori negativi da arrotondamento.
 
-8. RSS Memory (Memoria RAM Utilizzata)
-   - Origine: Output del comando di sistema `/usr/bin/time -v clingo ...`.
-   - Come si prende: Il comando ha la voce "Maximum resident set size (kbytes): X". 
-     Il numero affianco corrisponde ai Kilobytes di picco usati, che vengono poi divisi 
-     per 1024 per ottenere il valore in Megabytes (MB).
+4. choices, conflicts, restarts
+   - Comando sorgente: stesso run JSON di Clingo.
+   - Campi JSON letti:
+     `Stats.Core.Choices`, `Stats.Core.Conflicts`, `Stats.Core.Restarts`.
 
-9. Heuristics Grounding (Euristiche Istanziate)
-   - Origine: Output testuale del grounder (`clingo --text`).
-   - Come si prende: Il dato nel grafico è la somma di due voci:
-     - Le euristiche "standard" (direttive come `#heuristic`), contate analizzando il testo.
-     - Le euristiche "lazy" (fatti speciali come `__heuristic(...)`), contate sempre nel testo.
+5. rules
+   - Comando sorgente: stesso run JSON di Clingo.
+   - Campo JSON letto: `Stats.LP.Rules.Final`.
 
-10. Ground Facts (Fatti Istanziati)
-    - Origine: Output testuale del grounder (`clingo --text`).
-    - Come si prende: Corrisponde al numero di fatti base (righe senza condizioni/corpo) 
-      presenti nel programma istanziato.
+6. variables
+   - Comando sorgente: stesso run JSON di Clingo.
+   - Campo JSON letto: `Stats.Problem.Variables`.
 
-Altre metriche utilizzate per i grafici di comparazione (es. riduzioni e speedup):
-- Total Time: si prende dall'output di Clingo, voce "Time         : X.XXXs".
-- Rules: si prende dall'output di Clingo, voce "Rules        : X". Indica il numero 
-  di regole interne generate per il risolutore SAT.
+7. memory_mb
+   - Comando sorgente: processo Clingo lanciato da benchmark_runner.py.
+   - Misura: `resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss / 1024`.
+     Su Linux `ru_maxrss` e' in KiB, quindi il valore salvato nel CSV e' in MB.
 
-(Le espressioni regolari e la logica precisa di estrazione di tutte queste voci si 
-trovano negli script Bash esterni che eseguono i test e generano i file CSV.)
+8. ground_heuristics
+   - Comando sorgente: benchmark_runner.py riesegue Clingo con `--text`.
+   - Conteggio: numero di righe del programma ground testuale che iniziano con
+     `#heuristic`.
+
+9. ground_lazy_heuristic_facts
+   - Comando sorgente: stesso run `clingo --text`.
+   - Conteggio: numero di righe che iniziano con `__heuristic(`.
+
+10. ground_facts
+    - Comando sorgente: stesso run `clingo --text`.
+    - Conteggio: righe che sono fatti ground, cioe' terminano con `.` e non
+      contengono `:-`; i fatti `__heuristic(...)` sono inclusi.
+
+11. ground_lines
+    - Comando sorgente: stesso run `clingo --text`.
+    - Conteggio: numero totale di righe stampate nell'output testuale ground.
+
+12. combined_heuristics
+    - Non e' una colonna del CSV: viene calcolata qui come
+      `ground_heuristics + ground_lazy_heuristic_facts`.
+
+Le colonne diagnostiche `status`, `failure_reason`, `exit_code` e
+`memory_limit_hit` sono usate dallo script di benchmark per fermare una variante
+dopo un hit di memoria; questo script le ignora nei grafici.
 """
 
 import argparse
@@ -125,6 +134,13 @@ LOWER_IS_BETTER_METRICS = {
 
 PLOT_CONFIGS = [
     {
+        "metric": "total_s",
+        "title": "Total Time",
+        "ylabel": "Time (seconds)",
+        "description": "End-to-end Clingo time from JSON field Time.Total.",
+        "filename": "total_time.png",
+    },
+    {
         "metric": "grounding_s",
         "title": "Grounding Time",
         "ylabel": "Time (seconds)",
@@ -179,6 +195,20 @@ PLOT_CONFIGS = [
         "ylabel": "Memory (MB)",
         "description": "Peak resident memory usage",
         "filename": "memory_comparison.png",
+    },
+    {
+        "metric": "ground_heuristics",
+        "title": "Ground Native Heuristics",
+        "ylabel": "#heuristic directives",
+        "description": "Rows starting with #heuristic in clingo --text output.",
+        "filename": "ground_heuristics.png",
+    },
+    {
+        "metric": "ground_lazy_heuristic_facts",
+        "title": "Ground Lazy Heuristic Facts",
+        "ylabel": "__heuristic facts",
+        "description": "Rows starting with __heuristic( in clingo --text output.",
+        "filename": "ground_lazy_heuristic_facts.png",
     },
     {
         "metric": "combined_heuristics",
@@ -1383,8 +1413,9 @@ def ensure_plot_dependencies():
         print("Matplotlib/Numpy non sono installati.")
         print("Crea un virtualenv e installa le dipendenze, ad esempio:")
         print("  python3 -m venv /tmp/clingo-graphs-venv")
-        print("  /tmp/clingo-graphs-venv/bin/python -m pip install -r test_folder/tools/requirements.txt")
-        print("  /tmp/clingo-graphs-venv/bin/python test_folder/tools/gen_graphs.py")
+        print(f"  /tmp/clingo-graphs-venv/bin/python -m pip install -r {os.path.join(TEST_ROOT, 'tools', 'requirements.txt')}")
+        print("  cd test_folder")
+        print("  PYTHON_BIN=/tmp/clingo-graphs-venv/bin/python ./generate_graphs.sh")
         sys.exit(1)
 
 

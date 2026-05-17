@@ -28,12 +28,13 @@ if [ ! -x "${RUNNER}" ]; then
     exit 1
 fi
 
-TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-600}"
+TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-60}"
 MEM_LIMIT_BYTES="${MEM_LIMIT_BYTES:-$((32 * 1024 * 1024 * 1024))}"
-REPEATS="${REPEATS:-3}"
+REPEATS="${REPEATS:-1}"
 N_START="${N_START:-10}"
-N_END="${N_END:-70}"
+N_END="${N_END:-50}"
 N_STEP="${N_STEP:-10}"
+STOP_VARIANT_ON_MEMORY="${STOP_VARIANT_ON_MEMORY:-1}"
 
 ENC_DIR="${TEST_ROOT}/encodings/BSP"
 INSTANCE_RANGE="${TEST_ROOT}/instances/BSP_instances/BSP_range.lp"
@@ -92,20 +93,36 @@ mkdir -p "${RESULTS_DIR}"
 rm -f "${CSV_FILE}"
 
 echo "Varianti BSP attive: ${ENABLED_VARIANTS[*]}"
+echo "Parametri: timeout=${TIMEOUT_SECONDS}s repeats=${REPEATS} n=${N_START}..${N_END} step=${N_STEP} mem=${MEM_LIMIT_BYTES} bytes"
+if [ "${STOP_VARIANT_ON_MEMORY}" = "1" ]; then
+    echo "Stop per variante su limite memoria: attivo"
+else
+    echo "Stop per variante su limite memoria: disattivo"
+fi
 echo "Risultati: ${CSV_FILE}"
 
-total_runs=$(( ((N_END - N_START) / N_STEP + 1) * ${#ENABLED_VARIANTS[@]} * REPEATS ))
+planned_runs=$(( ((N_END - N_START) / N_STEP + 1) * ${#ENABLED_VARIANTS[@]} * REPEATS ))
 current_run=0
+declare -A VARIANT_STOPPED_BY_MEMORY=()
+declare -A VARIANT_MEMORY_N=()
+for variant in "${ENABLED_VARIANTS[@]}"; do
+    VARIANT_STOPPED_BY_MEMORY["${variant}"]=0
+done
 
 for n in $(seq "${N_START}" "${N_STEP}" "${N_END}"); do
     echo ""
     echo "=== N=${n} ==="
 
     for variant in "${ENABLED_VARIANTS[@]}"; do
+        if [ "${STOP_VARIANT_ON_MEMORY}" = "1" ] && [ "${VARIANT_STOPPED_BY_MEMORY[${variant}]}" = "1" ]; then
+            echo "--- ${variant}: salto N=${n}; limite memoria gia' raggiunto a N=${VARIANT_MEMORY_N[${variant}]} ---"
+            continue
+        fi
+
         for seed in $(seq 1 "${REPEATS}"); do
             current_run=$((current_run + 1))
-            echo "--- ${variant} (run ${current_run}/${total_runs}) ---"
-            python3 "${RUNNER}" \
+            echo "--- ${variant} (run ${current_run}/${planned_runs}, seed ${seed}) ---"
+            if python3 "${RUNNER}" \
                 --clingo "${CLINGO_MOD}" \
                 --encoding "${VARIANT_FILES[${variant}]}" \
                 --instance "${INSTANCE_RANGE}" \
@@ -118,11 +135,29 @@ for n in $(seq "${N_START}" "${N_STEP}" "${N_END}"); do
                 --models 1 \
                 --timeout "${TIMEOUT_SECONDS}" \
                 --memory-bytes "${MEM_LIMIT_BYTES}" \
-                --domain-heuristic
+                --domain-heuristic; then
+                rc=0
+            else
+                rc=$?
+            fi
+
+            if [ "${rc}" -eq 75 ] && [ "${STOP_VARIANT_ON_MEMORY}" = "1" ]; then
+                VARIANT_STOPPED_BY_MEMORY["${variant}"]=1
+                VARIANT_MEMORY_N["${variant}"]="${n}"
+                echo "--- ${variant}: limite memoria raggiunto a N=${n}; salto i valori successivi per questa variante ---"
+                break
+            fi
         done
     done
 done
 
 echo ""
 echo "Benchmark BSP completato. ${current_run} esecuzioni totali."
+if [ "${STOP_VARIANT_ON_MEMORY}" = "1" ]; then
+    for variant in "${ENABLED_VARIANTS[@]}"; do
+        if [ "${VARIANT_STOPPED_BY_MEMORY[${variant}]}" = "1" ]; then
+            echo "Variante ${variant}: fermata dopo hit di memoria a N=${VARIANT_MEMORY_N[${variant}]}."
+        fi
+    done
+fi
 echo "Risultati salvati in: ${CSV_FILE}"

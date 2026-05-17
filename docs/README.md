@@ -134,316 +134,138 @@ Poi ricompila:
 
 ## Benchmark BSP
 
-Questa sezione serve per ricordare come eseguire i benchmark del problema BSP.
+Questa sezione documenta la suite sperimentale BSP usata per confrontare:
+
+```text
+1. semantica: Clingo vs Alpha
+2. strategia: ground-and-solve vs lazy
+3. forma dell'encoding: diretto vs ausiliario
+```
 
 Gli script principali sono:
 
 ```bash
 test_folder/benchmarks/benchmark_bsp.sh
 test_folder/benchmarks/benchmark_runner.py
+test_folder/tools/gen_graphs.py
 test_folder/generate_graphs.sh
 ```
 
-Il benchmark BSP esegue più varianti dell'encoding BSP, cambiando automaticamente il valore della costante `n`, il seed e la variante da testare.
+`benchmark_bsp.sh` itera su varianti, valori di `n` e seed. `benchmark_runner.py` esegue una singola run, estrae le statistiche da Clingo e aggiunge una riga al CSV. `gen_graphs.py` legge il CSV e genera i grafici.
 
-I risultati vengono salvati in:
+I risultati BSP vengono salvati in:
 
 ```bash
 test_folder/results/bsp_results.csv
 ```
 
----
-
-## Eseguire il benchmark BSP standard
-
-Dalla root del repository:
+I grafici BSP vengono salvati in:
 
 ```bash
-bash test_folder/benchmarks/benchmark_bsp.sh
+test_folder/results/graphs/bsp/standard/
+test_folder/results/graphs/bsp/no_ga/
 ```
 
-Di default vengono usati questi parametri:
+## Prima Suite Da Eseguire
+
+Per ora la suite di default e' quella esplorativa da 60 secondi con una sola ripetizione:
 
 ```bash
-TIMEOUT_SECONDS=600
-MEM_LIMIT_BYTES=34359738368
-REPEATS=3
+TIMEOUT_SECONDS=60
+REPEATS=1
 N_START=10
-N_END=70
+N_END=50
 N_STEP=10
 BSP_VARIANTS="gc gc_aux ga la lc la_aux"
+STOP_VARIANT_ON_MEMORY=1
 ```
 
-Quindi, di default, vengono testati:
+Quindi dalla root del repository basta eseguire:
 
 ```bash
-n = 10, 20, 30, 40, 50, 60, 70
-```
-
-Per ogni valore di `n`, lo script esegue tutte le varianti attive e ripete ogni run 3 volte, usando seed diversi.
-
----
-
-## Varianti BSP disponibili
-
-Le varianti disponibili sono:
-
-```bash
-gc
-gc_aux
-ga
-la
-lc
-la_aux
-la_co
-```
-
-Significato sintetico:
-
-```text
-gc      = encoding nativo Clingo, con semantica Clingo
-gc_aux  = encoding nativo Clingo con predicati ausiliari
-ga      = encoding nativo ground-and-solve con semantica Alpha
-la      = encoding lazy con semantica Alpha
-lc      = encoding lazy con semantica Clingo
-la_aux  = encoding lazy con predicati ausiliari
-la_co   = encoding lazy con vincolo BSP ottimizzato/lineare
-```
-
-Attenzione: `la_co` esiste, ma non è inclusa nel benchmark di default.
-
----
-
-## Scegliere quali varianti eseguire
-
-Lo script non usa un parametro `--exclude`.
-
-Per escludere una variante, bisogna specificare direttamente la lista delle varianti da eseguire tramite `BSP_VARIANTS`.
-
-Per esempio, per escludere `ga`:
-
-```bash
-BSP_VARIANTS="gc gc_aux la lc la_aux" \
-bash test_folder/benchmarks/benchmark_bsp.sh
-```
-
-Per eseguire solo le varianti lazy:
-
-```bash
-BSP_VARIANTS="la lc la_aux la_co" \
-bash test_folder/benchmarks/benchmark_bsp.sh
-```
-
-Per confrontare solo `gc` e `lc`:
-
-```bash
-BSP_VARIANTS="gc lc" \
-bash test_folder/benchmarks/benchmark_bsp.sh
-```
-
-Per includere anche `la_co`:
-
-```bash
-BSP_VARIANTS="gc gc_aux ga la lc la_aux la_co" \
-bash test_folder/benchmarks/benchmark_bsp.sh
-```
-
----
-
-## Cambiare il valore massimo di `n`
-
-Il parametro `N_END` controlla il massimo valore di `n`.
-
-Per eseguire il benchmark fino a `n=100`:
-
-```bash
-N_END=100 \
-bash test_folder/benchmarks/benchmark_bsp.sh
-```
-
-Per eseguire da `n=10` a `n=200` con passo 10:
-
-```bash
-N_START=10 \
-N_END=200 \
-N_STEP=10 \
-bash test_folder/benchmarks/benchmark_bsp.sh
-```
-
-Per fare un test rapido solo su pochi valori:
-
-```bash
-N_START=10 \
-N_END=30 \
-N_STEP=10 \
-REPEATS=1 \
-bash test_folder/benchmarks/benchmark_bsp.sh
-```
-
-Questo esegue solo:
-
-```bash
-n = 10, 20, 30
-```
-
-con una sola ripetizione per variante.
-
----
-
-## Cambiare il numero di ripetizioni
-
-Il parametro `REPEATS` controlla quante volte viene ripetuta ogni combinazione di:
-
-```text
-variante + valore di n
-```
-
-Per una sola ripetizione:
-
-```bash
-REPEATS=1 \
-bash test_folder/benchmarks/benchmark_bsp.sh
-```
-
-Per 5 ripetizioni:
-
-```bash
-REPEATS=5 \
-bash test_folder/benchmarks/benchmark_bsp.sh
-```
-
----
-
-## Cambiare il timeout massimo
-
-Il parametro `TIMEOUT_SECONDS` controlla il tempo massimo di una singola run.
-
-Di default è:
-
-```bash
-TIMEOUT_SECONDS=600
-```
-
-cioè 600 secondi.
-
-Per usare un timeout di 120 secondi:
-
-```bash
-TIMEOUT_SECONDS=120 \
-bash test_folder/benchmarks/benchmark_bsp.sh
-```
-
-Per usare un timeout di 30 minuti:
-
-```bash
-TIMEOUT_SECONDS=1800 \
-bash test_folder/benchmarks/benchmark_bsp.sh
-```
-
----
-
-## Cambiare il limite di memoria
-
-Il parametro `MEM_LIMIT_BYTES` controlla il limite di memoria in byte.
-
-Di default è:
-
-```bash
-MEM_LIMIT_BYTES=34359738368
-```
-
-cioè 32 GiB.
-
-Per usare 16 GiB:
-
-```bash
-MEM_LIMIT_BYTES=$((16 * 1024 * 1024 * 1024)) \
-bash test_folder/benchmarks/benchmark_bsp.sh
-```
-
-Per usare 8 GiB:
-
-```bash
-MEM_LIMIT_BYTES=$((8 * 1024 * 1024 * 1024)) \
-bash test_folder/benchmarks/benchmark_bsp.sh
-```
-
----
-
-## Esempio completo per benchmark veloce
-
-Questo comando esegue un benchmark rapido, utile per controllare che tutto funzioni:
-
-```bash
-REPEATS=1 \
-N_START=10 \
-N_END=30 \
-N_STEP=10 \
-TIMEOUT_SECONDS=120 \
-BSP_VARIANTS="gc lc la" \
 bash test_folder/benchmarks/benchmark_bsp.sh
 ```
 
 Questo testa:
 
 ```text
-varianti: gc, lc, la
-n:        10, 20, 30
+n:        10, 20, 30, 40, 50
+varianti: gc, gc_aux, ga, la, lc, la_aux
 repeat:   1
-timeout:  120 secondi
+timeout:  60 secondi per singola run
 ```
 
----
-
-## Esempio completo per benchmark più serio
+`STOP_VARIANT_ON_MEMORY=1` e' attivo di default. Se una variante raggiunge il limite di memoria a un certo valore di `n`, lo script la ferma per i valori successivi e continua invece con le altre varianti. Per disattivare questo comportamento:
 
 ```bash
-REPEATS=3 \
-N_START=10 \
-N_END=100 \
-N_STEP=10 \
-TIMEOUT_SECONDS=600 \
-MEM_LIMIT_BYTES=$((32 * 1024 * 1024 * 1024)) \
-BSP_VARIANTS="gc gc_aux ga la lc la_aux la_co" \
+STOP_VARIANT_ON_MEMORY=0 \
 bash test_folder/benchmarks/benchmark_bsp.sh
 ```
 
-Questo testa tutte le varianti BSP, inclusa `la_co`, fino a `n=100`.
+Il limite superiore dello sweep resta `N_END`: per continuare a valori di `n` piu' grandi, aumenta `N_END`.
 
----
+## Varianti BSP
 
-## Usare un binario clingo specifico
+Set principale consigliato:
 
-Normalmente lo script cerca automaticamente il binario modificato in:
-
-```bash
-build/bin/clingo
-clingo-modified/build/bin/clingo
+```text
+gc      = ground-and-solve, semantica Clingo, #heuristic nativa
+gc_aux  = ground-and-solve, semantica Clingo, aggregato spostato in ausiliario
+ga      = ground-and-solve, semantica Alpha
+la      = lazy, semantica Alpha
+lc      = lazy, semantica Clingo
+la_aux  = lazy, semantica Alpha, aggregato materializzato in ausiliario
 ```
 
-Se però vuoi forzare un binario specifico, puoi usare `CLINGO_MOD`.
+Variante disponibile ma non inclusa nel default:
 
-Esempio:
+```text
+la_co   = lazy Alpha con vincolo BSP ottimizzato/lineare
+```
+
+Per cambiare il set:
+
+```bash
+BSP_VARIANTS="gc lc" \
+bash test_folder/benchmarks/benchmark_bsp.sh
+```
+
+## Parametri Utili
+
+Cambiare intervallo di `n`:
+
+```bash
+N_START=10 \
+N_END=100 \
+N_STEP=10 \
+bash test_folder/benchmarks/benchmark_bsp.sh
+```
+
+Cambiare ripetizioni e timeout:
+
+```bash
+REPEATS=3 \
+TIMEOUT_SECONDS=300 \
+bash test_folder/benchmarks/benchmark_bsp.sh
+```
+
+Cambiare limite memoria:
+
+```bash
+MEM_LIMIT_BYTES=$((16 * 1024 * 1024 * 1024)) \
+bash test_folder/benchmarks/benchmark_bsp.sh
+```
+
+Forzare un binario Clingo specifico:
 
 ```bash
 CLINGO_MOD=./clingo-modified/build/bin/clingo \
 bash test_folder/benchmarks/benchmark_bsp.sh
 ```
 
-Oppure:
+## Singola Run Manuale
 
-```bash
-CLINGO_MOD=/percorso/al/binario/clingo \
-bash test_folder/benchmarks/benchmark_bsp.sh
-```
-
----
-
-## Eseguire una singola run manualmente
-
-Lo script `benchmark_runner.py` esegue una singola run e aggiunge il risultato a un CSV.
-
-Esempio con la variante `lc` e `n=50`:
+Esempio con `lc` e `n=50`:
 
 ```bash
 python3 test_folder/benchmarks/benchmark_runner.py \
@@ -457,71 +279,64 @@ python3 test_folder/benchmarks/benchmark_runner.py \
   --csv test_folder/results/manual_bsp.csv \
   --constant n=50 \
   --models 1 \
-  --timeout 600 \
+  --timeout 60 \
   --memory-bytes $((32 * 1024 * 1024 * 1024)) \
   --domain-heuristic
 ```
 
-Questo è utile quando vuoi testare una sola variante senza eseguire tutto il benchmark BSP.
+## Origine Dei Dati
 
----
-
-## Cosa misura il benchmark
-
-Il CSV prodotto contiene colonne come:
+Il CSV contiene sia metriche numeriche per i grafici sia colonne diagnostiche:
 
 ```text
-n
-variant
-seed
-solving_s
-total_s
-grounding_s
-choices
-conflicts
-restarts
-rules
-variables
-memory_mb
-ground_heuristics
-ground_lazy_heuristic_facts
-ground_facts
-ground_lines
+n, variant, seed
+status, failure_reason, exit_code, memory_limit_hit
+solving_s, total_s, grounding_s
+choices, conflicts, restarts
+rules, variables, memory_mb
+ground_heuristics, ground_lazy_heuristic_facts
+ground_facts, ground_lines
 ```
 
-Significato delle colonne principali:
+Le metriche vengono prodotte cosi':
 
 ```text
-n                           valore della costante n
-variant                     variante dell'encoding testata
-seed                        seed usato da clingo
-solving_s                   tempo di solving
-total_s                     tempo totale
-grounding_s                 tempo stimato di grounding
-choices                     numero di choice del solver
-conflicts                   numero di conflitti
-restarts                    numero di restart
-rules                       numero di regole finali
-variables                   numero di variabili del problema
-memory_mb                   memoria massima osservata
-ground_heuristics           numero di direttive #heuristic dopo grounding
-ground_lazy_heuristic_facts numero di fatti __heuristic(...) dopo grounding
-ground_facts                numero di fatti ground
-ground_lines                numero di linee prodotte da clingo --text
+total_s                       Clingo JSON --outf=2 --stats=2, campo Time.Total
+solving_s                     Clingo JSON, campo Time.Solve
+grounding_s                   total_s - solving_s
+choices                       Clingo JSON, Stats.Core.Choices
+conflicts                     Clingo JSON, Stats.Core.Conflicts
+restarts                      Clingo JSON, Stats.Core.Restarts
+rules                         Clingo JSON, Stats.LP.Rules.Final
+variables                     Clingo JSON, Stats.Problem.Variables
+memory_mb                     resource.getrusage(RUSAGE_CHILDREN).ru_maxrss / 1024
+ground_heuristics             conteggio righe "#heuristic" in clingo --text
+ground_lazy_heuristic_facts   conteggio righe "__heuristic(" in clingo --text
+ground_facts                  conteggio fatti ground in clingo --text
+ground_lines                  numero totale righe in clingo --text
 ```
 
----
+`status`, `failure_reason`, `exit_code` e `memory_limit_hit` servono al benchmark per capire se una variante e' andata in timeout, in errore o in limite memoria. I grafici ignorano queste colonne.
 
-## Generare i grafici BSP
+## Generare I Grafici
 
-Dopo aver eseguito il benchmark e prodotto il CSV, puoi generare i grafici con:
+Dopo il benchmark:
 
 ```bash
 cd test_folder
 ./generate_graphs.sh
 ```
 
-Lo script `generate_graphs.sh` esegue:
+Se `matplotlib`/`numpy` non sono installati nel Python di sistema:
+
+```bash
+python3 -m venv /tmp/clingo-graphs-venv
+/tmp/clingo-graphs-venv/bin/python -m pip install -r test_folder/tools/requirements.txt
+cd test_folder
+PYTHON_BIN=/tmp/clingo-graphs-venv/bin/python ./generate_graphs.sh
+```
+
+Lo script esegue:
 
 ```bash
 python3 tools/gen_graphs.py --reset
@@ -529,74 +344,72 @@ python3 tools/gen_graphs.py --type bsp
 python3 tools/gen_graphs.py --type bsp --exclude bspga
 ```
 
-Quindi fa tre cose:
+`bspga` e' il selettore compatto della variante `ga`/`BSP_ga.lp`; la cartella `no_ga` serve quando `ga` schiaccia la scala dei grafici.
+
+Grafici principali generati:
 
 ```text
-1. resetta/cancella i grafici precedenti;
-2. genera i grafici BSP completi;
-3. genera anche una versione dei grafici BSP escludendo bspga.
+total_time.png
+grounding_time.png
+solving_time.png
+ground_heuristics.png
+ground_lazy_heuristic_facts.png
+combined_heuristics.png
+ground_program_lines.png
+ground_facts.png
+memory_comparison.png
+choices_comparison.png
+conflicts_comparison.png
+restarts_comparison.png
+variables_comparison.png
 ```
 
-La versione senza `bspga` è utile perché la variante `ga` può essere molto più lenta o molto più grande delle altre, rendendo i grafici difficili da leggere.
+## Prossimi Test Appuntati
 
-Nota: nello script di benchmark la variante si chiama `ga`, mentre nei grafici può comparire come `bspga`.
-
----
-
-## Generare manualmente solo i grafici BSP
-
-Da dentro `test_folder`:
+Fase 2, confronto principale Clingo:
 
 ```bash
-python3 tools/gen_graphs.py --type bsp
-```
-
-Per generare i grafici BSP escludendo `bspga`:
-
-```bash
-python3 tools/gen_graphs.py --type bsp --exclude bspga
-```
-
-Per resettare i grafici precedenti:
-
-```bash
-python3 tools/gen_graphs.py --reset
-```
-
----
-
-## Workflow consigliato
-
-Per un test veloce:
-
-```bash
-./test_folder/tools/recompile.sh
-
-REPEATS=1 \
-N_START=10 \
-N_END=30 \
-N_STEP=10 \
-BSP_VARIANTS="gc lc la" \
+TIMEOUT_SECONDS=120 REPEATS=1 N_START=10 N_END=100 N_STEP=10 \
+BSP_VARIANTS="gc lc" \
 bash test_folder/benchmarks/benchmark_bsp.sh
-
-cd test_folder
-./generate_graphs.sh
 ```
 
-Per un benchmark più completo:
+Fase 2, confronto Alpha:
 
 ```bash
-./test_folder/tools/recompile.sh
-
-REPEATS=3 \
-N_START=10 \
-N_END=100 \
-N_STEP=10 \
-TIMEOUT_SECONDS=600 \
-MEM_LIMIT_BYTES=$((32 * 1024 * 1024 * 1024)) \
-BSP_VARIANTS="gc gc_aux ga la lc la_aux la_co" \
+TIMEOUT_SECONDS=120 REPEATS=1 N_START=10 N_END=100 N_STEP=10 \
+BSP_VARIANTS="ga la" \
 bash test_folder/benchmarks/benchmark_bsp.sh
+```
 
-cd test_folder
-./generate_graphs.sh
+Fase 2, confronto ausiliari:
+
+```bash
+TIMEOUT_SECONDS=120 REPEATS=1 N_START=10 N_END=80 N_STEP=10 \
+BSP_VARIANTS="gc gc_aux la la_aux" \
+bash test_folder/benchmarks/benchmark_bsp.sh
+```
+
+Fase 3, run finale comparativo:
+
+```bash
+TIMEOUT_SECONDS=300 REPEATS=3 N_START=10 N_END=70 N_STEP=10 \
+BSP_VARIANTS="gc gc_aux ga la lc la_aux" \
+bash test_folder/benchmarks/benchmark_bsp.sh
+```
+
+Se troppe varianti ground vanno in timeout o memoria, usa un massimo comune piu' basso:
+
+```bash
+TIMEOUT_SECONDS=300 REPEATS=3 N_START=10 N_END=50 N_STEP=10 \
+BSP_VARIANTS="gc gc_aux ga la lc la_aux" \
+bash test_folder/benchmarks/benchmark_bsp.sh
+```
+
+Run esteso solo lazy:
+
+```bash
+TIMEOUT_SECONDS=300 REPEATS=3 N_START=80 N_END=200 N_STEP=20 \
+BSP_VARIANTS="la lc" \
+bash test_folder/benchmarks/benchmark_bsp.sh
 ```

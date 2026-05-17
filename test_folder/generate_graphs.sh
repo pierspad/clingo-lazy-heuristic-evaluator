@@ -1,7 +1,8 @@
 #!/usr/bin/env sh
 
-python3 tools/gen_graphs.py --reset
-python3 tools/gen_graphs.py --type bsp
-python3 tools/gen_graphs.py --type bsp --exclude bspga
+PYTHON_BIN="${PYTHON_BIN:-python3}"
 
+"${PYTHON_BIN}" tools/gen_graphs.py --reset
+"${PYTHON_BIN}" tools/gen_graphs.py --type bsp
+"${PYTHON_BIN}" tools/gen_graphs.py --type bsp --exclude bspga
 

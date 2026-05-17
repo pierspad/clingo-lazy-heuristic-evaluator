@@ -16,6 +16,10 @@ CSV_FIELDS = [
     "n",
     "variant",
     "seed",
+    "status",
+    "failure_reason",
+    "exit_code",
+    "memory_limit_hit",
     "solving_s",
     "total_s",
     "grounding_s",
@@ -32,6 +36,10 @@ CSV_FIELDS = [
 ]
 
 SUCCESS_STATUSES = {0, 10, 20, 30}
+EXIT_OK = 0
+EXIT_MEMORY = 75
+EXIT_TIMEOUT = 124
+EXIT_ERROR = 1
 
 
 def find_clingo(explicit_path: str | None) -> str:
@@ -148,25 +156,48 @@ def failure_metrics() -> dict[str, str]:
     }
 
 
-def collect_ground_counts(args, clingo: str) -> dict[str, str]:
+def ground_failure_metrics() -> dict[str, str]:
+    return {
+        "ground_heuristics": "NA",
+        "ground_lazy_heuristic_facts": "NA",
+        "ground_facts": "NA",
+        "ground_lines": "NA",
+    }
+
+
+def _contains_memory_error(*texts: str) -> bool:
+    joined = "\n".join(text for text in texts if text).lower()
+    memory_markers = (
+        "bad_alloc",
+        "cannot allocate memory",
+        "out of memory",
+        "memory exhausted",
+        "std::bad_alloc",
+        "allocation failed",
+    )
+    return any(marker in joined for marker in memory_markers)
+
+
+def classify_process_failure(proc: subprocess.CompletedProcess[str]) -> tuple[str, str]:
+    if _contains_memory_error(proc.stdout, proc.stderr):
+        return "memory", "memory_limit"
+    if proc.returncode < 0 and -proc.returncode in (signal.SIGKILL, signal.SIGSEGV):
+        return "memory", f"signal_{-proc.returncode}"
+    return "error", f"exit_{proc.returncode}"
+
+
+def collect_ground_counts(args, clingo: str) -> tuple[dict[str, str], str]:
     cmd = build_clingo_command(args, clingo, json_mode=False)
     try:
         proc = run_command(cmd, args.timeout, args.memory_bytes)
-    except (subprocess.TimeoutExpired, OSError):
-        return {
-            "ground_heuristics": "NA",
-            "ground_lazy_heuristic_facts": "NA",
-            "ground_facts": "NA",
-            "ground_lines": "NA",
-        }
+    except subprocess.TimeoutExpired:
+        return ground_failure_metrics(), "timeout"
+    except OSError:
+        return ground_failure_metrics(), "error"
 
     if proc.returncode not in SUCCESS_STATUSES:
-        return {
-            "ground_heuristics": "NA",
-            "ground_lazy_heuristic_facts": "NA",
-            "ground_facts": "NA",
-            "ground_lines": "NA",
-        }
+        status, _reason = classify_process_failure(proc)
+        return ground_failure_metrics(), status
 
     heuristics = 0
     lazy_facts = 0
@@ -192,7 +223,7 @@ def collect_ground_counts(args, clingo: str) -> dict[str, str]:
         "ground_lazy_heuristic_facts": str(lazy_facts),
         "ground_facts": str(facts),
         "ground_lines": str(lines),
-    }
+    }, "ok"
 
 
 def child_memory_mb() -> str:
@@ -216,6 +247,9 @@ def run_benchmark(args) -> int:
     clingo = find_clingo(args.clingo)
     json_cmd = build_clingo_command(args, clingo, json_mode=True)
     row = {"n": args.size, "variant": args.variant, "seed": str(args.seed)}
+    status = "ok"
+    failure_reason = ""
+    exit_code = EXIT_OK
 
     print(f"  [seed={args.seed}] {' '.join(json_cmd)}")
     try:
@@ -223,9 +257,15 @@ def run_benchmark(args) -> int:
     except subprocess.TimeoutExpired:
         print("    warning: timeout; solver metrics marked as NA", file=sys.stderr)
         row.update(failure_metrics())
+        status = "timeout"
+        failure_reason = "solver_timeout"
+        exit_code = EXIT_TIMEOUT
     except OSError as exc:
         print(f"    warning: cannot execute clingo: {exc}", file=sys.stderr)
         row.update(failure_metrics())
+        status = "error"
+        failure_reason = "exec_error"
+        exit_code = EXIT_ERROR
     else:
         memory_mb = child_memory_mb()
         run_ok = proc.returncode in SUCCESS_STATUSES
@@ -238,6 +278,13 @@ def run_benchmark(args) -> int:
         if run_ok and data.get("Result") != "UNKNOWN":
             row.update(parse_solver_metrics(data, memory_mb))
         else:
+            if run_ok and data.get("Result") == "UNKNOWN":
+                status = "timeout"
+                failure_reason = "clingo_time_limit"
+                exit_code = EXIT_TIMEOUT
+            else:
+                status, failure_reason = classify_process_failure(proc)
+                exit_code = EXIT_MEMORY if status == "memory" else EXIT_ERROR
             print(
                 f"    warning: clingo exited with status {proc.returncode}; solver metrics marked as NA",
                 file=sys.stderr,
@@ -246,17 +293,34 @@ def run_benchmark(args) -> int:
                 print(proc.stderr.strip(), file=sys.stderr)
             row.update(failure_metrics())
 
-    row.update(collect_ground_counts(args, clingo))
+    ground_counts, ground_status = collect_ground_counts(args, clingo)
+    row.update(ground_counts)
+    if ground_status == "memory":
+        status = "memory"
+        failure_reason = failure_reason or "ground_text_memory_limit"
+        exit_code = EXIT_MEMORY
+    elif status == "ok" and ground_status != "ok":
+        failure_reason = f"ground_text_{ground_status}"
+
+    row.update(
+        {
+            "status": status,
+            "failure_reason": failure_reason,
+            "exit_code": str(exit_code),
+            "memory_limit_hit": "1" if status == "memory" else "0",
+        }
+    )
     append_csv(args.csv, row)
 
     print(
+        "    status={status} reason={failure_reason} "
         "    grounding={grounding_s}s solving={solving_s}s total={total_s}s "
         "choices={choices} conflicts={conflicts} restarts={restarts} "
         "rules={rules} vars={variables} mem={memory_mb}MB "
         "heur={ground_heuristics} lazy_facts={ground_lazy_heuristic_facts} "
         "facts={ground_facts} ground_lines={ground_lines}".format(**row)
     )
-    return 0
+    return exit_code
 
 
 def parse_args():
