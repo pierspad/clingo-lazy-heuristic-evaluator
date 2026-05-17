@@ -5,6 +5,9 @@
 
 x(1..n).
 
+#const tot = (n*(n+1))/2.
+sum_value(0..tot).
+
 % guessing
 b(X) :- x(X), not c(X).
 c(X) :- x(X), not b(X).
@@ -17,5 +20,5 @@ sumC(Sum) :- Sum = #sum{Y : c(Y)}.
 :- sumB(SB), sumC(SC), (SB - SC)**2 > 1.
 
 % heuristics
-#heuristic b(X) : x(X), S = #sum{Y : c(Y)}. [X@S, true]
-#heuristic c(X) : x(X), S = #sum{Y : b(Y)}. [X@S, true]
+#heuristic b(X) : x(X), sum_value(S), S <= #sum{Y : c(Y)}. [X@S, true]
+#heuristic c(X) : x(X), sum_value(S), S <= #sum{Y : b(Y)}. [X@S, true]

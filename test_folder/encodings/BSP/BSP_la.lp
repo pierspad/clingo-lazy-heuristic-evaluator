@@ -14,7 +14,7 @@ sumB(Sum) :- Sum = #sum{Y : b(Y)}.
 sumC(Sum) :- Sum = #sum{Y : c(Y)}.
 
 % constrain difference between sums
-:- sumB(SB), sumC(SC), (SB-SC)**2 > 1.
+:- sumB(SB), sumC(SC), (SB - SC)**2 > 1.
 
 % L'ordine degli argomenti è irrilevante: il target è marcato da __target/1.
 __heuristic(__target(b), x, __n_c, __bind(s, __sum(c, 0)), __weight(self), __priority(s), true).
