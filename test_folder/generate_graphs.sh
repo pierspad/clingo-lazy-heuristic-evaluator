@@ -5,6 +5,9 @@ PYTHON_BIN="${PYTHON_BIN:-python3}"
 "${PYTHON_BIN}" tools/gen_graphs.py --reset
 "${PYTHON_BIN}" tools/gen_graphs.py --type bsp
 "${PYTHON_BIN}" tools/gen_graphs.py --type bsp --exclude bsplaco
+"${PYTHON_BIN}" tools/gen_graphs.py --type bsp --exclude bsplaco,bspgadyn
+"${PYTHON_BIN}" tools/gen_graphs.py --type bsp --exclude bsplaco,bspgadyn,bspgcaux
+"${PYTHON_BIN}" tools/gen_graphs.py --type bsp --exclude bsplaco,bspgadyn,bspgcaux,bsplaaux
 
 # "${PYTHON_BIN}" tools/gen_graphs.py --type bsp --exclude bspga
 
