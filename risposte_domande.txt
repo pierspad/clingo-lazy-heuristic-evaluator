@@ -1,0 +1,18 @@
+
+
+1) perchè clingo standard con il suo approccio ground and solve affronta una prima fase di grounding con gringo che poi passa a clasp tutto il programma ground
+
+questo vuol dire che non ci possono essere variabili nel programma che riceve clasp
+
+per fare ciò è costretto a istanziare TUTTE le possibili euristiche che possono essere generate.
+In questo caso, dato che l'euristica chiede di inserire un atomo in un insieme basandosi sulla somma degli elementi nell'altro gli è necessario, per ogni atomo di ogni insieme, calcolare un euristica per ogni somma risultante dalle possbili combinazioni di atomi selezionati come veri da 1 a n
+
+quindi
+
+numero euristiche * n atomi * n(n+1)/2 somme
+
+2) perchè la direttiva euristica __heuristic e l'aggregato __sum non sono keyword riconosciute da gringo, che le tratta quindi come dei normali predicati da groundare creando quindi un solo fatto per ogni __heuristic
+
+3-4-5) l'aggregato vero  #sum viene interpretato a livello del grounding
+
+il termine __sum viene semplicemente "trascritto" a livello di grounding ma poi, durante il solving il propagatore euristico, una classe che eredita da Cligno::Heuristic e che risponde a determinati callback come propagate, undo, decide, check ecc. si occupa di scansionare gli atomi del programma
