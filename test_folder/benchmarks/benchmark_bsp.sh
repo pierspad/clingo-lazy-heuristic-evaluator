@@ -29,7 +29,16 @@ if [ ! -x "${RUNNER}" ]; then
 fi
 
 TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-60}"
-MEM_LIMIT_BYTES="${MEM_LIMIT_BYTES:-$((32 * 1024 * 1024 * 1024))}"
+if [ -n "${MEM_LIMIT_BYTES:-}" ]; then
+    MEM_LIMIT_BYTES="${MEM_LIMIT_BYTES}"
+elif [ -n "${MEM_LIMIT_GB:-}" ]; then
+    MEM_LIMIT_BYTES="$(python3 -c 'import sys; print(int(float(sys.argv[1]) * 1024**3))' "${MEM_LIMIT_GB}")"
+elif [ -n "${MEM_LIMIT_MB:-}" ]; then
+    MEM_LIMIT_BYTES="$(python3 -c 'import sys; print(int(float(sys.argv[1]) * 1024**2))' "${MEM_LIMIT_MB}")"
+else
+    MEM_LIMIT_BYTES="$((8 * 1024 * 1024 * 1024))"
+fi
+
 REPEATS="${REPEATS:-1}"
 N_START="${N_START:-10}"
 N_END="${N_END:-50}"

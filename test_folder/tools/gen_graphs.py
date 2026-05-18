@@ -232,15 +232,17 @@ BSP_THEME = {
         "gc": "G&S + Clingo sem",
         "gc_aux": "G&S + Clingo sem + Aux",
         "ga": "G&S + Alpha sem",
+        "ga_dyn": "G&S + Alpha sem + Dyn Aggr",
         "la": "Lazy + Alpha sem",
         "lc": "Lazy + Clingo sem",
         "la_aux": "Lazy + Alpha sem + Aux",
-        "la_co": "Lazy + Optimized Constraint (BSP_la_co.lp)",
+        "la_co": "Lazy + Alpha sem + Constr Opt",
     },
     "variant_files": {
         "gc": "encodings/BSP/BSP_gc.lp",
         "gc_aux": "encodings/BSP/BSP_gc_aux.lp",
         "ga": "encodings/BSP/BSP_ga.lp",
+        "ga_dyn": "encodings/BSP/BSP_ga_dyn.lp",
         "la": "encodings/BSP/BSP_la.lp",
         "lc": "encodings/BSP/BSP_lc.lp",
         "la_aux": "encodings/BSP/BSP_la_aux.lp",
@@ -250,6 +252,7 @@ BSP_THEME = {
         "gc":  "#E74C3C",
         "gc_aux": "#C0392B",
         "ga": "#F39C12",
+        "ga_dyn": "#D68910",
         "la":   "#2ECC71",
         "lc": "#9B59B6",
         "la_aux": "#16A085",
@@ -259,6 +262,7 @@ BSP_THEME = {
         "gc":  "o",
         "gc_aux": "s",
         "ga": "^",
+        "ga_dyn": "v",
         "la":   "o",
         "lc": "s",
         "la_aux": "^",
@@ -268,12 +272,13 @@ BSP_THEME = {
         "gc": "--",
         "gc_aux": "--",
         "ga": "--",
+        "ga_dyn": "--",
         "la": "-",
         "lc": "-",
         "la_aux": "-",
         "la_co": "-.",
     },
-    "variant_order": ["gc", "gc_aux", "ga", "la", "lc", "la_aux", "la_co"],
+    "variant_order": ["gc", "gc_aux", "ga", "ga_dyn", "la", "lc", "la_aux", "la_co"],
     "xlabel": "Problem size (N)",
     "suptitle": "BSP Benchmark: Standard vs Lazy Heuristic Grounding",
     "baseline": "gc",
@@ -1807,7 +1812,7 @@ def ensure_plot_dependencies():
         print("Matplotlib/Numpy non sono installati.")
         print("Crea un virtualenv e installa le dipendenze, ad esempio:")
         print("  python3 -m venv /tmp/clingo-graphs-venv")
-        print(f"  /tmp/clingo-graphs-venv/bin/python -m pip install -r {os.path.join(TEST_ROOT, 'tools', 'requirements.txt')}")
+        print(f"  /tmp/clingo-graphs-venv/bin/python -m pip install -r {os.path.join(TEST_ROOT, 'requirements.txt')}")
         print("  cd test_folder")
         print("  PYTHON_BIN=/tmp/clingo-graphs-venv/bin/python ./generate_graphs.sh")
         sys.exit(1)
