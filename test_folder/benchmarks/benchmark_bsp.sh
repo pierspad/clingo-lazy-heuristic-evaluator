@@ -51,8 +51,8 @@ RESULTS_DIR="${TEST_ROOT}/results"
 CSV_FILE="${RESULTS_DIR}/bsp_results.csv"
 
 declare -A VARIANT_FILES=(
+    [gc_noheur]="${ENC_DIR}/BSP_gc_noheur.lp"
     [gc]="${ENC_DIR}/BSP_gc.lp"
-    [gc_aux]="${ENC_DIR}/BSP_gc_aux.lp"
     [ga]="${ENC_DIR}/BSP_ga.lp"
     [ga_dyn]="${ENC_DIR}/BSP_ga_dyn.lp"
     [la]="${ENC_DIR}/BSP_la.lp"
@@ -62,8 +62,8 @@ declare -A VARIANT_FILES=(
 )
 
 declare -A VARIANT_SEMANTICS=(
+    [gc_noheur]="clingo"
     [gc]="clingo"
-    [gc_aux]="clingo"
     [ga]="alpha"
     [ga_dyn]="alpha"
     [la]="alpha"
@@ -72,7 +72,7 @@ declare -A VARIANT_SEMANTICS=(
     [la_co]="alpha"
 )
 
-DEFAULT_VARIANTS=(gc gc_aux ga la lc la_aux)
+DEFAULT_VARIANTS=(gc_noheur gc ga la lc la_aux)
 read -r -a ACTIVE_VARIANTS <<< "${BSP_VARIANTS:-${DEFAULT_VARIANTS[*]}}"
 
 if [ ! -f "${INSTANCE_RANGE}" ]; then

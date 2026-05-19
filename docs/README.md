@@ -172,7 +172,7 @@ Per ora la suite di default e' quella esplorativa da 60 secondi con una sola rip
 
 ```bash
 TIMEOUT_SECONDS=60 REPEATS=1 N_START=10 N_END=50 N_STEP=10 \
-BSP_VARIANTS="gc gc_aux ga la lc la_aux" \
+BSP_VARIANTS="gc_noheur gc ga la lc la_aux" \
 bash test_folder/benchmarks/benchmark_bsp.sh
 ```
 
@@ -186,7 +186,7 @@ Questo testa:
 
 ```text
 n:        10, 20, 30, 40, 50
-varianti: gc, gc_aux, ga, la, lc, la_aux
+varianti: gc_noheur, gc, ga, la, lc, la_aux
 repeat:   1
 timeout:  60 secondi per singola run
 ```
@@ -209,8 +209,8 @@ Il limite superiore dello sweep resta `N_END`: per continuare a valori di `n` pi
 Set principale consigliato:
 
 ```text
+gc_noheur = ground-and-solve, semantica Clingo, senza #heuristic; riferimento dei grafici
 gc      = ground-and-solve, semantica Clingo, #heuristic nativa
-gc_aux  = ground-and-solve, semantica Clingo, aggregato spostato in ausiliario
 ga      = ground-and-solve, semantica Alpha
 la      = lazy, semantica Alpha
 lc      = lazy, semantica Clingo
@@ -404,7 +404,7 @@ Fase 2, confronto ausiliari:
 
 ```bash
 TIMEOUT_SECONDS=120 REPEATS=1 N_START=10 N_END=80 N_STEP=10 \
-BSP_VARIANTS="gc gc_aux la la_aux" \
+BSP_VARIANTS="gc_noheur gc la la_aux" \
 bash test_folder/benchmarks/benchmark_bsp.sh
 ```
 
@@ -412,7 +412,7 @@ Fase 3, run finale comparativo:
 
 ```bash
 TIMEOUT_SECONDS=300 REPEATS=3 N_START=10 N_END=70 N_STEP=10 \
-BSP_VARIANTS="gc gc_aux ga la lc la_aux" \
+BSP_VARIANTS="gc_noheur gc ga la lc la_aux" \
 bash test_folder/benchmarks/benchmark_bsp.sh
 ```
 
@@ -420,7 +420,7 @@ Se troppe varianti ground vanno in timeout o memoria, usa un massimo comune piu'
 
 ```bash
 TIMEOUT_SECONDS=300 REPEATS=3 N_START=10 N_END=50 N_STEP=10 \
-BSP_VARIANTS="gc gc_aux ga la lc la_aux" \
+BSP_VARIANTS="gc_noheur gc ga la lc la_aux" \
 bash test_folder/benchmarks/benchmark_bsp.sh
 ```
 

@@ -283,8 +283,8 @@ MAIN_PLOT_LAYOUT.extend(INTERPRETIVE_PLOT_CONFIGS)
 
 BSP_THEME = {
     "variant_labels": {
+        "gc_noheur": "G&S + Clingo sem (no heur)",
         "gc": "G&S + Clingo sem",
-        "gc_aux": "G&S + Clingo sem + Aux",
         "ga": "G&S + Alpha sem",
         "ga_dyn": "G&S + Alpha sem + Dyn Aggr",
         "la": "Lazy + Alpha sem",
@@ -293,8 +293,8 @@ BSP_THEME = {
         "la_co": "Lazy + Alpha sem + Constr Opt",
     },
     "variant_files": {
+        "gc_noheur": "encodings/BSP/BSP_gc_noheur.lp",
         "gc": "encodings/BSP/BSP_gc.lp",
-        "gc_aux": "encodings/BSP/BSP_gc_aux.lp",
         "ga": "encodings/BSP/BSP_ga.lp",
         "ga_dyn": "encodings/BSP/BSP_ga_dyn.lp",
         "la": "encodings/BSP/BSP_la.lp",
@@ -303,8 +303,8 @@ BSP_THEME = {
         "la_co": "encodings/BSP/BSP_la_co.lp",
     },
     "variant_colors": {
+        "gc_noheur": "#34495E",
         "gc":  "#E74C3C",
-        "gc_aux": "#C0392B",
         "ga": "#F39C12",
         "ga_dyn": "#D68910",
         "la":   "#2ECC71",
@@ -313,8 +313,8 @@ BSP_THEME = {
         "la_co": "#3498DB",
     },
     "variant_markers": {
+        "gc_noheur": "X",
         "gc":  "o",
-        "gc_aux": "s",
         "ga": "^",
         "ga_dyn": "v",
         "la":   "o",
@@ -323,8 +323,8 @@ BSP_THEME = {
         "la_co": "D",
     },
     "variant_linestyles": {
+        "gc_noheur": ":",
         "gc": "--",
-        "gc_aux": "--",
         "ga": "--",
         "ga_dyn": "--",
         "la": "-",
@@ -332,19 +332,18 @@ BSP_THEME = {
         "la_aux": "-",
         "la_co": "-.",
     },
-    "variant_order": ["gc", "gc_aux", "ga", "ga_dyn", "la", "lc", "la_aux", "la_co"],
+    "variant_order": ["gc_noheur", "gc", "ga", "ga_dyn", "la", "lc", "la_aux", "la_co"],
     "xlabel": "Problem size (N)",
     "suptitle": "BSP Benchmark: Standard vs Lazy Heuristic Grounding",
-    "baseline": "gc",
+    "baseline": "gc_noheur",
+    "heuristic_baseline": "gc",
     "comparison_pairs": [
         ("gc", "lc", "gc / lc"),
         ("ga_dyn", "la", "ga_dyn / la"),
-        ("gc_aux", "la_aux", "gc_aux / la_aux"),
     ],
     "lazy_solving_overhead_pairs": [
         ("gc", "lc"),
         ("ga_dyn", "la"),
-        ("gc_aux", "la_aux"),
         ("gc", "la"),
     ],
 }
@@ -2428,6 +2427,19 @@ def process_csv(csv_path, graphs_dir, theme, problem_name, title_suffix="", excl
         print(f"    {variant}: {len(ns)} N values, ~{seeds} seeds per point")
 
     stats = compute_stats(raw)
+    known_variants = set(theme.get("variant_order", []))
+    unsupported_variants = sorted(set(stats) - known_variants)
+    if unsupported_variants:
+        stats = {
+            variant: data
+            for variant, data in stats.items()
+            if variant in known_variants
+        }
+        print(
+            "  Varianti non piu' supportate ignorate: "
+            f"{', '.join(unsupported_variants)}"
+        )
+
     excluded_variants = set(excluded_variants or [])
     if excluded_variants:
         stats = _filtered_stats(stats, excluded_variants)
@@ -2472,7 +2484,7 @@ def parse_args():
   {cmd("%(prog)s --type bsp")}
       Generate only standard BSP charts.
 
-  {cmd("%(prog)s --type bsp --exclude bspga,bspgcaux")}
+  {cmd("%(prog)s --type bsp --exclude bspga,bspgcnoheur")}
       Generate BSP charts in a separate exclusion directory, without the
       selected variants.
 
@@ -2525,10 +2537,10 @@ def parse_args():
   {cmd("%(prog)s --type bsp --exclude BSP_lc.lp")}
       Exclude the BSP_lc.lp variant from a separate BSP graph set.
 
-  {cmd("%(prog)s --type bsp --exclude bspla,bspgcaux, BSP_la_co.lp")}
+  {cmd("%(prog)s --type bsp --exclude bspla,bspgcnoheur, BSP_la_co.lp")}
       Exclude several variants with a comma-separated list.
 
-  {cmd("%(prog)s --type bsp --exclude bspla,bspgcaux --exclude BSP_la_co.lp")}
+  {cmd("%(prog)s --type bsp --exclude bspla,bspgcnoheur --exclude BSP_la_co.lp")}
       Exclude several variants in one run.
         """.strip(),
         formatter_class=argparse.RawDescriptionHelpFormatter,

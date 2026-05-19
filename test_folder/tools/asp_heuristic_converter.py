@@ -771,7 +771,7 @@ def main():
 {heading("Rewrite modes")}
   {value("la")}            lazy grounding with Alpha body/aggregate semantics; emits clingo-like __heuristic/N facts.
   {value("lc")}            lazy grounding with Clingo body/aggregate semantics; emits clingo-like __heuristic/N facts.
-  {value("aux")}           ground and solve with an auxiliary predicate; emits BSP_gc_aux-style native #heuristic.
+  {value("aux")}           ground and solve with an auxiliary predicate; emits native #heuristic.
   {value("la-aux")}        lazy grounding with Alpha body/aggregate semantics through an auxiliary predicate.
 
 {heading("Options")}
