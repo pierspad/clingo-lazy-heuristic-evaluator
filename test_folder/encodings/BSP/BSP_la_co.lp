@@ -4,7 +4,6 @@
 % instances/BSP_instances/BSP_range.lp
 
 x(1..n).
-#const k = n + 1.
 
 #const tot = (n*(n+1))/2.
 #const min_val = tot / 2.
@@ -19,6 +18,6 @@ c(X) :- x(X), not b(X).
 
 % In semantica clingo-like il ranking globale sta in W, mentre @P resta locale.
 __heuristic(__target(b), x, __n_c, __bind(s, __sum(c, 0)),
-            __weight(__add(__mul(k, s), self)), __priority(0), __modifier(true), __semantics(alpha)).
+            __weight(__add(__mul(__add(n, 1), s), self)), __priority(0), __modifier(true), __semantics(alpha)).
 __heuristic(__target(c), x, __n_b, __bind(s, __sum(b, 0)),
-            __weight(__add(__mul(k, s), self)), __priority(0), __modifier(true), __semantics(alpha)).
+            __weight(__add(__mul(__add(n, 1), s), self)), __priority(0), __modifier(true), __semantics(alpha)).

@@ -112,6 +112,11 @@ struct BodyArgBinding {
     int source_arg_index = -1;
 };
 
+struct TargetArgBinding {
+    Clingo::Symbol variable_name;
+    int target_arg_index = -1;
+};
+
 struct BodyPredicateSpec {
     Clingo::Symbol pred_name;
     std::vector<BodyMatch> matches;
@@ -174,6 +179,8 @@ struct HeuristicRuleTemplate {
     HeuristicSemantics semantics = HeuristicSemantics::Clingo;
     std::unordered_map<Clingo::Symbol, AggregateKey> var_bindings;
     std::unordered_set<Clingo::Symbol> body_var_names;
+    std::unordered_set<Clingo::Symbol> target_var_names;
+    std::vector<TargetArgBinding> target_arg_bindings;
     ArithmeticExpression bias_expr = ArithmeticExpression::number(0);
     ArithmeticExpression local_priority_expr = ArithmeticExpression::number(0);
 };

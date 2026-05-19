@@ -40,6 +40,7 @@ class HeuristicDirective:
     target_text: str = ""
     target_args: list = field(default_factory=list)
     target_var: Optional[str] = None
+    target_var_positions: dict = field(default_factory=dict)
     pos_body: list = field(default_factory=list)
     neg_body: list = field(default_factory=list)
     body_predicates: list = field(default_factory=list)
@@ -67,7 +68,8 @@ def _convert_arith_expr(
     expr: str,
     target_var: Optional[str],
     binding_vars: dict,
-    body_vars: Optional[dict] = None
+    body_vars: Optional[dict] = None,
+    target_binding_vars: Optional[dict] = None
 ) -> str:
 
 
@@ -83,7 +85,7 @@ def _convert_arith_expr(
         except ValueError:
             pass
 
-        inner = _convert_arith_expr(rest, target_var, binding_vars, body_vars)
+        inner = _convert_arith_expr(rest, target_var, binding_vars, body_vars, target_binding_vars)
         return f"__sub(0, {inner})"
 
 
@@ -113,17 +115,21 @@ def _convert_arith_expr(
             return expr
 
         op_name = {'+': '__add', '-': '__sub', '*': '__mul'}[op_char]
-        left_conv = _convert_arith_expr(left, target_var, binding_vars, body_vars)
-        right_conv = _convert_arith_expr(right, target_var, binding_vars, body_vars)
+        left_conv = _convert_arith_expr(left, target_var, binding_vars, body_vars, target_binding_vars)
+        right_conv = _convert_arith_expr(right, target_var, binding_vars, body_vars, target_binding_vars)
         return f"{op_name}({left_conv}, {right_conv})"
 
 
     if expr.startswith('(') and expr.endswith(')'):
-        return _convert_arith_expr(expr[1:-1], target_var, binding_vars, body_vars)
+        return _convert_arith_expr(expr[1:-1], target_var, binding_vars, body_vars, target_binding_vars)
 
 
     if _is_domain_variable(expr, target_var):
         return "self"
+
+    target_binding_vars = target_binding_vars or {}
+    if expr in target_binding_vars:
+        return target_binding_vars[expr]
 
 
     if expr in binding_vars:
@@ -166,6 +172,29 @@ def _format_binding(b: AggregateBinding, var_lower: str) -> str:
     if b.arg_index is None:
         return f"__bind({var_lower}, __{b.agg_type}({b.pred_name}{filter_suffix}))"
     return f"__bind({var_lower}, __{b.agg_type}({b.pred_name}, {b.arg_index}{filter_suffix}))"
+
+
+def _expr_symbol_names(*exprs: str) -> list:
+    names = []
+    seen = set()
+    for expr in exprs:
+        for name in re.findall(r'\b[A-Z_]\w*\b', expr):
+            if name not in seen:
+                seen.add(name)
+                names.append(name)
+    return names
+
+
+def _target_arg_bindings_used(directive: HeuristicDirective) -> list:
+    used = []
+    for name in _expr_symbol_names(directive.bias_expr, directive.local_priority_expr):
+        target_idx = directive.target_var_positions.get(name)
+        if target_idx is None:
+            continue
+        if target_idx == 0 and name == directive.target_var:
+            continue
+        used.append((name, target_idx, name.lower()))
+    return used
 
 
 def _format_positive_body(pred: BodyPredicate, directive: HeuristicDirective) -> tuple:
@@ -260,6 +289,12 @@ def generate_lazy_heuristic(directive: HeuristicDirective, semantics: str = "alp
         args.append(f"__n_{pred.pred_name}")
 
 
+    target_binding_vars = {}
+    for var_name, target_idx, var_lower in _target_arg_bindings_used(directive):
+        target_binding_vars[var_name] = var_lower
+        args.append(f"__bind_target_arg({var_lower}, {target_idx})")
+
+
     binding_vars = {}
     for b in directive.bindings:
         var_lower = b.var_name.lower()
@@ -268,13 +303,13 @@ def generate_lazy_heuristic(directive: HeuristicDirective, semantics: str = "alp
 
 
     bias_conv = _convert_arith_expr(
-        directive.bias_expr, directive.target_var, binding_vars, body_vars
+        directive.bias_expr, directive.target_var, binding_vars, body_vars, target_binding_vars
     )
     args.append(f"__weight({bias_conv})")
 
 
     local_priority_conv = _convert_arith_expr(
-        directive.local_priority_expr, directive.target_var, binding_vars, body_vars
+        directive.local_priority_expr, directive.target_var, binding_vars, body_vars, target_binding_vars
     )
     args.append(f"__priority({local_priority_conv})")
 
@@ -358,6 +393,7 @@ def generate_lazy_aux_heuristic(directive: HeuristicDirective, idx: int) -> list
         target_text=directive.target_text,
         target_args=directive.target_args,
         target_var=directive.target_var,
+        target_var_positions=directive.target_var_positions,
         pos_body=[BodyPredicate(pred_name=aux, args=aux_arg_list, text=f"{aux}({aux_args})")],
         neg_body=[],
         body_predicates=[],
@@ -559,11 +595,8 @@ def _directive_from_heuristic_ast(ast_node) -> Optional[HeuristicDirective]:
         if target_arg_list else target_fn.name
     )
     target_var = None
-    for arg in target_fn.arguments:
-        name = _ast_variable_name(arg)
-        if name is not None:
-            target_var = name
-            break
+    if target_fn.arguments:
+        target_var = _ast_variable_name(target_fn.arguments[0])
 
     target_positions = {
         arg: idx
@@ -606,6 +639,7 @@ def _directive_from_heuristic_ast(ast_node) -> Optional[HeuristicDirective]:
         target_text=target_text,
         target_args=target_arg_list,
         target_var=target_var,
+        target_var_positions=target_positions,
         pos_body=pos_body,
         neg_body=neg_body,
         body_predicates=body_predicates,
@@ -666,6 +700,7 @@ def _process_file_ast(input_path: str, dry_run: bool = False, mode: str = "la") 
 
         directive.original_line = original_one_line
         warn_lines, converted = _generate_directive_output(directive, conversions + 1, mode)
+        warnings.extend(warn_lines)
         replacement = f"% Originale: {directive.original_line}\n"
         replacement += "".join(warn_lines)
         replacement += f"{converted}\n"

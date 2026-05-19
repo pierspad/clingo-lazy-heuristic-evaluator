@@ -91,6 +91,7 @@ static ArithmeticExpression parse_arithmetic_expression(
     Clingo::Symbol const &term,
     std::unordered_map<Clingo::Symbol, AggregateKey> const &bindings,
     std::unordered_set<Clingo::Symbol> const &body_vars,
+    std::unordered_set<Clingo::Symbol> const &target_vars,
     std::string const &field_name
 ) {
     if (is_clingo_symbol_number(term)) {
@@ -99,7 +100,7 @@ static ArithmeticExpression parse_arithmetic_expression(
 
     if (!is_clingo_symbol_function(term)) {
         throw std::runtime_error("Sintassi euristica malformata: " + field_name +
-                                 " accetta solo numeri, self, variabili __bind e __add/__sub/__mul.");
+                                 " accetta solo numeri, self, variabili bindate e __add/__sub/__mul.");
     }
 
     std::string const name = term.name();
@@ -116,8 +117,12 @@ static ArithmeticExpression parse_arithmetic_expression(
         if (body_vars.find(name_symbol) != body_vars.end()) {
             return ArithmeticExpression::bound_variable(name_symbol);
         }
+        if (target_vars.find(name_symbol) != target_vars.end()) {
+            return ArithmeticExpression::bound_variable(name_symbol);
+        }
         throw std::runtime_error("Sintassi euristica malformata: variabile '" + name +
-                                 "' usata in " + field_name + " ma non definita con __bind o __bind_arg.");
+                                 "' usata in " + field_name +
+                                 " ma non definita con __bind, __bind_arg o __bind_target_arg.");
     }
 
     ArithmeticOperator const op = parse_arithmetic_operator(name);
@@ -130,8 +135,8 @@ static ArithmeticExpression parse_arithmetic_expression(
                                  "' in " + field_name + " richiede esattamente due argomenti.");
     }
 
-    auto lhs = parse_arithmetic_expression(args[0], bindings, body_vars, field_name);
-    auto rhs = parse_arithmetic_expression(args[1], bindings, body_vars, field_name);
+    auto lhs = parse_arithmetic_expression(args[0], bindings, body_vars, target_vars, field_name);
+    auto rhs = parse_arithmetic_expression(args[1], bindings, body_vars, target_vars, field_name);
     return ArithmeticExpression::binary(expression_kind_for_operator(op), std::move(lhs), std::move(rhs));
 }
 
@@ -223,6 +228,27 @@ static BodyArgBinding parse_body_arg_binding(Clingo::Symbol const &binding_symbo
     binding.source_arg_index = args[1].number();
     if (binding.source_arg_index < 0) {
         throw std::runtime_error("Sintassi euristica malformata: l'indice di __bind_arg deve essere non negativo.");
+    }
+    return binding;
+}
+
+static TargetArgBinding parse_target_arg_binding(Clingo::Symbol const &binding_symbol) {
+    if (!is_named_function(binding_symbol, "__bind_target_arg")) {
+        throw std::runtime_error("Sintassi euristica malformata: binding target non valido; usa __bind_target_arg(var, target_idx).");
+    }
+
+    auto const args = binding_symbol.arguments();
+    if (args.size() != 2 ||
+        !is_nullary_function(args[0]) ||
+        !is_clingo_symbol_number(args[1])) {
+        throw std::runtime_error("Sintassi euristica malformata: __bind_target_arg richiede una variabile e un indice numerico.");
+    }
+
+    TargetArgBinding binding;
+    binding.variable_name = args[0];
+    binding.target_arg_index = args[1].number();
+    if (binding.target_arg_index < 0) {
+        throw std::runtime_error("Sintassi euristica malformata: l'indice di __bind_target_arg deve essere non negativo.");
     }
     return binding;
 }
@@ -338,7 +364,8 @@ std::vector<HeuristicRuleTemplate> parse_lazy_heuristic_templates(std::vector<Cl
                 Clingo::Symbol const var_symbol = arg_args[0];
                 std::string const var_name = arg_args[0].name();
                 if (tmpl.var_bindings.find(var_symbol) != tmpl.var_bindings.end() ||
-                    tmpl.body_var_names.find(var_symbol) != tmpl.body_var_names.end()) {
+                    tmpl.body_var_names.find(var_symbol) != tmpl.body_var_names.end() ||
+                    tmpl.target_var_names.find(var_symbol) != tmpl.target_var_names.end()) {
                     throw std::runtime_error("Sintassi euristica malformata: variabile '" + var_name +
                                              "' definita piu' volte in __heuristic.");
                 }
@@ -372,6 +399,19 @@ std::vector<HeuristicRuleTemplate> parse_lazy_heuristic_templates(std::vector<Cl
 
                 AggregateKey key{Clingo::Id(agg_op_str.c_str()), pred_symbol, arg_idx, std::move(filters)};
                 tmpl.var_bindings.emplace(var_symbol, std::move(key));
+                continue;
+            }
+
+            if (arg_name == "__bind_target_arg") {
+                TargetArgBinding binding = parse_target_arg_binding(arg);
+                if (tmpl.var_bindings.find(binding.variable_name) != tmpl.var_bindings.end() ||
+                    tmpl.body_var_names.find(binding.variable_name) != tmpl.body_var_names.end() ||
+                    !tmpl.target_var_names.insert(binding.variable_name).second) {
+                    throw std::runtime_error("Sintassi euristica malformata: variabile '" +
+                                             std::string(binding.variable_name.name()) +
+                                             "' definita piu' volte in __heuristic.");
+                }
+                tmpl.target_arg_bindings.push_back(std::move(binding));
                 continue;
             }
 
@@ -438,6 +478,7 @@ std::vector<HeuristicRuleTemplate> parse_lazy_heuristic_templates(std::vector<Cl
                 BodyPredicateSpec spec = parse_body_predicate_spec(arg);
                 for (auto const &binding : spec.arg_bindings) {
                     if (tmpl.var_bindings.find(binding.variable_name) != tmpl.var_bindings.end() ||
+                        tmpl.target_var_names.find(binding.variable_name) != tmpl.target_var_names.end() ||
                         !tmpl.body_var_names.insert(binding.variable_name).second) {
                         throw std::runtime_error("Sintassi euristica malformata: variabile '" +
                                                  std::string(binding.variable_name.name()) +
@@ -490,10 +531,10 @@ std::vector<HeuristicRuleTemplate> parse_lazy_heuristic_templates(std::vector<Cl
         }
 
         tmpl.bias_expr = parse_arithmetic_expression(
-            weight_symbol, tmpl.var_bindings, tmpl.body_var_names, "__weight"
+            weight_symbol, tmpl.var_bindings, tmpl.body_var_names, tmpl.target_var_names, "__weight"
         );
         tmpl.local_priority_expr = parse_arithmetic_expression(
-            priority_symbol, tmpl.var_bindings, tmpl.body_var_names, "__priority"
+            priority_symbol, tmpl.var_bindings, tmpl.body_var_names, tmpl.target_var_names, "__priority"
         );
 
         templates.push_back(std::move(tmpl));

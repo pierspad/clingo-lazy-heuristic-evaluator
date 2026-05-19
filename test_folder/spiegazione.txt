@@ -47,13 +47,18 @@ Quindi:
 
 Per BSP, la forma lazy clingo-like deve essere:
 
-    #const k = n + 1.
-
     __heuristic(__target(b), x, __n_c, __bind(s, __sum(c, 0)),
-                __weight(__add(__mul(k, s), self)),
+                __weight(__add(__mul(__add(n, 1), s), self)),
                 __priority(0),
                 __modifier(true),
                 __semantics(clingo)).
+
+Qui `self` indica sempre l'argomento 0 del target corrente. Per target con
+piu' argomenti si puo' rendere esplicito un argomento qualunque con:
+
+    __bind_target_arg(var, idx)
+
+e poi usare `var` in `__weight(...)` o `__priority(...)`.
 
 Non usare piu':
 

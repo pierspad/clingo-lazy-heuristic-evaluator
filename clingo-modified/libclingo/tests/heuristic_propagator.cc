@@ -120,6 +120,38 @@ TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
         REQUIRE(models == ModelVec({{Function("choose", {Number(3)})}}));
     }
 
+    SECTION("self uses the first target argument for multi-argument targets") {
+        Control ctl{{"1", "--heuristic=Domain"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            dom(1,100). dom(3,1).
+            1 { choose(X,Y) : dom(X,Y) } 1.
+            __heuristic(__target(choose), dom,
+                        __weight(self), __priority(1), __modifier(true)).
+            #show choose/2.
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE(test_solve(ctl.solve(), models).is_satisfiable());
+        REQUIRE(models == ModelVec({{Function("choose", {Number(3), Number(1)})}}));
+    }
+
+    SECTION("target argument binding feeds arithmetic expressions") {
+        Control ctl{{"1", "--heuristic=Domain"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            dom(1,100). dom(3,1).
+            1 { choose(X,Y) : dom(X,Y) } 1.
+            __heuristic(__target(choose), dom, __bind_target_arg(y, 1),
+                        __weight(y), __priority(1), __modifier(true)).
+            #show choose/2.
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE(test_solve(ctl.solve(), models).is_satisfiable());
+        REQUIRE(models == ModelVec({{Function("choose", {Number(1), Number(100)})}}));
+    }
+
     SECTION("explicit body binding feeds arithmetic expressions") {
         Control ctl{{"1", "--heuristic=Domain"}, logger, 20};
         HeuristicPropagator propagator;
@@ -239,6 +271,52 @@ TEST_CASE("lazy-heuristic-syntax-validation", "[clingo][heuristic]") {
             { choose(X) } :- dom(X).
             __heuristic(__target(choose),
                         __body(body, __match(0, 0), __bind_arg(w, 1), __bind_arg(w, 2)),
+                        __weight(w), __modifier(true)).
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE_THROWS(test_solve(ctl.solve(), models));
+    }
+
+    SECTION("duplicate target argument variable is rejected") {
+        Control ctl{{"0"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            dom(1).
+            { choose(X) } :- dom(X).
+            __heuristic(__target(choose), dom,
+                        __bind_target_arg(w, 0),
+                        __bind(w, __sum(dom, 0)),
+                        __weight(w), __modifier(true)).
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE_THROWS(test_solve(ctl.solve(), models));
+    }
+
+    SECTION("negative target argument index is rejected") {
+        Control ctl{{"0"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            dom(1).
+            { choose(X) } :- dom(X).
+            __heuristic(__target(choose), dom,
+                        __bind_target_arg(w, -1),
+                        __weight(w), __modifier(true)).
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE_THROWS(test_solve(ctl.solve(), models));
+    }
+
+    SECTION("out-of-range target argument binding is rejected") {
+        Control ctl{{"0"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            dom(1).
+            { choose(X) } :- dom(X).
+            __heuristic(__target(choose), dom,
+                        __bind_target_arg(w, 1),
                         __weight(w), __modifier(true)).
         )");
         ctl.ground({{"base", {}}}, nullptr);

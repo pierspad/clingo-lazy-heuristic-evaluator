@@ -28,15 +28,11 @@ La forma esplicita e' questa:
         x,
         __n_c,
         __bind(s, __sum(c, 0)),
-        __weight(__add(__mul(k, s), self)),
+        __weight(__add(__mul(__add(n, 1), s), self)),
         __priority(0),
         __modifier(true),
         __semantics(clingo)
     ).
-
-con, per BSP:
-
-    #const k = n + 1.
 
 Questa direttiva corrisponde a:
 
@@ -108,6 +104,14 @@ Contiene solo le informazioni ground necessarie a rivalutare una direttiva:
     pos_body_lits
     neg_body_lits
     aggregate_bindings
+
+`self_value` e' sempre il valore numerico dell'argomento 0 del target corrente.
+Se serve un altro argomento del target, la sintassi esplicita e':
+
+    __bind_target_arg(nome, indice)
+
+Il valore bindato entra nello stesso ambiente runtime usato da `__bind(...)`
+e `__bind_arg(...)`.
 
 In parallelo vengono mantenute queste strutture:
 
@@ -347,7 +351,7 @@ globale: `@priority` resta sempre locale nel propagatore nuovo.
 
 Per imitare clingo nativo su BSP, usare:
 
-    __weight(__add(__mul(k, s), self))
+    __weight(__add(__mul(__add(n, 1), s), self))
     __priority(0)
     __modifier(true)
 

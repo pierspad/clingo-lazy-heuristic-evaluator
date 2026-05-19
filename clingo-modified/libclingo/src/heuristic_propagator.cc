@@ -544,8 +544,18 @@ bool HeuristicPropagator::build_variable_environment(
     std::unordered_map<Clingo::Symbol, int> &var_env
 ) const {
     var_env.clear();
-    var_env.reserve(candidate.body_var_values.size() + candidate.aggregate_bindings.size());
+    var_env.reserve(candidate.body_var_values.size() +
+                    tmpl.target_arg_bindings.size() +
+                    candidate.aggregate_bindings.size());
     var_env.insert(candidate.body_var_values.begin(), candidate.body_var_values.end());
+
+    for (auto const &binding : tmpl.target_arg_bindings) {
+        if (binding.target_arg_index < 0 ||
+            static_cast<size_t>(binding.target_arg_index) >= candidate.tuple_values.size()) {
+            throw std::runtime_error("Lazy heuristic clingo-like: __bind_target_arg usa un indice fuori dall'arita' del target.");
+        }
+        var_env[binding.variable_name] = candidate.tuple_values[binding.target_arg_index];
+    }
 
     for (auto const &binding : candidate.aggregate_bindings) {
         if (!binding.has_valid_runtime_key) {
