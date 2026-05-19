@@ -178,14 +178,14 @@ PLOT_CONFIGS = [
     {
         "metric": "ground_lines",
         "title": "Ground Program Lines",
-        "ylabel": "Lines in --text output",
+        "ylabel": "Lines in --text output (millions)",
         "description": "Line count of the textual ground program, comparable to clingo/gringo --text | wc -l.",
         "filename": "ground_program_lines.png",
     },
     {
         "metric": "variables",
         "title": "Propositional Variables",
-        "ylabel": "Number of variables",
+        "ylabel": "Variables (millions)",
         "description": "Size of the propositional search space",
         "filename": "variables_comparison.png",
     },
@@ -212,8 +212,8 @@ PLOT_CONFIGS = [
     },
     {
         "metric": "combined_heuristics",
-        "title": "Heuristics Grounding",
-        "ylabel": "Ground heuristic entries",
+        "title": "Heuristic Grounding",
+        "ylabel": "Ground heuristic entries (millions)",
         "description": "Standard: native #heuristic directives\nLazy: __heuristic facts passed to the propagator",
         "filename": "combined_heuristics.png",
     },
@@ -225,6 +225,60 @@ PLOT_CONFIGS = [
         "filename": "ground_facts.png",
     },
 ]
+
+PLOT_CONFIG_BY_METRIC = {
+    config["metric"]: config
+    for config in PLOT_CONFIGS
+}
+
+MAIN_PLOT_LAYOUT = [
+    PLOT_CONFIG_BY_METRIC["grounding_s"],
+    PLOT_CONFIG_BY_METRIC["solving_s"],
+    PLOT_CONFIG_BY_METRIC["total_s"],
+    PLOT_CONFIG_BY_METRIC["memory_mb"],
+    PLOT_CONFIG_BY_METRIC["choices"],
+    PLOT_CONFIG_BY_METRIC["conflicts"],
+    PLOT_CONFIG_BY_METRIC["restarts"],
+    None,
+    PLOT_CONFIG_BY_METRIC["ground_lines"],
+    PLOT_CONFIG_BY_METRIC["variables"],
+    PLOT_CONFIG_BY_METRIC["ground_facts"],
+    PLOT_CONFIG_BY_METRIC["combined_heuristics"],
+]
+
+INTERPRETIVE_PLOT_CONFIGS = [
+    {
+        "kind": "heuristic_expansion_factor",
+        "title": "Heuristic Expansion Factor",
+        "ylabel": "Standard / lazy objects (x)",
+        "description": "Number of native #heuristic directives in the standard encoding divided by lazy __heuristic facts in the paired lazy encoding.",
+        "filename": "heuristic_expansion_factor.png",
+    },
+    {
+        "kind": "additional_ground_lines_vs_lazy",
+        "title": "Additional Ground Lines vs Lazy Counterpart",
+        "ylabel": "Extra ground lines",
+        "description": "Difference in total ground-program lines between a standard encoding and its paired lazy counterpart.",
+        "filename": "additional_ground_lines_vs_lazy.png",
+    },
+    {
+        "kind": "grounding_time_vs_heuristic_size",
+        "title": "Grounding Time vs Heuristic Objects",
+        "ylabel": "Grounding time (seconds)",
+        "xlabel": "Ground heuristic objects",
+        "description": "Scatter plot relating grounding time to the number of materialized heuristic objects.",
+        "filename": "grounding_time_vs_heuristic_size.png",
+    },
+    {
+        "kind": "lazy_solving_overhead",
+        "title": "Lazy Solving Overhead",
+        "ylabel": "Lazy / standard solving time (x)",
+        "description": "Solving-time ratio for each lazy encoding against its paired standard encoding. Values above 1 indicate solving overhead.",
+        "filename": "lazy_solving_overhead.png",
+    },
+]
+
+MAIN_PLOT_LAYOUT.extend(INTERPRETIVE_PLOT_CONFIGS)
 
 
 BSP_THEME = {
@@ -282,6 +336,17 @@ BSP_THEME = {
     "xlabel": "Problem size (N)",
     "suptitle": "BSP Benchmark: Standard vs Lazy Heuristic Grounding",
     "baseline": "gc",
+    "comparison_pairs": [
+        ("gc", "lc", "gc / lc"),
+        ("ga_dyn", "la", "ga_dyn / la"),
+        ("gc_aux", "la_aux", "gc_aux / la_aux"),
+    ],
+    "lazy_solving_overhead_pairs": [
+        ("gc", "lc"),
+        ("ga_dyn", "la"),
+        ("gc_aux", "la_aux"),
+        ("gc", "la"),
+    ],
 }
 
 
@@ -348,6 +413,12 @@ PUP_THEME = {
     ],
     "xlabel": "Instance size (N)",
     "baseline": "pup",
+    "comparison_pairs": [
+        ("pup_double_std", "pup_double", "double std / lazy"),
+        ("pup_double_aux", "pup_double_aux_l", "double aux std / lazy"),
+        ("pup_doublev_std", "pup_doublev", "doublev std / lazy"),
+        ("pup_doublev_aux", "pup_doublev_aux_l", "doublev aux std / lazy"),
+    ],
 }
 
 
@@ -464,6 +535,7 @@ ENDPOINT_LABEL_METRICS = {
 ENDPOINT_LABEL_MIN_GAP_POINTS = 9.0
 SHARED_Y_SCALE_METRIC_GROUPS = (
     ("ground_heuristics", "ground_lazy_heuristic_facts"),
+    ("ground_lines", "variables"),
 )
 VARIANT_LINESTYLES = [
     "-",
@@ -474,12 +546,11 @@ VARIANT_LINESTYLES = [
     (0, (3, 1, 1, 1)),
     (0, (1, 1)),
 ]
-THOUSAND_FORMAT_METRICS = {
-    "variables",
-    "combined_heuristics",
-}
+THOUSAND_FORMAT_METRICS = set()
 MILLION_FORMAT_METRICS = {
     "ground_lines",
+    "variables",
+    "combined_heuristics",
 }
 
 
@@ -653,6 +724,9 @@ def _shared_y_scale_limits(stats: dict, theme: dict, metrics) -> tuple | None:
 
     if not has_value:
         return None
+
+    if set(metrics) == {"ground_lines", "variables"}:
+        return min(0.0, min_value), max_value
 
     span = max_value - min_value
     pad = max(span * 0.05, max_value * 0.02, 1.0)
@@ -835,15 +909,17 @@ def _format_compact_number(value, _pos=None):
 
 def _format_millions(value, _pos=None):
 
-    abs_value = abs(value)
-    if abs_value >= 100_000:
-        scaled = value / 1_000_000
-        return f"{scaled:.1f}".rstrip("0").rstrip(".") + "M"
-    if abs_value >= 1:
-        return f"{value:.0f}"
+    scaled = value / 1_000_000
+    abs_scaled = abs(scaled)
     if value == 0:
         return "0"
-    return f"{value:g}"
+    if abs_scaled >= 100 or scaled.is_integer():
+        return f"{scaled:.0f}"
+    if abs_scaled >= 10:
+        return f"{scaled:.1f}".rstrip("0").rstrip(".")
+    if abs_scaled >= 1:
+        return f"{scaled:.2f}".rstrip("0").rstrip(".")
+    return f"{scaled:.3f}".rstrip("0").rstrip(".")
 
 
 def _format_thousands(value, _pos=None):
@@ -889,7 +965,7 @@ def _apply_y_axis_format(ax, metric: str):
         ax.yaxis.set_major_locator(MaxNLocator(nbins=6, integer=True))
         ax.yaxis.set_major_formatter(FuncFormatter(_format_thousands))
     elif metric in MILLION_FORMAT_METRICS:
-        ax.yaxis.set_major_locator(MaxNLocator(nbins=6, integer=True))
+        ax.yaxis.set_major_locator(MaxNLocator(nbins=6, integer=True, prune="upper"))
         ax.yaxis.set_major_formatter(FuncFormatter(_format_millions))
     elif metric in INTEGER_METRICS:
         ax.yaxis.set_major_locator(MaxNLocator(nbins=6, integer=True))
@@ -1198,7 +1274,7 @@ def generate_graphs(
         "grid.linestyle": "--",
     })
 
-    n_plots = len(PLOT_CONFIGS)
+    n_plots = len(MAIN_PLOT_LAYOUT)
     n_cols = 2
     n_rows = (n_plots + n_cols - 1) // n_cols
 
@@ -1208,8 +1284,22 @@ def generate_graphs(
     variants = _ordered_variants(stats, theme)
     shared_metric_ylims = _shared_y_scale_limits_by_metric(stats, theme)
 
-    for idx, config in enumerate(PLOT_CONFIGS):
+    for idx, config in enumerate(MAIN_PLOT_LAYOUT):
         ax = axes_flat[idx]
+        if config is None:
+            ax.axis("off")
+            continue
+        if "kind" in config:
+            _plot_interpretive_chart_on_axis(
+                ax=ax,
+                stats=stats,
+                theme=theme,
+                config=config,
+                xlabel=xlabel,
+                compact=True,
+            )
+            continue
+
         metric = config["metric"]
         has_data = False
         series = []
@@ -1274,7 +1364,7 @@ def generate_graphs(
         ax.set_title(_format_title(metric, config["title"]))
         ax.set_xlabel(xlabel)
         ax.set_ylabel(config["ylabel"])
-        if has_data and metric not in ENDPOINT_LABEL_METRICS:
+        if has_data:
             ax.legend(loc="upper left")
 
         _apply_y_axis_format(ax, metric)
@@ -1326,6 +1416,17 @@ def generate_graphs(
             xlabel=xlabel,
         )
 
+    for cfg in INTERPRETIVE_PLOT_CONFIGS:
+        name, ext = os.path.splitext(cfg["filename"])
+        fname = f"{name}{suffix}{ext}" if title_suffix else cfg["filename"]
+        _generate_interpretive_chart(
+            stats=stats,
+            graphs_dir=graphs_dir,
+            config=cfg,
+            filename=fname,
+            theme=theme,
+            xlabel=xlabel,
+        )
 
     rel_fname = f"comparison_vs_{baseline}{suffix}.png" if title_suffix else f"comparison_vs_{baseline}.png"
     _generate_relative_vs_baseline_chart(stats, graphs_dir, baseline, theme, rel_fname, xlabel)
@@ -1440,8 +1541,7 @@ def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, description
     ax.set_xlabel(xlabel, fontsize=11)
     ax.set_ylabel(ylabel, fontsize=11)
     if has_data:
-        if metric not in ENDPOINT_LABEL_METRICS:
-            ax.legend(fontsize=10)
+        ax.legend(fontsize=10)
     else:
         ax.text(0.5, 0.5, "No data", transform=ax.transAxes,
                 ha="center", va="center", fontsize=13, color="#AAA")
@@ -1461,6 +1561,291 @@ def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, description
     plt.savefig(out_path, dpi=200, bbox_inches="tight")
     plt.close()
     print(f"  Chart '{filename}' saved to '{out_path}'.")
+
+
+def _generate_interpretive_chart(stats, graphs_dir, config, filename, theme, xlabel):
+
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        return
+
+    fig, ax = plt.subplots(figsize=(8.8, 5.2))
+    _plot_interpretive_chart_on_axis(
+        ax=ax,
+        stats=stats,
+        theme=theme,
+        config=config,
+        xlabel=xlabel,
+        compact=False,
+    )
+    _add_axis_caption(
+        ax,
+        config["description"],
+        y=-0.20,
+        width=92,
+        fontsize=8,
+    )
+
+    plt.tight_layout(rect=[0, 0.05, 1, 1])
+    out_path = os.path.join(graphs_dir, filename)
+    plt.savefig(out_path, dpi=200, bbox_inches="tight")
+    plt.close()
+    print(f"  Chart '{filename}' saved to '{out_path}'.")
+
+
+def _plot_interpretive_chart_on_axis(ax, stats, theme, config, xlabel, *, compact: bool):
+
+    kind = config["kind"]
+    if kind == "heuristic_expansion_factor":
+        has_data = _plot_heuristic_expansion_factor(ax, stats, theme)
+    elif kind == "additional_ground_lines_vs_lazy":
+        has_data = _plot_additional_ground_lines_vs_lazy(ax, stats, theme)
+    elif kind == "grounding_time_vs_heuristic_size":
+        has_data = _plot_grounding_time_vs_heuristic_size(ax, stats, theme)
+    elif kind == "lazy_solving_overhead":
+        has_data = _plot_lazy_solving_overhead(ax, stats, theme)
+    else:
+        has_data = False
+
+    ax.set_title(config["title"], fontsize=12 if compact else 13, fontweight="bold")
+    ax.set_xlabel(config.get("xlabel", xlabel), fontsize=10 if compact else 11)
+    ax.set_ylabel(config["ylabel"], fontsize=10 if compact else 11)
+    ax.grid(True, alpha=0.3, linestyle="--")
+
+    if has_data:
+        ax.legend(fontsize=8 if compact else 9)
+    else:
+        ax.text(
+            0.5,
+            0.5,
+            "No comparable data",
+            transform=ax.transAxes,
+            ha="center",
+            va="center",
+            fontsize=12,
+            color="#AAA",
+        )
+
+
+def _plot_heuristic_expansion_factor(ax, stats, theme) -> bool:
+
+    has_data = False
+    for standard, lazy, label in _available_comparison_pairs(stats, theme):
+        n_vals, standard_size, lazy_size = _aligned_cross_metric_pair(
+            stats,
+            standard,
+            "ground_heuristics",
+            lazy,
+            "ground_lazy_heuristic_facts",
+        )
+        ratios = [
+            _positive_ratio(std, laz)
+            for std, laz in zip(standard_size, lazy_size)
+        ]
+        if not _has_positive_finite(ratios):
+            continue
+
+        has_data = True
+        ax.plot(
+            n_vals,
+            ratios,
+            marker=theme["variant_markers"].get(lazy, "o"),
+            linewidth=2,
+            color=theme["variant_colors"].get(standard),
+            linestyle="-",
+            markeredgecolor="white",
+            markeredgewidth=0.8,
+            label=label,
+        )
+
+    ax.axhline(1.0, color="#555", linewidth=1, linestyle="--")
+    if has_data:
+        ax.set_yscale("log")
+        domain = _all_metric_ns(stats, ["ground_heuristics", "ground_lazy_heuristic_facts"])
+        if domain:
+            ax.set_xlim(min(domain), max(domain))
+    return has_data
+
+
+def _plot_additional_ground_lines_vs_lazy(ax, stats, theme) -> bool:
+
+    has_data = False
+    for standard, lazy, label in _available_comparison_pairs(stats, theme):
+        n_vals, standard_lines, lazy_lines = _aligned_cross_metric_pair(
+            stats,
+            standard,
+            "ground_lines",
+            lazy,
+            "ground_lines",
+        )
+        extra = [
+            std - laz
+            for std, laz in zip(standard_lines, lazy_lines)
+        ]
+        if not _has_finite(extra):
+            continue
+
+        has_data = True
+        ax.plot(
+            n_vals,
+            extra,
+            marker=theme["variant_markers"].get(lazy, "o"),
+            linewidth=2,
+            color=theme["variant_colors"].get(standard),
+            linestyle="-",
+            markeredgecolor="white",
+            markeredgewidth=0.8,
+            label=label,
+        )
+
+    ax.axhline(0.0, color="#555", linewidth=1, linestyle="--")
+    _apply_compact_axis_formatter(ax)
+    domain = _all_metric_ns(stats, ["ground_lines"])
+    if domain:
+        ax.set_xlim(min(domain), max(domain))
+    return has_data
+
+
+def _plot_grounding_time_vs_heuristic_size(ax, stats, theme) -> bool:
+
+    has_data = False
+    for variant in _ordered_variants(stats, theme):
+        heuristic_size = _effective_heuristic_map(stats, variant)
+        grounding = _metric_mean_map(stats, variant, "grounding_s")
+        common_n = sorted(set(heuristic_size.keys()) & set(grounding.keys()))
+        x_vals = []
+        y_vals = []
+        for n in common_n:
+            x = heuristic_size[n]
+            y = grounding[n]
+            if x > 0 and y > 0:
+                x_vals.append(x)
+                y_vals.append(y)
+
+        if not x_vals:
+            continue
+
+        has_data = True
+        ax.scatter(
+            x_vals,
+            y_vals,
+            marker=theme["variant_markers"].get(variant, "o"),
+            s=42,
+            color=theme["variant_colors"].get(variant),
+            edgecolors="white",
+            linewidths=0.7,
+            alpha=0.92,
+            label=theme["variant_labels"].get(variant, variant),
+        )
+
+    if has_data:
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+    return has_data
+
+
+def _plot_lazy_solving_overhead(ax, stats, theme) -> bool:
+
+    has_data = False
+    for standard, lazy in _available_lazy_solving_overhead_pairs(stats, theme):
+        n_vals, standard_solving, lazy_solving = _aligned_cross_metric_pair(
+            stats,
+            standard,
+            "solving_s",
+            lazy,
+            "solving_s",
+        )
+        ratios = [
+            _positive_ratio(laz, std)
+            for std, laz in zip(standard_solving, lazy_solving)
+        ]
+        if not _has_positive_finite(ratios):
+            continue
+
+        has_data = True
+        ax.plot(
+            n_vals,
+            ratios,
+            marker=theme["variant_markers"].get(lazy, "o"),
+            linewidth=2,
+            color=theme["variant_colors"].get(lazy),
+            linestyle="-",
+            markeredgecolor="white",
+            markeredgewidth=0.8,
+            label=f"{_variant_dir_identifier(theme, lazy)} / {_variant_dir_identifier(theme, standard)}",
+        )
+
+    ax.axhline(1.0, color="#555", linewidth=1, linestyle="--")
+    if has_data:
+        ax.set_yscale("log")
+        domain = _all_metric_ns(stats, ["solving_s"])
+        if domain:
+            ax.set_xlim(min(domain), max(domain))
+    return has_data
+
+
+def _available_lazy_solving_overhead_pairs(stats, theme):
+
+    configured = theme.get("lazy_solving_overhead_pairs")
+    if configured is None:
+        configured = [
+            (standard, lazy)
+            for standard, lazy, _ in theme.get("comparison_pairs", [])
+        ]
+
+    pairs = []
+    for standard, lazy in configured:
+        if standard in stats and lazy in stats:
+            pairs.append((standard, lazy))
+    return pairs
+
+
+def _available_comparison_pairs(stats, theme):
+
+    pairs = []
+    for standard, lazy, label in theme.get("comparison_pairs", []):
+        if standard in stats and lazy in stats:
+            pairs.append((standard, lazy, label))
+    return pairs
+
+
+def _aligned_cross_metric_pair(stats, left_variant, left_metric, right_variant, right_metric):
+
+    left_map = _metric_mean_map(stats, left_variant, left_metric)
+    right_map = _metric_mean_map(stats, right_variant, right_metric)
+    common_n = sorted(set(left_map.keys()) & set(right_map.keys()))
+    return common_n, [left_map[n] for n in common_n], [right_map[n] for n in common_n]
+
+
+def _positive_ratio(numerator, denominator):
+
+    if denominator <= 0 or numerator <= 0:
+        return float("nan")
+    return numerator / denominator
+
+
+def _has_finite(values) -> bool:
+
+    import math
+
+    return any(math.isfinite(float(value)) for value in values)
+
+
+def _has_positive_finite(values) -> bool:
+
+    import math
+
+    return any(math.isfinite(float(value)) and value > 0 for value in values)
+
+
+def _apply_compact_axis_formatter(ax):
+
+    from matplotlib.ticker import FuncFormatter, MaxNLocator
+
+    ax.yaxis.set_major_locator(MaxNLocator(nbins=6))
+    ax.yaxis.set_major_formatter(FuncFormatter(_format_compact_number))
+    ax.yaxis.offsetText.set_visible(False)
 
 
 def _generate_relative_vs_baseline_chart(stats, graphs_dir, baseline_variant, theme, filename, xlabel):
