@@ -4,6 +4,7 @@
 % instances/BSP_instances/BSP_range.lp
 
 x(1..n).
+#const k = n + 1.
 
 % guessing
 b(X) :- x(X), not c(X).
@@ -18,6 +19,8 @@ sumC(Sum) :- Sum = #sum{Y : c(Y)}.
 
 % heuristics
 % Originale: #heuristic b(X) : x(X), not c(X), S = #sum{Y : c(Y)}. [(((n+1)*S)+X), true]
-__heuristic(__target(b), x, __n_c, __bind(s, __sum(c, 0)), __weight(self), __priority(s), true, __semantics(clingo)).
+__heuristic(__target(b), x, __n_c, __bind(s, __sum(c, 0)),
+            __weight(__add(__mul(k, s), self)), __priority(0), __modifier(true), __semantics(clingo)).
 % Originale: #heuristic c(X) : x(X), not b(X), S = #sum{Y : b(Y)}. [(((n+1)*S)+X), true]
-__heuristic(__target(c), x, __n_b, __bind(s, __sum(b, 0)), __weight(self), __priority(s), true, __semantics(clingo)).
+__heuristic(__target(c), x, __n_b, __bind(s, __sum(b, 0)),
+            __weight(__add(__mul(k, s), self)), __priority(0), __modifier(true), __semantics(clingo)).

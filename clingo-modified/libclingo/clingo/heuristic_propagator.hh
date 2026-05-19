@@ -29,27 +29,33 @@ private:
         bool has_valid_runtime_key = false;
     };
 
-    struct CandidateRankKey {
-        int priority = 0;
-        int weight = 0;
+    struct CandidateHeuristicEffect {
+        bool active = false;
         Clingo::literal_t target_lit = 0;
+        int bias = 0;
+        int local_priority = 0;
+        HeuristicModifier modifier = HeuristicModifier::True;
         size_t candidate_id = 0;
-
-        bool operator==(CandidateRankKey const &o) const {
-            return priority == o.priority &&
-                   weight == o.weight &&
-                   target_lit == o.target_lit &&
-                   candidate_id == o.candidate_id;
-        }
     };
 
-    struct CandidateRankGreater {
-        bool operator()(CandidateRankKey const &a, CandidateRankKey const &b) const {
-            if (a.priority != b.priority) return a.priority > b.priority;
-            if (a.weight != b.weight) return a.weight > b.weight;
-            if (a.target_lit != b.target_lit) return a.target_lit < b.target_lit;
-            return a.candidate_id < b.candidate_id;
-        }
+    struct ResolvedModifierValue {
+        bool active = false;
+        int local_priority = 0;
+        int value = 0;
+        size_t source_candidate_id = 0;
+    };
+
+    struct TargetHeuristicState {
+        Clingo::literal_t target_lit = 0;
+        ResolvedModifierValue level;
+        ResolvedModifierValue sign;
+        bool decision_ranked = false;
+        int ranked_level = 0;
+    };
+
+    struct DecisionRankKey {
+        int level = 0;
+        Clingo::literal_t target_lit = 0;
     };
 
     struct RuntimeHeuristicCandidate {
@@ -61,8 +67,13 @@ private:
         std::vector<Clingo::literal_t> pos_body_lits;
         std::vector<Clingo::literal_t> neg_body_lits;
         std::vector<CandidateAggregateBinding> aggregate_bindings;
-        bool ranked = false;
-        CandidateRankKey rank_key;
+    };
+
+    struct DecisionRankGreater {
+        bool operator()(DecisionRankKey const &a, DecisionRankKey const &b) const {
+            if (a.level != b.level) return a.level > b.level;
+            return a.target_lit < b.target_lit;
+        }
     };
 
     using LitByTuple = std::unordered_map<NumericTupleKey, Clingo::literal_t, NumericTupleKeyHash>;
@@ -70,7 +81,10 @@ private:
 
     std::vector<HeuristicRuleTemplate> heuristic_rule_templates_;
     std::vector<RuntimeHeuristicCandidate> heuristic_candidates_;
-    std::set<CandidateRankKey, CandidateRankGreater> active_candidate_ranks_;
+    std::vector<CandidateHeuristicEffect> candidate_effects_;
+    std::unordered_map<Clingo::literal_t, std::vector<size_t>> candidate_ids_by_target_;
+    std::unordered_map<Clingo::literal_t, TargetHeuristicState> target_states_;
+    std::set<DecisionRankKey, DecisionRankGreater> active_decision_ranks_;
     std::unordered_map<Clingo::literal_t, AggregateContributions> aggregate_contributions_by_lit_;
     std::unordered_map<Clingo::literal_t, std::vector<size_t>> candidate_ids_to_refresh_by_lit_;
     std::unordered_map<Clingo::literal_t, std::vector<RuntimeAggregateKey>> aggregate_keys_to_refresh_by_lit_;
@@ -121,7 +135,7 @@ private:
                                std::vector<Clingo::literal_t> pos_body_lits,
                                std::vector<Clingo::literal_t> neg_body_lits,
                                std::unordered_map<Clingo::Symbol, int> body_var_values);
-    void erase_candidate_rank(size_t candidate_id) noexcept;
+    void erase_target_decision_rank(Clingo::literal_t target_lit) noexcept;
     bool candidate_target_is_free(RuntimeHeuristicCandidate const &candidate,
                                   Clingo::Assignment const &assignment) const;
     bool positive_body_is_satisfied(RuntimeHeuristicCandidate const &candidate,
@@ -135,8 +149,19 @@ private:
                                     RuntimeHeuristicCandidate const &candidate,
                                     Clingo::Assignment const &assignment,
                                     std::unordered_map<Clingo::Symbol, int> &var_env) const;
-    bool evaluate_candidate_rank(size_t candidate_id, Clingo::Assignment const &assignment,
-                                 CandidateRankKey &rank_key) const;
+    bool evaluate_candidate_effect(size_t candidate_id,
+                                   Clingo::Assignment const &assignment,
+                                   CandidateHeuristicEffect &effect) const;
+    void update_best_by_local_priority(ResolvedModifierValue &current,
+                                       int local_priority,
+                                       int value,
+                                       size_t candidate_id) const;
+    void apply_effect_to_target_state(CandidateHeuristicEffect const &effect,
+                                      TargetHeuristicState &state) const;
+    Clingo::literal_t apply_resolved_sign(ResolvedModifierValue const &sign,
+                                          Clingo::literal_t target_lit,
+                                          Clingo::literal_t fallback) const;
+    void refresh_target(Clingo::literal_t target_lit, Clingo::Assignment const &assignment);
     void refresh_candidate(size_t candidate_id, Clingo::Assignment const &assignment);
     void refresh_candidate_noexcept(size_t candidate_id, Clingo::Assignment const &assignment) noexcept;
     void refresh_aggregates_for_literal(Clingo::literal_t lit, Clingo::Assignment const &assignment);

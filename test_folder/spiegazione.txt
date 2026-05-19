@@ -1,154 +1,74 @@
+Ricapitolazione corretta del lazy heuristic propagator
 
-Giusto per ricapitolare a parole mie così vediamo se reisco a spiegare le cose per bene e quindi se le ho capite (sii "severo" nella correzione ed esigente, devo conoscere questo progetto come le mie tasche)
+La versione attuale del propagatore non ordina piu' i candidate con una chiave
+globale `priority, weight`. Quella era la vecchia approssimazione, piu' vicina
+al comportamento Alpha-style, e non rispecchiava la semantica di clingo.
 
-viene dato in pasto a questa versione modificata di clingo un encoding dove le euristiche sono state trascritte dal classico formato
+La forma concettuale da imitare e':
 
-#heuristic... blabla
+    #heuristic A : Body. [W@P, M]
 
-ad un formato diverso:
-__heuristic(blabla)
+dove:
 
-questo fa si che, nel caso in cui l'euristica utilizzava degli aggregati scritti come __*aggregato* Gringo non interpreti la direttiva e non si occupi di groundare tutte le combinazioni possibili di aggregato facendo esplodere la memoria necessaria, ma groundi atomi __heuristic() come fatti normali che verranno, solo in un secondo momento, interpretati, durante il processo di solving di clasp, dal propagatore euristico richiamato dai callback del solver
-L’aggregato scritto come __sum(...), __count(...), ecc. è solo un termine, non un aggregato ASP valutato da Gringo.
+    W = bias/value della modifica
+    P = priority locale tra modifiche dello stesso target
+    M = modifier: level, sign, true, false, init, factor
 
-Dopo il grounding e prima della ricerca vera e propria, Clingo richiama la
-callback init del propagatore/euristica registrato. 
-In questa fase il codice riceve accesso i symbolic_atoms dopo il grounding, legge i fatti e scannerizza tutti gli atomi, raccgolie solo gli __heuristic e li passa al parser che costruisce i rispettivi HeuristicRuleTemplate;
-di queste c'è una piccola "trasformazione"
-Peso e priorità vengono trasformati in piccoli AST aritmetici perché devono
-essere rivalutati molte volte durante il solving, usando valori runtime come
-self o variabili legate ad aggregati. Il parsing viene fatto una sola volta
-durante init; durante il solving si esegue solo la valutazione dell'AST.
+Il flusso ora e':
 
-Se non ne trova nessuno allora il propagatore non installa nessun watch e non verrà quindi richiamato durante il processo di risoluzione, altrimenti interviene facendo le seguenti cose:
+1. Clingo grounda i fatti `__heuristic(...)` come normali atomi.
+2. Durante `init`, il propagatore legge questi fatti e costruisce gli
+   `HeuristicRuleTemplate`.
+3. Ogni template viene materializzato in uno o piu' `RuntimeHeuristicCandidate`,
+   uno per target/body compatibile.
+4. Ogni candidate, quando viene rivalutato, produce un
+   `CandidateHeuristicEffect`:
 
-Viene chiamato init lazy passandogli già il vettore con gli HeuristicRuleTemplate trovati
+       target_lit
+       bias
+       local_priority
+       modifier
 
-Viene chiamato build_ground_literal_index_for_predicates che costruisce un set con al suo interno i predicati usati dentro gli HeuristicRuleTemplate e successivamente viene usato per cercare quali sono i predicati che ci interessano ignorando tutto il resto e costruire una mappa predicato[atomkey] -> solverLiteral
-(ignora gli atomi non numerici)
+5. Gli effect attivi vengono risolti per target:
 
-GroundLiteralIndex:
-  b -> { [1] -> lit_b1, [2] -> lit_b2, ... }
-  c -> { [1] -> lit_c1, [2] -> lit_c2, ... }
-  x -> { [1] -> lit_x1, [2] -> lit_x2, ... }
+       target -> level risolto
+       target -> sign risolto
 
+6. Solo dopo questa risoluzione locale il target entra nel ranking globale,
+   usando il suo level risolto.
+7. `decide()` sceglie il target con level positivo piu' alto e applica il sign
+   risolto.
 
-Poi viene chiamato materialize_lazy_candidates_and_register_watches() che cicla su tutti gli HeuristicRuleTemplate e su ciascuno di essi chiama:
-materialize_candidates_for_template(), per ogni combinazione compatibile target/body,
-chiama add_runtime_candidate(). 
-Questa funzione costruisce il RuntimeHeuristicCandidate
-tramite build_runtime_candidate(), lo salva nel vettore heuristic_candidates_,
-indicizza le dipendenze dagli aggregati e registra i watch sui literal rilevanti.
+Quindi:
 
+    clingo @priority = tie-break locale sullo stesso target
+    clingo level     = ranking globale tra target
+    clingo sign      = valore preferito quando il target viene scelto
 
-chiama build_runtime_candidate() per creare concretamente un RuntimeHeuristicCandidate, l’istanza concreta del template per uno specifico target/body.
-Gli aggregati non vengono valutati né espansi in tutti i possibili valori: il candidate salva solo
-un CandidateAggregateBinding verso una RuntimeAggregateKey, che verrà usata durante il solving
-per leggere il valore corrente dell’AggregateState.
+Per BSP, la forma lazy clingo-like deve essere:
 
-RuntimeHeuristicCandidate:
-    rule_idx = template di b
-    target_lit = lit_b2
-    self_value = 2
-    tuple_values = [2]
+    #const k = n + 1.
 
-    pos_body_lits = [lit_x2]
-    neg_body_lits = [lit_c2]
+    __heuristic(__target(b), x, __n_c, __bind(s, __sum(c, 0)),
+                __weight(__add(__mul(k, s), self)),
+                __priority(0),
+                __modifier(true),
+                __semantics(clingo)).
 
-    aggregate_bindings:
-        s -> runtime key di sum(c)
+Non usare piu':
 
+    __weight(self), __priority(s), true
 
-poi chiama 
-- index_candidate_aggregate_dependencies() che costruisce una mappa <RuntimeAggregateKey, std::vector<size_t>> che lega un aggregato ai RuntimeHeuristicCandidate (usando size_T, ovvero un intero che rappresenta l'indice numeri del RuntimeHeuristicCandidate all'interno del vettore heuristic_candidates_) che dipendono da quell'aggregato
+perche' `s` sarebbe solo priority locale e non ordinerebbe globalmente target
+diversi.
 
-serve per vedere quali candidate aggiornare quando durante il solving un valore di un atomo, contenuto in un aggregato, cambia facendo quindi cambiare il valore dell'aggregato
+Nota importante:
 
-- watch_candidate_refresh_literals() che costruisce una mappa <Clingo::literal_t, std::vector<size_t>> (candidate_ids_to_refresh_by_lit_) che associa ad ogni solver literal i RuntimeHeuristicCandidate (usando size_T, ovvero un intero che rappresenta l'indice numeri del RuntimeHeuristicCandidate all'interno del vettore heuristic_candidates_) che vanno aggiornati quando quell'atomo cambia 
+`init` e `factor` sono riconosciuti dal parser, ma non sono implementati nel
+propagatore lazy. In clingo nativo modificano lo score euristico interno; qui
+il propagatore puo' solo restituire un literal da `decide()`, quindi trattarli
+come `level` sarebbe una semantica falsa.
 
-inoltre per ogni literal chiede a clasp di registrare un watch tramite init.add_Watch(slit) così da essere notificato durante il processo di risoluzione
+Per la spiegazione dettagliata passo-passo vedere:
 
-
-Una volta usciti da materialize_lazy_candidates_and_register_watches() si passa a 
-- initialize_aggregate_sources() che crea una mappa che associa ad ogni solver literal gli aggregati che va ad influenzare (sommando preventivamente i literal già veri nell'assegnamento iniziale)
-
-aggregate_contributions_by_lit_[101] = {
-    values: [ { runtime_key: KEY_SUM_C, value: 1 } ]
-}
-aggregate_contributions_by_lit_[102] = {
-    values: [ { runtime_key: KEY_SUM_C, value: 2 } ]
-}
-aggregate_contributions_by_lit_[103] = {
-    values: [ { runtime_key: KEY_SUM_C, value: 3 } ]
-}
-
-e una mappa aggregato literal che invece fa il contrario
-
-aggregate_source_lits_[KEY_SUM_C] = [ 101, 102, 103 ]
-aggregate_source_lits_[KEY_SUM_B] = [ 201, 202, 203 ]
-
-serve soprattutto per la semantica clingo, dove un aggregato può essere usato solo quando tutte le sue sorgenti rilevanti sono determinate.
-
-e infine chiamiamo 
-- refresh_all_candidates() che scorre il vettore heuristic_candidates_ e per ciascun RuntimeHeuristicCandidate chiama refresh_candidate() che:
-1) rimuove il candidate dall'insieme ordinato dei rank attivi
-2) rivaluta il candidate
-3) inserisce il CandidateRankKey risultante nell'insieme ordinato
-
-evaluate_candidate_rank() dove viene controllato che il target sia free, il body rispettato e vengono valutati gli AST degli aggregati e a questo punto viene creato un CandidateRankKey e viene inserito nell'insieme active_candidate_ranks_ che sotto al cofano è un albero binario ordinato con CandidateRankGreater: prima priorità maggiore, poi peso maggiore, poi i tie-break su literal e candidate id
-
-Se il candidate risulta applicabile, non viene ricostruito. Viene creata una nuova
-CandidateQueueEntry con priority, weight, target_lit e candidate_id. Questa entry viene
-inserita in active_candidate_queue_ e viene salvata anche dentro il RuntimeHeuristicCandidate
-nei campi queue_entry e queued=true. Se invece il candidate non è applicabile, resta fuori
-dalla coda e queued=false.
-
-una volta finito il processo di inizializzazione è terminato e possiamo passare alla fase di risoluzione.
-
-Durante la ricerca, Clingo/Clasp interagisce con l’euristica lazy tramite tre metodi principali:
-propagate(), chiamato quando literal osservati vengono assegnati;
-undo(), chiamato durante il backtracking per annullare cambiamenti;
-decide(), chiamato quando il solver ha bisogno di una nuova decisione euristica.
-
-propagate(changes) -> 
-
-Quando un literal osservato viene assegnato a vero nel trail, Clingo lo passa a propagate().
-Se il propagatore ha registrato anche il literal negato -lit, allora anche l’assegnazione
-a falso dell’atomo può essere osservata come comparsa di -lit nel trail.
-
-Controlla in aggregate_contributions_by_lit_ se il literal apporta un contributo numerico a un aggregato e in tal caso aggiorna l'incrementatore associato.
-
-Consulta aggregate_keys_to_refresh_by_lit_ e candidate_ids_to_refresh_by_lit_ per capire quali aggregati e candidati sono stati invalidati dal cambiamento e quindi chiama il refresh_candidate() solo su quegli indici, ricalcolandone l'applicabilità e riposizionando il loro CandidateRankKey nell'insieme ordinato attivo
-
-
-
-undo(changes) 
-
-Quando il solver torna indietro e rimuove dal trail
-literal precedentemente assegnati. Il propagatore deve allora annullare gli effetti
-runtime di quei literal: rimuove le contribuzioni dagli AggregateState e rinfresca
-i candidati che dipendono dagli aggregati o dai literal coinvolti.
-
-
-
-decide() 
-
-Prende la migliore CandidateQueueEntry da active_candidate_queue_, ma non si fida ciecamente:
-verifica che il candidate esista ancora, che sia ancora queued e che la queue_entry salvata
-nel candidate coincida con quella letta dalla coda. Poi rivaluta il candidate; se non è più valido,
-lo rimuove; se è valido ma con priority/weight cambiati, lo reinserisce aggiornato.
-Solo quando l’entry è stabile, restituisce il target literal modificato da apply_sign().
-
-
-Se non ci sono candidate applicabili, decide() restituisce 0; in questo caso il solver
-usa la propria euristica/fallback interna.
-
-
-IMPORTANTISSIMO
-
-in alpha abbiamo [weight@level]
-in clingo abbiamo [weight@priority, level]
-
-e la priority agisce solo su atomi uguali
-quesot
-
+    test_folder/esecuzione_passo_passo.txt

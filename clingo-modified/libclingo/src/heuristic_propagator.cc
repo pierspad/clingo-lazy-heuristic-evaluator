@@ -3,16 +3,14 @@
 #include "clingo/heuristic_symbol.hh"
 
 #include <algorithm>
+#include <stdexcept>
 #include <unordered_set>
 #include <utility>
 
-static Clingo::literal_t apply_sign(HeuristicSign sign, Clingo::literal_t target_lit, Clingo::literal_t fallback) {
-    switch (sign) {
-        case HeuristicSign::True:  return target_lit;
-        case HeuristicSign::False: return -target_lit;
-        case HeuristicSign::FollowFallback: return fallback < 0 ? -target_lit : target_lit;
-    }
-    return target_lit;
+static int normalize_sign(int value) {
+    if (value > 0) return +1;
+    if (value < 0) return -1;
+    return 0;
 }
 
 static Clingo::Symbol predicate_name_symbol(Clingo::Symbol const &atom_symbol) {
@@ -270,7 +268,10 @@ void HeuristicPropagator::init(Clingo::PropagateInit &init) {
     aggregate_contributions_by_lit_.clear();
     heuristic_rule_templates_.clear();
     heuristic_candidates_.clear();
-    active_candidate_ranks_.clear();
+    candidate_effects_.clear();
+    candidate_ids_by_target_.clear();
+    target_states_.clear();
+    active_decision_ranks_.clear();
     candidate_ids_to_refresh_by_lit_.clear();
     aggregate_keys_to_refresh_by_lit_.clear();
     candidate_ids_by_aggregate_.clear();
@@ -411,6 +412,12 @@ HeuristicPropagator::RuntimeHeuristicCandidate HeuristicPropagator::build_runtim
 size_t HeuristicPropagator::store_runtime_candidate(RuntimeHeuristicCandidate candidate) {
     size_t const candidate_id = heuristic_candidates_.size();
     heuristic_candidates_.push_back(std::move(candidate));
+    CandidateHeuristicEffect inactive_effect;
+    inactive_effect.candidate_id = candidate_id;
+    inactive_effect.target_lit = heuristic_candidates_.back().target_lit;
+    inactive_effect.active = false;
+    candidate_effects_.push_back(inactive_effect);
+    candidate_ids_by_target_[inactive_effect.target_lit].push_back(candidate_id);
     return candidate_id;
 }
 
@@ -477,14 +484,13 @@ void HeuristicPropagator::add_runtime_candidate(
     watch_candidate_refresh_literals(init, candidate_id);
 }
 
-void HeuristicPropagator::erase_candidate_rank(size_t candidate_id) noexcept {
-    if (candidate_id >= heuristic_candidates_.size()) return;
+void HeuristicPropagator::erase_target_decision_rank(Clingo::literal_t target_lit) noexcept {
+    auto state_it = target_states_.find(target_lit);
+    if (state_it == target_states_.end() || !state_it->second.decision_ranked) return;
 
-    auto &candidate = heuristic_candidates_[candidate_id];
-    if (candidate.ranked) {
-        active_candidate_ranks_.erase(candidate.rank_key);
-        candidate.ranked = false;
-    }
+    active_decision_ranks_.erase(DecisionRankKey{state_it->second.ranked_level, target_lit});
+    state_it->second.decision_ranked = false;
+    state_it->second.ranked_level = 0;
 }
 
 bool HeuristicPropagator::candidate_target_is_free(RuntimeHeuristicCandidate const &candidate,
@@ -564,12 +570,13 @@ bool HeuristicPropagator::build_variable_environment(
     return true;
 }
 
-bool HeuristicPropagator::evaluate_candidate_rank(size_t candidate_id,
-                                                  Clingo::Assignment const &assignment,
-                                                  CandidateRankKey &rank_key) const {
+bool HeuristicPropagator::evaluate_candidate_effect(size_t candidate_id,
+                                                    Clingo::Assignment const &assignment,
+                                                    CandidateHeuristicEffect &effect) const {
     if (candidate_id >= heuristic_candidates_.size()) return false;
 
     auto const &candidate = heuristic_candidates_[candidate_id];
+    if (candidate.rule_idx >= heuristic_rule_templates_.size()) return false;
     auto const &tmpl = heuristic_rule_templates_[candidate.rule_idx];
 
     if (!candidate_target_is_free(candidate, assignment)) return false;
@@ -579,24 +586,127 @@ bool HeuristicPropagator::evaluate_candidate_rank(size_t candidate_id,
     std::unordered_map<Clingo::Symbol, int> var_env;
     if (!build_variable_environment(tmpl, candidate, assignment, var_env)) return false;
 
-    rank_key.priority = evaluate_arithmetic_expression(tmpl.priority_expr, candidate.self_value, var_env);
-    rank_key.weight = evaluate_arithmetic_expression(tmpl.weight_expr, candidate.self_value, var_env);
-    rank_key.target_lit = candidate.target_lit;
-    rank_key.candidate_id = candidate_id;
+    int const local_priority = evaluate_arithmetic_expression(
+        tmpl.local_priority_expr,
+        candidate.self_value,
+        var_env
+    );
+    if (local_priority < 0) {
+        throw std::runtime_error("Lazy heuristic clingo-like: __priority locale negativa non supportata.");
+    }
+
+    effect.active = true;
+    effect.target_lit = candidate.target_lit;
+    effect.bias = evaluate_arithmetic_expression(tmpl.bias_expr, candidate.self_value, var_env);
+    effect.local_priority = local_priority;
+    effect.modifier = tmpl.modifier;
+    effect.candidate_id = candidate_id;
     return true;
+}
+
+void HeuristicPropagator::update_best_by_local_priority(ResolvedModifierValue &current,
+                                                        int local_priority,
+                                                        int value,
+                                                        size_t candidate_id) const {
+    if (!current.active ||
+        local_priority > current.local_priority ||
+        (local_priority == current.local_priority && candidate_id < current.source_candidate_id)) {
+        current.active = true;
+        current.local_priority = local_priority;
+        current.value = value;
+        current.source_candidate_id = candidate_id;
+    }
+}
+
+void HeuristicPropagator::apply_effect_to_target_state(CandidateHeuristicEffect const &effect,
+                                                       TargetHeuristicState &state) const {
+    switch (effect.modifier) {
+        case HeuristicModifier::Level:
+            update_best_by_local_priority(state.level, effect.local_priority, effect.bias, effect.candidate_id);
+            break;
+
+        case HeuristicModifier::Sign:
+            update_best_by_local_priority(state.sign,
+                                          effect.local_priority,
+                                          normalize_sign(effect.bias),
+                                          effect.candidate_id);
+            break;
+
+        case HeuristicModifier::True:
+            update_best_by_local_priority(state.level, effect.local_priority, effect.bias, effect.candidate_id);
+            update_best_by_local_priority(state.sign, effect.local_priority, +1, effect.candidate_id);
+            break;
+
+        case HeuristicModifier::False:
+            update_best_by_local_priority(state.level, effect.local_priority, effect.bias, effect.candidate_id);
+            update_best_by_local_priority(state.sign, effect.local_priority, -1, effect.candidate_id);
+            break;
+
+        case HeuristicModifier::Init:
+        case HeuristicModifier::Factor:
+            throw std::runtime_error("init/factor non supportati dal lazy heuristic propagator clingo-like.");
+    }
+}
+
+Clingo::literal_t HeuristicPropagator::apply_resolved_sign(ResolvedModifierValue const &sign,
+                                                           Clingo::literal_t target_lit,
+                                                           Clingo::literal_t fallback) const {
+    if (!sign.active || sign.value == 0) {
+        Clingo::literal_t const fallback_target = fallback > 0 ? fallback : -fallback;
+        if (fallback_target == target_lit) {
+            return fallback;
+        }
+        return target_lit;
+    }
+
+    return sign.value > 0 ? target_lit : -target_lit;
+}
+
+void HeuristicPropagator::refresh_target(Clingo::literal_t target_lit, Clingo::Assignment const &assignment) {
+    erase_target_decision_rank(target_lit);
+
+    TargetHeuristicState new_state;
+    new_state.target_lit = target_lit;
+
+    auto ids_it = candidate_ids_by_target_.find(target_lit);
+    if (ids_it != candidate_ids_by_target_.end()) {
+        for (size_t candidate_id : ids_it->second) {
+            if (candidate_id >= candidate_effects_.size()) continue;
+
+            auto const &effect = candidate_effects_[candidate_id];
+            if (!effect.active) continue;
+
+            apply_effect_to_target_state(effect, new_state);
+        }
+    }
+
+    target_states_[target_lit] = new_state;
+
+    if (new_state.level.active &&
+        new_state.level.value > 0 &&
+        assignment.truth_value(target_lit) == Clingo::TruthValue::Free) {
+        active_decision_ranks_.insert(DecisionRankKey{new_state.level.value, target_lit});
+        auto &stored_state = target_states_[target_lit];
+        stored_state.decision_ranked = true;
+        stored_state.ranked_level = new_state.level.value;
+    }
 }
 
 void HeuristicPropagator::refresh_candidate(size_t candidate_id, Clingo::Assignment const &assignment) {
     if (candidate_id >= heuristic_candidates_.size()) return;
 
-    erase_candidate_rank(candidate_id);
+    Clingo::literal_t const target_lit = heuristic_candidates_[candidate_id].target_lit;
+    CandidateHeuristicEffect effect;
+    effect.active = false;
+    effect.target_lit = target_lit;
+    effect.candidate_id = candidate_id;
 
-    CandidateRankKey rank_key;
-    if (evaluate_candidate_rank(candidate_id, assignment, rank_key)) {
-        active_candidate_ranks_.insert(rank_key);
-        heuristic_candidates_[candidate_id].rank_key = rank_key;
-        heuristic_candidates_[candidate_id].ranked = true;
+    evaluate_candidate_effect(candidate_id, assignment, effect);
+
+    if (candidate_id < candidate_effects_.size()) {
+        candidate_effects_[candidate_id] = effect;
     }
+    refresh_target(target_lit, assignment);
 }
 
 void HeuristicPropagator::refresh_candidate_noexcept(size_t candidate_id,
@@ -605,7 +715,18 @@ void HeuristicPropagator::refresh_candidate_noexcept(size_t candidate_id,
         refresh_candidate(candidate_id, assignment);
     }
     catch (...) {
-        erase_candidate_rank(candidate_id);
+        if (candidate_id >= heuristic_candidates_.size()) return;
+
+        Clingo::literal_t const target_lit = heuristic_candidates_[candidate_id].target_lit;
+        if (candidate_id < candidate_effects_.size()) {
+            candidate_effects_[candidate_id].active = false;
+        }
+        try {
+            refresh_target(target_lit, assignment);
+        }
+        catch (...) {
+            erase_target_decision_rank(target_lit);
+        }
     }
 }
 
@@ -868,38 +989,37 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
     static_cast<void>(thread_id);
 
     try {
-        while (!active_candidate_ranks_.empty()) {
-            CandidateRankKey const rank_key = *active_candidate_ranks_.begin();
-            size_t const candidate_id = rank_key.candidate_id;
-
-            if (candidate_id >= heuristic_candidates_.size() ||
-                !heuristic_candidates_[candidate_id].ranked ||
-                !(heuristic_candidates_[candidate_id].rank_key == rank_key)) {
-                active_candidate_ranks_.erase(active_candidate_ranks_.begin());
+        while (!active_decision_ranks_.empty()) {
+            DecisionRankKey const rank_key = *active_decision_ranks_.begin();
+            auto state_it = target_states_.find(rank_key.target_lit);
+            if (state_it == target_states_.end()) {
+                active_decision_ranks_.erase(active_decision_ranks_.begin());
                 continue;
             }
 
-            CandidateRankKey refreshed;
-            if (!evaluate_candidate_rank(candidate_id, assignment, refreshed)) {
-                erase_candidate_rank(candidate_id);
+            auto const &state = state_it->second;
+            if (assignment.truth_value(rank_key.target_lit) != Clingo::TruthValue::Free) {
+                erase_target_decision_rank(rank_key.target_lit);
                 continue;
             }
 
-            if (!(refreshed == rank_key)) {
-                try {
-                    erase_candidate_rank(candidate_id);
-                    active_candidate_ranks_.insert(refreshed);
-                    heuristic_candidates_[candidate_id].rank_key = refreshed;
-                    heuristic_candidates_[candidate_id].ranked = true;
-                }
-                catch (...) {
-                    erase_candidate_rank(candidate_id);
-                }
+            if (!state.level.active ||
+                state.level.value != rank_key.level ||
+                state.level.value <= 0) {
+                erase_target_decision_rank(rank_key.target_lit);
                 continue;
             }
 
-            auto const &tmpl = heuristic_rule_templates_[heuristic_candidates_[candidate_id].rule_idx];
-            return apply_sign(tmpl.sign, rank_key.target_lit, fallback);
+            return apply_resolved_sign(state.sign, rank_key.target_lit, fallback);
+        }
+
+        Clingo::literal_t const fallback_target = fallback > 0 ? fallback : -fallback;
+        if (fallback_target != 0 &&
+            assignment.truth_value(fallback_target) == Clingo::TruthValue::Free) {
+            auto state_it = target_states_.find(fallback_target);
+            if (state_it != target_states_.end() && state_it->second.sign.active) {
+                return apply_resolved_sign(state_it->second.sign, fallback_target, fallback);
+            }
         }
     }
     catch (...) {

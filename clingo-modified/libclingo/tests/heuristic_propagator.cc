@@ -72,7 +72,7 @@ TEST_CASE("lazy-heuristic-propagator-corner-cases", "[clingo][heuristic]") {
             #const n=0.
             dom(1..n).
             { choose(X) } :- dom(X).
-            __heuristic(__target(choose), dom, __weight(self), __priority(1), true).
+            __heuristic(__target(choose), dom, __weight(self), __priority(1), __modifier(true)).
             #show choose/1.
         )");
         ctl.ground({{"base", {}}}, nullptr);
@@ -89,7 +89,7 @@ TEST_CASE("lazy-heuristic-propagator-corner-cases", "[clingo][heuristic]") {
             { choose(X) } :- dom(X).
             :- not choose(1).
             :- choose(1).
-            __heuristic(__target(choose), dom, __weight(self), __priority(1), true).
+            __heuristic(__target(choose), dom, __weight(self), __priority(1), __modifier(true)).
             #show choose/1.
         )");
         ctl.ground({{"base", {}}}, nullptr);
@@ -112,7 +112,7 @@ TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
         ctl.add("base", {}, R"(
             dom(1..3).
             1 { choose(X) : dom(X) } 1.
-            __heuristic(__target(choose), dom, __weight(self), __priority(1), true).
+            __heuristic(__target(choose), dom, __weight(self), __priority(1), __modifier(true)).
             #show choose/1.
         )");
         ctl.ground({{"base", {}}}, nullptr);
@@ -130,7 +130,7 @@ TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
             body(X,W) :- dom(X), score(X,W).
             1 { choose(X) : dom(X) } 1.
             __heuristic(__target(choose), __body(body, __match(0, 0), __bind_arg(w, 1)),
-                        __weight(w), __priority(1), true).
+                        __weight(w), __priority(1), __modifier(true)).
             #show choose/1.
         )");
         ctl.ground({{"base", {}}}, nullptr);
@@ -148,7 +148,26 @@ TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
             1 { choose(X) : dom(X) } 1.
             __heuristic(__target(choose), dom,
                         __bind(s, __sum(source, 1, __filter(0, 0))),
-                        __weight(s), __priority(1), true).
+                        __weight(s), __priority(1), __modifier(true)).
+            #show choose/1.
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE(test_solve(ctl.solve(), models).is_satisfiable());
+        REQUIRE(models == ModelVec({{Function("choose", {Number(2)})}}));
+    }
+
+    SECTION("local priority resolves only modifications of the same target") {
+        Control ctl{{"1", "--heuristic=Domain"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            dom(1..2).
+            mark(1).
+            1 { choose(X) : dom(X) } 1.
+            __heuristic(__target(choose), __body(mark, __match(0, 0)),
+                        __weight(1), __priority(100), __modifier(true)).
+            __heuristic(__target(choose), dom,
+                        __weight(self), __priority(0), __modifier(true)).
             #show choose/1.
         )");
         ctl.ground({{"base", {}}}, nullptr);
@@ -174,7 +193,7 @@ TEST_CASE("lazy-heuristic-syntax-validation", "[clingo][heuristic]") {
             __heuristic(__target(choose), dom,
                         __bind(s, __sum(dom, 0)),
                         __bind(s, __count(dom, 0)),
-                        __weight(s), true).
+                        __weight(s), __modifier(true)).
         )");
         ctl.ground({{"base", {}}}, nullptr);
         REQUIRE_THROWS(test_solve(ctl.solve(), models));
@@ -189,7 +208,7 @@ TEST_CASE("lazy-heuristic-syntax-validation", "[clingo][heuristic]") {
             { choose(X) } :- dom(X).
             __heuristic(__target(choose), dom,
                         __bind(s, __sum(dom, -1)),
-                        __weight(s), true).
+                        __weight(s), __modifier(true)).
         )");
         ctl.ground({{"base", {}}}, nullptr);
         REQUIRE_THROWS(test_solve(ctl.solve(), models));
@@ -204,7 +223,7 @@ TEST_CASE("lazy-heuristic-syntax-validation", "[clingo][heuristic]") {
             body(1,10).
             { choose(X) } :- dom(X).
             __heuristic(__target(choose), __body(body, __bind_arg(w, 1)),
-                        __weight(w), true).
+                        __weight(w), __modifier(true)).
         )");
         ctl.ground({{"base", {}}}, nullptr);
         REQUIRE_THROWS(test_solve(ctl.solve(), models));
@@ -220,7 +239,7 @@ TEST_CASE("lazy-heuristic-syntax-validation", "[clingo][heuristic]") {
             { choose(X) } :- dom(X).
             __heuristic(__target(choose),
                         __body(body, __match(0, 0), __bind_arg(w, 1), __bind_arg(w, 2)),
-                        __weight(w), true).
+                        __weight(w), __modifier(true)).
         )");
         ctl.ground({{"base", {}}}, nullptr);
         REQUIRE_THROWS(test_solve(ctl.solve(), models));

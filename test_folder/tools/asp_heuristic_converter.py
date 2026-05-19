@@ -44,9 +44,9 @@ class HeuristicDirective:
     neg_body: list = field(default_factory=list)
     body_predicates: list = field(default_factory=list)
     bindings: list = field(default_factory=list)
-    weight_expr: str = "0"
-    priority_expr: str = "0"
-    sign: str = "true"
+    bias_expr: str = "0"
+    local_priority_expr: str = "0"
+    modifier: str = "true"
     body_str: str = ""
     original_line: str = ""
 
@@ -83,7 +83,7 @@ def _convert_arith_expr(
         except ValueError:
             pass
 
-        inner = _convert_arith_expr(rest, target_var, binding_vars)
+        inner = _convert_arith_expr(rest, target_var, binding_vars, body_vars)
         return f"__sub(0, {inner})"
 
 
@@ -267,22 +267,21 @@ def generate_lazy_heuristic(directive: HeuristicDirective, semantics: str = "alp
         args.append(_format_binding(b, var_lower))
 
 
-    weight_conv = _convert_arith_expr(
-        directive.weight_expr, directive.target_var, binding_vars, body_vars
+    bias_conv = _convert_arith_expr(
+        directive.bias_expr, directive.target_var, binding_vars, body_vars
     )
-    args.append(f"__weight({weight_conv})")
+    args.append(f"__weight({bias_conv})")
 
 
-    priority_conv = _convert_arith_expr(
-        directive.priority_expr, directive.target_var, binding_vars, body_vars
+    local_priority_conv = _convert_arith_expr(
+        directive.local_priority_expr, directive.target_var, binding_vars, body_vars
     )
-    args.append(f"__priority({priority_conv})")
+    args.append(f"__priority({local_priority_conv})")
 
 
-    args.append(directive.sign)
+    args.append(f"__modifier({directive.modifier})")
 
-    if semantics == "clingo":
-        args.append("__semantics(clingo)")
+    args.append(f"__semantics({semantics})")
 
     result_line = f"__heuristic({', '.join(args)})."
     return warnings, result_line
@@ -301,8 +300,8 @@ def _aux_rule_body_with_weights(directive: HeuristicDirective) -> str:
     parts = []
     if directive.body_str:
         parts.append(directive.body_str)
-    parts.append(f"AuxWeight = {directive.weight_expr}")
-    parts.append(f"AuxPriority = {directive.priority_expr}")
+    parts.append(f"AuxWeight = {directive.bias_expr}")
+    parts.append(f"AuxPriority = {directive.local_priority_expr}")
     return ", ".join(parts)
 
 
@@ -317,7 +316,7 @@ def generate_aux_heuristic(directive: HeuristicDirective, idx: int) -> list:
     heuristic = (
         f"#heuristic {directive.target_text} : "
         f"{aux}({target_args}, AuxWeight, AuxPriority). "
-        f"[AuxWeight@AuxPriority, {directive.sign}]"
+        f"[AuxWeight@AuxPriority, {directive.modifier}]"
     )
     return [], f"{aux_rule}\n{heuristic}"
 
@@ -347,7 +346,7 @@ def generate_lazy_aux_heuristic(directive: HeuristicDirective, idx: int) -> list
     existing_args = set(target_arg_list + binding_arg_list)
     extra_arg_list = [
         name
-        for name in _expr_variables(directive.weight_expr, directive.priority_expr)
+        for name in _expr_variables(directive.bias_expr, directive.local_priority_expr)
         if name not in existing_args
     ]
     aux_arg_list = target_arg_list + binding_arg_list + extra_arg_list
@@ -363,9 +362,9 @@ def generate_lazy_aux_heuristic(directive: HeuristicDirective, idx: int) -> list
         neg_body=[],
         body_predicates=[],
         bindings=[],
-        weight_expr=directive.weight_expr,
-        priority_expr=directive.priority_expr,
-        sign=directive.sign,
+        bias_expr=directive.bias_expr,
+        local_priority_expr=directive.local_priority_expr,
+        modifier=directive.modifier,
         body_str=f"{aux}({aux_args})",
         original_line=directive.original_line,
     )
@@ -598,9 +597,9 @@ def _directive_from_heuristic_ast(ast_node) -> Optional[HeuristicDirective]:
                 pos_body.append(parsed)
                 body_predicates.append(parsed)
 
-    sign = str(ast_node.modifier)
-    if sign not in {"true", "false", "sign"}:
-        sign = "true"
+    modifier = str(ast_node.modifier)
+    if modifier not in {"level", "sign", "true", "false", "init", "factor"}:
+        modifier = "true"
 
     return HeuristicDirective(
         target_pred=target_fn.name,
@@ -611,9 +610,9 @@ def _directive_from_heuristic_ast(ast_node) -> Optional[HeuristicDirective]:
         neg_body=neg_body,
         body_predicates=body_predicates,
         bindings=bindings,
-        weight_expr=str(ast_node.bias),
-        priority_expr=str(ast_node.priority),
-        sign=sign,
+        bias_expr=str(ast_node.bias),
+        local_priority_expr=str(ast_node.priority),
+        modifier=modifier,
         body_str=", ".join(str(lit) for lit in ast_node.body),
         original_line=str(ast_node),
     )
@@ -735,10 +734,10 @@ def main():
       Show the conversions that would be performed, without writing files.
 
 {heading("Rewrite modes")}
-  {value("la")}            lazy grounding with Alpha semantics; emits BSP_la-style __heuristic/N facts.
-  {value("lc")}            lazy grounding with Clingo semantics; emits BSP_lc-style __heuristic/N facts.
+  {value("la")}            lazy grounding with Alpha body/aggregate semantics; emits clingo-like __heuristic/N facts.
+  {value("lc")}            lazy grounding with Clingo body/aggregate semantics; emits clingo-like __heuristic/N facts.
   {value("aux")}           ground and solve with an auxiliary predicate; emits BSP_gc_aux-style native #heuristic.
-  {value("la-aux")}        lazy grounding with Alpha semantics through an auxiliary predicate.
+  {value("la-aux")}        lazy grounding with Alpha body/aggregate semantics through an auxiliary predicate.
 
 {heading("Options")}
   {opt("-o, --output PATH")}
@@ -758,13 +757,13 @@ def main():
 
 {heading("Examples")}
   {cmd("%(prog)s test_folder/encodings/BSP/BSP_gc.lp --mode la -o test_folder/encodings/BSP/BSP_la.lp")}
-      Convert to lazy grounding with Alpha semantics.
+      Convert to lazy grounding with Alpha body/aggregate semantics and local @priority.
 
   {cmd("%(prog)s test_folder/encodings/BSP/BSP_gc.lp --mode la-aux -o test_folder/encodings/BSP/BSP_la_aux.lp")}
       Convert through an auxiliary lazy body predicate.
 
   {cmd("%(prog)s test_folder/encodings/BSP/BSP_gc.lp --mode lc -o test_folder/encodings/BSP/BSP_lc.lp")}
-      Convert to lazy syntax with Clingo semantics for negative literals.
+      Convert to lazy syntax with Clingo body/aggregate semantics and local @priority.
 
   {cmd("%(prog)s test_folder/encodings/BSP/BSP_gc.lp --dry-run")}
       Check what would change before writing anything.

@@ -88,10 +88,13 @@ struct NumericTupleKeyHash {
     }
 };
 
-enum class HeuristicSign {
+enum class HeuristicModifier {
+    Level,
+    Sign,
     True,
     False,
-    FollowFallback
+    Init,
+    Factor
 };
 
 enum class HeuristicSemantics {
@@ -167,10 +170,10 @@ struct HeuristicRuleTemplate {
     Clingo::Symbol target_pred;
     std::vector<BodyPredicateSpec> pos_body_preds;
     std::vector<Clingo::Symbol> neg_body_preds;
-    HeuristicSign sign = HeuristicSign::True;
-    HeuristicSemantics semantics = HeuristicSemantics::Alpha;
+    HeuristicModifier modifier = HeuristicModifier::True;
+    HeuristicSemantics semantics = HeuristicSemantics::Clingo;
     std::unordered_map<Clingo::Symbol, AggregateKey> var_bindings;
     std::unordered_set<Clingo::Symbol> body_var_names;
-    ArithmeticExpression weight_expr = ArithmeticExpression::number(0);
-    ArithmeticExpression priority_expr = ArithmeticExpression::number(0);
+    ArithmeticExpression bias_expr = ArithmeticExpression::number(0);
+    ArithmeticExpression local_priority_expr = ArithmeticExpression::number(0);
 };

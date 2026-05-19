@@ -4,6 +4,6 @@ dom(1).
 :- not choose(1).
 :- choose(1).
 
-__heuristic(__target(choose), dom, __weight(self), __priority(1), true).
+__heuristic(__target(choose), dom, __weight(self), __priority(1), __modifier(true), __semantics(clingo)).
 
 #show choose/1.

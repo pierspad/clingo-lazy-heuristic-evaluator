@@ -9,17 +9,29 @@ static bool is_neg_body(std::string const &name) {
     return name.size() > 4 && name.compare(0, 4, "__n_") == 0;
 }
 
-static bool try_parse_sign(std::string const &name, HeuristicSign &out) {
-    if (name == "true") {
-        out = HeuristicSign::True;
-        return true;
-    }
-    if (name == "false") {
-        out = HeuristicSign::False;
+static bool try_parse_modifier(std::string const &name, HeuristicModifier &out) {
+    if (name == "level") {
+        out = HeuristicModifier::Level;
         return true;
     }
     if (name == "sign") {
-        out = HeuristicSign::FollowFallback;
+        out = HeuristicModifier::Sign;
+        return true;
+    }
+    if (name == "true") {
+        out = HeuristicModifier::True;
+        return true;
+    }
+    if (name == "false") {
+        out = HeuristicModifier::False;
+        return true;
+    }
+    if (name == "init") {
+        out = HeuristicModifier::Init;
+        return true;
+    }
+    if (name == "factor") {
+        out = HeuristicModifier::Factor;
         return true;
     }
     return false;
@@ -288,11 +300,11 @@ std::vector<HeuristicRuleTemplate> parse_lazy_heuristic_templates(std::vector<Cl
         }
 
         HeuristicRuleTemplate tmpl;
-        tmpl.sign = HeuristicSign::True;
+        tmpl.modifier = HeuristicModifier::True;
         bool has_target = false;
         bool has_weight = false;
         bool has_priority = false;
-        bool has_sign = false;
+        bool has_modifier = false;
         bool has_semantics = false;
         Clingo::Symbol weight_symbol = Clingo::Number(0);
         Clingo::Symbol priority_symbol = Clingo::Number(0);
@@ -403,6 +415,25 @@ std::vector<HeuristicRuleTemplate> parse_lazy_heuristic_templates(std::vector<Cl
                 continue;
             }
 
+            if (arg_name == "__modifier") {
+                if (arg_args.size() != 1 || !is_nullary_function(arg_args[0])) {
+                    throw std::runtime_error(
+                        "Sintassi euristica malformata: __modifier richiede "
+                        "__modifier(level|sign|true|false|init|factor)."
+                    );
+                }
+                if (has_modifier) {
+                    throw std::runtime_error("Sintassi euristica malformata: modifier duplicato in __heuristic.");
+                }
+                HeuristicModifier parsed_modifier;
+                if (!try_parse_modifier(arg_args[0].name(), parsed_modifier)) {
+                    throw std::runtime_error("Sintassi euristica malformata: modifier euristico sconosciuto.");
+                }
+                tmpl.modifier = parsed_modifier;
+                has_modifier = true;
+                continue;
+            }
+
             if (arg_name == "__body") {
                 BodyPredicateSpec spec = parse_body_predicate_spec(arg);
                 for (auto const &binding : spec.arg_bindings) {
@@ -418,14 +449,14 @@ std::vector<HeuristicRuleTemplate> parse_lazy_heuristic_templates(std::vector<Cl
             }
 
             if (arg_args.empty()) {
-                HeuristicSign parsed_sign;
+                HeuristicModifier parsed_modifier;
 
-                if (try_parse_sign(arg_name, parsed_sign)) {
-                    if (has_sign) {
-                        throw std::runtime_error("Sintassi euristica malformata: modificatore di segno duplicato in __heuristic.");
+                if (try_parse_modifier(arg_name, parsed_modifier)) {
+                    if (has_modifier) {
+                        throw std::runtime_error("Sintassi euristica malformata: modifier duplicato in __heuristic.");
                     }
-                    tmpl.sign = parsed_sign;
-                    has_sign = true;
+                    tmpl.modifier = parsed_modifier;
+                    has_modifier = true;
                     continue;
                 }
 
@@ -458,8 +489,12 @@ std::vector<HeuristicRuleTemplate> parse_lazy_heuristic_templates(std::vector<Cl
             throw std::runtime_error("Sintassi euristica malformata: __heuristic richiede un argomento __target(pred).");
         }
 
-        tmpl.weight_expr = parse_arithmetic_expression(weight_symbol, tmpl.var_bindings, tmpl.body_var_names, "__weight");
-        tmpl.priority_expr = parse_arithmetic_expression(priority_symbol, tmpl.var_bindings, tmpl.body_var_names, "__priority");
+        tmpl.bias_expr = parse_arithmetic_expression(
+            weight_symbol, tmpl.var_bindings, tmpl.body_var_names, "__weight"
+        );
+        tmpl.local_priority_expr = parse_arithmetic_expression(
+            priority_symbol, tmpl.var_bindings, tmpl.body_var_names, "__priority"
+        );
 
         templates.push_back(std::move(tmpl));
     }
