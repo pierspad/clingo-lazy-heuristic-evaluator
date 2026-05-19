@@ -19,7 +19,8 @@ sumC(Sum) :- Sum = #sum{Y : c(Y)}.
 % constrain difference between sums
 :- sumB(SB), sumC(SC), (SB - SC)**2 > 1.
 
-% heuristics
-#heuristic b(X) : x(X), sum_value(S), S <= #sum{Y : c(Y)}. [X@S, true]
 
-#heuristic c(X) : x(X), sum_value(S), S <= #sum{Y : b(Y)}. [X@S, true]
+
+% heuristics
+#heuristic b(X) : x(X), sum_value(S), S <= #sum{Y : c(Y)}. [(((n+1)*S)+X), true]
+#heuristic c(X) : x(X), sum_value(S), S <= #sum{Y : b(Y)}. [(((n+1)*S)+X), true]
