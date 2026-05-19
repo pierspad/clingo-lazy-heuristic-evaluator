@@ -117,6 +117,7 @@ planned_runs=$(( ((N_END - N_START) / N_STEP + 1) * ${#ENABLED_VARIANTS[@]} * RE
 current_run=0
 declare -A VARIANT_STOPPED_BY_LIMIT=()
 declare -A VARIANT_LIMIT_N=()
+declare -A VARIANT_LIMIT_REASON=()
 for variant in "${ENABLED_VARIANTS[@]}"; do
     VARIANT_STOPPED_BY_LIMIT["${variant}"]=0
 done
@@ -156,6 +157,11 @@ for n in $(seq "${N_START}" "${N_STEP}" "${N_END}"); do
             if [ "${rc}" -eq 75 -o "${rc}" -eq 124 ] && [ "${STOP_VARIANT_ON_LIMIT}" = "1" ]; then
                 VARIANT_STOPPED_BY_LIMIT["${variant}"]=1
                 VARIANT_LIMIT_N["${variant}"]="${n}"
+                if [ "${rc}" -eq 75 ]; then
+                    VARIANT_LIMIT_REASON["${variant}"]="OOM"
+                else
+                    VARIANT_LIMIT_REASON["${variant}"]="TIMEOUT"
+                fi
                 echo "--- ${variant}: limite memoria/timeout raggiunto a N=${n}; salto i run e valori successivi per questa variante ---"
                 break
             fi
@@ -166,10 +172,22 @@ done
 echo ""
 echo "Benchmark BSP completato. ${current_run} esecuzioni totali."
 if [ "${STOP_VARIANT_ON_LIMIT}" = "1" ]; then
+    > "${RESULTS_DIR}/bsp_failures.txt"
     for variant in "${ENABLED_VARIANTS[@]}"; do
         if [ "${VARIANT_STOPPED_BY_LIMIT[${variant}]}" = "1" ]; then
-            echo "Variante ${variant}: fermata dopo limite a N=${VARIANT_LIMIT_N[${variant}]}."
+            fn="${VARIANT_LIMIT_N[${variant}]}"
+            fr="${VARIANT_LIMIT_REASON[${variant}]}"
+            echo -e "${fn}\t${variant}\t${fr}" >> "${RESULTS_DIR}/bsp_failures.txt"
         fi
     done
+    if [ -s "${RESULTS_DIR}/bsp_failures.txt" ]; then
+        echo "=== REPORT FALLIMENTI BSP (ordinato per N crescente) ==="
+        sort -n "${RESULTS_DIR}/bsp_failures.txt" | while read -r fn fv fr; do
+            echo " - Variante '${fv}' ha fallito a N=${fn} causa: ${fr}"
+        done
+        echo "========================================================"
+    else
+        echo "=== Nessun fallimento registrato in BSP! ==="
+    fi
 fi
 echo "Risultati salvati in: ${CSV_FILE}"

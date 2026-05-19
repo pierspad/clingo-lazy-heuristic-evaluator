@@ -19,6 +19,8 @@ if [ ! -f "${PUP_SCRIPT}" ]; then
     exit 1
 fi
 
+START_TIME=$(date +%s)
+
 echo "==============================================================="
 echo " Avvio benchmark BSP"
 echo "==============================================================="
@@ -31,7 +33,14 @@ echo "==============================================================="
 bash "${PUP_SCRIPT}"
 
 echo ""
+END_TIME=$(date +%s)
+TOTAL_SECONDS=$((END_TIME - START_TIME))
+HOURS=$((TOTAL_SECONDS / 3600))
+MINUTES=$(((TOTAL_SECONDS % 3600) / 60))
+SECONDS_REMAINING=$((TOTAL_SECONDS % 60))
+
 echo "==============================================================="
 echo " Benchmark completi (BSP + PUP)."
+printf " Durata totale: %02d ore, %02d minuti, %02d secondi\n" "$HOURS" "$MINUTES" "$SECONDS_REMAINING"
 echo " Risultati disponibili in ${TEST_ROOT}/results"
 echo "==============================================================="

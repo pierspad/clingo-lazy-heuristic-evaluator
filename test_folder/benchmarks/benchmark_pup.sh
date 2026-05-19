@@ -135,6 +135,9 @@ run_encoding_on_instances() {
             if [ "${rc}" -eq 75 -o "${rc}" -eq 124 ] && [ "${STOP_VARIANT_ON_LIMIT:-1}" = "1" ]; then
                 limit_reached=1
                 limit_n="${instance_size}"
+                local reason="TIMEOUT"
+                if [ "${rc}" -eq 75 ]; then reason="OOM"; fi
+                echo -e "${instance_size}\t${variant_name}\t${reason}" >> "${RESULTS_DIR}/pup_failures.txt"
                 echo "--- ${variant_name}: limite memoria/timeout raggiunto a N=${instance_size}; salto i run e valori successivi ---"
                 break
             fi
@@ -152,7 +155,7 @@ current_run=0
 
 CSV_DOUBLE="${RESULTS_DIR}/pup_double_results.csv"
 CSV_DOUBLEV="${RESULTS_DIR}/pup_doublev_results.csv"
-rm -f "${CSV_DOUBLE}" "${CSV_DOUBLEV}"
+rm -f "${CSV_DOUBLE}" "${CSV_DOUBLEV}" "${RESULTS_DIR}/pup_failures.txt"
 
 echo ""
 echo "================================================================"
@@ -186,3 +189,14 @@ echo "  Benchmark PUP completato. ${current_run} esecuzioni totali."
 echo "  Risultati Double:        ${CSV_DOUBLE}"
 echo "  Risultati DoubleVariant: ${CSV_DOUBLEV}"
 echo "================================================================"
+
+if [ -f "${RESULTS_DIR}/pup_failures.txt" ] && [ -s "${RESULTS_DIR}/pup_failures.txt" ]; then
+    echo ""
+    echo "=== REPORT FALLIMENTI PUP (ordinato per N crescente) ==="
+    sort -n "${RESULTS_DIR}/pup_failures.txt" | while read -r fn fv fr; do
+        echo " - Variante '${fv}' ha fallito a N=${fn} causa: ${fr}"
+    done
+    echo "========================================================"
+else
+    echo "=== Nessun fallimento registrato in PUP! ==="
+fi
