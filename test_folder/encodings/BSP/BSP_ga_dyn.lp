@@ -21,4 +21,5 @@ sumC(Sum) :- Sum = #sum{Y : c(Y)}.
 
 % heuristics
 #heuristic b(X) : x(X), sum_value(S), S <= #sum{Y : c(Y)}. [X@S, true]
+
 #heuristic c(X) : x(X), sum_value(S), S <= #sum{Y : b(Y)}. [X@S, true]
