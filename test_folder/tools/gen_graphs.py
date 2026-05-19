@@ -462,6 +462,9 @@ ENDPOINT_LABEL_METRICS = {
     "ground_facts",
 }
 ENDPOINT_LABEL_MIN_GAP_POINTS = 9.0
+SHARED_Y_SCALE_METRIC_GROUPS = (
+    ("ground_heuristics", "ground_lazy_heuristic_facts"),
+)
 VARIANT_LINESTYLES = [
     "-",
     "--",
@@ -620,6 +623,52 @@ def _include_variant_for_metric(stats: dict, variant: str, metric: str) -> bool:
             _has_positive_metric(stats, variant, "ground_lazy_heuristic_facts")
         )
     return True
+
+
+def _shared_y_scale_limits(stats: dict, theme: dict, metrics) -> tuple | None:
+
+    import math
+
+    min_value = 0.0
+    max_value = 0.0
+    has_value = False
+
+    for metric in metrics:
+        for variant in _ordered_variants(stats, theme):
+            if not _include_variant_for_metric(stats, variant, metric):
+                continue
+            data = stats.get(variant, {}).get(metric)
+            if not data:
+                continue
+
+            means = data.get("mean", [])
+            deviations = data.get("gc", [0.0] * len(means))
+            for mean, deviation in zip(means, deviations):
+                if not math.isfinite(float(mean)):
+                    continue
+                deviation = deviation if math.isfinite(float(deviation)) else 0.0
+                min_value = min(min_value, float(mean) - float(deviation))
+                max_value = max(max_value, float(mean) + float(deviation))
+                has_value = True
+
+    if not has_value:
+        return None
+
+    span = max_value - min_value
+    pad = max(span * 0.05, max_value * 0.02, 1.0)
+    return min(0.0, min_value - pad), max_value + pad
+
+
+def _shared_y_scale_limits_by_metric(stats: dict, theme: dict) -> dict:
+
+    limits = {}
+    for metrics in SHARED_Y_SCALE_METRIC_GROUPS:
+        metric_limits = _shared_y_scale_limits(stats, theme, metrics)
+        if metric_limits is None:
+            continue
+        for metric in metrics:
+            limits[metric] = metric_limits
+    return limits
 
 
 def _endpoint_label_offsets(ax, series) -> dict:
@@ -1157,6 +1206,7 @@ def generate_graphs(
     axes_flat = axes.flatten()
 
     variants = _ordered_variants(stats, theme)
+    shared_metric_ylims = _shared_y_scale_limits_by_metric(stats, theme)
 
     for idx, config in enumerate(PLOT_CONFIGS):
         ax = axes_flat[idx]
@@ -1204,7 +1254,10 @@ def generate_graphs(
                             alpha=VARIANT_FILL_ALPHA, color=color,
                             transform=transform, zorder=2)
 
-        _expand_flat_integer_axis(ax, series, metric)
+        if metric in shared_metric_ylims:
+            ax.set_ylim(*shared_metric_ylims[metric])
+        else:
+            _expand_flat_integer_axis(ax, series, metric)
         if metric in ENDPOINT_LABEL_METRICS:
             ax.margins(x=0.12)
             _annotate_metric_endpoints(ax, series, theme, metric)
@@ -1323,6 +1376,7 @@ def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, description
 
     fig, ax = plt.subplots(figsize=(8, 5))
     variants = _ordered_variants(stats, theme)
+    shared_metric_ylims = _shared_y_scale_limits_by_metric(stats, theme)
     has_data = False
     series = []
 
@@ -1365,7 +1419,10 @@ def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, description
                         alpha=VARIANT_FILL_ALPHA, color=color,
                         transform=transform, zorder=2)
 
-    _expand_flat_integer_axis(ax, series, metric)
+    if metric in shared_metric_ylims:
+        ax.set_ylim(*shared_metric_ylims[metric])
+    else:
+        _expand_flat_integer_axis(ax, series, metric)
     if metric in ENDPOINT_LABEL_METRICS:
         ax.margins(x=0.12)
         _annotate_metric_endpoints(ax, series, theme, metric)
