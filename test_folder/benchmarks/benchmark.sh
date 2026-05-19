@@ -4,6 +4,22 @@
 
 set -euo pipefail
 
+# ==============================================================================
+# CONFIGURAZIONE BENCHMARK
+# Modifica questi parametri per cambiare il comportamento dei test.
+# ==============================================================================
+export RUN_BSP="true"
+export RUN_PUP="false"
+
+export TIMEOUT_SECONDS=120
+export REPEATS=2
+export MEM_LIMIT_BYTES=$((8 * 1024 * 1024 * 1024))
+export N_START=10
+export N_END=200
+export N_STEP=10
+export STOP_VARIANT_ON_LIMIT=1
+# ==============================================================================
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 TEST_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 BSP_SCRIPT="${SCRIPT_DIR}/benchmark_bsp.sh"
@@ -21,16 +37,28 @@ fi
 
 START_TIME=$(date +%s)
 
-echo "==============================================================="
-echo " Avvio benchmark BSP"
-echo "==============================================================="
-bash "${BSP_SCRIPT}"
+if [ "${RUN_BSP}" = "true" ]; then
+    echo "==============================================================="
+    echo " Avvio benchmark BSP"
+    echo "==============================================================="
+    bash "${BSP_SCRIPT}"
+else
+    echo "==============================================================="
+    echo " Benchmark BSP disabilitato (RUN_BSP!=true)"
+    echo "==============================================================="
+fi
 
 echo ""
-echo "==============================================================="
-echo " Avvio benchmark PUP"
-echo "==============================================================="
-bash "${PUP_SCRIPT}"
+if [ "${RUN_PUP}" = "true" ]; then
+    echo "==============================================================="
+    echo " Avvio benchmark PUP"
+    echo "==============================================================="
+    bash "${PUP_SCRIPT}"
+else
+    echo "==============================================================="
+    echo " Benchmark PUP disabilitato (RUN_PUP!=true)"
+    echo "==============================================================="
+fi
 
 echo ""
 END_TIME=$(date +%s)

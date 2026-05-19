@@ -43,6 +43,15 @@ EXIT_MEMORY = 75
 EXIT_TIMEOUT = 124
 EXIT_ERROR = 1
 
+# ==============================================================================
+# DEFAULT BENCHMARK PARAMETERS
+# ==============================================================================
+DEFAULT_MODELS = 1
+DEFAULT_TIMEOUT = 120
+DEFAULT_MEMORY_BYTES = 8 * 1024 * 1024 * 1024
+DEFAULT_SEMANTICS = "native"
+# ==============================================================================
+
 
 def find_clingo(explicit_path: str | None) -> str:
     if explicit_path:
@@ -368,13 +377,13 @@ def parse_args():
     parser.add_argument("--seed", type=int, required=True, help="Clingo random seed.")
     parser.add_argument("--semantics", default="native", help="Semantic label for logs and benchmark configs.")
     parser.add_argument("--csv", required=True, help="CSV file to append.")
-    parser.add_argument("--models", type=int, default=1, help="Number of models requested. Default: 1.")
-    parser.add_argument("--timeout", type=int, default=600, help="Timeout in seconds. Default: 600.")
+    parser.add_argument("--models", type=int, default=DEFAULT_MODELS, help=f"Number of models requested. Default: {DEFAULT_MODELS}.")
+    parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT, help=f"Timeout in seconds. Default: {DEFAULT_TIMEOUT}.")
     parser.add_argument(
         "--memory-bytes",
         type=int,
-        default=32 * 1024 * 1024 * 1024,
-        help="Address-space limit in bytes. Default: 32 GiB.",
+        default=DEFAULT_MEMORY_BYTES,
+        help=f"Address-space limit in bytes. Default: {DEFAULT_MEMORY_BYTES}.",
     )
     parser.add_argument(
         "-c",
