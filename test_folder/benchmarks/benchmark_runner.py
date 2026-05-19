@@ -17,6 +17,8 @@ CSV_FIELDS = [
     "variant",
     "seed",
     "status",
+    "solver_status",
+    "ground_status",
     "failure_reason",
     "exit_code",
     "memory_limit_hit",
@@ -276,12 +278,14 @@ def run_benchmark(args) -> int:
         print("    warning: timeout; solver metrics marked as NA", file=sys.stderr)
         row.update(failure_metrics(child_memory_mb()))
         status = "timeout"
+        solver_status = "timeout"
         failure_reason = "solver_timeout"
         exit_code = EXIT_TIMEOUT
     except OSError as exc:
         print(f"    warning: cannot execute clingo: {exc}", file=sys.stderr)
         row.update(failure_metrics())
         status = "error"
+        solver_status = "error"
         failure_reason = "exec_error"
         exit_code = EXIT_ERROR
     else:
@@ -295,13 +299,16 @@ def run_benchmark(args) -> int:
                 run_ok = False
         if run_ok and data.get("Result") != "UNKNOWN":
             row.update(parse_solver_metrics(data, memory_mb))
+            solver_status = "ok"
         else:
             if run_ok and data.get("Result") == "UNKNOWN":
                 status = "timeout"
+                solver_status = "timeout"
                 failure_reason = "clingo_time_limit"
                 exit_code = EXIT_TIMEOUT
             else:
                 status, failure_reason = classify_process_failure(proc)
+                solver_status = status
                 if status == "memory":
                     exit_code = EXIT_MEMORY
                 elif status == "timeout":
@@ -328,6 +335,8 @@ def run_benchmark(args) -> int:
     row.update(
         {
             "status": status,
+            "solver_status": solver_status,
+            "ground_status": ground_status,
             "failure_reason": failure_reason,
             "exit_code": str(exit_code),
             "memory_limit_hit": "1" if status == "memory" else "0",

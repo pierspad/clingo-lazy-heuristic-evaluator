@@ -444,7 +444,19 @@ def load_csv(csv_path: str):
                         pass
 
             legacy_failed_run = _looks_like_legacy_failed_lazy_run(row_values)
-            invalid_on_failure = {
+
+            solver_status = row.get("solver_status", row.get("status", "")).strip()
+            ground_status = row.get("ground_status", "").strip()
+            if not ground_status:
+                general_status = row.get("status", "").strip()
+                if general_status == "ok":
+                    ground_status = "ok"
+                elif general_status == "timeout" and "ground_lines" in row_values:
+                    ground_status = "ok"
+                else:
+                    ground_status = general_status
+
+            solver_metrics = {
                 "grounding_s",
                 "solving_s",
                 "total_s",
@@ -455,9 +467,26 @@ def load_csv(csv_path: str):
                 "variables",
                 "memory_mb",
             }
+            
+            ground_metrics = {
+                "ground_heuristics",
+                "ground_lazy_heuristic_facts",
+                "ground_facts",
+                "ground_lines",
+            }
+
+            invalid_metrics = set()
+            if legacy_failed_run:
+                invalid_metrics.update(solver_metrics)
+            
+            if solver_status and solver_status != "ok":
+                invalid_metrics.update(solver_metrics)
+                
+            if ground_status and ground_status != "ok":
+                invalid_metrics.update(ground_metrics)
 
             for metric, value in row_values.items():
-                if legacy_failed_run and metric in invalid_on_failure:
+                if metric in invalid_metrics:
                     continue
                 raw[variant][n][metric].append(value)
 
