@@ -453,12 +453,15 @@ OVERLAP_CAPTION = (
     "the measured values."
 )
 OFFSET_METRICS = {
+    "variables",
+}
+ENDPOINT_LABEL_METRICS = {
     "ground_lazy_heuristic_facts",
     "ground_heuristics",
     "combined_heuristics",
     "ground_facts",
-    "variables",
 }
+ENDPOINT_LABEL_MIN_GAP_POINTS = 9.0
 VARIANT_LINESTYLES = [
     "-",
     "--",
@@ -595,6 +598,131 @@ def _variant_linestyle(variant: str, theme: dict):
 def _endpoint_label(theme: dict, variant: str) -> str:
 
     return _variant_dir_identifier(theme, variant)
+
+
+def _has_positive_metric(stats: dict, variant: str, metric: str) -> bool:
+
+    data = stats.get(variant, {}).get(metric)
+    if not data:
+        return False
+    return any(value > 0 for value in data.get("mean", []))
+
+
+def _include_variant_for_metric(stats: dict, variant: str, metric: str) -> bool:
+
+    if metric == "ground_heuristics":
+        return _has_positive_metric(stats, variant, "ground_heuristics")
+    if metric == "ground_lazy_heuristic_facts":
+        return _has_positive_metric(stats, variant, "ground_lazy_heuristic_facts")
+    if metric == "combined_heuristics":
+        return (
+            _has_positive_metric(stats, variant, "ground_heuristics") or
+            _has_positive_metric(stats, variant, "ground_lazy_heuristic_facts")
+        )
+    return True
+
+
+def _endpoint_label_offsets(ax, series) -> dict:
+
+    endpoints = []
+    for item in series:
+        points = _finite_xy(item["x"], item["y"])
+        if not points:
+            continue
+        x, y = points[-1]
+        _, y_px = ax.transData.transform((x, y))
+        endpoints.append((y_px, item["key"]))
+
+    offsets = {item["key"]: 0.0 for item in series}
+    if not endpoints:
+        return offsets
+
+    point_to_px = ax.figure.dpi / 72.0
+    min_gap_px = ENDPOINT_LABEL_MIN_GAP_POINTS * point_to_px
+    endpoints.sort()
+
+    groups = []
+    current = [endpoints[0]]
+    for endpoint in endpoints[1:]:
+        if endpoint[0] - current[-1][0] <= min_gap_px:
+            current.append(endpoint)
+        else:
+            groups.append(current)
+            current = [endpoint]
+    groups.append(current)
+
+    for group in groups:
+        if len(group) <= 1:
+            continue
+        center = (len(group) - 1) / 2.0
+        for idx, (_, key) in enumerate(group):
+            offsets[key] = (idx - center) * ENDPOINT_LABEL_MIN_GAP_POINTS
+
+    return offsets
+
+
+def _annotate_metric_endpoints(ax, series, theme, metric: str):
+
+    if metric not in ENDPOINT_LABEL_METRICS:
+        return
+
+    try:
+        import matplotlib.patheffects as path_effects
+    except ImportError:
+        path_effects = None
+
+    offsets = _endpoint_label_offsets(ax, series)
+
+    for item in series:
+        points = _finite_xy(item["x"], item["y"])
+        if not points:
+            continue
+
+        x, y = points[-1]
+        text = ax.annotate(
+            _endpoint_label(theme, item["variant"]),
+            xy=(x, y),
+            xytext=(7, offsets.get(item["key"], 0.0)),
+            textcoords="offset points",
+            color=item.get("color"),
+            fontsize=item.get("fontsize", 7),
+            fontweight="bold",
+            va="center",
+            ha="left",
+            clip_on=False,
+            zorder=8,
+        )
+        if path_effects is not None:
+            text.set_path_effects([
+                path_effects.Stroke(linewidth=2.5, foreground="white"),
+                path_effects.Normal(),
+            ])
+
+
+def _expand_flat_integer_axis(ax, series, metric: str):
+
+    if metric not in INTEGER_METRICS:
+        return
+
+    values = [
+        y
+        for item in series
+        for _, y in _finite_xy(item["x"], item["y"])
+    ]
+    if not values:
+        return
+
+    min_value = min(values)
+    max_value = max(values)
+    if min_value != max_value:
+        return
+
+    if min_value >= 0:
+        upper = max(max_value + 1.0, max_value * 1.2, 1.0)
+        ax.set_ylim(0.0, upper)
+    else:
+        pad = max(abs(min_value) * 0.1, 1.0)
+        ax.set_ylim(min_value - pad, max_value + pad)
 
 
 def _annotate_overlap_endpoints(ax, series, offsets, *, label_fn):
@@ -1037,6 +1165,8 @@ def generate_graphs(
         series = []
 
         for variant in variants:
+            if not _include_variant_for_metric(stats, variant, metric):
+                continue
             if metric not in stats[variant]:
                 continue
 
@@ -1074,6 +1204,11 @@ def generate_graphs(
                             alpha=VARIANT_FILL_ALPHA, color=color,
                             transform=transform, zorder=2)
 
+        _expand_flat_integer_axis(ax, series, metric)
+        if metric in ENDPOINT_LABEL_METRICS:
+            ax.margins(x=0.12)
+            _annotate_metric_endpoints(ax, series, theme, metric)
+
         _annotate_overlap_endpoints(
             ax,
             series,
@@ -1086,7 +1221,7 @@ def generate_graphs(
         ax.set_title(_format_title(metric, config["title"]))
         ax.set_xlabel(xlabel)
         ax.set_ylabel(config["ylabel"])
-        if has_data:
+        if has_data and metric not in ENDPOINT_LABEL_METRICS:
             ax.legend(loc="upper left")
 
         _apply_y_axis_format(ax, metric)
@@ -1192,6 +1327,8 @@ def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, description
     series = []
 
     for variant in variants:
+        if not _include_variant_for_metric(stats, variant, metric):
+            continue
         if metric not in stats[variant]:
             continue
         data = stats[variant][metric]
@@ -1228,6 +1365,11 @@ def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, description
                         alpha=VARIANT_FILL_ALPHA, color=color,
                         transform=transform, zorder=2)
 
+    _expand_flat_integer_axis(ax, series, metric)
+    if metric in ENDPOINT_LABEL_METRICS:
+        ax.margins(x=0.12)
+        _annotate_metric_endpoints(ax, series, theme, metric)
+
     _annotate_overlap_endpoints(
         ax,
         series,
@@ -1241,7 +1383,8 @@ def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, description
     ax.set_xlabel(xlabel, fontsize=11)
     ax.set_ylabel(ylabel, fontsize=11)
     if has_data:
-        ax.legend(fontsize=10)
+        if metric not in ENDPOINT_LABEL_METRICS:
+            ax.legend(fontsize=10)
     else:
         ax.text(0.5, 0.5, "No data", transform=ax.transAxes,
                 ha="center", va="center", fontsize=13, color="#AAA")
