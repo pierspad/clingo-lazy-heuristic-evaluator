@@ -144,5 +144,11 @@ Se non ci sono candidate applicabili, decide() restituisce 0; in questo caso il 
 usa la propria euristica/fallback interna.
 
 
+IMPORTANTISSIMO
 
+in alpha abbiamo [weight@level]
+in clingo abbiamo [weight@priority, level]
+
+e la priority agisce solo su atomi uguali
+quesot
 

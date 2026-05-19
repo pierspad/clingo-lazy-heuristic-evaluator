@@ -20,5 +20,5 @@ sumC(Sum) :- Sum = #sum{Y : c(Y)}.
 h_b(X,S) :- x(X), not c(X), S = #sum{Y : c(Y)}.
 h_c(X,S) :- x(X), not b(X), S = #sum{Y : b(Y)}.
 
-#heuristic b(X) : h_b(X,S). [X@S, true]
-#heuristic c(X) : h_c(X,S). [X@S, true]
+#heuristic b(X) : h_b(X,S). [(((n+1)*S)+X), true]
+#heuristic c(X) : h_c(X,S). [(((n+1)*S)+X), true]

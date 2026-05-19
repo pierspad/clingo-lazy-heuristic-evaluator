@@ -17,5 +17,5 @@ sumC(Sum) :- Sum = #sum{Y : c(Y)}.
 :- sumB(SB), sumC(SC), (SB - SC)**2 > 1.
 
 % heuristics
-#heuristic b(X) : x(X), not c(X), S = #sum{Y : c(Y)}. [X@S, true]
-#heuristic c(X) : x(X), not b(X), S = #sum{Y : b(Y)}. [X@S, true]
+#heuristic b(X) : x(X), not c(X), S = #sum{Y : c(Y)}. [(((n+1)*S)+X), true]
+#heuristic c(X) : x(X), not b(X), S = #sum{Y : b(Y)}. [(((n+1)*S)+X), true]
