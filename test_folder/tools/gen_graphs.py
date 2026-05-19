@@ -534,7 +534,6 @@ ENDPOINT_LABEL_METRICS = {
 ENDPOINT_LABEL_MIN_GAP_POINTS = 9.0
 SHARED_Y_SCALE_METRIC_GROUPS = (
     ("ground_heuristics", "ground_lazy_heuristic_facts"),
-    ("ground_lines", "variables"),
 )
 VARIANT_LINESTYLES = [
     "-",
@@ -723,9 +722,6 @@ def _shared_y_scale_limits(stats: dict, theme: dict, metrics) -> tuple | None:
 
     if not has_value:
         return None
-
-    if set(metrics) == {"ground_lines", "variables"}:
-        return min(0.0, min_value), max_value
 
     span = max_value - min_value
     pad = max(span * 0.05, max_value * 0.02, 1.0)
