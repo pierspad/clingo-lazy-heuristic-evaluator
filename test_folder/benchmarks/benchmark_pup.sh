@@ -34,9 +34,10 @@ if [ ! -f "${CONVERTER}" ]; then
     exit 1
 fi
 
-TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-600}"
+TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-120}"
 MEM_LIMIT_BYTES="${MEM_LIMIT_BYTES:-$((32 * 1024 * 1024 * 1024))}"
-REPEATS="${REPEATS:-3}"
+REPEATS="${REPEATS:-2}"
+STOP_VARIANT_ON_LIMIT="${STOP_VARIANT_ON_LIMIT:-1}"
 
 ENC_DIR="${TEST_ROOT}/encodings/PUP"
 INSTANCES_DOUBLE="${TEST_ROOT}/instances/PUP_instances/Double"
@@ -88,9 +89,17 @@ run_encoding_on_instances() {
         return
     fi
 
+    local limit_reached=0
+    local limit_n=""
+
     for inst in "${instances[@]}"; do
         local instance_size
         instance_size="$(extract_instance_size "${inst}")"
+
+        if [ "${STOP_VARIANT_ON_LIMIT:-1}" = "1" ] && [ "${limit_reached}" = "1" ]; then
+            echo "--- ${variant_name}: salto N=${instance_size}; limite superato a N=${limit_n} ---"
+            continue
+        fi
 
         echo ""
         echo "  [${variant_name}] Istanza: $(basename "${inst}") (N=${instance_size})"
@@ -116,7 +125,19 @@ run_encoding_on_instances() {
             if [ "${use_domain}" = "yes" ]; then
                 cmd+=(--domain-heuristic)
             fi
-            "${cmd[@]}"
+            
+            if "${cmd[@]}"; then
+                rc=0
+            else
+                rc=$?
+            fi
+
+            if [ "${rc}" -eq 75 -o "${rc}" -eq 124 ] && [ "${STOP_VARIANT_ON_LIMIT:-1}" = "1" ]; then
+                limit_reached=1
+                limit_n="${instance_size}"
+                echo "--- ${variant_name}: limite memoria/timeout raggiunto a N=${instance_size}; salto i run e valori successivi ---"
+                break
+            fi
         done
     done
 }

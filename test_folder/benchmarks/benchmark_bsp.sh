@@ -28,7 +28,7 @@ if [ ! -x "${RUNNER}" ]; then
     exit 1
 fi
 
-TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-60}"
+TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-120}"
 if [ -n "${MEM_LIMIT_BYTES:-}" ]; then
     MEM_LIMIT_BYTES="${MEM_LIMIT_BYTES}"
 elif [ -n "${MEM_LIMIT_GB:-}" ]; then
@@ -39,11 +39,11 @@ else
     MEM_LIMIT_BYTES="$((8 * 1024 * 1024 * 1024))"
 fi
 
-REPEATS="${REPEATS:-1}"
+REPEATS="${REPEATS:-2}"
 N_START="${N_START:-10}"
-N_END="${N_END:-50}"
+N_END="${N_END:-200}"
 N_STEP="${N_STEP:-10}"
-STOP_VARIANT_ON_MEMORY="${STOP_VARIANT_ON_MEMORY:-1}"
+STOP_VARIANT_ON_LIMIT="${STOP_VARIANT_ON_LIMIT:-1}"
 
 ENC_DIR="${TEST_ROOT}/encodings/BSP"
 INSTANCE_RANGE="${TEST_ROOT}/instances/BSP_instances/BSP_range.lp"
@@ -106,19 +106,19 @@ rm -f "${CSV_FILE}"
 echo "Varianti BSP attive: ${ENABLED_VARIANTS[*]}"
 MEM_LIMIT_GB="$(python3 -c 'import sys; print(f"{int(sys.argv[1]) / (1024**3):.2f}")' "${MEM_LIMIT_BYTES}")"
 echo "Parametri: timeout=${TIMEOUT_SECONDS}s repeats=${REPEATS} n=${N_START}..${N_END} step=${N_STEP} mem=${MEM_LIMIT_GB} GB"
-if [ "${STOP_VARIANT_ON_MEMORY}" = "1" ]; then
-    echo "Stop per variante su limite memoria: attivo"
+if [ "${STOP_VARIANT_ON_LIMIT}" = "1" ]; then
+    echo "Stop per variante su limite memoria/timeout: attivo"
 else
-    echo "Stop per variante su limite memoria: disattivo"
+    echo "Stop per variante su limite memoria/timeout: disattivo"
 fi
 echo "Risultati: ${CSV_FILE}"
 
 planned_runs=$(( ((N_END - N_START) / N_STEP + 1) * ${#ENABLED_VARIANTS[@]} * REPEATS ))
 current_run=0
-declare -A VARIANT_STOPPED_BY_MEMORY=()
-declare -A VARIANT_MEMORY_N=()
+declare -A VARIANT_STOPPED_BY_LIMIT=()
+declare -A VARIANT_LIMIT_N=()
 for variant in "${ENABLED_VARIANTS[@]}"; do
-    VARIANT_STOPPED_BY_MEMORY["${variant}"]=0
+    VARIANT_STOPPED_BY_LIMIT["${variant}"]=0
 done
 
 for n in $(seq "${N_START}" "${N_STEP}" "${N_END}"); do
@@ -126,8 +126,8 @@ for n in $(seq "${N_START}" "${N_STEP}" "${N_END}"); do
     echo "=== N=${n} ==="
 
     for variant in "${ENABLED_VARIANTS[@]}"; do
-        if [ "${STOP_VARIANT_ON_MEMORY}" = "1" ] && [ "${VARIANT_STOPPED_BY_MEMORY[${variant}]}" = "1" ]; then
-            echo "--- ${variant}: salto N=${n}; limite memoria gia' raggiunto a N=${VARIANT_MEMORY_N[${variant}]} ---"
+        if [ "${STOP_VARIANT_ON_LIMIT}" = "1" ] && [ "${VARIANT_STOPPED_BY_LIMIT[${variant}]}" = "1" ]; then
+            echo "--- ${variant}: salto N=${n}; limite superato a N=${VARIANT_LIMIT_N[${variant}]} ---"
             continue
         fi
 
@@ -153,10 +153,10 @@ for n in $(seq "${N_START}" "${N_STEP}" "${N_END}"); do
                 rc=$?
             fi
 
-            if [ "${rc}" -eq 75 ] && [ "${STOP_VARIANT_ON_MEMORY}" = "1" ]; then
-                VARIANT_STOPPED_BY_MEMORY["${variant}"]=1
-                VARIANT_MEMORY_N["${variant}"]="${n}"
-                echo "--- ${variant}: limite memoria raggiunto a N=${n}; salto i valori successivi per questa variante ---"
+            if [ "${rc}" -eq 75 -o "${rc}" -eq 124 ] && [ "${STOP_VARIANT_ON_LIMIT}" = "1" ]; then
+                VARIANT_STOPPED_BY_LIMIT["${variant}"]=1
+                VARIANT_LIMIT_N["${variant}"]="${n}"
+                echo "--- ${variant}: limite memoria/timeout raggiunto a N=${n}; salto i run e valori successivi per questa variante ---"
                 break
             fi
         done
@@ -165,10 +165,10 @@ done
 
 echo ""
 echo "Benchmark BSP completato. ${current_run} esecuzioni totali."
-if [ "${STOP_VARIANT_ON_MEMORY}" = "1" ]; then
+if [ "${STOP_VARIANT_ON_LIMIT}" = "1" ]; then
     for variant in "${ENABLED_VARIANTS[@]}"; do
-        if [ "${VARIANT_STOPPED_BY_MEMORY[${variant}]}" = "1" ]; then
-            echo "Variante ${variant}: fermata dopo hit di memoria a N=${VARIANT_MEMORY_N[${variant}]}."
+        if [ "${VARIANT_STOPPED_BY_LIMIT[${variant}]}" = "1" ]; then
+            echo "Variante ${variant}: fermata dopo limite a N=${VARIANT_LIMIT_N[${variant}]}."
         fi
     done
 fi
