@@ -1,0 +1,558 @@
+\section{Metodologia}
+
+\subsection{Sviluppo del Sistema}
+
+\subsubsection{Architettura dell'Applicazione}
+Per la realizzazione di questo progetto, è stata sviluppata un'applicazione in Python, utilizzando le seguenti librerie: \texttt{Tkinter} per l'implementazione dell'interfaccia grafica utente, \texttt{NumPy}, \texttt{Matplotlib}, \texttt{Seaborn} e \texttt{Pandas} per l'elaborazione dei dati e la visualizzazione. L'architettura dell'applicazione adotta il paradigma \textbf{Model-View-Controller} (MVC), strutturata in:
+
+\begin{enumerate}
+    \item 
+    \textbf{Model (\texttt{CharacterModel})}:
+    Gestisce la logica di business dell'applicazione, comprendendo l'interazione con il database per la creazione e la gestione dei personaggi, l'esecuzione dei test di personalità e la delega della generazione di contenuti al modello di linguaggio di grandi dimensioni (LLM).\\
+    Il \textbf{Model} include anche le classi \texttt{DatabaseManager}, \texttt{ChatManager} e \texttt{IPIPTest}.
+    \begin{enumerate}
+        \item
+        \textbf{Database Manager (\texttt{DatabaseManager})}:
+        Amministra le operazioni \textbf{Create}, \textbf{Read}, \textbf{Update}, \textbf{Delete} (CRUD) sul database SQLite, garantendo la persistenza dei dati dei personaggi.
+
+        \item
+        \textbf{Chat Manager (\texttt{ChatManager})}: Coordina la generazione di risposte coerenti con il profilo di personalità del personaggio selezionato, interagendo con gli LLM tramite la classe \texttt{OpenAIClient}.
+        
+        \item
+        \textbf{IPIP Test (\texttt{IPIPTest})}:
+        Implementa il test di personalità \textit{"50-item IPIP version of the Big Five Markers"}\cite{goldberg1992}, gestendo l'esecuzione del test, l'elaborazione delle risposte e il calcolo dei punteggi per ciascun tratto di personalità.
+    \end{enumerate}
+    
+    \item 
+    \textbf{View (CharacterCreatorView)}:
+    Implementa l'interfaccia grafica utente utilizzando \texttt{Tkinter}. Gestisce la visualizzazione dei dati dei personaggi, l'interfaccia di chat e fornisce controlli per la creazione e la modifica dei personaggi, nonché per l'esecuzione dei test di personalità.
+    
+    \item
+    \textbf{Controller (CharacterCreatorController)}:
+    Funge da intermediario e coordinatore tra il \textbf{Model} e la \textbf{View}, gestendo le interazioni dell'utente. Si occupa dell'inizializzazione dei componenti dell'applicazione, della gestione degli eventi dell'interfaccia grafica e del coordinamento delle operazioni di creazione, modifica e test dei personaggi.
+
+    \item \textbf{Classi di Supporto}:
+    \begin{enumerate}
+        \item \textbf{Prompts (\texttt{prompts.py})}:
+        Contiene le definizioni dei prompt utilizzati per interagire con il modello di linguaggio, cruciali per generare risposte coerenti e backstory dei personaggi.
+        
+        \item \textbf{Settings (\texttt{settings.py})}:
+        Centralizza le configurazioni dell'applicazione, inclusi parametri del database, impostazioni dell'API, e costanti dell'interfaccia utente.
+        
+        \item \textbf{Language (\texttt{language.py})}:
+        Gestisce la localizzazione del testo dell'interfaccia utente, facilitando future traduzioni.
+        
+        \item \textbf{Stats (\texttt{stats.py})}:
+        Implementa funzioni per l'analisi statistica e la creazione di grafici per la visualizzazione dei risultati dei test di personalità.
+    \end{enumerate}
+
+\end{enumerate}
+
+\subsection{Implementazione degli LLM}
+
+Durante questa ricerca, sono state implementate e testate due architetture di LLM utilizzando diverse tecniche e livelli di quantizzazione, risultando in un totale di \textbf{sei configurazioni} distinte.
+La quantizzazione è una tecnica fondamentale per ridurre le dimensioni del modello e migliorare l'efficienza computazionale, cercando al contempo di preservare prestazioni simili a quelle del modello originale.\\\\
+Le configurazioni testate sono:
+
+\begin{enumerate}
+    \item \textbf{Gemma 2 27B IQ2\_M}
+    \item \textbf{Gemma 2 27B Q3\_K\_S}
+    \item \textbf{Gemma 2 9B Q5\_K\_M}
+    \item \textbf{Gemma 2 9B Q8\_0}
+    \item \textbf{LLaMA 3.1 8B Q5\_K\_M}
+    \item \textbf{LLaMA 3.1 8B Q8\_0}
+\end{enumerate}
+
+Dove:
+\begin{itemize}
+    \item
+    \textbf{B} indica i miliardi di parametri del modello.
+    \item
+    \textbf{IQ} e \textbf{Q} rappresentano diverse tecniche di quantizzazione, con \textbf{IQ} che sta per "Integer Quantization".
+    \item
+    I numeri \textbf{2}, \textbf{3}, \textbf{5}, \textbf{8} che seguono la \textbf{Q} indicano il numero di bit utilizzati per rappresentare ciascun peso del modello, influenzando il compromesso tra dimensione e accuratezza del modello. Ad esempio, \textbf{Q8\_0} rappresenta una quantizzazione a 8 bit, che offre un equilibrio tra la precisione del modello originale (tipicamente 16 o 32 bit) e una significativa riduzione delle dimensioni.
+    \item
+    \textbf{K} nei metodi di quantizzazione (es. Q3\_K, Q5\_K) si riferisce a "K-quants"\cite{kquants}, una serie specifica di metodi di quantizzazione che utilizza strutture di "\textit{super-blocchi}" per ottimizzare ulteriormente la rappresentazione dei pesi.
+    \item 
+    \textbf{S}, \textbf{M}, \textbf{L} (Small, Medium, Large) rappresentano varianti del metodo di quantizzazione, che applicano diverse precisioni a parti differenti del modello per ottimizzare il bilanciamento tra prestazioni e dimensioni.
+
+\end{itemize}
+La selezione di diverse configurazioni consente di valutare il compromesso tra dimensione del modello, velocità di inferenza e accuratezza delle predizioni. Quest'ultima è spesso misurata tramite la \textbf{Perplexity}\cite{bernstein2021perplexity}, una metrica che quantifica quanto bene il modello prevede una sequenza di parole, con valori più bassi che indicano una maggiore precisione nelle predizioni.
+La scelta di diverse configurazioni permette di valutare il trade-off tra dimensione del modello, velocità di inferenza e accuratezza delle predizioni, misurata attraverso metriche come la perplexity.
+I modelli sono stati integrati con \textbf{LM Studio}, un LLM Manager compatibile con l'API standard di OpenAI e un server locale.
+Per ottimizzare le prestazioni e ridurre la latenza durante l'interazione con i personaggi IA, è stata implementata una classe \texttt{OpenAIClient} che gestisce le richieste al server LLM in modo asincrono e con supporto per lo streaming delle risposte, utilizzando la libreria \texttt{requests}.\\\\
+Per illustrare l'implementazione dei componenti utilizzati e l'applicazione delle tecniche di prompting si considerino i seguenti esempi di codice chiave:\\
+La generazione dei personaggi è implementata nella classe
+\begin{lstlisting}[language=Python]
+class CharacterModel:
+    def generate_random_character_basics(self) -> Character:
+        name = self.generate_random_name()
+        traits = {
+            trait: self.generate_random_trait() 
+            for trait in [
+                EXTRAVERSION_TEXT, 
+                AGREEABLENESS_TEXT, 
+                CONSCIENTIOUSNESS_TEXT, 
+                NEUROTICISM_TEXT, 
+                OPENNESS_TEXT
+            ]
+        }
+        return Character(0, name, **traits, backstory="")
+
+    def generate_random_trait(self) -> float:
+        return round(random.random(), 2)
+\end{lstlisting}
+Questo metodo genera un personaggio assegnando valori casuali a ciascun tratto di personalità del modello Big Five.
+
+\clearpage
+
+\subsection{Implementazione della Memoria dei Personaggi}
+
+L'applicazione implementa la possibilità di mantenere una "memoria" delle conversazioni passate rendendo le conversazioni più coerenti e immersive nel tempo.\\
+Il processo funziona come segue:
+
+\begin{enumerate}
+    \item
+    \textbf{Riassunto delle Conversazioni}:
+    Ad ogni nuovo messaggio, il sistema genera un riassunto conciso di tutta la storia delle conversazioni precedenti.
+    \item
+    \textbf{Selezione delle Informazioni Chiave}:
+    Durante questo processo di riassunto, vengono identificate e mantenute solo le informazioni più rilevanti e significative.
+    \item
+    \textbf{Memorizzazione nel Database}:
+    Questi riassunti vengono salvati nel database, associati al personaggio specifico.
+    \item
+    \textbf{Utilizzo nelle Interazioni Successive}:
+    Nelle conversazioni successive, questi riassunti vengono accodati al prompt per la generazione delle risposte, permettendo al personaggio di "ricordare" facendo riferimento ad informazioni raccolte in conversazioni passate.
+\end{enumerate}
+
+\textbf{Vantaggi}:
+\begin{itemize}
+    \item
+    \textbf{Coerenza Temporale}:
+    I personaggi possono mantenere una coerenza nelle loro interazioni nel corso del tempo, riferendosi a eventi o informazioni menzionate in conversazioni precedenti.
+    \item
+    \textbf{Personalizzazione dell'Esperienza}:
+    L'interazione diventa più personalizzata e immersiva, in quanto il personaggio può adattare le sue risposte basandosi sulla storia condivisa con l'utente.
+\end{itemize}
+
+\clearpage
+
+\subsection{Generazione di Storie di Background e Interazioni}
+
+Per ogni personaggio creato, è possibile generare automaticamente una backstory coerente o di inserirla manualmente.
+La generazione della backstory, insieme ad altre interazioni con il modello LLM, utilizza la tecnica di prompting \textbf{Few-Shot}\cite{brown2020language}, specificamente un approccio \textbf{3-Shot}.\\\\
+Il \textbf{Few-Shot learning} prevede la fornitura di alcuni esempi di risposte al modello per orientarlo verso la produzione di risposte più adeguate e contestualizzate.
+Questa tecnica è stata scelta come compromesso ideale tra qualità delle risposte ed efficienza computazionale. Rispetto al \textbf{Zero-shot learning}, offre un miglioramento significativo nella coerenza e contestualizzazione delle risposte, mantenendo un consumo di memoria e tempi di inferenza inferiori rispetto a tecniche più avanzate e complesse, come il \textbf{Tree of Thoughts}\cite{yao2023treethoughtsdeliberateproblem}.
+\textbf{Il processo di generazione automatica utilizza prompt strutturati che includono:}
+
+\begin{enumerate} \item Valori numerici dei tratti del modello Big Five. \item Elementi narrativi che riflettono le combinazioni specifiche dei tratti di personalità assegnati. \item Tre esempi di backstory per personaggi con tratti di personalità diversi, fornendo un contesto ricco per la generazione. \end{enumerate}
+
+I prompt sono gestiti dalla classe \texttt{MessageBuilder}, che formatta le richieste assegnando correttamente i ruoli richiesti dall'API.
+
+Per arricchire i personaggi con una storia di background coerente, il sistema utilizza, tramite la classe \texttt{ChatManager}, un prompt del file \texttt{prompts} che implementa la tecnica di \textit{3-Shot learning}. Di seguito sono riportati il prompt e una prima interazione con l'API di LM Studio:\\
+\vskip 1.5cm
+\texttt{prompts.py}
+\begin{lstlisting}[language=Python]
+def get_backstory_prompt(character_name, traits_description):
+    return f"""
+    You are a master storyteller specializing in character creation for role-playing games.
+    YOU MUST ANSWER ONLY WITH THE BACKSTORY, avoid sentences like 'Here is a compelling backstory..' etc.
+
+    Backstory Requirements:
+    1. Length: Maximum 25 lines
+    2. Structure:
+       a) Early life (2-3 sentences)
+       b) Two defining events that shaped the character (4-6 sentences each)
+       c) Current situation and outlook (2-3 sentences)
+    3. Elements to include:
+       - Primary motivations
+       - Major weaknesses or flaws
+       - Unique quirks or distinguishing features
+       - How their traits manifest in their behavior and decisions
+
+    Few-Shot Examples:
+    Example 1:
+    Character Information:
+    - Name: **Mickey Mouse**
+    - Traits: **Openness: 90%, Conscientiousness: 60%, Extraversion: 40% ...**
+    - Backstory: ** Mickey Mouse was born as a cartoon character in the 1920s, he has always been known for his cheerful personality and adventurous spirit...**
+
+    Example 2:
+    Character Information:
+    - Name: ****
+    - Traits: ****
+    - Backstory: ****
+
+    Example 3:
+    Character Information:
+    - Name: ****
+    - Traits: ****
+    - Backstory: ****
+
+    Now, create a compelling backstory for {character_name} that brings their character to life, following the structure and incorporating their unique traits.
+
+    Character Information:
+    - Name: {character_name}
+    - Traits: {traits_description}
+    - Backstory:
+    """
+\end{lstlisting}
+\vskip 1.2cm
+\texttt{chat\_manager.py}
+\begin{lstlisting}[language=Python]
+    def get_backstory(self, user_message: str) -> str:
+        with self.lock:
+            self.message_builder.
+                            clear_all_messages()
+            self.message_builder.
+                    add_system_message(self.character_prompt)
+            self.message_builder.
+                            add_user_message(user_message)
+            messages = self.
+                            message_builder.get_messages()
+            full_response = self.
+                            _get_chat_completion(messages)
+            self.message_builder.
+                        add_assistant_message(full_response)
+            return full_response
+\end{lstlisting}
+\vskip 1.2cm
+\texttt{chat\_manager.py}
+\begin{lstlisting}[language=Python]
+    def _get_chat_completion(self, messages: List[Dict[str, str]]) -> str:
+        try:
+            completion_stream = 
+            self.client.chat_completions_create
+            (
+                model=OPENAI_MODEL,
+                messages=messages,
+                temperature=0.7,
+                stream=True
+            )
+            full_response = self.
+                _process_completion_stream(completion_stream)
+            return full_response.strip('"')
+        except Exception as e:
+            print(ERROR_GENERATING_RESPONSE_TEXT.format(e))
+            return ""
+\end{lstlisting}
+\vskip 1.2cm
+\texttt{opneai\_client.py}
+\begin{lstlisting}[language=Python]
+    def _get_chat_completion(self, messages: List[Dict[str, str]]) -> str:
+        try:
+            completion_stream = 
+            self.client.chat_completions_create
+            (
+                model=OPENAI_MODEL,
+                messages=messages,
+                temperature=0.7,
+                stream=True
+            )
+            full_response = self.
+                _process_completion_stream(completion_stream)
+            return full_response.strip('"')
+        except Exception as e:
+            print(ERROR_GENERATING_RESPONSE_TEXT.format(e))
+            return ""
+\end{lstlisting}
+\vskip 1.2cm
+
+\clearpage
+
+\subsubsection{Esempio Pratico di Interazione e Gestione della Memoria}
+Per dimostrare il funzionamento della "memoria" consideriamo un esempio concreto con il personaggio \textbf{Brave Ranger}.\\
+I suoi tratti di personalità sono:
+Estroversione: 42\%, Amicalità: 88\%, Coscienziosità: 30\%, Nevroticismo: 49\%, Apertura all'esperienza: 23\%.\\\\
+\textbf{Inizializzazione della Conversazione}\\
+Viene inviato un messaggio contenente degli esempi few-shot sul "modo di rispondere per carattere" per guidare la generazione della risposta del personaggio.\\
+Gli esempi Few-Shot \textbf{sono} hardcoded, mentre le informazioni del personaggio (in questo esempio Brave Ranger) \textbf{non sono} hardcoded ma vengono aggiunte in base al personaggio scelto.\\\\
+I messaggi possono essere di 3 tipi:
+\begin{itemize}
+    \item
+    \textbf{System}:
+    Forniscono istruzioni generali definendo il comportamento complessivo, il tono, e le limitazioni del modello.
+    \item
+    \textbf{User}:
+    Indica le richieste o le affermazioni dell'utente umano a cui il modello deve rispondere.
+    \item
+    \textbf{Assistant}:
+    Indica come il modello ha interpretato e risposto agli input dell'utente, seguendo le istruzioni del sistema.
+\end{itemize}
+\textbf{Prima Interazione in chat:}\\
+
+\begin{lstlisting}[language=Python]
+### Scelta del personaggio ###
+# Personaggio: Brave Ranger 
+# Tratti: Estroversione: 42%, Amicalita: 88%, Coscienziosita: 30%, Nevroticismo: 49%, Apertura all'esperienza: 23% 
+
+### Invio dei primi messaggi alla chat ###
+## Role: System 
+# Message:   
+# You are an expert RPG designer specializing in creating immersive NPC interactions.
+#     YOU MUST ANSWER ONLY WITH THE ANSWER OF THE CHARACTER, avoid sentences like "Here is the answer" etc.
+# 
+#     Instructions:
+#     1. Analyze the provided character information.
+#     2. Consider the conversation history and the player's last message.
+#     3. Craft a response that:
+#         a) Reflects Brave Ranger's personality and emotional state.
+#         b) Aligns with their goals and the scenario's stakes.
+#         c) Maintains immersion in the game world.
+#         d) Is concise (1-3 sentences) but meaningful.
+#     4. Ensure the response's tone matches Brave Ranger's emotional state.
+#     5. Enclose the response in inverted commas "".
+# 
+#     Few-Shot Examples:
+# 
+#      Example 1:
+#      Character Information:
+#      - Name: Eldrin the Eccentric
+#      - Traits: Openness: 85%, Conscientiousness: 55%, Extraversion: 25%, Agreeableness: 30%, Neuroticism: 70%
+#     - Backstory: Eldrin is a reclusive wizard who lives in a tower filled with bizarre magical experiments. He values knowledge above all else but has poor social skills and a tendency to mutter to himself.
+#     - Response: *squints suspiciously* What's that? The magic shop? *sighs and rubs temples* Very well. Third street past the alchemist's, can't miss the floating signboard. And for the love of the arcane, don't mention my name if you go in there. Last thing I need is more amateur wand-wavers knocking at my door.
+# 
+#     Example 2:
+#     Character Information:
+#     - Name: Rosie Warmhearth
+#     - Traits: Openness: 60%, Conscientiousness: 75%, Extraversion: 90%, Agreeableness: 85%, Neuroticism: 20%
+#     - Backstory: Rosie runs the most popular inn in town, known for its friendly atmosphere and delicious food. She treats every guest like family and has a knack for making people feel at home.
+#     - Response: Oh, bless your heart, you look absolutely famished! Come in, come in! We've got a lovely room with a view of the garden, and I'll have Berta whip up a hot bowl of stew for you right away. Now, tell me all about your travels while we get you settled!
+#         
+#     Example 3:
+#     Character Information:
+#     - Name: Zephyr the Enigma
+#     - Traits: Openness: 95%, Conscientiousness: 25%, Extraversion: 30%, Agreeableness: 60%, Neuroticism: 50%
+#     - Backstory: Zephyr is a wandering seer, gifted with visions of possible futures. They speak in riddles and metaphors, finding conventional language too limiting for the truths they perceive.
+#     - Response: *eyes glaze over slightly* Ah, seeker of truths untold... The mists part, revealing fragments of what may be. But remember, the future is a river with many branches. Are you prepared to glimpse its swirling currents? The price may be more than coin...
+#         
+#     Now, craft your response for Brave Ranger based on their traits and the player's last message.
+# 
+#     Character Information:
+#     - Name: Brave Ranger
+#     - Big Five traits: Estroversione: 42%, Amicalita: 88%, Coscienziosita: 30%, Nevroticismo: 49%,
+#     - Backstory: 
+#     - Response:
+#     """
+# 
+## Role: User 
+# "Heila, io mi chiamo Pierpaolo e studio informatica. E tu?"
+\end{lstlisting}
+
+\begin{itemize}
+\item \textbf{Utente:} "Heilà, io mi chiamo Pierpaolo e sono uno studente di informatica. E tu?"
+\end{itemize}
+\textbf{Gestione della risposta}\\
+Le richieste all'LLM Manager vengono effettuate con il flag \texttt{stream=True} sfruttando il \textbf{Chunk Transfer Encoding} di HTPP \cite{rfc9113} che permette di ricevere i token man mano che vengono generati senza aspettare il termine dell'inferenza.
+\begin{lstlisting}[language=Python]
+## Esempio di stream dal server durante la generazione ###
+# " 
+# Salve 
+# , 
+# Pier 
+# paolo 
+# . 
+# Il 
+# mio 
+# nome
+# è
+# Brave 
+# Ranger 
+# ." 
+#
+### Risposta completa ###
+## Role: Assistant
+# "Salve, Pierpaolo. Il mio nome è Brave Ranger."
+
+\end{lstlisting}    
+
+\begin{itemize}
+    \item \textbf{Brave Ranger:} "Salve, Pierpaolo. Il mio nome è Brave Ranger."
+\end{itemize}
+\textbf{Aggiornamento della Memoria}\\
+Dopo ogni interazione, il sistema genera un riassunto della conversazione da accodare al contesto nelle interazioni future per mantenere la coerenza e la memoria delle conversazioni passate usando un altro prompt che utilizza il Few-Shot.
+
+\begin{lstlisting}[language=Python]
+## Riassunto dei messaggi precedenti: 
+# You are an expert narrative analyst specializing in concise, insightful summaries.
+#
+#    Task: Summarize the previous conversation, focusing on key elements that will inform future interactions.
+#    YOU MUST ANSWER ONLY WITH THE SUMMARY OF THE ENTIRE CONVERSATION, AVOID SENTENCES LIKE "Here is the summary.." etc.
+#
+#    Summary Requirements:
+#    1. Length: 3-20 concise sentences
+#    2. Focus on:
+#       a) Critical plot points from both the previous knowledge and recent conversation
+#       b) Character dynamics and development throughout the entire interaction
+#       c) User's intentions, motivations, or relationships as they have evolved
+#       d) any information that should be remembered (e.g., promises, secrets, goals)
+#    3. Highlight any changes or revelations in the user's perspective from the beginning to the end of the conversation
+#
+#    Few-Shot Examples:
+#
+#    Example 1:
+#    - Past Knowledge:
+#    - Player Message: "Ciao"
+#    - NPC Response: "Ciao amico, come va?"
+#    - Summary: Nella loro prima interazione lui e il player si sono salutati in modo amichevole, stabilendo un tono positivo per la conversazione.
+#
+#    Example 2:
+#    - Past Knowledge: lui e il player si sono salutati in modo amichevole, stabilendo un tono positivo per la conversazione.
+#    - Player Message: "Sto bene, grazie! Hai qualche consiglio su cosa fare oggi?"
+#    - NPC Response: "Potresti andare al mercato, c'è sempre qualcosa di interessante."
+#    - Summary: Dopo essersi salutati in modo amichevole il player chiede consiglio su dove andare e lui gli suggerisce il mercato, c'è sempre qualcosa di interessante
+#    
+#    Example 3:
+#    - Past Knowledge: Dopo essersi salutati in modo amichevole il player chiede consiglio su dove andare e lui gli suggerisce il mercato, c'è sempre qualcosa di interessante
+#    - Player Message: "Sono andato al mercato, ma ho trovato un po' di difficoltà a contrattare. Hai qualche suggerimento?"
+#    - NPC Response: "Certamente, la chiave è essere pazienti e ascoltare attentamente ciò che l'altro ha da dire prima di rispondere."
+#    - Summary: Dopo un saluto amichevole lui consiglia al player di andare al mercato per fare qualcosa di interessante, il player ha avuto difficoltà a contrattare e lui gli suggerisce di essere paziente e ascoltare ciò che l'altro ha da dire
+#    
+#    Example 4:
+#    - Past Knowledge: Dopo un saluto amichevole lui consiglia al player di andare al mercato per fare qualcosa di interessante, il player ha avuto difficoltà a contrattare e lui gli suggerisce di essere paziente e ascoltare ciò che l'altro ha da dire
+#    - Player Message: "Grazie per i consigli, li ho messi in pratica e ho ottenuto un buon affare! Cosa mi consigli di fare ora?"
+#    - NPC Response: "Complimenti! Ora potresti esplorare le rovine fuori città, ci sono storie di tesori nascosti."
+#    - Summary: Dopo un saluto amichevole lui consiglia al player di andare al mercato. Il player incontra difficoltà e chiede aiuto a lui che gli suggerisce di essere paziente e interessato. Il player gli riferisce che i consigli funzionano e lui gli dice che ora sarebbe una buona idea esplorare le rovine fuori città, ci sono storie di tesori nascosti
+#    
+#    Now, summarize the conversation based on the following elements:
+#    - Past Knowledge: 
+#    - Player Message: "Heilà, io mi chiamo Pierpaolo e sono uno studente di informatica. E tu?"
+#    - NPC Response: "Salve, Pierpaolo. Il mio nome è Brave Ranger."
+#    - Summary: 
+#
+### Riassunto dell'LLM ###
+# Pierpaolo, uno studente di informatica, inizia una conversazione presentandosi a Brave Ranger. Brave Ranger ricambia la presentazione, instaurando uno scambio amichevole e potenzialmente informativo. L'incontro segna l'inizio di una potenziale relazione costruita su interessi comuni o forse anche su ricerche di conoscenza.
+# 
+\end{lstlisting}
+\begin{itemize}
+    \item \textbf{Chat\_Knowledge di Brave Ranger:}\\
+    Pierpaolo, uno studente di informatica, inizia una conversazione presentandosi a Brave Ranger. Brave Ranger ricambia la presentazione, instaurando uno scambio amichevole e potenzialmente informativo. L'incontro segna l'inizio di una potenziale relazione costruita su interessi comuni o forse anche su ricerche di conoscenza.
+\end{itemize}
+Qui il riassunto viene salvato nel database nel campo \texttt{chat\_knowledge} del personaggio \textbf{Brave Ranger}.\\
+Anche effettuando un reset della chat, il sistema è in grado di recuperare il riassunto dal database e accodarlo al prompt per la generazione delle risposte.\\\\
+\textbf{Interazioni Successive}
+\begin{itemize}
+\item \textbf{Utente:} "Il mio piatto preferito è la zuppa di funghi, il tuo qual è?
+\item \textbf{Brave Ranger:} "La mia preferenza va al semplice stufato d'orzo, sostanzioso e saziante per i lunghi viaggi."
+\item \textbf{***Riassunto***}
+\item \textbf{***Spegnimento e riaccensione del sistema***}
+\item \textbf{Utente:} "Quanto tempo che non ci sentiamo Brave!"
+\item \textbf{Brave Ranger:} "Sembrano passati secoli dall'ultima volta che abbiamo parlato, Pierpaolo. La strada è stata lunga."
+\item \textbf{***Riassunto***}
+\item \textbf{Utente:} "Ricordo che il tuo piatto preferito è lo stufato d'orzo. Tu ricordi ancora qual è il mio?"
+\item \textbf{Brave Ranger:} "Infatti, e la tua è una zuppa di funghi, se la memoria non mi inganna."
+\item \textbf{***Riassunto finale***}\\
+"Pierpaolo e Brave Ranger si sono riuniti dopo un periodo di lontananza e la loro precedente interazione ha stabilito un rapporto amichevole costruito su interessi culinari comuni. Pierpaolo ricorda le loro conversazioni passate, riferendosi in particolare alla passione di Brave Ranger per il sostanzioso stufato d'orzo. Con fare scherzoso, invita Brave Ranger a ricordare il suo piatto preferito: la zuppa di funghi.  Brave Ranger conferma entrambi i ricordi con precisione, ponendo le basi per un'ulteriore conversazione nostalgica o per una potenziale collaborazione, visto che Brave Ranger parla di una "lunga strada"."
+
+\end{itemize}
+\textbf{Analisi dell'Interazione}\\
+Questo esempio dimostra come il sistema possa:
+\begin{enumerate}
+\item Mantenere una coerenza nelle interazioni attraverso sessioni multiple.
+\item Ricordare dettagli specifici delle conversazioni precedenti.
+\item Adattare il tono e il contenuto delle risposte in base alla personalità del personaggio e al modo in cui l'utente interagisce.
+\end{enumerate}
+
+\clearpage
+
+\subsection{Valutazione}
+
+\subsubsection{Generazione dei Personaggi}
+
+Per garantire consistenza e replicabilità negli esperimenti, le backstory e i profili dei personaggi utilizzati nei test sono stati generati una sola volta utilizzando il modello \textbf{LLaMA 3.1 8B Q8\_0}. Questi profili sono stati successivamente riutilizzati per i test con tutti i modelli implementati.\\
+Il processo di generazione, implementato nella classe \texttt{CharacterModel}, si è svolto attraverso i seguenti passi:
+
+\begin{enumerate}
+    \item Generazione casuale di 5 valori $X$ con $X \in [0.00, 1.00]$ per ciascun tratto dei Big Five utilizzando il metodo \texttt{generate\_random\_trait()}.
+    \item Generazione automatica di una backstory coerente con il profilo di personalità definito, utilizzando il prompt strutturato gestito dalla classe \texttt{ChatManager}.
+    \item Memorizzazione del personaggio completo nel database SQLite attraverso la classe \texttt{DatabaseManager} per i successivi test e analisi.
+\end{enumerate}
+
+\subsubsection{Test di Coerenza della Personalità}
+
+Il test per la valutazione dei tratti GBF è stato implementato nella classe \texttt{IPIPTest}, che gestisce i seguenti aspetti:
+
+\begin{itemize}
+    \item 
+    La somministrazione del test tramite il metodo \texttt{run\_test\_for\_character()}. 
+    \item 
+    L'elaborazione delle risposte, effettuata attraverso il metodo \texttt{process\_response()}, che applica una regex a ciascuna riga di risposta restituita dall'LLM. 
+    \item
+    Il calcolo dei punteggi per ogni tratto di personalità, considerando le domande formulate sia in modo positivo che negativo.
+\end{itemize}
+È importante che l'LLM restituisca esattamente 50 righe, una per ogni risposta, altrimenti il test viene considerato fallito.
+
+\subsubsection{Raccolta Dati}
+
+Per ciascun test eseguito, il metodo \texttt{\_save\_test\_results\_to\_csv()} della classe \texttt{CharacterCreatorController} raccoglie:
+
+\begin{enumerate}
+    \item
+    Metadati associati, inclusi i valori target dei tratti di personalità e l'identificatore univoco del modello LLM utilizzato.
+    \item
+    Punteggi calcolati per ciascun tratto di personalità basati sulle risposte fornite.
+    \item
+    Il tempo di completamento di ciascun test.
+    \item
+    Le risposte generate dal modello LLM per ciascuna domanda del test IPIP, permettendo analisi qualitative dettagliate.
+\end{enumerate}
+Questi dati sono stati sistematicamente archiviati in file CSV, uno per ciascun LLM testato, facilitando successive analisi comparative.
+
+\subsection{Metodi di Analisi}
+
+\subsubsection{Analisi dei risultati}
+
+L'analisi dei dati raccolti, implementata principalmente nella classe \\
+\texttt{CharacterCreatorController}, ha coinvolto diverse fasi:
+
+\begin{enumerate}
+    \item
+    \textbf{Calcolo dell'Accuratezza}:
+    Per ciascun tratto di personalità, avendo il valore target assegnato e il valore misurato attraverso il test IPIP, è stata calcolata, nel metodo \texttt{\_calculate\_accuracy()}.\\\\    
+    L'accuratezza del singolo tratto è definita come:
+    \[
+    1 - \left| CharacterTrait_i - TestResult_i \right| \times 100
+    \]
+
+    L'accuratezza totale dei 5 tratti è definita come:
+    \[
+    \frac{1}{5} \sum_{i=1}^{5} \left( 1 - \left| CharacterTrait_i - TestResult_i \right| \right) \times 100
+    \]
+
+    Dove $CharacterTrait_i$ e $TestResult_i$ sono rispettivamente i valori target e i valori misurati per il tratto di personalità $i$
+    con $ i \in [1,5] \quad \text{e} \quad i \in \mathbf{Z}$.
+    
+
+    \item
+    \textbf{Analisi Statistica}:
+    Utilizzando le librerie \texttt{seaborn}, \texttt{pandas} e \texttt{matplotlib} sono state generate diverse visualizzazioni per analizzare i risultati, tra cui:
+    \begin{itemize}
+        \item \textit{Box plot} dell'accuratezza per ciascun tratto di personalità e modello, per visualizzare la distribuzione e la variabilità delle accuratezze.
+        \item \textit{Scatter plot} della durata del test rispetto all'accuratezza totale, per identificare eventuali correlazioni tra tempo di elaborazione e prestazioni.
+        \item \textit{Heatmap} di correlazione tra i valori attesi e ottenuti per ciascun tratto di personalità, per evidenziare pattern di coerenza o discrepanza.
+        \item \textit{Istogrammi} della distribuzione dell'accuratezza per ciascun tratto, per comprendere la frequenza delle diverse fasce di accuratezza.
+        \item \textit{Istogramma} del tasso di successo, per una valutazione complessiva delle prestazioni di ciascun modello.
+    \end{itemize}
+    
+    \item
+    \textbf{Confronto tra Modelli}:
+    Sono stati calcolati e confrontati i tassi di successo e le distribuzioni di accuratezza per ciascun modello LLM testato, permettendo una valutazione comparativa delle performance dei diversi modelli e tecniche di quantizzazione.
+    \begin{itemize}
+        \item L'impatto delle diverse tecniche di quantizzazione sulle prestazioni.
+        \item Eventuali trade-off tra dimensione del modello, velocità di elaborazione e accuratezza nella rappresentazione della personalità.
+    \end{itemize}
+\end{enumerate}
+
+\subsubsection{Metriche di Valutazione}
+
+\begin{enumerate}
+    \item \textbf{Accuratezza Media}: Calcolata come la media delle accuratezze per tutti i tratti di personalità e tutti i personaggi testati, fornisce una misura globale della performance del modello.
+    
+    \item \textbf{Tasso di Successo}: Definito come la percentuale di casi in cui l'accuratezza supera una soglia predefinita (es. 80\%), indica la frequenza con cui il modello produce risultati accettabili.
+    
+    \item \textbf{Coefficiente di Correlazione}: Calcolato tra i valori target e i valori misurati per ciascun tratto, quantifica la relazione lineare tra le personalità attese e quelle generate.
+    
+    \item \textbf{Tempo Medio di Elaborazione}: Misura l'efficienza computazionale del modello, cruciale per applicazioni in tempo reale.
+\end{enumerate}
+

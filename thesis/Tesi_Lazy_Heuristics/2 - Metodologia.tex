@@ -1,28 +1,12 @@
-\section{Metodologia}
+\section{Methodology}
 
-\subsection{Architettura generale}
+\subsection{System Architecture}
 
-Il progetto estende una copia locale di clingo, contenuta in \path{clingo-modified}, con una componente dedicata alle euristiche lazy. L'idea architetturale e' separare tre responsabilita':
+The project extends a local copy of clingo, stored in \path{clingo-modified}, with a component dedicated to lazy declarative heuristics. The extension separates three concerns that are normally intertwined in native \lstinline|#heuristic| grounding: the declarative description of the heuristic inside the ASP program, the parsing of this description into internal C++ structures, and the incremental evaluation of heuristic effects during search through the \lstinline|Clingo::Heuristic| interface.
 
-\begin{enumerate}
-    \item la rappresentazione dichiarativa dell'euristica dentro il programma ASP, tramite fatti \lstinline|__heuristic(...)|;
-    \item il parsing e la validazione di tali fatti in strutture C++ interne;
-    \item la valutazione incrementale durante il solving, tramite l'interfaccia \lstinline|Clingo::Heuristic|.
-\end{enumerate}
+An input program contains the ordinary rules of the problem and one or more \lstinline|__heuristic(...)| facts. clingo still grounds the program in the standard way, but during the propagator initialization phase the extension scans the symbolic atoms for \lstinline|__heuristic| facts, parses them into \lstinline|HeuristicRuleTemplate| objects, indexes the ground literals used by targets and bodies, and materializes runtime heuristic candidates for the relevant ground targets. During search, the solver calls \lstinline|propagate|, \lstinline|undo|, and \lstinline|decide|; the propagator updates the active heuristic effects and, when possible, returns the preferred decision literal.
 
-La pipeline completa e' la seguente:
-
-\begin{enumerate}
-    \item l'encoding ASP contiene normali regole del problema e uno o piu' fatti \lstinline|__heuristic(...)|;
-    \item clingo esegue il grounding del programma;
-    \item durante \lstinline|init|, il propagatore cerca tutti gli atomi simbolici con nome \lstinline|__heuristic|;
-    \item il parser produce una lista di \lstinline|HeuristicRuleTemplate|;
-    \item il propagatore costruisce indici sui literal ground dei predicati usati da target e body;
-    \item ogni template viene materializzato in candidate runtime associati a target ground;
-    \item il solver invoca \lstinline|propagate|, \lstinline|undo| e \lstinline|decide|; il propagatore aggiorna gli effetti euristici e restituisce il literal preferito.
-\end{enumerate}
-
-L'estensione e' registrata in \path{clingo-modified/libclingo/src/clingo_app.cc}. Nella funzione \lstinline|ClingoApp::run| viene creato un oggetto \lstinline|HeuristicPropagator| e viene registrato su \lstinline|Control|:
+The extension is registered in \path{clingo-modified/libclingo/src/clingo_app.cc}. Inside \lstinline|ClingoApp::run|, the modified binary creates the propagator and attaches it to the \lstinline|Control| object:
 
 \begin{lstlisting}[language=C++]
 Clingo::Control ctl(reinterpret_cast<clingo_control_t*>(grd.get()), false);
@@ -30,22 +14,22 @@ HeuristicPropagator my_propagator;
 ctl.register_propagator(my_propagator, true);
 \end{lstlisting}
 
-Il parametro \lstinline|true| richiede una registrazione sequenziale. Questa scelta evita interazioni concorrenti sulla struttura dati del propagatore, coerentemente con l'implementazione attuale.
+The second argument requests sequential registration. This is consistent with the current implementation, which keeps mutable ranking and aggregate state inside the propagator and does not yet provide a parallel synchronization layer.
 
-\subsection{Sintassi interna delle euristiche lazy}
+\subsection{Internal Syntax for Lazy Heuristics}
 
-La forma nativa di clingo e':
+The native clingo form is:
 
 \begin{lstlisting}[language=ASP]
 #heuristic A : Body. [W@P, M]
 \end{lstlisting}
 
-Nel progetto, questa informazione viene riscritta in un fatto:
+The proposed representation rewrites the same information as a compact fact:
 
 \begin{lstlisting}[language=ASP]
 __heuristic(__target(pred),
-            body_positivo,
-            __n_body_negativo,
+            positive_body,
+            __n_negative_body,
             __bind(var, __sum(source, 0)),
             __weight(expr),
             __priority(expr),
@@ -53,22 +37,9 @@ __heuristic(__target(pred),
             __semantics(clingo)).
 \end{lstlisting}
 
-Gli argomenti hanno ruoli distinti:
+The first argument selects the target predicate. Body arguments may be implicit, as in a nullary symbol such as \lstinline|x| that is matched against the target tuple, or explicit, through \lstinline|__body(pred, __match(...), __bind_arg(...))|. Negative body predicates are encoded with the \lstinline|__n_| prefix. Runtime variables can be bound either from target arguments through \lstinline|__bind_target_arg|, from body arguments through \lstinline|__bind_arg|, or from dynamic aggregates through \lstinline|__bind(var, __sum(...))|. The remaining arguments describe the weight expression, the local priority expression, the modifier, and the intended evaluation semantics.
 
-\begin{itemize}
-    \item \lstinline|__target(pred)| identifica il predicato target da suggerire al solver;
-    \item un predicato nullo come \lstinline|x| rappresenta un body positivo implicito sulla stessa tupla del target;
-    \item \lstinline|__body(pred, __match(...), __bind_arg(...))| rappresenta un body positivo con mapping esplicito tra argomenti del body e argomenti del target;
-    \item \lstinline|__n_p| indica la presenza di un body negativo \lstinline|not p(...)|;
-    \item \lstinline|__bind(var, __sum(...))| lega una variabile runtime al valore di un aggregato dinamico;
-    \item \lstinline|__bind_target_arg(var, idx)| rende disponibile un argomento del target diverso da \lstinline|self|;
-    \item \lstinline|__weight(expr)| descrive il valore $W$ della modifica euristica;
-    \item \lstinline|__priority(expr)| descrive la priorita' locale $P$;
-    \item \lstinline|__modifier(...)| specifica il modifier;
-    \item \lstinline|__semantics(alpha|clingo)| seleziona la semantica di valutazione di body negativi e aggregati.
-\end{itemize}
-
-La forma BSP clingo-like usata negli esperimenti e':
+The direct clingo-like BSP heuristic used in the experiments is represented as follows:
 
 \begin{lstlisting}[language=ASP]
 __heuristic(__target(b), x, __n_c, __bind(s, __sum(c, 0)),
@@ -78,18 +49,18 @@ __heuristic(__target(b), x, __n_c, __bind(s, __sum(c, 0)),
             __semantics(clingo)).
 \end{lstlisting}
 
-Essa corrisponde concettualmente alla direttiva:
+Conceptually, this corresponds to the native directive:
 
 \begin{lstlisting}[language=ASP]
 #heuristic b(X) : x(X), not c(X), S = #sum{Y : c(Y)}.
     [(((n+1)*S)+X)@0, true]
 \end{lstlisting}
 
-La differenza cruciale rispetto alle versioni precedenti del progetto e' che \lstinline|__priority| non e' piu' usato come ranking globale tra candidate diversi. In clingo, la priorita' \lstinline|@P| serve a risolvere conflitti tra modifiche applicabili allo stesso target e allo stesso modifier. Il ranking globale tra target e' invece il livello risultante dopo l'applicazione dei modifier.
+The important semantic point is that \lstinline|__priority| is not used as a global ranking key among different targets. In clingo, the priority \lstinline|@P| resolves conflicts among applicable modifications for the same target and modifier. The global ranking among targets is instead induced by the resolved level after modifiers have been applied.
 
-\subsection{Tipi e rappresentazione}
+\subsection{Runtime Representation}
 
-Il file \path{clingo-modified/libclingo/clingo/heuristic_types.hh} definisce le strutture condivise dal parser e dal propagatore. Il tipo centrale e' \lstinline|HeuristicRuleTemplate|:
+The shared data structures are defined in \path{clingo-modified/libclingo/clingo/heuristic_types.hh}. The central type is \lstinline|HeuristicRuleTemplate|:
 
 \begin{lstlisting}[language=C++]
 struct HeuristicRuleTemplate {
@@ -107,7 +78,7 @@ struct HeuristicRuleTemplate {
 };
 \end{lstlisting}
 
-Il template non e' ancora un candidate ground: e' una descrizione parametrica della regola euristica. La materializzazione avviene dopo avere indicizzato gli atomi ground. Ogni \lstinline|RuntimeHeuristicCandidate| contiene target, tuple numeriche, literal del body e binding runtime:
+A template is still parametric. It becomes concrete only after the propagator has indexed the ground atoms and matched the template against possible target tuples. Each \lstinline|RuntimeHeuristicCandidate| stores the target literal, the target tuple values, the literals appearing in the positive and negative bodies, the values bound from body predicates, and the aggregate bindings that must be read during evaluation:
 
 \begin{lstlisting}[language=C++]
 struct RuntimeHeuristicCandidate {
@@ -122,110 +93,49 @@ struct RuntimeHeuristicCandidate {
 };
 \end{lstlisting}
 
-Questa struttura e' deliberatamente povera di semantica globale. Non contiene una chiave ordinata di tipo \enquote{priority, weight}. La sua funzione e' produrre, quando valutata, un effetto euristico locale:
+When evaluated, a candidate produces a local effect rather than a global decision order. The effect records whether the candidate is active, the target literal, the computed bias, the computed local priority, the modifier, and the candidate identifier. Active effects are then resolved per target in a \lstinline|TargetHeuristicState|. Only after this local resolution does a target enter the global decision ranking.
 
-\begin{lstlisting}[language=C++]
-struct CandidateHeuristicEffect {
-    bool active = false;
-    Clingo::literal_t target_lit = 0;
-    int bias = 0;
-    int local_priority = 0;
-    HeuristicModifier modifier = HeuristicModifier::True;
-    size_t candidate_id = 0;
-};
-\end{lstlisting}
+\subsection{Parsing of \texttt{\_\_heuristic} Facts}
 
-Gli effetti attivi vengono poi risolti per target in un \lstinline|TargetHeuristicState|, che contiene il level e il sign risultanti. Solo dopo questa risoluzione locale il target entra nel ranking globale.
-
-\subsection{Parser dei fatti \texttt{\_\_heuristic}}
-
-Il parser si trova in \path{clingo-modified/libclingo/src/heuristic_parser.cc}. La funzione pubblica:
+The parser is implemented in \path{clingo-modified/libclingo/src/heuristic_parser.cc}. Its public entry point,
 
 \begin{lstlisting}[language=C++]
 std::vector<HeuristicRuleTemplate>
 parse_lazy_heuristic_templates(std::vector<Clingo::Symbol> const &heuristic_symbols)
 \end{lstlisting}
 
-riceve i simboli \lstinline|__heuristic| gia' prodotti dal grounding. Per ogni simbolo:
+receives the \lstinline|__heuristic| symbols already produced by grounding. For each symbol, the parser checks that a target is present, recognizes implicit and explicit positive bodies, translates negative bodies marked by \lstinline|__n_|, validates aggregate bindings and target/body variables, reads \lstinline|__weight| and \lstinline|__priority| as arithmetic expressions, and rejects duplicated or ambiguous syntax early.
 
-\begin{enumerate}
-    \item controlla la presenza di \lstinline|__target|;
-    \item riconosce body positivi impliciti e body positivi espliciti;
-    \item traduce body negativi con prefisso \lstinline|__n_|;
-    \item valida binding di aggregati, variabili di body e variabili target;
-    \item legge \lstinline|__weight| e \lstinline|__priority| come espressioni aritmetiche;
-    \item legge \lstinline|__modifier| e \lstinline|__semantics|;
-    \item fallisce immediatamente in caso di duplicati o sintassi ambigua.
-\end{enumerate}
+Arithmetic expressions are represented as a small AST. The current language supports integer constants, \lstinline|self|, bound variables, and the explicit operators \lstinline|__add|, \lstinline|__sub|, and \lstinline|__mul|. This avoids reparsing textual expressions during search: once the AST has been built, runtime evaluation is a recursive visit over a small and typed structure.
 
-Le espressioni aritmetiche sono rappresentate come un piccolo AST con i nodi:
+\subsection{Dynamic Aggregates}
 
-\begin{itemize}
-    \item numero intero;
-    \item \lstinline|self|;
-    \item variabile bindata;
-    \item somma, sottrazione e moltiplicazione.
-\end{itemize}
+Dynamic aggregates are implemented in \path{clingo-modified/libclingo/clingo/heuristic_aggregate.hh}. All aggregate states share a minimal interface with \lstinline|add|, \lstinline|remove|, \lstinline|result|, and \lstinline|reset| operations. The current implementation provides incremental support for \lstinline|sum|, \lstinline|count|, \lstinline|min|, and \lstinline|max|; minima and maxima are maintained with ordered multisets based on \lstinline|std::map|.
 
-Il parser accetta operatori espliciti \lstinline|__add|, \lstinline|__sub| e \lstinline|__mul|. Questa scelta evita di reinterpretare stringhe testuali durante il solving: una volta costruito l'AST, la valutazione runtime e' una visita ricorsiva dell'albero.
-
-\subsection{Aggregati dinamici}
-
-Gli aggregati supportati sono implementati in \path{clingo-modified/libclingo/clingo/heuristic_aggregate.hh}. L'interfaccia comune e':
-
-\begin{lstlisting}[language=C++]
-struct AggregateState {
-    virtual void add(int value) = 0;
-    virtual void remove(int value) = 0;
-    virtual int result() const = 0;
-    virtual void reset() = 0;
-};
-\end{lstlisting}
-
-Le implementazioni concrete sono:
-
-\begin{itemize}
-    \item \lstinline|SumState|, con somma incrementale;
-    \item \lstinline|CountState|, con contatore;
-    \item \lstinline|MinState|, con multiset ordinato basato su \lstinline|std::map|;
-    \item \lstinline|MaxState|, simmetrico a \lstinline|MinState|.
-\end{itemize}
-
-Ogni sorgente di aggregato contribuisce a una \lstinline|RuntimeAggregateKey|. La chiave contiene la descrizione dell'aggregato e i valori dei filtri istanziati. I filtri permettono aggregati target-specific, ad esempio:
+Each aggregate source contributes to a \lstinline|RuntimeAggregateKey|. The key stores the aggregate descriptor and the instantiated filter values. Filters make it possible to express target-specific aggregates, for example:
 
 \begin{lstlisting}[language=ASP]
 __bind(s, __sum(source, 1, __filter(0, 0)))
 \end{lstlisting}
 
-In questo caso il valore aggregato per un target \lstinline|choose(X)| considera solo sorgenti \lstinline|source(X, V)| compatibili con l'argomento del target.
+In this case, the aggregate associated with a target such as \lstinline|choose(X)| only considers source atoms \lstinline|source(X, V)| whose first argument matches the first target argument.
 
-\subsection{Materializzazione dei candidate}
+\subsection{Candidate Materialization}
 
-Durante \lstinline|init|, il propagatore costruisce un indice:
+During initialization, the propagator builds an index from predicate names to ground literals:
 
 \begin{lstlisting}[language=C++]
 using GroundLiteralIndex =
     std::unordered_map<Clingo::Symbol, LitByTuple>;
 \end{lstlisting}
 
-La chiave esterna e' il nome del predicato; la chiave interna e' la tupla numerica degli argomenti. Solo atomi con argomenti numerici sono considerati. Questo vincolo semplifica la valutazione di \lstinline|self|, dei binding e degli aggregati, ma e' anche un limite dell'implementazione attuale.
+The outer key is the predicate name and the inner key is the tuple of numeric arguments. The implementation currently considers only atoms whose arguments can be represented numerically. This restriction simplifies the evaluation of \lstinline|self|, variable bindings, and aggregate filters, but it is also one of the present limitations of the prototype.
 
-Per ogni target ground compatibile, il propagatore:
+For each compatible ground target, the propagator collects the positive and negative body literals, applies any explicit \lstinline|__match| mappings, stores values introduced by \lstinline|__bind_arg|, creates a \lstinline|RuntimeHeuristicCandidate|, and registers watches on the literals that may change the candidate's activation. This process is intentionally different from grounding native \lstinline|#heuristic| directives. Native directives become many printed ground heuristic objects; the lazy propagator keeps only a few descriptive facts in the ground program and stores the activation logic in C++ data structures.
 
-\begin{enumerate}
-    \item raccoglie i literal del body positivo;
-    \item raccoglie i literal del body negativo sulla stessa tupla;
-    \item costruisce eventuali mapping espliciti \lstinline|__match|;
-    \item memorizza i valori bindati da \lstinline|__bind_arg|;
-    \item crea un \lstinline|RuntimeHeuristicCandidate|;
-    \item registra watch sui literal che possono modificarne l'attivazione.
-\end{enumerate}
+\subsection{Candidate Evaluation}
 
-La materializzazione non e' la stessa cosa del grounding di \lstinline|#heuristic|. Le direttive native producono molte righe ground; il propagatore produce candidate interni non stampati nel programma ground. Il vantaggio e' che i fatti \lstinline|__heuristic| rimangono pochi e descrittivi, mentre la logica di attivazione viene mantenuta in strutture dati C++.
-
-\subsection{Valutazione dei candidate}
-
-La funzione concettualmente centrale e':
+The central evaluation routine is:
 
 \begin{lstlisting}[language=C++]
 bool HeuristicPropagator::evaluate_candidate_effect(
@@ -235,55 +145,40 @@ bool HeuristicPropagator::evaluate_candidate_effect(
 ) const
 \end{lstlisting}
 
-Un candidate e' attivo solo se:
+A candidate is active only when its target is still free, all positive body literals are true, the negative body literals are satisfied according to the selected semantics, the required aggregates are available, and both the weight and priority expressions can be evaluated. The distinction between Alpha-style and clingo-like semantics is concentrated in the treatment of negative bodies and aggregates. In Alpha-style semantics, \lstinline|not a| is satisfied as soon as $a$ is not true; in clingo-like semantics, it is satisfied only when $a$ is false. For clingo-like aggregate evaluation, the implementation can also require the relevant sources to be determined.
 
-\begin{enumerate}
-    \item il target e' ancora libero;
-    \item tutti i body positivi sono veri;
-    \item i body negativi sono soddisfatti secondo la semantica selezionata;
-    \item gli aggregati richiesti sono disponibili;
-    \item \lstinline|__weight| e \lstinline|__priority| sono valutabili.
-\end{enumerate}
+If the computed local priority is negative, the propagator raises an error. The implementation deliberately avoids defining an ordering with negative priorities, because such a behaviour would not be documented by the current prototype.
 
-La differenza tra semantica Alpha e semantica clingo e' concentrata nella valutazione di body negativi e aggregati:
+\subsection{Local Resolution and Global Ranking}
 
-\begin{itemize}
-    \item in semantica Alpha, \lstinline|not a| e' soddisfatto se $a$ non e' vero;
-    \item in semantica clingo-like, \lstinline|not a| e' soddisfatto solo se $a$ e' falso;
-    \item in semantica clingo-like, gli aggregati possono richiedere che tutte le sorgenti rilevanti siano determinate.
-\end{itemize}
+The most delicate part of the implementation is the interpretation of \lstinline|@P|. Earlier versions of the prototype used the pair \enquote{priority, weight} as a global key among candidates. That choice was natural for some Alpha-style experiments, but it was not faithful to clingo. In the current design, \lstinline|__priority(P)| resolves modifications that apply to the same target, while \lstinline|__weight(W)| contributes to the target level or sign according to the modifier.
 
-Il risultato della valutazione e' un \lstinline|CandidateHeuristicEffect|. Se la priorita' locale risulta negativa, il propagatore solleva un errore: produrre un ordinamento con priorita' negative avrebbe una semantica non documentata per questa implementazione.
+\begin{table}[H]
+\centering
+\begin{tabular}{lp{10cm}}
+\toprule
+\textbf{Modifier} & \textbf{Effect in the propagator}\\
+\midrule
+\lstinline|level| & Updates the target level with value $W$.\\
+\lstinline|sign|  & Updates only the preferred sign, using $\operatorname{sign}(W)$.\\
+\lstinline|true|  & Sets level $W$ and a positive preferred sign.\\
+\lstinline|false| & Sets level $W$ and a negative preferred sign.\\
+\lstinline|init|, \lstinline|factor| & Recognized by the parser but not implemented.\\
+\bottomrule
+\end{tabular}
+\caption{Implemented interpretation of clingo heuristic modifiers.}
+\label{tab:modifier-semantics}
+\end{table}
 
-\subsection{Risoluzione locale e ranking globale}
+\lstinline|init| and \lstinline|factor| are intentionally not treated as aliases for \lstinline|level|. In native clingo they modify the internal score of the solver heuristic; the \lstinline|Clingo::Heuristic::decide| interface used here can return a decision literal, but it cannot directly update the score of the underlying heuristic. Mapping these modifiers to \lstinline|level| would be easy to implement but semantically misleading.
 
-La parte piu' delicata e' la semantica di \lstinline|@P|. Una versione precedente del progetto usava \lstinline|priority, weight| come chiave globale tra candidate. Questa scelta era intuitiva per alcune euristiche Alpha-style, ma non era fedele a clingo. Nella semantica corrente:
-
-\begin{itemize}
-    \item \lstinline|__priority(P)| risolve conflitti tra modifiche applicabili allo stesso target;
-    \item \lstinline|__weight(W)| contribuisce al level o al sign, in base al modifier;
-    \item il ranking globale ordina i target per level risolto.
-\end{itemize}
-
-La funzione \lstinline|apply_effect_to_target_state| applica i modifier:
-
-\begin{itemize}
-    \item \lstinline|level| aggiorna solo il level con valore $W$;
-    \item \lstinline|sign| aggiorna solo il sign con $\operatorname{sign}(W)$;
-    \item \lstinline|true| equivale a level $W$ e sign positivo;
-    \item \lstinline|false| equivale a level $W$ e sign negativo;
-    \item \lstinline|init| e \lstinline|factor| sono riconosciuti dal parser ma non implementati nel propagatore.
-\end{itemize}
-
-Il motivo per cui \lstinline|init| e \lstinline|factor| non sono implementati e' strutturale: in clingo nativo modificano lo score interno della euristica del solver. L'interfaccia \lstinline|Clingo::Heuristic::decide|, invece, permette al propagatore di restituire un literal di decisione, ma non di aggiornare direttamente lo score interno della euristica sottostante. Trattarli come \lstinline|level| produrrebbe una semantica falsa.
-
-Dopo la risoluzione locale, il target entra in:
+After local resolution, targets are stored in:
 
 \begin{lstlisting}[language=C++]
 std::set<DecisionRankKey, DecisionRankGreater> active_decision_ranks_;
 \end{lstlisting}
 
-La chiave contiene solo:
+The ranking key contains only a resolved level and a target literal:
 
 \begin{lstlisting}[language=C++]
 struct DecisionRankKey {
@@ -292,45 +187,17 @@ struct DecisionRankKey {
 };
 \end{lstlisting}
 
-Il confronto ordina per level decrescente e poi per literal crescente, come tie-break deterministico. Questo tie-break non replica interamente la euristica interna di clingo quando piu' target hanno lo stesso level; e' una scelta implementativa esplicita.
+The comparison orders targets by decreasing level and then by increasing literal as a deterministic tie-breaker. This tie-breaker does not attempt to reproduce the full internal heuristic state of clingo when several targets share the same level.
 
-\subsection{Propagate, undo e decide}
+\subsection{Search-Time Behaviour}
 
-Quando un literal osservato diventa vero, \lstinline|propagate|:
+The propagator reacts to search events through \lstinline|propagate|, \lstinline|undo|, and \lstinline|decide|. When an observed literal becomes true, \lstinline|propagate| adds its contribution to the relevant aggregate states, refreshes candidates depending on those aggregates or on the literal itself, and updates the resolved state of affected targets. During backtracking, \lstinline|undo| removes aggregate contributions and uses \lstinline|noexcept| refresh routines, because exceptions during undo would violate the solver's robustness expectations.
 
-\begin{enumerate}
-    \item aggiunge eventuali contributi agli aggregati;
-    \item ricalcola i candidate dipendenti dall'aggregato;
-    \item ricalcola i candidate dipendenti dal literal;
-    \item aggiorna lo stato dei target coinvolti.
-\end{enumerate}
+The \lstinline|decide| method reads the currently best target from \lstinline|active_decision_ranks_|, discards stale or already assigned targets, applies the resolved sign, and returns the selected literal. If no lazy target with positive level is available, the method checks whether the solver fallback literal has an active lazy sign; otherwise it returns 0, which leaves the decision to the standard solver heuristic.
 
-Quando il solver fa backtracking, \lstinline|undo| rimuove i contributi aggregati e usa varianti \lstinline|noexcept| delle funzioni di refresh. Questo e' importante per non far propagare eccezioni durante la fase di undo, dove il solver richiede robustezza.
+\subsection{ASP Converter}
 
-La funzione \lstinline|decide| sceglie il prossimo literal:
-
-\begin{enumerate}
-    \item legge il target con level massimo da \lstinline|active_decision_ranks_|;
-    \item scarta target non piu' liberi o stati obsoleti;
-    \item applica il sign risolto;
-    \item se non ci sono target lazy con level positivo, controlla se il fallback ha un sign lazy attivo;
-    \item altrimenti restituisce 0.
-\end{enumerate}
-
-Restituire 0 significa lasciare decidere il solver con la sua euristica standard.
-
-\subsection{Converter ASP}
-
-Il file \path{test_folder/tools/asp_heuristic_converter.py} automatizza la riscrittura delle direttive \lstinline|#heuristic|. Usa \lstinline|clingo.ast| per leggere il programma sorgente e produce output in quattro modalita':
-
-\begin{itemize}
-    \item \lstinline|la|: forma lazy con semantica Alpha;
-    \item \lstinline|lc|: forma lazy con semantica clingo-like;
-    \item \lstinline|aux|: riscrittura tramite predicato ausiliario e \lstinline|#heuristic| nativo;
-    \item \lstinline|la-aux|: predicato ausiliario piu' fatto \lstinline|__heuristic|.
-\end{itemize}
-
-Il converter riconosce target, body positivi, body negativi, aggregati, peso, priorita' e modifier. Quando un body positivo non condivide direttamente la tupla del target, produce una forma esplicita con \lstinline|__body|, \lstinline|__match| e \lstinline|__bind_arg|. Questa scelta rende possibile usare predicati ausiliari come:
+The converter in \path{test_folder/tools/asp_heuristic_converter.py} automates the rewriting of selected native \lstinline|#heuristic| directives. It relies on \lstinline|clingo.ast| to read the source program and emits direct lazy forms, clingo-like lazy forms, auxiliary-predicate forms, and mixed auxiliary/lazy forms. The converter recognizes targets, positive and negative bodies, aggregates, weights, priorities, and modifiers. When a positive body does not share the target tuple directly, it emits an explicit representation with \lstinline|__body|, \lstinline|__match|, and \lstinline|__bind_arg|, as in the following example:
 
 \begin{lstlisting}[language=ASP]
 h_b(X,S) :- x(X), not c(X), S = #sum{Y : c(Y)}.
@@ -343,24 +210,35 @@ __heuristic(__target(b),
             __semantics(alpha)).
 \end{lstlisting}
 
-\subsection{Benchmark BSP}
+This form is useful when the heuristic value is already materialized by an auxiliary predicate. It also makes clear why auxiliary formulations must be evaluated separately from direct lazy formulations: they may reintroduce a large grounding cost before the propagator is even used.
 
-La suite sperimentale principale e' il Balanced Set Partitioning (BSP). Dato il dominio $1,\ldots,n$, il problema assegna ogni numero a uno tra due insiemi, rappresentati dai predicati \lstinline|b(X)| e \lstinline|c(X)|, imponendo che la differenza tra le somme dei due insiemi sia al piu' 1 in valore assoluto.
+\subsection{BSP Benchmark}
 
-Le varianti BSP sono organizzate in gruppi metodologicamente distinti. Questa separazione e' importante per non confondere tre effetti diversi: costo della materializzazione ground delle euristiche, semantica di attivazione della direttiva, e formulazione del vincolo del problema.
+The main experimental suite is based on Balanced Set Partitioning (BSP). Given the domain $1,\ldots,n$, the problem assigns each number to one of two sets, represented by the predicates \lstinline|b(X)| and \lstinline|c(X)|, while requiring the absolute difference between the sums of the two sets to be at most one.
 
-\begin{itemize}
-    \item \lstinline|gc_noheur|: ground-and-solve clingo senza euristiche;
-    \item \lstinline|gc|: variante nativa clingo-like con \lstinline|#heuristic| ground-and-solve;
-    \item \lstinline|ga|: variante ground-and-solve con attivazione Alpha-style, ottenuta eliminando il body negativo dalla direttiva euristica;
-    \item \lstinline|ga_dyn|: riformulazione ground-and-solve con bound intermedio \lstinline|S <= #sum|, trattata come variante separata;
-    \item \lstinline|la|: lazy diretta con semantica Alpha;
-    \item \lstinline|lc|: lazy diretta con semantica clingo-like;
-    \item \lstinline|la_aux|: lazy Alpha tramite predicati ausiliari;
-    \item \lstinline|la_co|: lazy Alpha con una formulazione piu' propagabile del vincolo BSP.
-\end{itemize}
+The variants are separated so that three effects do not get conflated: the cost of grounding heuristic directives, the semantics used to activate heuristic information, and the formulation of the BSP constraint.
 
-La variante \lstinline|gc| rappresenta il caso nativo clingo-like:
+\begin{table}[H]
+\centering
+\begin{tabular}{lp{11cm}}
+\toprule
+\textbf{Variant} & \textbf{Role in the evaluation}\\
+\midrule
+\lstinline|gc_noheur| & Ground-and-solve clingo without domain-specific heuristics.\\
+\lstinline|gc| & Native clingo-like \lstinline|#heuristic| directives.\\
+\lstinline|ga| & Ground-and-solve Alpha-style activation, obtained by removing the negative body from the directive.\\
+\lstinline|ga_dyn| & Ground-and-solve reformulation with an intermediate bound \lstinline|S <= #sum|; treated as a separate modelling variant.\\
+\lstinline|la| & Direct lazy form with Alpha-style semantics.\\
+\lstinline|lc| & Direct lazy form with clingo-like semantics.\\
+\lstinline|la_aux| & Lazy Alpha form driven by auxiliary predicates.\\
+\lstinline|la_co| & Lazy Alpha form combined with a more propagation-friendly BSP constraint.\\
+\bottomrule
+\end{tabular}
+\caption{BSP variants used in the experimental suite.}
+\label{tab:bsp-variants}
+\end{table}
+
+The native clingo-like variant is:
 
 \begin{lstlisting}[language=ASP]
 #heuristic b(X) : x(X), not c(X), S = #sum{Y : c(Y)}.
@@ -369,14 +247,14 @@ La variante \lstinline|gc| rappresenta il caso nativo clingo-like:
     [(((n+1)*S)+X)@0, true]
 \end{lstlisting}
 
-Questa forma e' rilevante perche' l'aggregato nel valore euristico costringe il grounder a produrre molte istanze della direttiva. La variante \lstinline|ga| rimuove invece \lstinline|not c(X)| e \lstinline|not b(X)| dal body euristico:
+The aggregate in the heuristic value forces the grounder to produce many directive instances. The \lstinline|ga| variant removes \lstinline|not c(X)| and \lstinline|not b(X)| from the heuristic body:
 
 \begin{lstlisting}[language=ASP]
 #heuristic b(X) : x(X), S = #sum{Y : c(Y)}. [...]
 #heuristic c(X) : x(X), S = #sum{Y : b(Y)}. [...]
 \end{lstlisting}
 
-Questa variante non va letta come una versione semplicemente piu' veloce o piu' lenta di \lstinline|gc|: cambia il momento in cui l'euristica puo' essere applicata, perche' non richiede piu' il body negativo. \lstinline|ga_dyn| e' ancora diversa:
+This is not merely a faster or slower version of \lstinline|gc|. It changes the moment at which the heuristic can be applied, because it no longer requires the negative body to hold. The \lstinline|ga_dyn| variant is different again:
 
 \begin{lstlisting}[language=ASP]
 sum_value(0..tot).
@@ -384,67 +262,33 @@ sum_value(0..tot).
 #heuristic c(X) : x(X), sum_value(S), S <= #sum{Y : b(Y)}. [...]
 \end{lstlisting}
 
-Qui il bound intermedio puo' rendere applicabili euristiche gia' con informazione parziale. Per questo motivo \lstinline|ga_dyn| non e' una baseline equivalente a \lstinline|ga|, ma una riformulazione distinta.
-
-La variante lazy principale e' \lstinline|la|:
-
-\begin{lstlisting}[language=ASP]
-__heuristic(__target(b), x, __n_c, __bind(s, __sum(c, 0)),
-            __weight(__add(__mul(__add(n, 1), s), self)),
-            __priority(0),
-            __modifier(true),
-            __semantics(alpha)).
-\end{lstlisting}
-
-Il template resta piccolo nel programma ground e la valutazione del valore euristico viene rimandata al propagatore. \lstinline|lc| usa la stessa idea con \lstinline|__semantics(clingo)|; in questa tesi, \enquote{semantica clingo-like} indica soprattutto il trattamento locale di \lstinline|not c(X)| e \lstinline|not b(X)| nel propagatore, non una reimplementazione generale di tutti gli aggregati ASP di clingo.
-
-\lstinline|la_aux| mostra invece il caso in cui il binding passa da un predicato ausiliario:
-
-\begin{lstlisting}[language=ASP]
-h_b(X,S) :- x(X), not c(X), S = #sum{Y : c(Y)}.
-
-__heuristic(__target(b),
-            __body(h_b, __match(0, 0), __bind_arg(s, 1)),
-            __weight(__add(__mul(__add(n, 1), s), self)),
-            __priority(0),
-            __modifier(true),
-            __semantics(alpha)).
-\end{lstlisting}
-
-Questa variante serve a verificare che il sistema possa legare variabili tramite argomenti di body predicate, non solo tramite aggregati lazy diretti. Infine, \lstinline|la_co| aggiunge una formulazione piu' propagabile del vincolo BSP:
+The intermediate bound can make heuristic information applicable with partial aggregate information, so \lstinline|ga_dyn| is not an equivalent baseline for \lstinline|ga|. Similarly, \lstinline|la_co| changes the BSP constraint itself:
 
 \begin{lstlisting}[language=ASP]
 :- not min_val <= #sum{Y : b(Y)} <= max_val.
 \end{lstlisting}
 
-Poiche' qui cambia anche la formulazione del vincolo del problema, \lstinline|la_co| non viene usata per dire semplicemente che una euristica lazy e' piu' veloce. Misura invece l'interazione tra lazy heuristics e una formulazione del vincolo BSP piu' favorevole alla propagazione.
+It is therefore discussed as a modelling experiment rather than as direct evidence that lazy heuristics alone are faster.
 
-Il benchmark e' orchestrato da \path{test_folder/benchmarks/benchmark_bsp.sh}. La singola run e' gestita da \path{test_folder/benchmarks/benchmark_runner.py}, che:
+The benchmark is orchestrated by \path{test_folder/benchmarks/benchmark_bsp.sh}. Each run is handled by \path{test_folder/benchmarks/benchmark_runner.py}, which executes clingo in JSON mode with \lstinline|--outf=2 --stats=2|, enables \lstinline|--heuristic=Domain|, applies timeout and memory limits, collects search and grounding-related statistics, runs clingo again with \lstinline|--text| to count ground lines and heuristic objects, writes the CSV row, and stores metadata in \path{test_folder/results/run_metadata.json}.
 
-\begin{enumerate}
-    \item esegue clingo in JSON mode con \lstinline|--outf=2 --stats=2|;
-    \item passa \lstinline|--heuristic=Domain|;
-    \item impone timeout e limite di memoria;
-    \item raccoglie tempi, scelte, conflitti, restart, regole, variabili e memoria;
-    \item riesegue clingo con \lstinline|--text| per contare righe ground, fatti e oggetti euristici;
-    \item scrive una riga nel CSV;
-    \item salva i metadati della run in \path{test_folder/results/run_metadata.json}.
-\end{enumerate}
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}p{5.7cm}p{8.8cm}@{}}
+\toprule
+\textbf{Metric} & \textbf{Meaning}\\
+\midrule
+\lstinline|ground_heuristics| & Number of printed \lstinline|#heuristic| lines in the textual ground program.\\
+\lstinline|ground_lazy_heuristic_facts| & Number of \lstinline|__heuristic| facts.\\
+\lstinline|ground_lines| & Total number of lines in the textual ground program.\\
+\lstinline|choices|, \lstinline|conflicts|, \lstinline|restarts| & Search behaviour reported by clingo.\\
+\lstinline|total_s| & The \lstinline|Time.Total| field from clingo JSON statistics.\\
+\lstinline|solving_s| & The \lstinline|Time.Solve| field.\\
+\lstinline|grounding_s| & Derived estimate \lstinline|Time.Total - Time.Solve|, truncated to zero after rounding.\\
+\bottomrule
+\end{tabular}
+\caption{Main metrics collected by the BSP runner.}
+\label{tab:benchmark-metrics}
+\end{table}
 
-Il file \path{run_metadata.json} registra commit, data e ora del benchmark, hostname, CPU, RAM, sistema operativo, compilatore, build type, path del binario clingo, comando di lancio, template dei comandi runner/clingo, timeout, limite di memoria, numero di repeat, range di $n$ e varianti attive.
-
-Le metriche piu' importanti sono:
-
-\begin{itemize}
-    \item \lstinline|ground_heuristics|: numero di righe \lstinline|#heuristic| nel ground text;
-    \item \lstinline|ground_lazy_heuristic_facts|: numero di fatti \lstinline|__heuristic|;
-    \item \lstinline|ground_lines|: righe totali del programma ground testuale;
-    \item \lstinline|choices|, \lstinline|conflicts| e \lstinline|restarts|: comportamento della ricerca;
-    \item \lstinline|total_s|: campo \lstinline|Time.Total| delle statistiche JSON di clingo;
-    \item \lstinline|solving_s|: campo \lstinline|Time.Solve|;
-    \item \lstinline|grounding_s|: stima derivata come \lstinline|Time.Total - Time.Solve|, troncata a zero in caso di piccoli valori negativi da arrotondamento.
-\end{itemize}
-
-\lstinline|grounding_s| non e' quindi un timer separato del solo grounding. Nel resto della tesi viene interpretato come stima della parte non attribuita al solving nelle statistiche di clingo, utile per confronti sperimentali ma non equivalente a una misura pura e indipendente del grounding.
-
-La generazione dei grafici e' affidata a \path{test_folder/tools/gen_graphs.py} e allo script \path{test_folder/generate_graphs.sh}. I grafici vengono salvati in \path{test_folder/results/graphs/bsp/}.
+The \lstinline|grounding_s| value is not an independent timer for the grounder alone. It is used throughout the thesis as an estimate of the part of the run not attributed to solving in clingo's statistics. The graphs are generated by \path{test_folder/tools/gen_graphs.py} and \path{test_folder/generate_graphs.sh}, and are stored under \path{test_folder/results/graphs/bsp/}.

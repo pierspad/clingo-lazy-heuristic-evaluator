@@ -1,0 +1,93 @@
+\section{Introduzione}
+\subsection{Contesto della Tesi}
+\textbf{L'intelligenza artificiale} (\textbf{AI}) costituisce un vasto campo di ricerca caratterizzato da una molteplicità di tecniche e applicazioni.
+Una definizione ampiamente accettata e comune alle diverse metodologie di AI è la seguente:
+\begin{quote}
+\textit{
+``Software utilizzato dai computer per emulare aspetti dell'intelligenza umana'' \cite{russell2010}
+}
+\end{quote}
+I \textbf{Large Language Models} (LLM) sono modelli di apprendimento automatico basati su reti neurali artificiali, progettati per comprendere, generare e manipolare il linguaggio umano in modo naturale e contestualizzato.\\\\
+La \textbf{nascita} degli LLM può essere fatta risalire ai primi tentativi di elaborazione del linguaggio naturale.
+Negli \textbf{anni '90}, IBM fu pioniera con il sistema \textbf{IBM Watson}, che gettò le basi per la comprensione del linguaggio su larga scala \cite{brown1993mathematics}. Tuttavia, la vera rivoluzione si è verificata nell'ultimo decennio, grazie all'introduzione delle architetture \textbf{Transformer} e alla disponibilità di vasti dataset testuali \cite{vaswani2017attention}. Recentemente, gli LLM hanno conosciuto una crescita esponenziale, principalmente grazie al successo dei \textbf{Generative Pre-trained Transformer} (\textbf{GPT}) \cite{vaswani2017attention}.\\\\
+Nonostante i notevoli progressi, gli LLM presentano ancora significative limitazioni.
+I modelli allo stato dell'arte (\textbf{SOTA}) rimangono appannaggio di grandi aziende e istituzioni di ricerca, a causa degli elevati costi computazionali e delle ingenti risorse necessarie per il loro sviluppo e utilizzo.
+Inoltre, l'impiego di modelli proprietari solleva questioni etiche riguardanti la trasparenza dei dati di addestramento e i potenziali bias incorporati \cite{ntoutsi2020bias}.
+In questo contesto, emerge l'importanza cruciale di esplorare e sfruttare al massimo le potenzialità di modelli \textbf{Open Weights} (\textbf{OW}) o \textbf{Open Source} (\textbf{OS}), più compatti e sufficientemente quantizzati da poter essere eseguiti su dispositivi nella fascia del consumatore.\\\\
+\textbf{Questi modelli:}
+\begin{itemize}
+\item Consentono l'adattamento a domini specifici o l'ottimizzazione per particolari applicazioni.
+\item Abbassano le barriere economiche per l'implementazione di soluzioni basate su AI in vari settori.
+\item Non sono soggetti a censure, permettendo un'implementazione più libera.
+\end{itemize}
+
+\textbf{Tuttavia, presentano anche delle sfide:}
+\begin{itemize}
+\item Generalmente, offrono capacità inferiori rispetto ai modelli più grandi e avanzati.
+\item Richiedono spesso un fine-tuning significativo per raggiungere prestazioni accettabili in compiti molto specifici.
+\item La quantizzazione, pur rendendo i modelli più leggeri, comporta una perdita di precisione.
+\end{itemize}
+Nel contesto dei \textbf{giochi di ruolo} (\textbf{GDR}), l'uso di LLM per la creazione di personaggi e dialoghi potrebbe rivoluzionare l'industria. Invece di dedicare enormi risorse e tempo alla progettazione manuale di \textbf{Non-Player Characters} (\textbf{NPC}) con personalità complesse e storie dettagliate, gli LLM \textbf{self-hosted} possono generare dialoghi in tempo reale che si adattano alle azioni del giocatore. Questo approccio non solo ridurrebbe drasticamente i costi e il tempo di sviluppo, ma aumenterebbe anche l'immersività del gioco, offrendo un'esperienza più dinamica e coinvolgente.
+
+\subsection{Il Modello dei Big Five}
+
+Per affrontare la sfida di creare personalità artificiali coerenti e realistiche, questo studio si basa sul modello dei \textbf{Big Five}, uno dei paradigmi più accreditati e validati empiricamente nella psicologia della personalità \cite{smith1996goldberg}. Questo modello descrive la personalità umana attraverso cinque dimensioni principali:
+
+\begin{enumerate}
+    \item 
+    \textbf{Estroversione (Extraversion)}: 
+    L'estroversione si manifesta con comportamenti socievoli, energici e loquaci, mentre l'introversione si caratterizza per atteggiamenti riflessivi e riservati.
+    
+    \item 
+    \textbf{Coscienziosità (Conscientiousness)}:
+    Le persone coscienziose aspirano a svolgere i compiti in modo ottimale, prendono seriamente gli impegni e sono efficienti e organizzate.
+    
+    \item 
+    \textbf{Amicalità (Agreeableness)}:
+    Gli individui con alti punteggi in amicalità tendono a essere empatici e altruisti, mentre coloro che presentano punteggi bassi possono risultare egoisti, competitivi e insensibili.
+    
+    \item 
+    \textbf{Nevroticismo (Neuroticism)}:
+    Le persone con punteggi elevati in nevroticismo tendono a sperimentare ansia, preoccupazione, rabbia, frustrazione, pessimismo e solitudine.
+    
+    \item 
+    \textbf{Apertura all'esperienza (Openness)}:
+    Gli individui con punteggi alti in questo tratto sono più creativi, curiosi e aperti a nuove esperienze. Al contrario, quelli con punteggi bassi sono più tradizionalisti, preferiscono routine familiari e hanno interessi più limitati.
+\end{enumerate}
+Per valutare queste caratteristiche di personalità, viene impiegato il test dell'\textbf{International Personality Item Pool} (\textbf{IPIP}) \cite{goldberg2006}, una collezione di test di personalità di pubblico dominio gestita dall'Istituto di Ricerca dell'Oregon e originariamente sviluppata da \textbf{Lewis Goldberg}. L'IPIP offre una serie di item standardizzati che permettono di misurare i tratti dei Big Five (\textbf{GBF}), fornendo così un metodo affidabile per valutare l'accuratezza delle personalità generate dai nostri modelli LLM. 
+
+\subsection{Obiettivi della Ricerca}
+\begin{enumerate}
+    \item 
+    \textbf{Sviluppo di un Sistema di Generazione di Personaggi IA}:
+    Sviluppare un'applicazione intuitiva e modulare per generare personaggi AI con tratti di personalità specifici, ispirati al modello dei Big Five.
+    
+    Questo sistema dovrà essere in grado di:
+    \begin{itemize}
+        \item Assegnare tratti di personalità basati sui GBF in modo preciso e granulare.
+        \item Creare backstory coerenti che riflettano i tratti di personalità assegnati.
+        \item Produrre dialoghi dinamici che mantengano coerenza con la personalità definita.
+    \end{itemize}
+    
+    \item 
+    \textbf{Valutazione dell'Accuratezza nella Replicazione dei Tratti}:
+    Sottoporre item dell'IPIP ai modelli che interpretano un NPC per verificare la loro capacità di "comportarsi" in accordo con i tratti di personalità loro specificati implementando un sistema automatizzato per la somministrazione dei test.
+    
+    \item 
+    \textbf{Analisi di Gemma e LLaMA (SOTA dei modelli OS):}
+    Effettuare un'analisi approfondita e comparativa delle prestazioni delle loro varianti nella replicazione dei tratti di personalità.
+    \begin{itemize}
+        \item Normalizzando i risultati del test per calcolare la percentuale di accuratezza tra i tratti assegnati e quelli emergenti dalle risposte generate.
+        \item Valutare l'impatto delle dimensioni del modello e del grado di quantizzazione sulle prestazioni.
+    \end{itemize}
+    
+    \item \textbf{Identificazione dei Pattern e delle Sfide}:
+    Attraverso l'analisi dei dati raccolti, si intende individuare pattern ricorrenti nella replicazione dei tratti di personalità e comprendere le principali sfide.
+    
+    Questo include:
+    \begin{itemize}
+        \item Verificare se alcuni tratti di personalità risultano costantemente più facili o più difficili da replicare per i modelli.
+        \item Identificare eventuali interazioni o conflitti tra tratti di personalità nella generazione delle risposte.
+        \item Esplorare le potenzialità di miglioramento dei modelli attraverso tecniche di fine-tuning e quantizzazione.
+    \end{itemize}    
+\end{enumerate}
