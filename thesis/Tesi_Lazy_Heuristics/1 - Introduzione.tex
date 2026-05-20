@@ -1,0 +1,63 @@
+\section{Introduzione}
+
+\subsection{Contesto della tesi}
+
+L'Answer Set Programming (ASP) e' un paradigma dichiarativo per la rappresentazione della conoscenza e la risoluzione di problemi combinatori. In ASP il programmatore descrive le proprieta' delle soluzioni ammissibili tramite regole logiche; il sistema di solving calcola poi gli answer set, cioe' modelli stabili del programma, che corrispondono alle soluzioni del problema modellato \cite{gebser2012asp,clingoGuide}.
+
+La catena di esecuzione piu' diffusa nei sistemi ASP moderni e' il modello \textit{ground-and-solve}. Un grounder trasforma il programma non ground, contenente variabili, in un programma proposizionale; successivamente un solver basato su tecniche CDCL visita lo spazio delle assegnazioni e produce modelli stabili \cite{clingoGuide}. clingo incarna questa architettura integrando gringo, il grounder, e clasp, il solver. Questa separazione e' efficace per molti domini, ma introduce un problema noto: il grounding puo' diventare il collo di bottiglia quando l'istanza ground cresce molto piu' rapidamente della descrizione dichiarativa iniziale.
+
+Tra gli strumenti per guidare la ricerca ci sono le euristiche domain-specific. In clingo esse possono essere espresse tramite direttive del tipo:
+
+\begin{lstlisting}[language=ASP]
+#heuristic A : Body. [W@P, M]
+\end{lstlisting}
+
+dove $A$ e' l'atomo target, $Body$ e' la condizione di applicabilita', $W$ e' il valore della modifica euristica, $P$ e' una priorita' locale e $M$ e' il modifier. La letteratura mostra che euristiche domain-specific possono essere decisive su istanze industriali difficili \cite{gebser2013heuristics,dodaro2016combining}. Allo stesso tempo, se una direttiva euristica contiene aggregati o body ricchi, il grounding delle euristiche puo' produrre un numero molto elevato di regole o direttive ground.
+
+Il lavoro di questa tesi nasce in questo punto preciso: preservare una forma dichiarativa per le euristiche, ma spostare una parte della loro valutazione dal grounding alla fase di ricerca. Il risultato non e' un lazy grounder generale per tutto ASP. E' invece un meccanismo lazy specializzato per le euristiche, implementato come propagatore euristico dentro clingo.
+
+\subsection{Grounding bottleneck ed euristiche dinamiche}
+
+Il grounding bottleneck emerge quando la rappresentazione proposizionale necessaria al solver diventa troppo grande in tempo o memoria. Il fenomeno e' particolarmente visibile quando il programma contiene costrutti che combinano domini numerici, aggregati e condizioni dinamiche. La ricerca su lazy grounding nasce proprio per interlecciare grounding e solving, istanziando solo parti necessarie del programma \cite{comploi2023domain}.
+
+Le euristiche dinamiche aggiungono un secondo livello di complessita'. Una buona scelta euristica puo' dipendere non solo dall'istanza, ma anche dallo stato parziale della ricerca. Per esempio, una decisione puo' essere preferibile perche' un certo insieme di atomi e' gia' vero, perche' un altro insieme non e' ancora stato deciso, o perche' un aggregato calcolato sugli atomi veri assume un valore favorevole. Questa idea e' studiata in Alpha, un sistema lazy-grounding, dove le euristiche dichiarative possono ragionare sullo stato parziale e su aggregati dinamici \cite{comploi2023domain,comploi2023dynamicAggregates}.
+
+clingo offre gia' un linguaggio maturo per \lstinline|#heuristic| e una euristica Domain nel solver, ma la sua pipeline ground-and-solve porta a materializzare le istanze ground delle direttive prima della ricerca. In scenari in cui la componente euristica cresce molto, puo' essere utile tenere l'euristica in una forma piu' compatta e valutarla a runtime.
+
+\subsection{Obiettivo del lavoro}
+
+L'obiettivo della tesi e' progettare e valutare un'estensione di clingo in grado di interpretare fatti ground del tipo:
+
+\begin{lstlisting}[language=ASP]
+__heuristic(__target(b), x, __n_c, __bind(s, __sum(c, 0)),
+            __weight(__add(__mul(__add(n, 1), s), self)),
+            __priority(0),
+            __modifier(true),
+            __semantics(clingo)).
+\end{lstlisting}
+
+Questi fatti descrivono una regola euristica in modo compatto. Il propagatore li legge durante l'inizializzazione, costruisce template runtime, materializza candidate euristici per i target rilevanti e li rivaluta quando il solver assegna o disassegna literal osservati. In questo modo il numero di fatti euristici nel grounding puo' rimanere costante anche quando la direttiva nativa equivalente genererebbe centinaia di migliaia o milioni di direttive ground.
+
+La tesi affronta tre domande principali:
+
+\begin{enumerate}
+    \item Come rappresentare una direttiva \lstinline|#heuristic| in una forma ground compatta e leggibile da un propagatore?
+    \item Come riprodurre, per quanto consentito dall'interfaccia di \lstinline|Clingo::Heuristic|, la semantica clingo-like di peso, priorita' locale e modifier?
+    \item Quale impatto ha la rappresentazione lazy sul grounding e sulla ricerca nel benchmark BSP?
+\end{enumerate}
+
+\subsection{Contributi}
+
+Il lavoro realizzato comprende:
+
+\begin{itemize}
+    \item una nuova componente C++ in \path{clingo-modified/libclingo}, formata da tipi, parser, aggregati e propagatore euristico;
+    \item l'integrazione automatica del propagatore in \path{clingo_app.cc}, cosi' che clingo registri il meccanismo senza richiedere codice Python esterno;
+    \item un converter in \path{test_folder/tools/asp_heuristic_converter.py}, usato per tradurre direttive \lstinline|#heuristic| in fatti lazy;
+    \item una suite BSP in \path{test_folder/benchmarks}, con CSV, metriche di grounding, metriche di solving e grafici;
+    \item una documentazione passo-passo della semantica corrente in \path{test_folder/esecuzione_passo_passo.txt}.
+\end{itemize}
+
+\subsection{Struttura della tesi}
+
+La Sezione 2 descrive la metodologia: architettura del sistema, sintassi interna, parser, propagatore, converter e benchmark. La Sezione 3 presenta i risultati sperimentali sul BSP e discute le principali metriche. La Sezione 4 conclude il lavoro, evidenziando limiti, implicazioni e possibili sviluppi futuri.

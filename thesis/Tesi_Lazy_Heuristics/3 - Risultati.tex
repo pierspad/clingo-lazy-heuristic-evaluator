@@ -1,0 +1,227 @@
+\section{Risultati}
+
+\subsection{Verifica funzionale}
+
+La verifica del sistema e' stata condotta su tre livelli:
+
+\begin{enumerate}
+    \item test C++ in \path{clingo-modified/libclingo/tests/heuristic_propagator.cc};
+    \item istanze di corner case in \path{test_folder/instances/corner_cases};
+    \item benchmark BSP con raccolta di metriche quantitative.
+\end{enumerate}
+
+I test C++ coprono:
+
+\begin{itemize}
+    \item comportamento degli aggregati incrementali \lstinline|sum|, \lstinline|count|, \lstinline|min| e \lstinline|max|;
+    \item dominio vuoto;
+    \item istanze insoddisfacibili;
+    \item uso di \lstinline|self| come primo argomento del target;
+    \item binding esplicito di argomenti del target;
+    \item binding di argomenti del body tramite \lstinline|__bind_arg|;
+    \item aggregati filtrati target-specific;
+    \item risoluzione locale di \lstinline|@priority|;
+    \item validazione di errori sintattici, come variabili duplicate o indici negativi.
+\end{itemize}
+
+Questi test sono importanti perche' isolano la semantica del propagatore dalla complessita' del benchmark. In particolare, il test sulla priorita' locale verifica che una modifica con priorita' maggiore per un target non diventi automaticamente migliore di modifiche relative ad altri target: il ranking globale deve dipendere dal level risolto.
+
+\subsection{Dataset sperimentale}
+
+La run sperimentale usata per i grafici BSP contiene 120 righe: 12 valori di $n$ da 10 a 120, 6 varianti e 2 seed, salvo arresto anticipato delle varianti che incontrano timeout. Le varianti considerate sono \lstinline|gc_noheur|, \lstinline|gc|, \lstinline|ga|, \lstinline|la|, \lstinline|lc| e \lstinline|la_aux|.
+
+La Tabella \ref{tab:max-ok} riassume il massimo valore di $n$ risolto con stato \lstinline|ok| prima del timeout.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lc}
+\toprule
+\textbf{Variante} & \textbf{Massimo $n$ con stato ok}\\
+\midrule
+\lstinline|gc_noheur| & 110\\
+\lstinline|gc|        & 100\\
+\lstinline|ga|        & 100\\
+\lstinline|la|        & 110\\
+\lstinline|lc|        & 100\\
+\lstinline|la_aux|    & 50\\
+\bottomrule
+\end{tabular}
+\caption{Massimo valore di $n$ risolto correttamente nella run BSP considerata.}
+\label{tab:max-ok}
+\end{table}
+
+I timeout registrati sono:
+
+\begin{itemize}
+    \item \lstinline|la_aux| a $n=60$;
+    \item \lstinline|gc|, \lstinline|ga| e \lstinline|lc| a $n=110$;
+    \item \lstinline|gc_noheur| e \lstinline|la| a $n=120$.
+\end{itemize}
+
+\subsection{Riduzione della componente euristica ground}
+
+Il risultato piu' netto riguarda la dimensione della componente euristica nel grounding. Nelle varianti native \lstinline|gc| e \lstinline|ga|, il numero di direttive \lstinline|#heuristic| ground cresce rapidamente con $n$. Nelle varianti lazy \lstinline|la| e \lstinline|lc|, invece, rimangono due fatti \lstinline|__heuristic|: uno per il target \lstinline|b| e uno per il target \lstinline|c|.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{combined_heuristics}
+    \caption{Confronto tra oggetti euristici ground nativi e fatti lazy.}
+    \label{fig:combined-heuristics}
+\end{figure}
+
+La Tabella \ref{tab:heur-growth} mostra il rapporto tra direttive native e fatti lazy.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{rrrr}
+\toprule
+\textbf{$n$} & \textbf{\lstinline|#heuristic| native} & \textbf{\lstinline|__heuristic| lazy} & \textbf{Rapporto}\\
+\midrule
+10  & $1{,}120$     & 2 & $560\times$\\
+50  & $127{,}600$   & 2 & $63{,}800\times$\\
+100 & $1{,}010{,}200$ & 2 & $505{,}100\times$\\
+110 & $1{,}343{,}320$ & 2 & $671{,}660\times$\\
+\bottomrule
+\end{tabular}
+\caption{Crescita della componente euristica ground nelle varianti native rispetto alle varianti lazy.}
+\label{tab:heur-growth}
+\end{table}
+
+Questo dato e' il principale segnale di efficacia della rappresentazione lazy. La riduzione non significa che l'intero programma ground diventi costante: il programma BSP contiene comunque regole e vincoli che crescono con $n$. Tuttavia, la parte dovuta alle euristiche viene compressa in una descrizione costante e rivalutata a runtime.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{heuristic_expansion_factor}
+    \caption{Fattore di espansione delle euristiche native rispetto ai fatti lazy.}
+    \label{fig:heuristic-expansion}
+\end{figure}
+
+\subsection{Tempi di esecuzione}
+
+La Figura \ref{fig:total-time} riporta il tempo totale. La decomposizione dei tempi mostra che, per valori grandi di $n$, il grounding domina il costo complessivo. Questo e' coerente con la natura del BSP usato nel benchmark: anche senza euristiche native, il programma base genera milioni di regole ground.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{total_time}
+    \caption{Tempo totale per variante BSP.}
+    \label{fig:total-time}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{grounding_time}
+    \caption{Tempo di grounding stimato come differenza tra tempo totale e tempo di solving.}
+    \label{fig:grounding-time}
+\end{figure}
+
+A $n=100$, le medie sui due seed sono riportate nella Tabella \ref{tab:n100-time}.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Variante} & \textbf{Totale (s)} & \textbf{Grounding (s)} & \textbf{Solving (s)}\\
+\midrule
+\lstinline|gc_noheur| & 69.40 & 54.49 & 14.91\\
+\lstinline|gc|        & 78.84 & 57.29 & 21.55\\
+\lstinline|ga|        & 67.79 & 55.15 & 12.64\\
+\lstinline|la|        & 54.85 & 54.83 & 0.02\\
+\lstinline|lc|        & 71.23 & 54.58 & 16.65\\
+\bottomrule
+\end{tabular}
+\caption{Tempi medi a $n=100$. La variante \lstinline|la_aux| non e' inclusa perche' si ferma prima su timeout.}
+\label{tab:n100-time}
+\end{table}
+
+La variante \lstinline|la| ottiene un tempo di solving quasi nullo rispetto alle altre varianti, perche' la guida euristica Alpha-style porta a scelte dirette e con pochi conflitti. La variante \lstinline|lc| replica invece piu' da vicino il comportamento clingo-like dei body negativi: il suo tempo di solving rimane comparabile a \lstinline|gc_noheur|, pur mantenendo la componente euristica ground compatta.
+
+\subsection{Scelte, conflitti e restart}
+
+Le statistiche di ricerca mostrano una differenza netta tra semantica Alpha e clingo-like. La variante \lstinline|la| effettua un numero di scelte pari a $n$: a $n=100$ effettua 100 scelte e 0 conflitti. Le varianti clingo-like, invece, seguono un profilo piu' simile al baseline senza euristiche.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{choices_comparison}
+    \caption{Numero di scelte effettuate dal solver.}
+    \label{fig:choices}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{conflicts_comparison}
+    \caption{Numero di conflitti.}
+    \label{fig:conflicts}
+\end{figure}
+
+A $n=100$:
+
+\begin{itemize}
+    \item \lstinline|gc_noheur| e \lstinline|lc| effettuano in media 63,255 scelte e 42,903 conflitti;
+    \item \lstinline|gc| effettua 32,514 scelte e 20,888 conflitti;
+    \item \lstinline|ga| effettua 54,147 scelte e 36,573 conflitti;
+    \item \lstinline|la| effettua 100 scelte e 0 conflitti.
+\end{itemize}
+
+Questo risultato deve essere letto con attenzione. \lstinline|la| non e' semplicemente una versione piu' efficiente di \lstinline|gc|: usa una semantica diversa per la soddisfazione dei body negativi e per la disponibilita' degli aggregati. Per questo motivo la tesi distingue sempre confronto di rappresentazione e confronto di semantica.
+
+\subsection{Regole, variabili e memoria}
+
+La riduzione della componente euristica si riflette anche sul numero di variabili quando si confrontano varianti native e lazy dirette. A $n=100$:
+
+\begin{itemize}
+    \item \lstinline|gc| usa circa $1{,}030{,}606$ variabili;
+    \item \lstinline|lc| usa circa $20{,}300$ variabili;
+    \item \lstinline|ga| usa circa $20{,}406$ variabili;
+    \item \lstinline|la| usa circa $20{,}300$ variabili.
+\end{itemize}
+
+Il caso \lstinline|gc| e' particolarmente costoso perche' le direttive native clingo-like includono il body negativo e l'aggregato nella forma ground-and-solve. La variante \lstinline|lc| evita la materializzazione delle euristiche, ma mantiene la semantica di valutazione piu' restrittiva.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{variables_comparison}
+    \caption{Numero di variabili nel problema ground.}
+    \label{fig:variables}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{memory_comparison}
+    \caption{Memoria massima osservata durante le run.}
+    \label{fig:memory}
+\end{figure}
+
+La memoria resta comunque dominata dal programma base per $n$ grandi. A $n=100$, \lstinline|gc_noheur|, \lstinline|la| e \lstinline|lc| sono attorno a 3.2 GiB, mentre \lstinline|gc| sale a circa 3.7 GiB. La differenza conferma che le euristiche native aggiungono pressione, ma non sono l'unica sorgente di crescita.
+
+\subsection{Confronto tra forme dirette e ausiliarie}
+
+La variante \lstinline|la_aux| usa predicati ausiliari per materializzare il body euristico e poi applica il propagatore lazy. Questo esperimento serve a distinguere due effetti:
+
+\begin{itemize}
+    \item ridurre il numero di direttive \lstinline|#heuristic| ground;
+    \item evitare la materializzazione del body euristico come predicato ausiliario.
+\end{itemize}
+
+\lstinline|la_aux| mantiene solo due fatti \lstinline|__heuristic|, ma introduce \lstinline|h_b| e \lstinline|h_c|. Il risultato e' che la componente euristica direttiva rimane piccola, mentre il body ausiliario puo' diventare costoso. Questo spiega perche' la variante va in timeout gia' a $n=60$ nella run considerata.
+
+Il dato mostra che la forma piu' interessante e' la lazy diretta: se il body dell'euristica viene prima materializzato in un predicato ausiliario molto grande, il vantaggio principale viene in parte perso.
+
+\subsection{Sintesi dei risultati}
+
+I risultati sperimentali portano a quattro conclusioni:
+
+\begin{enumerate}
+    \item la rappresentazione lazy riduce la componente euristica ground da centinaia di migliaia o milioni di direttive a due fatti descrittivi nel BSP;
+    \item il costo totale non diventa costante perche' il programma base viene ancora groundato da clingo;
+    \item la semantica Alpha-style puo' guidare la ricerca in modo molto aggressivo, ma non coincide con la semantica clingo-like;
+    \item la forma ausiliaria e' utile per esprimere mapping piu' generali, ma puo' reintrodurre il costo di grounding che si voleva evitare.
+\end{enumerate}
+
+La Figura \ref{fig:benchmark-results} raccoglie alcune delle visualizzazioni interpretative generate automaticamente.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth,height=0.82\textheight,keepaspectratio]{benchmark_results}
+    \caption{Grafico riepilogativo dei benchmark BSP.}
+    \label{fig:benchmark-results}
+\end{figure}

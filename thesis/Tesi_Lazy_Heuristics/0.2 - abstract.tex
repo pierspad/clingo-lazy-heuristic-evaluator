@@ -1,0 +1,15 @@
+\section*{Abstract}
+\addcontentsline{toc}{section}{Abstract}
+L'Answer Set Programming (ASP) permette di descrivere problemi combinatori in modo dichiarativo, delegando a un sistema di grounding e solving il compito di costruire e visitare lo spazio delle soluzioni. Nei sistemi ground-and-solve, come clingo, l'intero programma rilevante viene istanziato prima della ricerca. Questa architettura e' robusta e matura, ma puo' soffrire quando le direttive euristiche generano molte istanze ground, specialmente in presenza di euristiche dinamiche dipendenti dallo stato parziale della computazione.
+
+Questa tesi presenta la progettazione, l'implementazione e la valutazione di un propagatore euristico lazy integrato in una versione modificata di clingo. Il lavoro introduce una rappresentazione dichiarativa basata su fatti \lstinline|__heuristic(...)|, letti dal propagatore durante l'inizializzazione e valutati durante la ricerca. L'obiettivo e' evitare la materializzazione ground di grandi insiemi di direttive \lstinline|#heuristic|, mantenendo una semantica operativa vicina a quella di clingo per i modifier \lstinline|level|, \lstinline|sign|, \lstinline|true| e \lstinline|false|, e supportando una distinzione esplicita tra valutazione lazy di tipo Alpha e valutazione clingo-like di body negativi e aggregati.
+
+I contributi principali sono:
+\begin{enumerate}
+    \item un'estensione C++ di clingo basata su \lstinline|Clingo::Heuristic|, con parser dedicato, strutture runtime per candidate euristici, gestione incrementale di aggregati e ranking globale per target risolti;
+    \item un linguaggio interno per rappresentare target, body, binding di variabili, aggregati dinamici, peso, priorita' locale, modifier e semantica;
+    \item un converter Python da direttive \lstinline|#heuristic| verso varianti lazy, clingo-like e ausiliarie;
+    \item una suite sperimentale sul problema Balanced Set Partitioning (BSP), con benchmark, validazione semantica, raccolta di metriche e generazione automatica di grafici.
+\end{enumerate}
+
+I risultati mostrano che, sul benchmark BSP, la rappresentazione lazy riduce drasticamente il numero di oggetti euristici ground: per esempio, a $n=100$ le varianti native producono in media $1{,}010{,}200$ direttive \lstinline|#heuristic| ground, mentre le varianti lazy mantengono solo 2 fatti \lstinline|__heuristic|. Questo non elimina il costo di grounding del programma base, ma riduce la componente euristica e permette di separare in modo esplicito la crescita del programma dalla valutazione della guida di ricerca.

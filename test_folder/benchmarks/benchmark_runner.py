@@ -136,6 +136,8 @@ def parse_solver_metrics(data: dict[str, Any], memory_mb: str) -> dict[str, str]
     total = as_number(nested_get(data, ["Time", "Total"]))
     solve = as_number(nested_get(data, ["Time", "Solve"]))
     if total != "NA" and solve != "NA":
+        # Derived estimate from clingo JSON statistics, not a separate
+        # wall-clock timer for grounding alone.
         grounding = max(float(total) - float(solve), 0.0)
     else:
         grounding = "NA"

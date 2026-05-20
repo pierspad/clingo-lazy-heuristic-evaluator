@@ -144,7 +144,7 @@ PLOT_CONFIGS = [
         "metric": "grounding_s",
         "title": "Grounding Time",
         "ylabel": "Time (seconds)",
-        "description": "Time before CDNL search. For old CSV files this is derived as total time minus solving time.",
+        "description": "Derived estimate from clingo JSON stats: Time.Total minus Time.Solve.",
         "filename": "grounding_time.png",
     },
     {
@@ -1110,14 +1110,19 @@ def _compact_filename_stem(filename: str) -> str:
 def _exclude_selectors_for_variant(theme: dict, variant: str) -> set:
 
     filename = theme.get("variant_files", {}).get(variant)
+    selectors = {
+        variant.lower(),
+        variant.lower().replace("_", ""),
+    }
     if not filename:
-        return set()
+        return selectors
 
     basename = os.path.basename(filename.replace("\\", "/")).lower()
-    return {
+    selectors.update({
         basename,
         _compact_filename_stem(filename),
-    }
+    })
+    return selectors
 
 
 def resolve_excluded_variant_list(theme: dict, selectors: list, *, context: str, warn_unknown: bool = True) -> list:
@@ -2543,10 +2548,13 @@ def parse_args():
 
   {opt("--exclude SELECTOR")}
       Exclude matching variants for the selected --type. Accepts exact filenames with
-      extension, or compact file stems: lowercase, without spaces,
-      underscores, or extension. Can be repeated or comma-separated.
+      extension, variant ids such as ga_dyn/la_co, or compact file stems:
+      lowercase, without spaces, underscores, or extension. Can be repeated
+      or comma-separated.
 
 {heading("Selector examples")}
+  {value("la_co")}                     BSP variant id.
+  {value("ga_dyn,la_aux")}             comma-separated BSP variant ids.
   {value("BSP_ga.lp")}                  exact filename.
   {value("bspga")}                      compact BSP file stem.
   {value("PUP_double_aux_l.lp")}        exact filename.
@@ -2562,10 +2570,10 @@ def parse_args():
   {cmd("%(prog)s --type bsp --exclude BSP_lc.lp")}
       Exclude the BSP_lc.lp variant from a separate BSP graph set.
 
-  {cmd("%(prog)s --type bsp --exclude bspla,bspgcnoheur, BSP_la_co.lp")}
-      Exclude several variants with a comma-separated list.
+  {cmd("%(prog)s --type bsp --exclude la_co,ga_dyn,la_aux")}
+      Exclude several BSP variants with a comma-separated list.
 
-  {cmd("%(prog)s --type bsp --exclude bspla,bspgcnoheur --exclude BSP_la_co.lp")}
+  {cmd("%(prog)s --type bsp --exclude la --exclude gc_noheur")}
       Exclude several variants in one run.
         """.strip(),
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -2594,8 +2602,9 @@ def parse_args():
         metavar="SELECTOR",
         help=(
             "Exclude variants for the selected --type. Accepts exact filenames with extension "
-            "or compact file stems: lowercase, without spaces, underscores, or "
-            "extension. Repeat it or use comma-separated values."
+            "variant ids such as ga_dyn/la_co, or compact file stems: lowercase, "
+            "without spaces, underscores, or extension. Repeat it or use comma-separated "
+            "values."
         ),
     )
     parser.add_argument(

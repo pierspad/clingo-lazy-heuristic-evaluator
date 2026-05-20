@@ -1,5 +1,5 @@
 Esecuzione passo-passo del lazy heuristic propagator
-Aggiornato: 2026-05-19
+Aggiornato: 2026-05-20
 
 Questo file descrive la semantica nuova del propagatore lazy.
 Il punto centrale e' che `__priority(P)` non e' piu' una chiave globale tra
@@ -366,3 +366,79 @@ Nel primo caso il level globale e':
 
 Nel secondo caso `S` finirebbe nella priority locale e non ordinerebbe piu'
 globalmente target diversi.
+
+
+12. Mappa dell'implementazione attuale
+--------------------------------------
+
+I file principali sono:
+
+    clingo-modified/libclingo/clingo/heuristic_types.hh
+        Tipi condivisi tra parser e propagatore: template euristici,
+        espressioni aritmetiche, modifier, semantica alpha/clingo,
+        descrizioni di body, binding e aggregati.
+
+    clingo-modified/libclingo/src/heuristic_parser.cc
+        Parser dei fatti `__heuristic(...)`. Converte la sintassi ASP groundata
+        in `HeuristicRuleTemplate`, valida duplicati e indici, e costruisce gli
+        AST aritmetici di `__weight(...)` e `__priority(...)`.
+
+    clingo-modified/libclingo/clingo/heuristic_aggregate.hh
+        Stati incrementali per `__sum`, `__count`, `__min`, `__max`.
+
+    clingo-modified/libclingo/src/heuristic_propagator.cc
+        Materializzazione dei candidate, gestione delle watch, aggiornamento
+        incrementale di aggregati/body, risoluzione locale per target e
+        implementazione di `decide(...)`.
+
+    clingo-modified/libclingo/src/clingo_app.cc
+        Registra automaticamente `HeuristicPropagator` dentro `ClingoApp::run`
+        quando clingo parte in modalita' clingo/gringo.
+
+    clingo-modified/libclingo/CMakeLists.txt
+        Aggiunge i nuovi header e sorgenti alla libreria `libclingo`.
+
+    clingo-modified/libclingo/tests/heuristic_propagator.cc
+        Test unitari e di integrazione per aggregati, corner case, decisioni,
+        mapping espliciti e validazione sintattica.
+
+    test_folder/tools/asp_heuristic_converter.py
+        Converter da `#heuristic` nativo verso le forme `la`, `lc`, `aux` e
+        `la-aux`.
+
+    test_folder/benchmarks/benchmark_runner.py
+        Esegue una singola run, raccoglie statistiche JSON di clingo e conta
+        righe ground `#heuristic`, fatti `__heuristic`, fatti e righe totali.
+
+    test_folder/benchmarks/benchmark_bsp.sh
+        Itera sulle varianti BSP, su `n` e sui seed, fermando una variante
+        quando incontra timeout o limite memoria se `STOP_VARIANT_ON_LIMIT=1`.
+
+
+13. Stato dei benchmark BSP
+---------------------------
+
+La configurazione corrente di `benchmark_bsp.sh` e':
+
+    DEFAULT_TIMEOUT_SECONDS=180
+    DEFAULT_REPEATS=2
+    DEFAULT_N_START=10
+    DEFAULT_N_END=200
+    DEFAULT_N_STEP=10
+    DEFAULT_MEM_LIMIT_BYTES=10 GiB
+    DEFAULT_BSP_VARIANTS="ga_dyn ga gc_noheur gc la_aux la_co la lc"
+
+Il CSV in `test_folder/results/bsp_results.csv` puo' essere vuoto se i risultati
+sono stati ripuliti dopo la generazione dei grafici. In quel caso, per
+ricostruire o rigenerare i dati bisogna rieseguire:
+
+    bash test_folder/benchmarks/benchmark_bsp.sh
+
+e poi:
+
+    cd test_folder
+    ./generate_graphs.sh
+
+I grafici gia' presenti in `test_folder/results/graphs/bsp/` derivano dalle run
+precedenti e sono organizzati per set di esclusione delle varianti. La cartella
+`standard` e' il riferimento completo generato senza esclusioni aggiuntive.

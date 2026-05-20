@@ -1,0 +1,69 @@
+\section{Discussione e Conclusioni}
+
+\subsection{Discussione dei risultati}
+
+Il lavoro mostra che una parte importante del costo delle euristiche dichiarative puo' essere spostata dal grounding alla ricerca. Nel benchmark BSP, le direttive \lstinline|#heuristic| native crescono in modo molto rapido: a $n=100$ si superano il milione di direttive ground. La versione lazy conserva invece due fatti \lstinline|__heuristic| e demanda al propagatore la valutazione dei candidate.
+
+Questo risultato non va interpretato come una sostituzione completa del lazy grounding. clingo continua a groundare il programma base. Il propagatore interviene solo sulla componente euristica, cioe' sulla trasformazione e valutazione di regole pensate per guidare la ricerca. Per questo motivo la riduzione della componente euristica non elimina la crescita delle regole BSP, ma rende misurabile e controllabile un pezzo specifico del problema.
+
+Il secondo aspetto rilevante e' semantico. La tesi distingue esplicitamente:
+
+\begin{itemize}
+    \item semantica clingo-like, in cui body negativi e aggregati sono valutati in modo piu' conservativo;
+    \item semantica Alpha-style, in cui la non verita' puo' gia' rendere applicabile un body negativo e gli aggregati sono letti rispetto allo stato parziale.
+\end{itemize}
+
+Questa distinzione e' essenziale. La variante \lstinline|la| ha prestazioni di solving molto buone, ma segue una semantica diversa da \lstinline|gc|. La variante \lstinline|lc| e' invece piu' adatta a misurare la rappresentazione lazy rispetto alla semantica clingo-like, anche se mantiene un comportamento di ricerca piu' vicino al baseline.
+
+\subsection{Limiti dell'implementazione}
+
+L'implementazione attuale ha alcuni limiti tecnici e semantici:
+
+\begin{enumerate}
+    \item supporta solo target e body indicizzabili tramite tuple numeriche;
+    \item gli operatori aritmetici disponibili sono somma, sottrazione e moltiplicazione;
+    \item gli aggregati supportati sono \lstinline|sum|, \lstinline|count|, \lstinline|min| e \lstinline|max|;
+    \item \lstinline|init| e \lstinline|factor| sono riconosciuti ma non implementati;
+    \item il tie-break tra target con lo stesso level e' deterministico, ma non replica lo score interno del solver;
+    \item il propagatore e' registrato automaticamente e sequenzialmente, quindi non e' ancora configurabile da opzione CLI;
+    \item il benchmark principale e' concentrato sul BSP e deve essere esteso ad altri domini.
+\end{enumerate}
+
+Il limite su \lstinline|init| e \lstinline|factor| e' particolarmente importante. Questi modifier in clingo nativo non equivalgono a una scelta immediata del literal, ma modificano lo score della euristica interna. Poiche' l'interfaccia usata dal propagatore permette solo di restituire una decisione in \lstinline|decide|, implementarli come \lstinline|level| sarebbe tecnicamente semplice ma semanticamente scorretto.
+
+\subsection{Implicazioni}
+
+La principale implicazione del lavoro e' che le euristiche dichiarative possono essere trattate come un livello intermedio tra modellazione e solving. Non e' necessario scegliere solo tra:
+
+\begin{itemize}
+    \item direttive \lstinline|#heuristic| completamente groundate;
+    \item euristiche procedurali scritte direttamente dentro il solver.
+\end{itemize}
+
+La rappresentazione \lstinline|__heuristic| conserva una forma dichiarativa, ma permette una valutazione runtime con accesso allo stato parziale. Questo avvicina clingo ad alcune idee dei sistemi lazy-grounding, pur rimanendo dentro la sua architettura ground-and-solve.
+
+Dal punto di vista ingegneristico, l'estensione mostra anche che l'interfaccia dei propagatori e delle euristiche di clingo e' sufficientemente flessibile per prototipare strategie non banali. Il propagatore non aggiunge nuovi vincoli, ma interviene sul momento della decisione, combinando watch, aggregati incrementali e ranking dei target.
+
+\subsection{Sviluppi futuri}
+
+Gli sviluppi piu' naturali sono:
+
+\begin{enumerate}
+    \item rendere il propagatore attivabile da opzione, ad esempio solo quando il programma contiene fatti \lstinline|__heuristic| o quando viene passato un flag dedicato;
+    \item ampliare il linguaggio delle espressioni aritmetiche, includendo divisione intera, modulo e funzioni di confronto;
+    \item supportare simboli non numerici tramite mapping interno stabile;
+    \item migliorare il tie-break integrandolo, quando possibile, con il fallback del solver;
+    \item introdurre test di equivalenza piu' sistematici tra \lstinline|#heuristic| nativo e forma lazy clingo-like;
+    \item applicare il sistema a benchmark di configurazione, scheduling e packing, dove le euristiche dinamiche hanno maggiore rilevanza applicativa;
+    \item valutare una integrazione piu' stretta con il grounder, in modo da evitare anche la materializzazione di body ausiliari quando possibile.
+\end{enumerate}
+
+Un'altra direzione interessante e' la generazione automatica delle forme lazy a partire da \lstinline|#heuristic| piu' complesse. Il converter attuale usa l'AST di clingo e copre i casi necessari al BSP, ma puo' diventare un vero front-end per euristiche lazy, con messaggi diagnostici piu' ricchi e garanzie formali sulle trasformazioni ammesse.
+
+\subsection{Conclusioni}
+
+Questa tesi ha presentato un'estensione di clingo per la valutazione lazy di euristiche dichiarative. Il sistema introduce una sintassi basata su fatti \lstinline|__heuristic|, un parser dedicato, strutture runtime per candidate euristici, aggregati dinamici incrementali e una semantica clingo-like per la risoluzione locale di priorita', level e sign.
+
+La valutazione sul BSP mostra che la componente euristica ground puo' essere ridotta drasticamente: da oltre un milione di direttive native a due fatti lazy a $n=100$. Il vantaggio principale non e' solo quantitativo, ma concettuale: la tesi separa il costo di rappresentazione dell'euristica dal costo del programma base e rende esplicita la differenza tra semantica Alpha-style e semantica clingo-like.
+
+Il risultato finale e' un prototipo funzionante, documentato e misurabile. Non risolve da solo il grounding bottleneck generale, ma offre una strada concreta per portare euristiche dinamiche e dichiarative dentro clingo senza pagare sempre il costo della loro piena materializzazione ground.

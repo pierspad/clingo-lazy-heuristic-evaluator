@@ -1,0 +1,95 @@
+\documentclass[a4paper,12pt]{report}
+
+\usepackage[a4paper, left=3.5cm, right=2.5cm, top=3cm, bottom=3cm]{geometry}
+\renewcommand{\baselinestretch}{1.05}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[italian]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{csquotes}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage[hidelinks]{hyperref}
+
+\graphicspath{
+    {../../test_folder/results/graphs/bsp/standard/}
+    {../../test_folder/results/graphs/bsp/no_la_co-no_ga_dyn-no_la_aux/}
+}
+
+\renewcommand\thesection{\arabic{section}}
+\setlist[itemize]{leftmargin=*}
+\setlist[enumerate]{leftmargin=*}
+\setlength{\emergencystretch}{3em}
+
+\usepackage[backend=biber,style=numeric,sorting=none]{biblatex}
+\addbibresource{bibliografia.bib}
+
+\definecolor{backcolour}{rgb}{0.95,0.95,0.96}
+\definecolor{codegreen}{rgb}{0.0,0.45,0.0}
+\definecolor{codegray}{rgb}{0.45,0.45,0.45}
+\definecolor{codepurple}{rgb}{0.45,0,0.6}
+\definecolor{keywordcolor}{rgb}{0.0,0.2,0.7}
+
+\lstdefinelanguage{ASP}{
+    morekeywords={not,show,const},
+    sensitive=true,
+    morecomment=[l]{\%},
+    morestring=[b]"
+}
+
+\lstdefinestyle{thesiscode}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{keywordcolor},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2
+}
+
+\lstset{style=thesiscode}
+
+\title{Euristiche dichiarative lazy in Answer Set Programming}
+\author{Pierpaolo Spadafora}
+\date{Anno Accademico 2025/2026}
+
+\begin{document}
+
+\pagenumbering{gobble}
+\input{0.1 - frontespizio}
+\clearpage
+\pagenumbering{roman}
+\tableofcontents
+\newpage
+\input{0.2 - abstract}
+\newpage
+\pagenumbering{arabic}
+\input{1 - Introduzione}
+\newpage
+\input{2 - Metodologia}
+\newpage
+\input{3 - Risultati}
+\newpage
+\input{4 - Discussione-e-Conclusione}
+\newpage
+\printbibliography
+\newpage
+\input{5 - Ringraziamenti}
+
+\end{document}
