@@ -11,12 +11,12 @@
 \usepackage{amssymb}
 \usepackage{array}
 \usepackage{booktabs}
-\usepackage{csquotes}
 \usepackage{enumitem}
 \usepackage{float}
 \usepackage{graphicx}
 \usepackage{xcolor}
-\usepackage{listings}
+\usepackage{minted}
+\usepackage{csquotes}
 \usepackage[hidelinks]{hyperref}
 
 \newcommand{\ThesisGraphQuality}{SD} % change to HD for the final graph set
@@ -43,39 +43,25 @@
     pdfproducer={pdfTeX}
 }
 
-\definecolor{backcolour}{rgb}{0.95,0.95,0.96}
-\definecolor{codegreen}{rgb}{0.0,0.45,0.0}
-\definecolor{codegray}{rgb}{0.45,0.45,0.45}
-\definecolor{codepurple}{rgb}{0.45,0,0.6}
-\definecolor{keywordcolor}{rgb}{0.0,0.2,0.7}
+\definecolor{codebg}{RGB}{248,248,248}
 
-\lstdefinelanguage{ASP}{
-    morekeywords={not,show,const},
-    sensitive=true,
-    morecomment=[l]{\%},
-    morestring=[b]"
+\usemintedstyle{friendly}
+
+\setminted{
+    bgcolor=codebg,
+    linenos,
+    numbersep=8pt,
+    breaklines,
+    autogobble,
+    fontsize=\footnotesize,
+    frame=single,
+    framesep=2mm
 }
 
-\lstdefinestyle{thesiscode}{
-    backgroundcolor=\color{backcolour},
-    commentstyle=\color{codegreen},
-    keywordstyle=\color{keywordcolor},
-    numberstyle=\tiny\color{codegray},
-    stringstyle=\color{codepurple},
-    basicstyle=\ttfamily\footnotesize,
-    breakatwhitespace=false,
-    breaklines=true,
-    captionpos=b,
-    keepspaces=true,
-    numbers=left,
-    numbersep=5pt,
-    showspaces=false,
-    showstringspaces=false,
-    showtabs=false,
-    tabsize=2
+\setmintedinline{
+    breaklines,
+    fontsize=\footnotesize
 }
-
-\lstset{style=thesiscode}
 
 \title{Lazy Declarative Heuristics in Answer Set Programming}
 \author{Pierpaolo Spadafora}

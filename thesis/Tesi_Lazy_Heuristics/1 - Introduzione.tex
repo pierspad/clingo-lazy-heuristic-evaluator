@@ -8,9 +8,9 @@ Most modern ASP systems follow a \textit{ground-and-solve} architecture. A groun
 
 Domain-specific heuristics are one of the main tools for guiding search. In clingo they can be written as directives of the form:
 
-\begin{lstlisting}[language=ASP]
+\begin{minted}{prolog}
 #heuristic A : Body. [W@P, M]
-\end{lstlisting}
+\end{minted}
 
 Here $A$ is the target atom, $Body$ is the applicability condition, $W$ is the heuristic weight, $P$ is a local priority, and $M$ is the modifier. The literature shows that domain-specific heuristics can be decisive on difficult industrial instances \cite{gebser2013heuristics,dodaro2016combining}. At the same time, if a heuristic directive contains aggregates or a rich body, grounding the directive may produce a very large number of ground heuristic objects.
 
@@ -22,27 +22,27 @@ The grounding bottleneck appears when the propositional representation required 
 
 Dynamic heuristics add a second layer of complexity. A useful heuristic choice may depend not only on the input instance, but also on the partial assignment currently built by the solver. A decision may become preferable because some atoms are already true, because other atoms are still undecided, or because an aggregate computed over true atoms has reached a favourable value. This idea is studied in Alpha, a lazy-grounding system in which declarative heuristics can reason about partial states and dynamic aggregates \cite{comploi2023domain,comploi2023dynamicAggregates}.
 
-clingo already offers a mature language for \lstinline|#heuristic| directives and a Domain heuristic in the solver, but its ground-and-solve pipeline materializes the ground instances of such directives before search. When the heuristic component grows significantly, it becomes attractive to keep the heuristic in a compact representation and evaluate it at runtime.
+clingo already offers a mature language for \mintinline{text}|#heuristic| directives and a Domain heuristic in the solver, but its ground-and-solve pipeline materializes the ground instances of such directives before search. When the heuristic component grows significantly, it becomes attractive to keep the heuristic in a compact representation and evaluate it at runtime.
 
 \subsection{Objective}
 
 The objective of this thesis is to design and evaluate an extension of clingo that can interpret ground facts of the following form:
 
-\begin{lstlisting}[language=ASP]
+\begin{minted}{prolog}
 __heuristic(__target(b), x, __n_c, __bind(s, __sum(c, 0)),
             __weight(__add(__mul(__add(n, 1), s), self)),
             __priority(0),
             __modifier(true),
             __semantics(clingo)).
-\end{lstlisting}
+\end{minted}
 
 Such facts describe a heuristic rule compactly. During initialization, the propagator reads them, builds runtime templates, materializes heuristic candidates for the relevant ground targets, and re-evaluates those candidates whenever the solver assigns or unassigns observed literals. In this way, the number of heuristic facts in the grounded program can remain constant even when the equivalent native directive would generate hundreds of thousands or millions of ground directives.
 
-The thesis addresses three questions. First, it asks how a \lstinline|#heuristic| directive can be represented in a compact ground form that remains readable by a propagator. Second, it studies how far the clingo-like semantics of weights, local priorities, and modifiers can be reproduced through the \lstinline|Clingo::Heuristic| interface. Third, it evaluates the impact of the lazy representation on grounding and search in the BSP benchmark.
+The thesis addresses three questions. First, it asks how a \mintinline{text}|#heuristic| directive can be represented in a compact ground form that remains readable by a propagator. Second, it studies how far the clingo-like semantics of weights, local priorities, and modifiers can be reproduced through the \mintinline{text}|Clingo::Heuristic| interface. Third, it evaluates the impact of the lazy representation on grounding and search in the BSP benchmark.
 
 \subsection{Contributions}
 
-The implemented system consists of a new C++ component in \path{clingo-modified/libclingo}, including shared types, a parser, aggregate states, and the heuristic propagator itself. The propagator is automatically registered in \path{clingo_app.cc}, so that the modified clingo binary can use the mechanism without requiring an external Python controller. The project also includes the converter \path{test_folder/tools/asp_heuristic_converter.py}, which translates selected \lstinline|#heuristic| directives into lazy facts, and a BSP experimental suite under \path{test_folder/benchmarks}. The suite collects grounding and solving metrics, validates the relevant answer sets, and generates the figures used in the evaluation. A step-by-step account of the current semantics is kept in \path{test_folder/esecuzione_passo_passo.txt}.
+The implemented system consists of a new C++ component in \path{clingo-modified/libclingo}, including shared types, a parser, aggregate states, and the heuristic propagator itself. The propagator is automatically registered in \path{clingo_app.cc}, so that the modified clingo binary can use the mechanism without requiring an external Python controller. The project also includes the converter \path{test_folder/tools/asp_heuristic_converter.py}, which translates selected \mintinline{text}|#heuristic| directives into lazy facts, and a BSP experimental suite under \path{test_folder/benchmarks}. The suite collects grounding and solving metrics, validates the relevant answer sets, and generates the figures used in the evaluation. A step-by-step account of the current semantics is kept in \path{test_folder/esecuzione_passo_passo.txt}.
 
 \subsection{Structure of the Thesis}
 
