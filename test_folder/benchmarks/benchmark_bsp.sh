@@ -4,6 +4,21 @@
 
 set -euo pipefail
 
+# ==============================================================================
+# CONFIGURAZIONE BENCHMARK BSP
+# Override rapido da shell, per esempio:
+#   BSP_VARIANTS="gc_noheur gc ga ga_dyn la lc la_aux" ./benchmark_bsp.sh
+# ==============================================================================
+DEFAULT_TIMEOUT_SECONDS=180
+DEFAULT_REPEATS=2
+DEFAULT_N_START=10
+DEFAULT_N_END=200
+DEFAULT_N_STEP=10
+DEFAULT_MEM_LIMIT_BYTES=$((10 * 1024 * 1024 * 1024))
+DEFAULT_STOP_VARIANT_ON_LIMIT=1
+DEFAULT_BSP_VARIANTS="ga_dyn ga gc_noheur gc la_aux la_co la lc"
+# ==============================================================================
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 TEST_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 REPO_ROOT="$(cd "${TEST_ROOT}/.." && pwd)"
@@ -28,7 +43,7 @@ if [ ! -x "${RUNNER}" ]; then
     exit 1
 fi
 
-TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-120}"
+TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-${DEFAULT_TIMEOUT_SECONDS}}"
 if [ -n "${MEM_LIMIT_BYTES:-}" ]; then
     MEM_LIMIT_BYTES="${MEM_LIMIT_BYTES}"
 elif [ -n "${MEM_LIMIT_GB:-}" ]; then
@@ -36,14 +51,14 @@ elif [ -n "${MEM_LIMIT_GB:-}" ]; then
 elif [ -n "${MEM_LIMIT_MB:-}" ]; then
     MEM_LIMIT_BYTES="$(python3 -c 'import sys; print(int(float(sys.argv[1]) * 1024**2))' "${MEM_LIMIT_MB}")"
 else
-    MEM_LIMIT_BYTES="$((8 * 1024 * 1024 * 1024))"
+    MEM_LIMIT_BYTES="${DEFAULT_MEM_LIMIT_BYTES}"
 fi
 
-REPEATS="${REPEATS:-2}"
-N_START="${N_START:-10}"
-N_END="${N_END:-200}"
-N_STEP="${N_STEP:-10}"
-STOP_VARIANT_ON_LIMIT="${STOP_VARIANT_ON_LIMIT:-1}"
+REPEATS="${REPEATS:-${DEFAULT_REPEATS}}"
+N_START="${N_START:-${DEFAULT_N_START}}"
+N_END="${N_END:-${DEFAULT_N_END}}"
+N_STEP="${N_STEP:-${DEFAULT_N_STEP}}"
+STOP_VARIANT_ON_LIMIT="${STOP_VARIANT_ON_LIMIT:-${DEFAULT_STOP_VARIANT_ON_LIMIT}}"
 
 ENC_DIR="${TEST_ROOT}/encodings/BSP"
 INSTANCE_RANGE="${TEST_ROOT}/instances/BSP_instances/BSP_range.lp"
@@ -72,8 +87,7 @@ declare -A VARIANT_SEMANTICS=(
     [la_co]="alpha"
 )
 
-DEFAULT_VARIANTS=(gc_noheur gc ga la lc la_aux)
-read -r -a ACTIVE_VARIANTS <<< "${BSP_VARIANTS:-${DEFAULT_VARIANTS[*]}}"
+read -r -a ACTIVE_VARIANTS <<< "${BSP_VARIANTS:-${DEFAULT_BSP_VARIANTS}}"
 
 if [ ! -f "${INSTANCE_RANGE}" ]; then
     echo "Errore: file istanza BSP non trovato: ${INSTANCE_RANGE}"

@@ -13,51 +13,51 @@ export RUN_PUP="false"
 
 export TIMEOUT_SECONDS=120
 export REPEATS=2
-export MEM_LIMIT_BYTES=$((8 * 1024 * 1024 * 1024))
+export MEM_LIMIT_BYTES=$((10 * 1024 * 1024 * 1024))
 export N_START=10
 export N_END=200
 export N_STEP=10
 export STOP_VARIANT_ON_LIMIT=1
 # ==============================================================================
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 TEST_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 BSP_SCRIPT="${SCRIPT_DIR}/benchmark_bsp.sh"
 PUP_SCRIPT="${SCRIPT_DIR}/benchmark_pup.sh"
 
 if [ ! -f "${BSP_SCRIPT}" ]; then
-    echo "Errore: script non trovato: ${BSP_SCRIPT}"
-    exit 1
+  echo "Errore: script non trovato: ${BSP_SCRIPT}"
+  exit 1
 fi
 
 if [ ! -f "${PUP_SCRIPT}" ]; then
-    echo "Errore: script non trovato: ${PUP_SCRIPT}"
-    exit 1
+  echo "Errore: script non trovato: ${PUP_SCRIPT}"
+  exit 1
 fi
 
 START_TIME=$(date +%s)
 
 if [ "${RUN_BSP}" = "true" ]; then
-    echo "==============================================================="
-    echo " Avvio benchmark BSP"
-    echo "==============================================================="
-    bash "${BSP_SCRIPT}"
+  echo "==============================================================="
+  echo " Avvio benchmark BSP"
+  echo "==============================================================="
+  bash "${BSP_SCRIPT}"
 else
-    echo "==============================================================="
-    echo " Benchmark BSP disabilitato (RUN_BSP!=true)"
-    echo "==============================================================="
+  echo "==============================================================="
+  echo " Benchmark BSP disabilitato (RUN_BSP!=true)"
+  echo "==============================================================="
 fi
 
 echo ""
 if [ "${RUN_PUP}" = "true" ]; then
-    echo "==============================================================="
-    echo " Avvio benchmark PUP"
-    echo "==============================================================="
-    bash "${PUP_SCRIPT}"
+  echo "==============================================================="
+  echo " Avvio benchmark PUP"
+  echo "==============================================================="
+  bash "${PUP_SCRIPT}"
 else
-    echo "==============================================================="
-    echo " Benchmark PUP disabilitato (RUN_PUP!=true)"
-    echo "==============================================================="
+  echo "==============================================================="
+  echo " Benchmark PUP disabilitato (RUN_PUP!=true)"
+  echo "==============================================================="
 fi
 
 echo ""
