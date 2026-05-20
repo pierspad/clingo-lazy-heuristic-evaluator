@@ -347,16 +347,77 @@ __heuristic(__target(b),
 
 La suite sperimentale principale e' il Balanced Set Partitioning (BSP). Dato il dominio $1,\ldots,n$, il problema assegna ogni numero a uno tra due insiemi, rappresentati dai predicati \lstinline|b(X)| e \lstinline|c(X)|, imponendo che la differenza tra le somme dei due insiemi sia al piu' 1 in valore assoluto.
 
-Le varianti principali sono:
+Le varianti BSP sono organizzate in gruppi metodologicamente distinti. Questa separazione e' importante per non confondere tre effetti diversi: costo della materializzazione ground delle euristiche, semantica di attivazione della direttiva, e formulazione del vincolo del problema.
 
 \begin{itemize}
     \item \lstinline|gc_noheur|: ground-and-solve clingo senza euristiche;
-    \item \lstinline|gc|: ground-and-solve clingo con \lstinline|#heuristic| nativo;
-    \item \lstinline|ga|: ground-and-solve con semantica Alpha-style;
-    \item \lstinline|la|: lazy con semantica Alpha;
-    \item \lstinline|lc|: lazy con semantica clingo-like;
-    \item \lstinline|la_aux|: lazy Alpha tramite predicati ausiliari.
+    \item \lstinline|gc|: variante nativa clingo-like con \lstinline|#heuristic| ground-and-solve;
+    \item \lstinline|ga|: variante ground-and-solve con attivazione Alpha-style, ottenuta eliminando il body negativo dalla direttiva euristica;
+    \item \lstinline|ga_dyn|: riformulazione ground-and-solve con bound intermedio \lstinline|S <= #sum|, trattata come variante separata;
+    \item \lstinline|la|: lazy diretta con semantica Alpha;
+    \item \lstinline|lc|: lazy diretta con semantica clingo-like;
+    \item \lstinline|la_aux|: lazy Alpha tramite predicati ausiliari;
+    \item \lstinline|la_co|: lazy Alpha con una formulazione piu' propagabile del vincolo BSP.
 \end{itemize}
+
+La variante \lstinline|gc| rappresenta il caso nativo clingo-like:
+
+\begin{lstlisting}[language=ASP]
+#heuristic b(X) : x(X), not c(X), S = #sum{Y : c(Y)}.
+    [(((n+1)*S)+X)@0, true]
+#heuristic c(X) : x(X), not b(X), S = #sum{Y : b(Y)}.
+    [(((n+1)*S)+X)@0, true]
+\end{lstlisting}
+
+Questa forma e' rilevante perche' l'aggregato nel valore euristico costringe il grounder a produrre molte istanze della direttiva. La variante \lstinline|ga| rimuove invece \lstinline|not c(X)| e \lstinline|not b(X)| dal body euristico:
+
+\begin{lstlisting}[language=ASP]
+#heuristic b(X) : x(X), S = #sum{Y : c(Y)}. [...]
+#heuristic c(X) : x(X), S = #sum{Y : b(Y)}. [...]
+\end{lstlisting}
+
+Questa variante non va letta come una versione semplicemente piu' veloce o piu' lenta di \lstinline|gc|: cambia il momento in cui l'euristica puo' essere applicata, perche' non richiede piu' il body negativo. \lstinline|ga_dyn| e' ancora diversa:
+
+\begin{lstlisting}[language=ASP]
+sum_value(0..tot).
+#heuristic b(X) : x(X), sum_value(S), S <= #sum{Y : c(Y)}. [...]
+#heuristic c(X) : x(X), sum_value(S), S <= #sum{Y : b(Y)}. [...]
+\end{lstlisting}
+
+Qui il bound intermedio puo' rendere applicabili euristiche gia' con informazione parziale. Per questo motivo \lstinline|ga_dyn| non e' una baseline equivalente a \lstinline|ga|, ma una riformulazione distinta.
+
+La variante lazy principale e' \lstinline|la|:
+
+\begin{lstlisting}[language=ASP]
+__heuristic(__target(b), x, __n_c, __bind(s, __sum(c, 0)),
+            __weight(__add(__mul(__add(n, 1), s), self)),
+            __priority(0),
+            __modifier(true),
+            __semantics(alpha)).
+\end{lstlisting}
+
+Il template resta piccolo nel programma ground e la valutazione del valore euristico viene rimandata al propagatore. \lstinline|lc| usa la stessa idea con \lstinline|__semantics(clingo)|; in questa tesi, \enquote{semantica clingo-like} indica soprattutto il trattamento locale di \lstinline|not c(X)| e \lstinline|not b(X)| nel propagatore, non una reimplementazione generale di tutti gli aggregati ASP di clingo.
+
+\lstinline|la_aux| mostra invece il caso in cui il binding passa da un predicato ausiliario:
+
+\begin{lstlisting}[language=ASP]
+h_b(X,S) :- x(X), not c(X), S = #sum{Y : c(Y)}.
+
+__heuristic(__target(b),
+            __body(h_b, __match(0, 0), __bind_arg(s, 1)),
+            __weight(__add(__mul(__add(n, 1), s), self)),
+            __priority(0),
+            __modifier(true),
+            __semantics(alpha)).
+\end{lstlisting}
+
+Questa variante serve a verificare che il sistema possa legare variabili tramite argomenti di body predicate, non solo tramite aggregati lazy diretti. Infine, \lstinline|la_co| aggiunge una formulazione piu' propagabile del vincolo BSP:
+
+\begin{lstlisting}[language=ASP]
+:- not min_val <= #sum{Y : b(Y)} <= max_val.
+\end{lstlisting}
+
+Poiche' qui cambia anche la formulazione del vincolo del problema, \lstinline|la_co| non viene usata per dire semplicemente che una euristica lazy e' piu' veloce. Misura invece l'interazione tra lazy heuristics e una formulazione del vincolo BSP piu' favorevole alla propagazione.
 
 Il benchmark e' orchestrato da \path{test_folder/benchmarks/benchmark_bsp.sh}. La singola run e' gestita da \path{test_folder/benchmarks/benchmark_runner.py}, che:
 
@@ -366,8 +427,11 @@ Il benchmark e' orchestrato da \path{test_folder/benchmarks/benchmark_bsp.sh}. L
     \item impone timeout e limite di memoria;
     \item raccoglie tempi, scelte, conflitti, restart, regole, variabili e memoria;
     \item riesegue clingo con \lstinline|--text| per contare righe ground, fatti e oggetti euristici;
-    \item scrive una riga nel CSV.
+    \item scrive una riga nel CSV;
+    \item salva i metadati della run in \path{test_folder/results/run_metadata.json}.
 \end{enumerate}
+
+Il file \path{run_metadata.json} registra commit, data e ora del benchmark, hostname, CPU, RAM, sistema operativo, compilatore, build type, path del binario clingo, comando di lancio, template dei comandi runner/clingo, timeout, limite di memoria, numero di repeat, range di $n$ e varianti attive.
 
 Le metriche piu' importanti sono:
 
@@ -376,7 +440,11 @@ Le metriche piu' importanti sono:
     \item \lstinline|ground_lazy_heuristic_facts|: numero di fatti \lstinline|__heuristic|;
     \item \lstinline|ground_lines|: righe totali del programma ground testuale;
     \item \lstinline|choices|, \lstinline|conflicts| e \lstinline|restarts|: comportamento della ricerca;
-    \item \lstinline|grounding_s|, \lstinline|solving_s| e \lstinline|total_s|: decomposizione del tempo.
+    \item \lstinline|total_s|: campo \lstinline|Time.Total| delle statistiche JSON di clingo;
+    \item \lstinline|solving_s|: campo \lstinline|Time.Solve|;
+    \item \lstinline|grounding_s|: stima derivata come \lstinline|Time.Total - Time.Solve|, troncata a zero in caso di piccoli valori negativi da arrotondamento.
 \end{itemize}
+
+\lstinline|grounding_s| non e' quindi un timer separato del solo grounding. Nel resto della tesi viene interpretato come stima della parte non attribuita al solving nelle statistiche di clingo, utile per confronti sperimentali ma non equivalente a una misura pura e indipendente del grounding.
 
 La generazione dei grafici e' affidata a \path{test_folder/tools/gen_graphs.py} e allo script \path{test_folder/generate_graphs.sh}. I grafici vengono salvati in \path{test_folder/results/graphs/bsp/}.

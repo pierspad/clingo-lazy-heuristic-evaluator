@@ -15,6 +15,8 @@ Il secondo aspetto rilevante e' semantico. La tesi distingue esplicitamente:
 
 Questa distinzione e' essenziale. La variante \lstinline|la| ha prestazioni di solving molto buone, ma segue una semantica diversa da \lstinline|gc|. La variante \lstinline|lc| e' invece piu' adatta a misurare la rappresentazione lazy rispetto alla semantica clingo-like, anche se mantiene un comportamento di ricerca piu' vicino al baseline.
 
+La distinzione semantica non va confusa con la correttezza del programma ASP: le euristiche non aggiungono answer set e non ne eliminano. La validazione semantica confronta quindi i modelli del problema ignorando i simboli interni \lstinline|__...|, mentre le metriche sperimentali misurano quanto la rappresentazione euristica cambi grounding e search. Allo stesso modo, varianti come \lstinline|la_co| vanno lette come esperimenti sulla formulazione del vincolo BSP, non come confronti diretti tra sole euristiche.
+
 \subsection{Limiti dell'implementazione}
 
 L'implementazione attuale ha alcuni limiti tecnici e semantici:

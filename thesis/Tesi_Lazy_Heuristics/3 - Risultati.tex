@@ -2,7 +2,17 @@
 
 \subsection{Verifica funzionale}
 
-La verifica del sistema e' stata condotta su tre livelli:
+La verifica del sistema e' stata letta separando tre livelli che non devono essere confusi.
+
+\begin{enumerate}
+    \item \textbf{Correttezza semantica del programma ASP}: il programma mantiene gli stessi answer set rilevanti? Il risultato \lstinline|SAT|/\lstinline|UNSAT| e' lo stesso? Le soluzioni sono equivalenti?
+    \item \textbf{Correttezza della trasformazione euristica}: una direttiva \lstinline|#heuristic| viene tradotta correttamente in fatti \lstinline|__heuristic(...)|? Peso, priorita', modifier, variabili aggregate e variabili target sono preservati?
+    \item \textbf{Effetto sulla ricerca}: l'euristica cambia choices, conflicts, solving time, stima di grounding e numero di oggetti euristici ground?
+\end{enumerate}
+
+Le euristiche non cambiano la semantica del programma ASP: servono a guidare la ricerca, non a modificare gli answer set. Per questo la validazione semantica confronta i modelli ignorando i simboli interni del prototipo. Il validatore \path{test_folder/tools/validate_lazy_semantics.py} implementa esplicitamente questa scelta filtrando i simboli stampati che iniziano con \lstinline|__|, salvo quando viene richiesto il confronto completo con \lstinline|--keep-internal|. Le metriche di performance, invece, misurano l'effetto della rappresentazione euristica su grounding e search.
+
+Operativamente, la suite contiene:
 
 \begin{enumerate}
     \item test C++ in \path{clingo-modified/libclingo/tests/heuristic_propagator.cc};
@@ -24,11 +34,11 @@ I test C++ coprono:
     \item validazione di errori sintattici, come variabili duplicate o indici negativi.
 \end{itemize}
 
-Questi test sono importanti perche' isolano la semantica del propagatore dalla complessita' del benchmark. In particolare, il test sulla priorita' locale verifica che una modifica con priorita' maggiore per un target non diventi automaticamente migliore di modifiche relative ad altri target: il ranking globale deve dipendere dal level risolto.
+Questi test sono importanti perche' isolano la correttezza della trasformazione euristica dalla complessita' del benchmark. In particolare, il test sulla priorita' locale verifica che una modifica con priorita' maggiore per un target non diventi automaticamente migliore di modifiche relative ad altri target: il ranking globale deve dipendere dal level risolto.
 
 \subsection{Dataset sperimentale}
 
-La run sperimentale usata per i grafici BSP contiene 120 righe: 12 valori di $n$ da 10 a 120, 6 varianti e 2 seed, salvo arresto anticipato delle varianti che incontrano timeout. Le varianti considerate sono \lstinline|gc_noheur|, \lstinline|gc|, \lstinline|ga|, \lstinline|la|, \lstinline|lc| e \lstinline|la_aux|.
+La run sperimentale usata per i grafici BSP contiene 120 righe: 12 valori di $n$ da 10 a 120, 6 varianti e 2 seed, salvo arresto anticipato delle varianti che incontrano timeout. Le varianti considerate nel confronto principale sono \lstinline|gc_noheur|, \lstinline|gc|, \lstinline|ga|, \lstinline|la|, \lstinline|lc| e \lstinline|la_aux|. Le varianti \lstinline|ga_dyn| e \lstinline|la_co| sono trattate come esperimenti metodologicamente separati: la prima cambia la condizione di attivazione tramite bound intermedio, la seconda cambia anche la formulazione del vincolo BSP.
 
 La Tabella \ref{tab:max-ok} riassume il massimo valore di $n$ risolto con stato \lstinline|ok| prima del timeout.
 
@@ -98,7 +108,7 @@ Questo dato e' il principale segnale di efficacia della rappresentazione lazy. L
 
 \subsection{Tempi di esecuzione}
 
-La Figura \ref{fig:total-time} riporta il tempo totale. La decomposizione dei tempi mostra che, per valori grandi di $n$, il grounding domina il costo complessivo. Questo e' coerente con la natura del BSP usato nel benchmark: anche senza euristiche native, il programma base genera milioni di regole ground.
+La Figura \ref{fig:total-time} riporta il tempo totale. La decomposizione dei tempi mostra che, per valori grandi di $n$, la parte non attribuita al solving domina il costo complessivo. Questo e' coerente con la natura del BSP usato nel benchmark: anche senza euristiche native, il programma base genera milioni di regole ground.
 
 \begin{figure}[H]
     \centering
@@ -110,9 +120,11 @@ La Figura \ref{fig:total-time} riporta il tempo totale. La decomposizione dei te
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{grounding_time}
-    \caption{Tempo di grounding stimato come differenza tra tempo totale e tempo di solving.}
+    \caption{Stima del tempo di grounding, calcolata come differenza tra tempo totale e tempo di solving nelle statistiche JSON di clingo.}
     \label{fig:grounding-time}
 \end{figure}
+
+Nel runner questa colonna e' calcolata come \lstinline|grounding_s = Time.Total - Time.Solve|. Non va quindi interpretata come \enquote{grounding time puro}: e' una stima derivata dalle statistiche di clingo, non un timer indipendente che misura solo il grounder.
 
 A $n=100$, le medie sui due seed sono riportate nella Tabella \ref{tab:n100-time}.
 
@@ -206,15 +218,22 @@ La variante \lstinline|la_aux| usa predicati ausiliari per materializzare il bod
 
 Il dato mostra che la forma piu' interessante e' la lazy diretta: se il body dell'euristica viene prima materializzato in un predicato ausiliario molto grande, il vantaggio principale viene in parte perso.
 
+\subsection{Effetto della formulazione del vincolo}
+
+La variante \lstinline|la_co| deve essere letta separatamente dal confronto diretto tra euristiche. In questa variante non cambia solo la rappresentazione della direttiva euristica: cambia anche la formulazione del vincolo BSP, usando una forma piu' propagabile basata su un vincolo di intervallo. Il confronto con \lstinline|la| misura quindi l'interazione tra lazy heuristics e formulazione del vincolo, non un miglioramento attribuibile alla sola rappresentazione lazy.
+
+Per questa ragione \lstinline|la_co| e' utile nella tesi come esperimento sulla modellazione del problema, ma non come baseline diretta per affermare che una variante lazy sia piu' efficiente di una variante ground-and-solve equivalente.
+
 \subsection{Sintesi dei risultati}
 
-I risultati sperimentali portano a quattro conclusioni:
+I risultati sperimentali portano a cinque conclusioni:
 
 \begin{enumerate}
     \item la rappresentazione lazy riduce la componente euristica ground da centinaia di migliaia o milioni di direttive a due fatti descrittivi nel BSP;
     \item il costo totale non diventa costante perche' il programma base viene ancora groundato da clingo;
     \item la semantica Alpha-style puo' guidare la ricerca in modo molto aggressivo, ma non coincide con la semantica clingo-like;
-    \item la forma ausiliaria e' utile per esprimere mapping piu' generali, ma puo' reintrodurre il costo di grounding che si voleva evitare.
+    \item la forma ausiliaria e' utile per esprimere mapping piu' generali, ma puo' reintrodurre il costo di grounding che si voleva evitare;
+    \item le varianti con formulazione diversa del vincolo, come \lstinline|la_co|, vanno analizzate come esperimenti di modellazione e non come confronti diretti tra sole euristiche.
 \end{enumerate}
 
 La Figura \ref{fig:benchmark-results} raccoglie alcune delle visualizzazioni interpretative generate automaticamente.
