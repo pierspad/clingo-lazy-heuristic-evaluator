@@ -226,8 +226,8 @@ The variants are separated so that three effects do not get conflated: the cost 
 \midrule
 \mintinline{text}|gc_noheur| & Ground-and-solve clingo without domain-specific heuristics.\\
 \mintinline{text}|gc| & Native clingo-like \mintinline{text}|#heuristic| directives.\\
-\mintinline{text}|ga| & Ground-and-solve Alpha-style activation, obtained by removing the negative body from the directive.\\
-\mintinline{text}|ga_dyn| & Ground-and-solve reformulation with an intermediate bound \mintinline{text}|S <= #sum|; treated as a separate modelling variant.\\
+\mintinline{text}|ga_weak| & Weak ground-and-solve Alpha-style activation, obtained by removing the negative body from the directive.\\
+\mintinline{text}|ga| & Ground-and-solve reformulation with an intermediate bound \mintinline{text}|S <= #sum|; treated as the main Alpha-style ground-and-solve variant.\\
 \mintinline{text}|la| & Direct lazy form with Alpha-style semantics.\\
 \mintinline{text}|lc| & Direct lazy form with clingo-like semantics.\\
 \mintinline{text}|la_aux| & Lazy Alpha form driven by auxiliary predicates.\\
@@ -247,14 +247,14 @@ The native clingo-like variant is:
     [(((n+1)*S)+X)@0, true]
 \end{minted}
 
-The aggregate in the heuristic value forces the grounder to produce many directive instances. The \mintinline{text}|ga| variant removes \mintinline{text}|not c(X)| and \mintinline{text}|not b(X)| from the heuristic body:
+The aggregate in the heuristic value forces the grounder to produce many directive instances. The \mintinline{text}|ga_weak| variant removes \mintinline{text}|not c(X)| and \mintinline{text}|not b(X)| from the heuristic body:
 
 \begin{minted}{prolog}
 #heuristic b(X) : x(X), S = #sum{Y : c(Y)}. [...]
 #heuristic c(X) : x(X), S = #sum{Y : b(Y)}. [...]
 \end{minted}
 
-This is not merely a faster or slower version of \mintinline{text}|gc|. It changes the moment at which the heuristic can be applied, because it no longer requires the negative body to hold. The \mintinline{text}|ga_dyn| variant is different again:
+This is not merely a faster or slower version of \mintinline{text}|gc|. It changes the moment at which the heuristic can be applied, because it no longer requires the negative body to hold. The current \mintinline{text}|ga| variant is different again:
 
 \begin{minted}{prolog}
 sum_value(0..tot).
@@ -262,7 +262,7 @@ sum_value(0..tot).
 #heuristic c(X) : x(X), sum_value(S), S <= #sum{Y : b(Y)}. [...]
 \end{minted}
 
-The intermediate bound can make heuristic information applicable with partial aggregate information, so \mintinline{text}|ga_dyn| is not an equivalent baseline for \mintinline{text}|ga|. Similarly, \mintinline{text}|la_co| changes the BSP constraint itself:
+The intermediate bound can make heuristic information applicable with partial aggregate information, so \mintinline{text}|ga| is not an equivalent baseline for \mintinline{text}|ga_weak|. Similarly, \mintinline{text}|la_co| changes the BSP constraint itself:
 
 \begin{minted}{prolog}
 :- not min_val <= #sum{Y : b(Y)} <= max_val.
@@ -270,7 +270,7 @@ The intermediate bound can make heuristic information applicable with partial ag
 
 It is therefore discussed as a modelling experiment rather than as direct evidence that lazy heuristics alone are faster.
 
-The benchmark is orchestrated by \path{test_folder/benchmarks/benchmark_bsp.sh}. Each run is handled by \path{test_folder/benchmarks/benchmark_runner.py}, which executes clingo in JSON mode with \mintinline{text}|--outf=2 --stats=2|, enables \mintinline{text}|--heuristic=Domain|, applies timeout and memory limits, collects search and grounding-related statistics, runs clingo again with \mintinline{text}|--text| to count ground lines and heuristic objects, writes the CSV row, and stores metadata in \path{test_folder/results/run_metadata.json}.
+The benchmark is orchestrated by \path{test_folder/benchmarks/benchmark_bsp.sh}. Each run is handled by \path{test_folder/benchmarks/benchmark_runner.py}, which executes clingo in JSON mode with \mintinline{text}|--outf=2 --stats=2|, enables \mintinline{text}|--heuristic=Domain|, applies timeout and memory limits, collects search and grounding-related statistics, runs clingo again with \mintinline{text}|--text| to count ground lines and heuristic objects, writes the CSV row, and stores metadata in \path{test_folder/results/run_metadata.json}. The number of ground rules is not computed from textual grounding output: it is read from the same clingo statistics object used for the run, namely from \mintinline{text}|Stats.LP.Rules.Final|.
 
 \begin{table}[H]
 \centering
@@ -280,7 +280,8 @@ The benchmark is orchestrated by \path{test_folder/benchmarks/benchmark_bsp.sh}.
 \midrule
 \mintinline{text}|ground_heuristics| & Number of printed \mintinline{text}|#heuristic| lines in the textual ground program.\\
 \mintinline{text}|ground_lazy_heuristic_facts| & Number of \mintinline{text}|__heuristic| facts.\\
-\mintinline{text}|ground_lines| & Total number of lines in the textual ground program.\\
+\mintinline{text}|rules| & Number of ground rules reported by clingo statistics, from \mintinline{text}|Stats.LP.Rules.Final|.\\
+\mintinline{text}|ground_lines| & Diagnostic total number of lines in the textual ground program; not used as the rule count.\\
 \mintinline{text}|choices|, \mintinline{text}|conflicts|, \mintinline{text}|restarts| & Search behaviour reported by clingo.\\
 \mintinline{text}|solving_ms_per_choice| & Derived metric computed as $1000 \cdot$ \mintinline{text}|solving_s| / \mintinline{text}|choices|.\\
 \mintinline{text}|total_s| & The \mintinline{text}|Time.Total| field from clingo JSON statistics.\\
@@ -293,3 +294,11 @@ The benchmark is orchestrated by \path{test_folder/benchmarks/benchmark_bsp.sh}.
 \end{table}
 
 The \mintinline{text}|grounding_s| value is not an independent timer for the grounder alone. It is used throughout the thesis as an estimate of the part of the run not attributed to solving in clingo's statistics. The graphs are generated by \path{test_folder/tools/gen_graphs.py} and \path{test_folder/generate_graphs.sh}, and are stored under \path{test_folder/results/graphs/bsp/}.
+
+\subsection{Randomized BSP Runs}
+
+The script \path{test_folder/benchmarks/benchmark_bsp_random.sh} defines a smaller benchmark matrix dedicated to randomized-search sensitivity. Its default configuration uses the variants \mintinline{text}|la|, \mintinline{text}|lc|, \mintinline{text}|ga|, and \mintinline{text}|gc|, three values of $n$ ($40$, $70$, and $100$), and three seeds. The purpose is not to repeat the full performance benchmark, but to check whether the solving phase is stable when the solver is exposed to small random perturbations.
+
+Two settings are used by default. The first one, \mintinline{text}|seed_only|, changes only the value passed through \mintinline{text}|--seed|. This is a control setting: if all runs remain identical, the result simply means that the standard configuration is deterministic enough for these instances. The second one, \mintinline{text}|rand_freq_0_01|, adds \mintinline{text}|--rand-freq=0.01|. This allows approximately one percent of decisions to be random, which is mild enough to keep the experiment interpretable while still making alternative search paths possible.
+
+The randomized runs are evaluated mainly through \mintinline{text}|total_s|, \mintinline{text}|solving_s|, \mintinline{text}|choices|, and \mintinline{text}|conflicts|. These metrics reveal whether the solver actually follows different search trajectories. Grounding-related quantities, such as \mintinline{text}|rules|, \mintinline{text}|ground_lines|, and \mintinline{text}|ground_heuristics|, are not used as evidence of seed sensitivity, because the random seed should affect search decisions rather than the grounded program. If those quantities changed significantly between seeds for the same variant, size, and setting, the run would have to be treated as suspicious.

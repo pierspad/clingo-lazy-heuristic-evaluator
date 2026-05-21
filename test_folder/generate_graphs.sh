@@ -16,15 +16,15 @@ set -euo pipefail
 # - Per non generare piu' un set, commenta o rimuovi la riga.
 #
 # Varianti BSP valide:
-#   gc_noheur gc ga ga_dyn la lc la_aux la_co
+#   gc_noheur gc ga ga_weak la lc la_aux la_co
 #
 # Esempi:
 #   "standard:"                         -> tutte le varianti
 #   "no_la_co:la_co"                    -> esclude solo la_co
-#   "core_only:la_co,ga_dyn,la_aux"     -> esclude tre varianti
+#   "core_only:la_co,ga_weak,la_aux"    -> esclude tre varianti
 #
 # Override rapido da shell:
-#   BSP_GRAPH_SETS="standard: core_only:la_co,ga_dyn,la_aux" ./generate_graphs.sh
+#   BSP_GRAPH_SETS="standard: core_only:la_co,ga_weak,la_aux" ./generate_graphs.sh
 #
 # Compatibilita' legacy:
 #   BSP_GRAPH_EXCLUDES="__standard__ bsplaco" ./generate_graphs.sh
@@ -51,8 +51,8 @@ THESIS_SD_MAX_WIDTH="${THESIS_SD_MAX_WIDTH:-900}"
 DEFAULT_BSP_GRAPH_SETS=(
     "standard:"
     "no_la_co:la_co"
-    "no_la_co_no_ga_dyn:la_co,ga_dyn"
-    "no_la_co_no_ga_dyn_no_la_aux:la_co,ga_dyn,la_aux"
+    "no_la_co_no_ga_weak:la_co,ga_weak"
+    "no_la_co_no_ga_weak_no_la_aux:la_co,ga_weak,la_aux"
 )
 # ==============================================================================
 

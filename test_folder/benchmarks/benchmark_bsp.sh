@@ -7,7 +7,9 @@ set -euo pipefail
 # ==============================================================================
 # CONFIGURAZIONE BENCHMARK BSP
 # Override rapido da shell, per esempio:
-#   BSP_VARIANTS="gc_noheur gc ga ga_dyn la lc la_aux" ./benchmark_bsp.sh
+#   BSP_VARIANTS="gc_noheur gc ga la lc la_aux" ./benchmark_bsp.sh
+#   BSP_RANDOM_SETTINGS="seed_only: rand_freq_0_01:--rand-freq=0.01" REPEATS=3 ./benchmark_bsp.sh
+#   CLINGO_EXTRA_ARGS="--init-watches=rnd" ./benchmark_bsp.sh
 # ==============================================================================
 DEFAULT_TIMEOUT_SECONDS=180
 DEFAULT_REPEATS=2
@@ -16,7 +18,8 @@ DEFAULT_N_END=200
 DEFAULT_N_STEP=10
 DEFAULT_MEM_LIMIT_BYTES=$((10 * 1024 * 1024 * 1024))
 DEFAULT_STOP_VARIANT_ON_LIMIT=1
-DEFAULT_BSP_VARIANTS="ga_dyn ga gc_noheur gc la_aux la_co la lc"
+DEFAULT_BSP_VARIANTS="ga gc_noheur gc la_aux la_co la lc"
+DEFAULT_BSP_RANDOM_SETTINGS="seed_only:"
 # ==============================================================================
 
 PYTHON_BIN="${PYTHON_BIN:-python3}"
@@ -62,6 +65,8 @@ N_START="${N_START:-${DEFAULT_N_START}}"
 N_END="${N_END:-${DEFAULT_N_END}}"
 N_STEP="${N_STEP:-${DEFAULT_N_STEP}}"
 STOP_VARIANT_ON_LIMIT="${STOP_VARIANT_ON_LIMIT:-${DEFAULT_STOP_VARIANT_ON_LIMIT}}"
+BSP_RANDOM_SETTINGS_EFFECTIVE="${BSP_RANDOM_SETTINGS:-${DEFAULT_BSP_RANDOM_SETTINGS}}"
+export BSP_RANDOM_SETTINGS_EFFECTIVE
 
 ENC_DIR="${TEST_ROOT}/encodings/BSP"
 INSTANCE_RANGE="${TEST_ROOT}/instances/BSP_instances/BSP_range.lp"
@@ -73,7 +78,7 @@ declare -A VARIANT_FILES=(
     [gc_noheur]="${ENC_DIR}/BSP_gc_noheur.lp"
     [gc]="${ENC_DIR}/BSP_gc.lp"
     [ga]="${ENC_DIR}/BSP_ga.lp"
-    [ga_dyn]="${ENC_DIR}/BSP_ga_dyn.lp"
+    [ga_weak]="${ENC_DIR}/BDP_ga_weak.lp"
     [la]="${ENC_DIR}/BSP_la.lp"
     [lc]="${ENC_DIR}/BSP_lc.lp"
     [la_aux]="${ENC_DIR}/BSP_la_aux.lp"
@@ -84,7 +89,7 @@ declare -A VARIANT_SEMANTICS=(
     [gc_noheur]="clingo"
     [gc]="clingo"
     [ga]="alpha"
-    [ga_dyn]="alpha"
+    [ga_weak]="alpha"
     [la]="alpha"
     [lc]="clingo"
     [la_aux]="alpha"
@@ -263,12 +268,15 @@ runner_template = [
     "--semantics", "<semantics>",
     "--size", "<N>",
     "--seed", "<seed>",
+    "--setting", "<setting>",
     "--csv", str(csv_file),
     "--constant", "n=<N>",
     "--models", "1",
     "--timeout", str(timeout_seconds),
     "--memory-bytes", str(memory_bytes),
     "--domain-heuristic",
+    "<setting-specific --clingo-option>",
+    "<global --clingo-option>",
 ]
 clingo_json_template = [
     str(clingo_path),
@@ -281,6 +289,8 @@ clingo_json_template = [
     "--seed=<seed>",
     "-n", "1",
     f"--time-limit={timeout_seconds}",
+    "<setting-specific clingo options>",
+    "<CLINGO_EXTRA_ARGS>",
 ]
 clingo_text_template = [
     str(clingo_path),
@@ -319,6 +329,8 @@ metadata = {
     "build_type": build_type,
     "clingo_binary": str(clingo_path),
     "exact_command": launcher_command,
+    "random_settings": os.environ.get("BSP_RANDOM_SETTINGS_EFFECTIVE", "seed_only:"),
+    "clingo_extra_args": os.environ.get("CLINGO_EXTRA_ARGS", ""),
     "commands": {
         "benchmark_launcher": launcher_command,
         "runner_template": shlex.join(runner_template),
@@ -352,6 +364,7 @@ PY
 }
 
 read -r -a ACTIVE_VARIANTS <<< "${BSP_VARIANTS:-${DEFAULT_BSP_VARIANTS}}"
+read -r -a ACTIVE_SETTING_SPECS <<< "${BSP_RANDOM_SETTINGS_EFFECTIVE}"
 
 if [ ! -f "${INSTANCE_RANGE}" ]; then
     echo "Errore: file istanza BSP non trovato: ${INSTANCE_RANGE}"
@@ -378,13 +391,39 @@ if [ "${#ENABLED_VARIANTS[@]}" -eq 0 ]; then
     exit 1
 fi
 
+SETTING_NAMES=()
+SETTING_EXTRA_ARGS=()
+for setting_spec in "${ACTIVE_SETTING_SPECS[@]}"; do
+    setting_name="${setting_spec%%:*}"
+    if [ -z "${setting_name}" ]; then
+        echo "Errore: setting random BSP non valido: '${setting_spec}'."
+        exit 1
+    fi
+    if [[ "${setting_spec}" == *":"* ]]; then
+        setting_args="${setting_spec#*:}"
+    else
+        setting_args=""
+    fi
+    SETTING_NAMES+=("${setting_name}")
+    SETTING_EXTRA_ARGS+=("${setting_args}")
+done
+
+if [ "${#SETTING_NAMES[@]}" -eq 0 ]; then
+    echo "Errore: nessun setting random BSP attivo."
+    exit 1
+fi
+
 mkdir -p "${RESULTS_DIR}"
 rm -f "${CSV_FILE}"
 write_run_metadata "${METADATA_FILE}"
 
 echo "Varianti BSP attive: ${ENABLED_VARIANTS[*]}"
+echo "Setting random attivi: ${SETTING_NAMES[*]}"
 MEM_LIMIT_GB="$("${PYTHON_BIN}" -c 'import sys; print(f"{int(sys.argv[1]) / (1024**3):.2f}")' "${MEM_LIMIT_BYTES}")"
 echo "Parametri: timeout=${TIMEOUT_SECONDS}s repeats=${REPEATS} n=${N_START}..${N_END} step=${N_STEP} mem=${MEM_LIMIT_GB} GB"
+if [ -n "${CLINGO_EXTRA_ARGS:-}" ]; then
+    echo "Opzioni Clingo extra globali: ${CLINGO_EXTRA_ARGS}"
+fi
 if [ "${STOP_VARIANT_ON_LIMIT}" = "1" ]; then
     echo "Stop per variante su limite memoria/timeout: attivo"
 else
@@ -393,58 +432,88 @@ fi
 echo "Risultati: ${CSV_FILE}"
 echo "Metadata run: ${METADATA_FILE}"
 
-planned_runs=$(( ((N_END - N_START) / N_STEP + 1) * ${#ENABLED_VARIANTS[@]} * REPEATS ))
+planned_runs=$(( ((N_END - N_START) / N_STEP + 1) * ${#ENABLED_VARIANTS[@]} * REPEATS * ${#SETTING_NAMES[@]} ))
 current_run=0
 declare -A VARIANT_STOPPED_BY_LIMIT=()
 declare -A VARIANT_LIMIT_N=()
 declare -A VARIANT_LIMIT_REASON=()
-for variant in "${ENABLED_VARIANTS[@]}"; do
-    VARIANT_STOPPED_BY_LIMIT["${variant}"]=0
+for setting in "${SETTING_NAMES[@]}"; do
+    for variant in "${ENABLED_VARIANTS[@]}"; do
+        VARIANT_STOPPED_BY_LIMIT["${setting}:${variant}"]=0
+    done
 done
 
-for n in $(seq "${N_START}" "${N_STEP}" "${N_END}"); do
+for setting_index in "${!SETTING_NAMES[@]}"; do
+    setting="${SETTING_NAMES[${setting_index}]}"
+    setting_args="${SETTING_EXTRA_ARGS[${setting_index}]}"
+    read -r -a SETTING_CLINGO_ARGS <<< "${setting_args}"
+    read -r -a GLOBAL_CLINGO_ARGS <<< "${CLINGO_EXTRA_ARGS:-}"
+
     echo ""
-    echo "=== N=${n} ==="
+    echo "=== Setting ${setting} ==="
+    if [ -n "${setting_args}" ]; then
+        echo "Opzioni setting: ${setting_args}"
+    fi
 
-    for variant in "${ENABLED_VARIANTS[@]}"; do
-        if [ "${STOP_VARIANT_ON_LIMIT}" = "1" ] && [ "${VARIANT_STOPPED_BY_LIMIT[${variant}]}" = "1" ]; then
-            echo "--- ${variant}: salto N=${n}; limite superato a N=${VARIANT_LIMIT_N[${variant}]} ---"
-            continue
-        fi
+    for n in $(seq "${N_START}" "${N_STEP}" "${N_END}"); do
+        echo ""
+        echo "=== N=${n} ==="
 
-        for seed in $(seq 1 "${REPEATS}"); do
-            current_run=$((current_run + 1))
-            echo "--- ${variant} (run ${current_run}/${planned_runs}, seed ${seed}) ---"
-            if "${PYTHON_BIN}" "${RUNNER}" \
-                --clingo "${CLINGO_MOD}" \
-                --encoding "${VARIANT_FILES[${variant}]}" \
-                --instance "${INSTANCE_RANGE}" \
-                --variant "${variant}" \
-                --semantics "${VARIANT_SEMANTICS[${variant}]}" \
-                --size "${n}" \
-                --seed "${seed}" \
-                --csv "${CSV_FILE}" \
-                --constant "n=${n}" \
-                --models 1 \
-                --timeout "${TIMEOUT_SECONDS}" \
-                --memory-bytes "${MEM_LIMIT_BYTES}" \
-                --domain-heuristic; then
-                rc=0
-            else
-                rc=$?
+        for variant in "${ENABLED_VARIANTS[@]}"; do
+            variant_key="${setting}:${variant}"
+            if [ "${STOP_VARIANT_ON_LIMIT}" = "1" ] && [ "${VARIANT_STOPPED_BY_LIMIT[${variant_key}]}" = "1" ]; then
+                echo "--- ${variant} (${setting}): salto N=${n}; limite superato a N=${VARIANT_LIMIT_N[${variant_key}]} ---"
+                continue
             fi
 
-            if [ "${rc}" -eq 75 -o "${rc}" -eq 124 ] && [ "${STOP_VARIANT_ON_LIMIT}" = "1" ]; then
-                VARIANT_STOPPED_BY_LIMIT["${variant}"]=1
-                VARIANT_LIMIT_N["${variant}"]="${n}"
-                if [ "${rc}" -eq 75 ]; then
-                    VARIANT_LIMIT_REASON["${variant}"]="OOM"
+            for seed in $(seq 1 "${REPEATS}"); do
+                runner_extra_options=()
+                for opt in "${SETTING_CLINGO_ARGS[@]}"; do
+                    if [ -n "${opt}" ]; then
+                        runner_extra_options+=("--clingo-option=${opt}")
+                    fi
+                done
+                for opt in "${GLOBAL_CLINGO_ARGS[@]}"; do
+                    if [ -n "${opt}" ]; then
+                        runner_extra_options+=("--clingo-option=${opt}")
+                    fi
+                done
+
+                current_run=$((current_run + 1))
+                echo "--- ${variant} (run ${current_run}/${planned_runs}, setting ${setting}, seed ${seed}) ---"
+                if "${PYTHON_BIN}" "${RUNNER}" \
+                    --clingo "${CLINGO_MOD}" \
+                    --encoding "${VARIANT_FILES[${variant}]}" \
+                    --instance "${INSTANCE_RANGE}" \
+                    --variant "${variant}" \
+                    --semantics "${VARIANT_SEMANTICS[${variant}]}" \
+                    --size "${n}" \
+                    --seed "${seed}" \
+                    --setting "${setting}" \
+                    --csv "${CSV_FILE}" \
+                    --constant "n=${n}" \
+                    --models 1 \
+                    --timeout "${TIMEOUT_SECONDS}" \
+                    --memory-bytes "${MEM_LIMIT_BYTES}" \
+                    --domain-heuristic \
+                    "${runner_extra_options[@]}"; then
+                    rc=0
                 else
-                    VARIANT_LIMIT_REASON["${variant}"]="TIMEOUT"
+                    rc=$?
                 fi
-                echo "--- ${variant}: limite memoria/timeout raggiunto a N=${n}; salto i run e valori successivi per questa variante ---"
-                break
-            fi
+
+                if [ "${rc}" -eq 75 -o "${rc}" -eq 124 ] && [ "${STOP_VARIANT_ON_LIMIT}" = "1" ]; then
+                    VARIANT_STOPPED_BY_LIMIT["${variant_key}"]=1
+                    VARIANT_LIMIT_N["${variant_key}"]="${n}"
+                    if [ "${rc}" -eq 75 ]; then
+                        VARIANT_LIMIT_REASON["${variant_key}"]="OOM"
+                    else
+                        VARIANT_LIMIT_REASON["${variant_key}"]="TIMEOUT"
+                    fi
+                    echo "--- ${variant} (${setting}): limite memoria/timeout raggiunto a N=${n}; salto i run e valori successivi per questa variante/setting ---"
+                    break
+                fi
+            done
         done
     done
 done
@@ -453,17 +522,20 @@ echo ""
 echo "Benchmark BSP completato. ${current_run} esecuzioni totali."
 if [ "${STOP_VARIANT_ON_LIMIT}" = "1" ]; then
     > "${RESULTS_DIR}/bsp_failures.txt"
-    for variant in "${ENABLED_VARIANTS[@]}"; do
-        if [ "${VARIANT_STOPPED_BY_LIMIT[${variant}]}" = "1" ]; then
-            fn="${VARIANT_LIMIT_N[${variant}]}"
-            fr="${VARIANT_LIMIT_REASON[${variant}]}"
-            echo -e "${fn}\t${variant}\t${fr}" >> "${RESULTS_DIR}/bsp_failures.txt"
-        fi
+    for setting in "${SETTING_NAMES[@]}"; do
+        for variant in "${ENABLED_VARIANTS[@]}"; do
+            variant_key="${setting}:${variant}"
+            if [ "${VARIANT_STOPPED_BY_LIMIT[${variant_key}]}" = "1" ]; then
+                fn="${VARIANT_LIMIT_N[${variant_key}]}"
+                fr="${VARIANT_LIMIT_REASON[${variant_key}]}"
+                echo -e "${fn}\t${setting}\t${variant}\t${fr}" >> "${RESULTS_DIR}/bsp_failures.txt"
+            fi
+        done
     done
     if [ -s "${RESULTS_DIR}/bsp_failures.txt" ]; then
         echo "=== REPORT FALLIMENTI BSP (ordinato per N crescente) ==="
-        sort -n "${RESULTS_DIR}/bsp_failures.txt" | while read -r fn fv fr; do
-            echo " - Variante '${fv}' ha fallito a N=${fn} causa: ${fr}"
+        sort -n "${RESULTS_DIR}/bsp_failures.txt" | while read -r fn fs fv fr; do
+            echo " - Variante '${fv}' (${fs}) ha fallito a N=${fn} causa: ${fr}"
         done
         echo "========================================================"
     else

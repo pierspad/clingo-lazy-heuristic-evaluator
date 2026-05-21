@@ -10,7 +10,7 @@ The validation suite includes C++ tests in \path{clingo-modified/libclingo/tests
 
 \subsection{Experimental Dataset}
 
-The BSP run used for the graphs contains 120 rows: 12 values of $n$, from 10 to 120, 6 variants, and 2 seeds, except where variants stop earlier because of timeouts. The main comparison includes \mintinline{text}|gc_noheur|, \mintinline{text}|gc|, \mintinline{text}|ga|, \mintinline{text}|la|, \mintinline{text}|lc|, and \mintinline{text}|la_aux|. The variants \mintinline{text}|ga_dyn| and \mintinline{text}|la_co| are treated as methodologically separate experiments because they change either the activation condition or the BSP constraint formulation.
+The BSP run used for the graphs contains 120 rows: 12 values of $n$, from 10 to 120, 6 variants, and 2 seeds, except where variants stop earlier because of timeouts. The main comparison includes \mintinline{text}|gc_noheur|, \mintinline{text}|gc|, \mintinline{text}|ga|, \mintinline{text}|la|, \mintinline{text}|lc|, and \mintinline{text}|la_aux|. The variants \mintinline{text}|ga_weak| and \mintinline{text}|la_co| are treated as methodologically separate experiments because they change either the activation condition or the BSP constraint formulation.
 
 \begin{table}[H]
 \centering
@@ -145,6 +145,12 @@ Search statistics reveal a sharp distinction between Alpha-style and clingo-like
 
 This result must be interpreted carefully. \mintinline{text}|la| is not simply a more efficient implementation of \mintinline{text}|gc|; it uses a different activation semantics for negative bodies and aggregate availability. The thesis therefore keeps the comparison of representations separate from the comparison of semantics.
 
+\subsection{Randomized Search Sensitivity}
+
+The reduced randomized benchmark complements the main BSP run by focusing on the stability of the solving phase. It uses three seeds and two settings: \mintinline{text}|seed_only|, where only \mintinline{text}|--seed| changes, and \mintinline{text}|rand_freq_0_01|, where clingo also receives \mintinline{text}|--rand-freq=0.01|. The relevant output is not the size of the grounded program, but the variation of \mintinline{text}|total_s|, \mintinline{text}|solving_s|, \mintinline{text}|choices|, and \mintinline{text}|conflicts| across seeds.
+
+This experiment answers a specific methodological question: whether different solver trajectories can explain part of the observed runtime behaviour. If the seed-only setting gives identical or nearly identical curves, then the default configuration is stable for the selected instances. If the mildly randomized setting separates the curves by seed, especially in choices and conflicts, then the variability is not just wall-clock noise but a genuine change in the search path. Conversely, grounding-related values such as \mintinline{text}|rules| and \mintinline{text}|ground_lines| should remain stable for the same variant, $n$, and setting; changes there would indicate a measurement problem rather than search sensitivity.
+
 \subsection{Rules, Variables, and Memory}
 
 The reduction in the heuristic component is also visible in the number of variables when native and direct lazy variants are compared. At $n=100$, the native clingo-like variant is much larger because its grounded heuristic directives include the negative body and the aggregate in the ground-and-solve representation.
@@ -164,13 +170,6 @@ The reduction in the heuristic component is also visible in the number of variab
 \caption{Number of ground variables at $n=100$.}
 \label{tab:n100-vars}
 \end{table}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=\textwidth]{variables_comparison}
-    \caption{Number of variables in the ground problem.}
-    \label{fig:variables}
-\end{figure}
 
 \begin{figure}[H]
     \centering

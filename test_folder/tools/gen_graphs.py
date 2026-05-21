@@ -14,6 +14,8 @@ Il CSV viene prodotto da:
 Il generatore grafici non riesegue Clingo: legge le colonne numeriche gia'
 presenti nel CSV, calcola solo metriche derivate esplicite, raggruppa per
 (variant, n), calcola media e deviazione standard sui seed, e disegna le curve.
+Se nel CSV e' presente la colonna `setting`, genera anche grafici dedicati alla
+variabilita' tra seed e opzioni randomizzate di Clingo.
 
 Origine esatta delle colonne usate nei grafici BSP
 --------------------------------------------------
@@ -66,7 +68,9 @@ Origine esatta delle colonne usate nei grafici BSP
 
 11. ground_lines
     - Comando sorgente: stesso run `clingo --text`.
-    - Conteggio: numero totale di righe stampate nell'output testuale ground.
+    - Conteggio diagnostico: numero totale di righe stampate nell'output
+      testuale ground. Non viene usato come conteggio delle regole ground;
+      per quello si usa sempre la colonna `rules` da Clingo stats.
 
 12. combined_heuristics
     - Non e' una colonna del CSV: viene calcolata qui come
@@ -188,18 +192,18 @@ PLOT_CONFIGS = [
         "filename": "solving_cost_per_choice.png",
     },
     {
-        "metric": "ground_lines",
-        "title": "Ground Program Lines",
-        "ylabel": "Lines in --text output (millions)",
-        "description": "Line count of the textual ground program, comparable to clingo/gringo --text | wc -l.",
-        "filename": "ground_program_lines.png",
+        "metric": "rules",
+        "title": "Solver Rules",
+        "ylabel": "Rules (millions)",
+        "description": "Ground rules reported by the same clingo run used for timing, from JSON stats field Stats.LP.Rules.Final.",
+        "filename": "solver_rules.png",
     },
     {
-        "metric": "variables",
-        "title": "Propositional Variables",
-        "ylabel": "Variables (millions)",
-        "description": "Size of the propositional search space",
-        "filename": "variables_comparison.png",
+        "metric": "ground_lines",
+        "title": "Ground Text Lines",
+        "ylabel": "Lines in --text output (millions)",
+        "description": "Diagnostic line count of clingo --text output; solver rule counts are taken from clingo stats.",
+        "filename": "ground_program_lines.png",
     },
     {
         "metric": "memory_mb",
@@ -229,13 +233,6 @@ PLOT_CONFIGS = [
         "description": "Standard: native #heuristic directives\nLazy: __heuristic facts passed to the propagator",
         "filename": "combined_heuristics.png",
     },
-    {
-        "metric": "ground_facts",
-        "title": "Ground Facts",
-        "ylabel": "Ground facts",
-        "description": "Facts in --text output, including __heuristic facts",
-        "filename": "ground_facts.png",
-    },
 ]
 
 PLOT_CONFIG_BY_METRIC = {
@@ -252,9 +249,7 @@ MAIN_PLOT_LAYOUT = [
     PLOT_CONFIG_BY_METRIC["conflicts"],
     PLOT_CONFIG_BY_METRIC["restarts"],
     PLOT_CONFIG_BY_METRIC["solving_ms_per_choice"],
-    PLOT_CONFIG_BY_METRIC["ground_lines"],
-    PLOT_CONFIG_BY_METRIC["variables"],
-    PLOT_CONFIG_BY_METRIC["ground_facts"],
+    PLOT_CONFIG_BY_METRIC["rules"],
     PLOT_CONFIG_BY_METRIC["combined_heuristics"],
 ]
 
@@ -284,7 +279,7 @@ BSP_THEME = {
         "gc_noheur": "G&S + Clingo sem (no heur)",
         "gc": "G&S + Clingo sem",
         "ga": "G&S + Alpha sem",
-        "ga_dyn": "G&S + Alpha sem + Dyn Aggr",
+        "ga_weak": "G&S + Alpha sem (weak)",
         "la": "Lazy + Alpha sem",
         "lc": "Lazy + Clingo sem",
         "la_aux": "Lazy + Alpha sem + Aux",
@@ -294,7 +289,7 @@ BSP_THEME = {
         "gc_noheur": "encodings/BSP/BSP_gc_noheur.lp",
         "gc": "encodings/BSP/BSP_gc.lp",
         "ga": "encodings/BSP/BSP_ga.lp",
-        "ga_dyn": "encodings/BSP/BSP_ga_dyn.lp",
+        "ga_weak": "encodings/BSP/BDP_ga_weak.lp",
         "la": "encodings/BSP/BSP_la.lp",
         "lc": "encodings/BSP/BSP_lc.lp",
         "la_aux": "encodings/BSP/BSP_la_aux.lp",
@@ -304,7 +299,7 @@ BSP_THEME = {
         "gc_noheur": "#34495E",
         "gc":  "#E74C3C",
         "ga": "#F39C12",
-        "ga_dyn": "#D68910",
+        "ga_weak": "#D68910",
         "la":   "#2ECC71",
         "lc": "#9B59B6",
         "la_aux": "#16A085",
@@ -314,7 +309,7 @@ BSP_THEME = {
         "gc_noheur": "X",
         "gc":  "o",
         "ga": "^",
-        "ga_dyn": "v",
+        "ga_weak": "v",
         "la":   "o",
         "lc": "s",
         "la_aux": "^",
@@ -324,13 +319,16 @@ BSP_THEME = {
         "gc_noheur": ":",
         "gc": "--",
         "ga": "--",
-        "ga_dyn": "--",
+        "ga_weak": "--",
         "la": "-",
         "lc": "-",
         "la_aux": "-",
         "la_co": "-.",
     },
-    "variant_order": ["gc_noheur", "gc", "ga", "ga_dyn", "la", "lc", "la_aux", "la_co"],
+    "variant_order": ["gc_noheur", "gc", "ga", "ga_weak", "la", "lc", "la_aux", "la_co"],
+    "include_zero_metric_variants": {
+        "combined_heuristics": ["gc_noheur"],
+    },
     "xlabel": "Problem size (N)",
     "suptitle": "BSP Benchmark: Standard vs Lazy Heuristic Grounding",
     "baseline": "gc_noheur",
@@ -544,6 +542,172 @@ def compute_stats(raw):
     return result
 
 
+def _load_random_variability_rows(csv_path: str, theme: dict):
+
+    data = defaultdict(
+        lambda: defaultdict(
+            lambda: defaultdict(
+                lambda: defaultdict(lambda: defaultdict(list))
+            )
+        )
+    )
+    supported_variants = set(theme.get("variant_order", []))
+
+    with open(csv_path, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            variant = row.get("variant", "").strip()
+            if variant not in supported_variants:
+                continue
+
+            solver_status = row.get("solver_status", row.get("status", "")).strip()
+            if solver_status and solver_status != "ok":
+                continue
+
+            try:
+                n = int(row["n"])
+                seed = int(row.get("seed", "0"))
+            except (KeyError, TypeError, ValueError):
+                continue
+
+            setting = row.get("setting", "").strip() or "seed_only"
+            for metric, _title, _ylabel in RANDOM_VARIABILITY_METRICS:
+                value_text = row.get(metric, "").strip()
+                if value_text in ("", "NA"):
+                    continue
+                try:
+                    value = float(value_text)
+                except ValueError:
+                    continue
+                data[setting][metric][variant][seed][n].append(value)
+
+    return data
+
+
+def _has_random_variability_data(setting_data: dict) -> bool:
+
+    for metric_data in setting_data.values():
+        for variant_data in metric_data.values():
+            if len(variant_data) > 1:
+                return True
+    return False
+
+
+def _setting_display_name(setting: str) -> str:
+
+    return setting.replace("_", " ")
+
+
+def generate_random_variability_graphs(csv_path: str, graphs_dir: str, theme: dict) -> None:
+
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        return
+
+    random_data = _load_random_variability_rows(csv_path, theme)
+    if not random_data:
+        return
+
+    for setting in sorted(random_data):
+        setting_data = random_data[setting]
+        if not _has_random_variability_data(setting_data):
+            continue
+
+        fig, axes = plt.subplots(2, 2, figsize=(13, 8.4))
+        axes_flat = axes.flatten()
+        plotted_any = False
+
+        for ax, (metric, title, ylabel) in zip(axes_flat, RANDOM_VARIABILITY_METRICS):
+            metric_data = setting_data.get(metric, {})
+            has_data = False
+            for variant in _ordered_variants(metric_data, theme):
+                variant_data = metric_data.get(variant, {})
+                if not variant_data:
+                    continue
+
+                color = theme["variant_colors"].get(variant)
+                marker = theme["variant_markers"].get(variant, "o")
+                linestyle = _variant_linestyle(variant, theme)
+                per_n = defaultdict(list)
+
+                for seed, n_values in sorted(variant_data.items()):
+                    xs = sorted(n_values)
+                    ys = [
+                        sum(n_values[n]) / len(n_values[n])
+                        for n in xs
+                    ]
+                    if not xs:
+                        continue
+                    has_data = True
+                    plotted_any = True
+                    for n, value in zip(xs, ys):
+                        per_n[n].append(value)
+                    ax.plot(
+                        xs,
+                        ys,
+                        color=color,
+                        linewidth=0.9,
+                        alpha=0.28,
+                        marker=marker,
+                        markersize=3,
+                        markeredgewidth=0,
+                        label="_nolegend_",
+                    )
+
+                if per_n:
+                    xs = sorted(per_n)
+                    ys = [sum(per_n[n]) / len(per_n[n]) for n in xs]
+                    ax.plot(
+                        xs,
+                        ys,
+                        color=color,
+                        linestyle=linestyle,
+                        linewidth=2.2,
+                        marker=marker,
+                        markersize=5,
+                        markeredgecolor="white",
+                        markeredgewidth=0.7,
+                        label=theme["variant_labels"].get(variant, variant),
+                    )
+
+            ax.set_title(title, fontsize=12, fontweight="bold")
+            ax.set_xlabel(theme.get("xlabel", "Problem size (N)"))
+            ax.set_ylabel(ylabel)
+            ax.grid(True, alpha=0.3, linestyle="--")
+            _apply_y_axis_format(ax, metric)
+            if has_data:
+                ax.legend(fontsize=8)
+            else:
+                ax.text(
+                    0.5,
+                    0.5,
+                    "No data",
+                    transform=ax.transAxes,
+                    ha="center",
+                    va="center",
+                    fontsize=12,
+                    color="#AAA",
+                )
+
+        if not plotted_any:
+            plt.close(fig)
+            continue
+
+        fig.suptitle(
+            "BSP Randomized Search Variability\n"
+            f"setting: {_setting_display_name(setting)}; thin lines are individual seeds, thick lines are seed means",
+            fontsize=14,
+            fontweight="bold",
+        )
+        plt.tight_layout(rect=[0, 0.02, 1, 0.94], h_pad=2.8, w_pad=2.5)
+        filename = f"random_variability{_filename_suffix(setting)}.png"
+        out_path = os.path.join(graphs_dir, filename)
+        plt.savefig(out_path, dpi=200, bbox_inches="tight")
+        plt.close(fig)
+        print(f"  Random variability chart saved to '{out_path}'.")
+
+
 VARIANT_FILL_ALPHA = 0.15
 CAPTION_COLOR = "#5F6368"
 SEPARATOR_COLOR = "#D6D6D6"
@@ -585,9 +749,17 @@ MILLION_SUFFIX_FORMAT_METRICS = {
 }
 MILLION_FORMAT_METRICS = {
     "ground_lines",
+    "rules",
     "variables",
     "combined_heuristics",
 }
+
+RANDOM_VARIABILITY_METRICS = [
+    ("total_s", "Total Time", "Time (seconds)"),
+    ("solving_s", "Solving Time", "Time (seconds)"),
+    ("choices", "Choices", "Number of choices"),
+    ("conflicts", "Conflicts", "Number of conflicts"),
+]
 
 
 def _add_axis_caption(ax, description: str, *, y: float, width: int, fontsize: int):
@@ -718,17 +890,20 @@ def _has_positive_metric(stats: dict, variant: str, metric: str) -> bool:
     return any(value > 0 for value in data.get("mean", []))
 
 
-def _include_variant_for_metric(stats: dict, variant: str, metric: str) -> bool:
+def _include_variant_for_metric(stats: dict, variant: str, metric: str, theme: dict | None = None) -> bool:
 
     if metric == "ground_heuristics":
         return _has_positive_metric(stats, variant, "ground_heuristics")
     if metric == "ground_lazy_heuristic_facts":
         return _has_positive_metric(stats, variant, "ground_lazy_heuristic_facts")
     if metric == "combined_heuristics":
-        return (
+        if (
             _has_positive_metric(stats, variant, "ground_heuristics") or
             _has_positive_metric(stats, variant, "ground_lazy_heuristic_facts")
-        )
+        ):
+            return True
+        zero_metric_variants = (theme or {}).get("include_zero_metric_variants", {})
+        return variant in set(zero_metric_variants.get(metric, []))
     return True
 
 
@@ -742,7 +917,7 @@ def _shared_y_scale_limits(stats: dict, theme: dict, metrics) -> tuple | None:
 
     for metric in metrics:
         for variant in _ordered_variants(stats, theme):
-            if not _include_variant_for_metric(stats, variant, metric):
+            if not _include_variant_for_metric(stats, variant, metric, theme):
                 continue
             data = stats.get(variant, {}).get(metric)
             if not data:
@@ -1295,8 +1470,10 @@ def _variant_dir_identifier(theme: dict, variant: str) -> str:
     if filename:
         basename = os.path.basename(filename.replace("\\", "/"))
         stem, _ = os.path.splitext(basename)
-        if stem.startswith("BSP_"):
-            stem = stem[len("BSP_"):]
+        for prefix in ("BSP_", "BDP_"):
+            if stem.startswith(prefix):
+                stem = stem[len(prefix):]
+                break
         return stem.lower()
     return variant.lower()
 
@@ -1433,7 +1610,7 @@ def generate_graphs(
         series = []
 
         for variant in variants:
-            if not _include_variant_for_metric(stats, variant, metric):
+            if not _include_variant_for_metric(stats, variant, metric, theme):
                 continue
             if metric not in stats[variant]:
                 continue
@@ -1610,7 +1787,7 @@ def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, description
     series = []
 
     for variant in variants:
-        if not _include_variant_for_metric(stats, variant, metric):
+        if not _include_variant_for_metric(stats, variant, metric, theme):
             continue
         if metric not in stats[variant]:
             continue
@@ -2089,7 +2266,7 @@ def _generate_relative_vs_baseline_chart(stats, graphs_dir, baseline_variant, th
     ax_reduction.set_ylabel("Reduction (%)")
     ax_reduction.grid(True, alpha=0.3, linestyle="--")
     ax_reduction.legend(fontsize=8, ncol=2)
-    reduction_domain = _all_metric_ns(stats, ["ground_lines", "rules", "variables"])
+    reduction_domain = _all_metric_ns(stats, ["rules", "ground_lines", "variables"])
     if reduction_domain:
         ax_reduction.set_xlim(min(reduction_domain), max(reduction_domain))
 
@@ -2344,11 +2521,11 @@ def _aligned_metric_pair(stats, baseline_variant, variant, metric):
 def _preferred_ground_size_metric(stats, baseline_variant, variant):
 
     if (
-        "ground_lines" in stats.get(baseline_variant, {}) and
-        "ground_lines" in stats.get(variant, {})
+        "rules" in stats.get(baseline_variant, {}) and
+        "rules" in stats.get(variant, {})
     ):
-        return "ground_lines"
-    return "rules"
+        return "rules"
+    return "ground_lines"
 
 
 def _detect_seeds(stats):
@@ -2550,6 +2727,8 @@ def process_csv(csv_path, graphs_dir, theme, problem_name, title_suffix="", excl
 
     print_summary_table(stats, theme)
     generate_graphs(stats, graphs_dir, theme, title_suffix=title_suffix)
+    if problem_name.startswith("BSP"):
+        generate_random_variability_graphs(csv_path, graphs_dir, theme)
     return True
 
 
@@ -2615,13 +2794,13 @@ def parse_args():
 
   {opt("--exclude SELECTOR")}
       Exclude matching variants for the selected --type. Accepts exact filenames with
-      extension, variant ids such as ga_dyn/la_co, or compact file stems:
+      extension, variant ids such as ga_weak/la_co, or compact file stems:
       lowercase, without spaces, underscores, or extension. Can be repeated
       or comma-separated.
 
 {heading("Selector examples")}
   {value("la_co")}                     BSP variant id.
-  {value("ga_dyn,la_aux")}             comma-separated BSP variant ids.
+  {value("ga_weak,la_aux")}            comma-separated BSP variant ids.
   {value("BSP_ga.lp")}                  exact filename.
   {value("bspga")}                      compact BSP file stem.
   {value("PUP_double_aux_l.lp")}        exact filename.
@@ -2637,7 +2816,7 @@ def parse_args():
   {cmd("%(prog)s --type bsp --exclude BSP_lc.lp")}
       Exclude the BSP_lc.lp variant from a separate BSP graph set.
 
-  {cmd("%(prog)s --type bsp --exclude la_co,ga_dyn,la_aux")}
+  {cmd("%(prog)s --type bsp --exclude la_co,ga_weak,la_aux")}
       Exclude several BSP variants with a comma-separated list.
 
   {cmd("%(prog)s --type bsp --exclude la --exclude gc_noheur")}
@@ -2669,7 +2848,7 @@ def parse_args():
         metavar="SELECTOR",
         help=(
             "Exclude variants for the selected --type. Accepts exact filenames with extension "
-            "variant ids such as ga_dyn/la_co, or compact file stems: lowercase, "
+            "variant ids such as ga_weak/la_co, or compact file stems: lowercase, "
             "without spaces, underscores, or extension. Repeat it or use comma-separated "
             "values."
         ),

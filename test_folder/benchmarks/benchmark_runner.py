@@ -5,6 +5,7 @@ import csv
 import json
 import os
 import resource
+import shlex
 import signal
 import subprocess
 import sys
@@ -16,6 +17,8 @@ CSV_FIELDS = [
     "n",
     "variant",
     "seed",
+    "setting",
+    "clingo_extra_args",
     "status",
     "solver_status",
     "ground_status",
@@ -95,6 +98,7 @@ def build_clingo_command(args, clingo: str, *, json_mode: bool) -> list[str]:
     if json_mode:
         cmd.extend(["--outf=2", "--stats=2", f"--seed={args.seed}", "-n", str(args.models)])
         cmd.append(f"--time-limit={args.timeout}")
+        cmd.extend(args.clingo_option)
     else:
         cmd.append("--text")
     return cmd
@@ -277,12 +281,18 @@ def append_csv(csv_path: str, row: dict[str, str]):
 def run_benchmark(args) -> int:
     clingo = find_clingo(args.clingo)
     json_cmd = build_clingo_command(args, clingo, json_mode=True)
-    row = {"n": args.size, "variant": args.variant, "seed": str(args.seed)}
+    row = {
+        "n": args.size,
+        "variant": args.variant,
+        "seed": str(args.seed),
+        "setting": args.setting,
+        "clingo_extra_args": shlex.join(args.clingo_option) if args.clingo_option else "",
+    }
     status = "ok"
     failure_reason = ""
     exit_code = EXIT_OK
 
-    print(f"  [seed={args.seed}] {' '.join(json_cmd)}")
+    print(f"  [setting={args.setting} seed={args.seed}] {' '.join(json_cmd)}")
     try:
         proc = run_command(json_cmd, args.timeout + 5, args.memory_bytes)
     except subprocess.TimeoutExpired:
@@ -377,6 +387,18 @@ def parse_args():
     parser.add_argument("--variant", required=True, help="Variant label written to the CSV.")
     parser.add_argument("--size", required=True, help="Instance size written to the CSV n column.")
     parser.add_argument("--seed", type=int, required=True, help="Clingo random seed.")
+    parser.add_argument(
+        "--setting",
+        default="seed_only",
+        help="Randomization setting label written to the CSV.",
+    )
+    parser.add_argument(
+        "--clingo-option",
+        action="append",
+        default=[],
+        metavar="ARG",
+        help="Extra option passed to the JSON/statistics clingo run. Can be repeated.",
+    )
     parser.add_argument("--semantics", default="native", help="Semantic label for logs and benchmark configs.")
     parser.add_argument("--csv", required=True, help="CSV file to append.")
     parser.add_argument("--models", type=int, default=DEFAULT_MODELS, help=f"Number of models requested. Default: {DEFAULT_MODELS}.")
