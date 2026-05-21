@@ -558,6 +558,10 @@ OFFSET_METRICS = {
     "variables",
 }
 ENDPOINT_LABEL_METRICS = {
+    "grounding_s",
+    "solving_ms_per_choice",
+    "ground_lines",
+    "memory_mb",
     "ground_lazy_heuristic_facts",
     "ground_heuristics",
     "combined_heuristics",
@@ -1736,17 +1740,15 @@ def _plot_grounding_time_vs_heuristic_size(ax, stats, theme) -> bool:
 def _plot_lazy_solving_overhead(ax, stats, theme) -> bool:
 
     has_data = False
-    for standard, lazy in _available_lazy_solving_overhead_pairs(stats, theme):
-        n_vals, standard_solving, lazy_solving = _aligned_cross_metric_pair(
-            stats,
-            standard,
-            "solving_s",
-            lazy,
-            "solving_s",
-        )
+    pairs = _available_lazy_solving_overhead_pairs(stats, theme)
+    common_n = _common_lazy_solving_overhead_ns(stats, pairs)
+    for standard, lazy in pairs:
+        standard_map = _metric_mean_map(stats, standard, "solving_s")
+        lazy_map = _metric_mean_map(stats, lazy, "solving_s")
+        n_vals = common_n
         ratios = [
-            _positive_ratio(laz, std)
-            for std, laz in zip(standard_solving, lazy_solving)
+            _positive_ratio(lazy_map[n], standard_map[n])
+            for n in n_vals
         ]
         if not _has_positive_finite(ratios):
             continue
@@ -1767,10 +1769,29 @@ def _plot_lazy_solving_overhead(ax, stats, theme) -> bool:
     ax.axhline(1.0, color="#555", linewidth=1, linestyle="--")
     if has_data:
         ax.set_yscale("log")
-        domain = _all_metric_ns(stats, ["solving_s"])
-        if domain:
-            ax.set_xlim(min(domain), max(domain))
+        ax.set_xlim(min(common_n), max(common_n))
     return has_data
+
+
+def _common_lazy_solving_overhead_ns(stats, pairs):
+
+    import math
+
+    common_n = None
+    for standard, lazy in pairs:
+        standard_map = _metric_mean_map(stats, standard, "solving_s")
+        lazy_map = _metric_mean_map(stats, lazy, "solving_s")
+        valid_n = {
+            n
+            for n in set(standard_map.keys()) & set(lazy_map.keys())
+            if (
+                math.isfinite(ratio := _positive_ratio(lazy_map[n], standard_map[n]))
+                and ratio > 0
+            )
+        }
+        common_n = valid_n if common_n is None else common_n & valid_n
+
+    return sorted(common_n or [])
 
 
 def _available_lazy_solving_overhead_pairs(stats, theme):
