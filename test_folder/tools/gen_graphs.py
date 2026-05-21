@@ -2676,7 +2676,16 @@ def ensure_plot_dependencies():
         sys.exit(1)
 
 
-def process_csv(csv_path, graphs_dir, theme, problem_name, title_suffix="", excluded_variants=None):
+def process_csv(
+    csv_path,
+    graphs_dir,
+    theme,
+    problem_name,
+    title_suffix="",
+    excluded_variants=None,
+    *,
+    include_random_variability=False,
+):
 
     if not os.path.isfile(csv_path):
         print(f"\n[SKIP] {problem_name}: CSV non trovato: '{csv_path}'")
@@ -2727,7 +2736,7 @@ def process_csv(csv_path, graphs_dir, theme, problem_name, title_suffix="", excl
 
     print_summary_table(stats, theme)
     generate_graphs(stats, graphs_dir, theme, title_suffix=title_suffix)
-    if problem_name.startswith("BSP"):
+    if include_random_variability:
         generate_random_variability_graphs(csv_path, graphs_dir, theme)
     return True
 
@@ -2760,6 +2769,9 @@ def parse_args():
   {cmd("%(prog)s --type bsp")}
       Generate only standard BSP charts.
 
+  {cmd("%(prog)s --type bsp_random")}
+      Generate only randomized BSP charts from bsp_random_results.csv.
+
   {cmd("%(prog)s --type bsp --exclude bspga,bspgcnoheur")}
       Generate BSP charts in a separate exclusion directory, without the
       selected variants.
@@ -2769,6 +2781,7 @@ def parse_args():
 
 {heading("Expected CSV files")}
   {value("bsp_results.csv")}          BSP benchmark results.
+  {value("bsp_random_results.csv")}   Randomized BSP benchmark results.
   {value("pup_double_results.csv")}   PUP Double-family benchmark results.
   {value("pup_doublev_results.csv")}  PUP DoubleV-family benchmark results.
   {value("results.csv")}              legacy BSP fallback.
@@ -2776,6 +2789,7 @@ def parse_args():
 {heading("Output directories")}
   {value("results/graphs/bsp/standard/")}      BSP charts with all variants.
   {value("results/graphs/bsp/no_<variant>/")}  BSP charts with selected variants removed.
+  {value("results/graphs/bsp_random/standard/")}  Randomized BSP charts.
   {value("results/graphs/pup/")}               PUP Double and DoubleV charts.
 
 {heading("Options")}
@@ -2785,7 +2799,7 @@ def parse_args():
   {opt("--out DIR")}
       Base output directory for generated PNG charts. Default: graphs.
 
-  {opt("--type {bsp,pup}")}
+  {opt("--type {bsp,bsp_random,pup}")}
       Restrict generation to one benchmark family. Required when using
       --exclude.
 
@@ -2855,7 +2869,7 @@ def parse_args():
     )
     parser.add_argument(
         "--type",
-        choices=("bsp", "pup"),
+        choices=("bsp", "bsp_random", "pup"),
         default=None,
         help=(
             "Generate only one benchmark family. Required when using --exclude. "
@@ -2873,7 +2887,7 @@ def parse_args():
     if args.reset and (args.type or exclude_selectors):
         parser.error("--reset deve essere usato da solo: non combinare --reset con --type o --exclude.")
     if exclude_selectors and not args.type:
-        parser.error("--exclude richiede --type bsp oppure --type pup.")
+        parser.error("--exclude richiede --type bsp, --type bsp_random oppure --type pup.")
     return args
 
 
@@ -2908,6 +2922,33 @@ def process_bsp(results_dir, base_out, exclude_selectors):
         exclusion_dir_name(bsp_theme, bsp_excluded, bsp_user_excluded_order),
     )
     return process_csv(bsp_csv, bsp_out, bsp_theme, bsp_label, excluded_variants=bsp_excluded)
+
+
+def process_bsp_random(results_dir, base_out, exclude_selectors):
+    bsp_csv = os.path.join(results_dir, "bsp_random_results.csv")
+    bsp_theme, _, _ = build_themes()
+    bsp_theme["suptitle"] = "BSP Randomized Search Sensitivity"
+
+    bsp_user_excluded_order = resolve_excluded_variant_list_quiet(
+        bsp_theme,
+        exclude_selectors,
+    )
+    bsp_excluded = set(bsp_user_excluded_order)
+    bsp_label = "BSP Randomized Search"
+    bsp_out = os.path.join(
+        base_out,
+        "bsp_random",
+        exclusion_dir_name(bsp_theme, bsp_excluded, bsp_user_excluded_order),
+    )
+    return process_csv(
+        bsp_csv,
+        bsp_out,
+        bsp_theme,
+        bsp_label,
+        title_suffix="Randomized Search",
+        excluded_variants=bsp_excluded,
+        include_random_variability=True,
+    )
 
 
 def process_pup(results_dir, base_out, exclude_selectors):
@@ -2975,6 +3016,7 @@ def main():
     bsp_theme, pup_double_theme, pup_doublev_theme = build_themes()
     selected_themes = {
         "bsp": [bsp_theme],
+        "bsp_random": [bsp_theme],
         "pup": [pup_double_theme, pup_doublev_theme],
         None: [bsp_theme, pup_double_theme, pup_doublev_theme],
     }[args.type]
@@ -2991,6 +3033,7 @@ def main():
 
     expected_csvs = [
         os.path.join(results_dir, "bsp_results.csv"),
+        os.path.join(results_dir, "bsp_random_results.csv"),
         os.path.join(results_dir, "pup_double_results.csv"),
         os.path.join(results_dir, "pup_doublev_results.csv"),
         os.path.join(results_dir, "results.csv"),
@@ -3001,6 +3044,10 @@ def main():
     processed_any = False
     if args.type in (None, "bsp"):
         if process_bsp(results_dir, base_out, global_exclude_selectors):
+            processed_any = True
+
+    if args.type in (None, "bsp_random"):
+        if process_bsp_random(results_dir, base_out, global_exclude_selectors):
             processed_any = True
 
     if args.type in (None, "pup"):

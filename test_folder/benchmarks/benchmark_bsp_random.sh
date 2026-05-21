@@ -21,19 +21,19 @@
 #
 # Parametri di default
 # --------------------
-#   BSP_VARIANTS = "la lc ga gc"
+#   DEFAULT_BSP_VARIANTS = "la lc ga gc"
 #       Confronta le due varianti lazy dirette e le due ground-and-solve piu'
 #       rilevanti. Si tiene fuori il resto per mantenere il test piccolo e
 #       leggibile.
 #
-#   REPEATS = 3
+#   DEFAULT_REPEATS = 3
 #       Esegue i seed 1, 2 e 3. Nel CSV ogni riga conserva il seed usato.
 #
-#   N_START=40, N_END=100, N_STEP=30
+#   DEFAULT_N_START=40, DEFAULT_N_END=100, DEFAULT_N_STEP=30
 #       Usa tre dimensioni: 40, 70 e 100. Sono abbastanza distanti da mostrare
 #       l'andamento senza trasformare questo esperimento in un benchmark enorme.
 #
-#   BSP_RANDOM_SETTINGS =
+#   DEFAULT_BSP_RANDOM_SETTINGS =
 #       seed_only:
 #           configurazione di controllo. Cambia solo --seed.
 #
@@ -44,15 +44,18 @@
 #
 # Output atteso
 # -------------
-# Lo script delega tutto a benchmark_bsp.sh, quindi produce il solito CSV:
-#   test_folder/results/bsp_results.csv
+# Lo script delega tutto a benchmark_bsp.sh, ma usa file dedicati per non
+# sovrascrivere il benchmark BSP completo:
+#   test_folder/results/bsp_random_results.csv
+#   test_folder/results/run_random_metadata.json
+#   test_folder/results/bsp_random_failures.txt
 #
 # Le colonne importanti per questa analisi sono:
 #   setting, seed, total_s, solving_s, choices, conflicts
 #
 # I grafici generati da generate_graphs.sh includono anche:
-#   random_variability_seed_only.png
-#   random_variability_rand_freq_0_01.png
+#   test_folder/results/graphs/bsp_random/standard/random_variability_seed_only.png
+#   test_folder/results/graphs/bsp_random/standard/random_variability_rand_freq_0_01.png
 #
 # Come leggerli
 # -------------
@@ -67,12 +70,35 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+TEST_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-export BSP_VARIANTS="${BSP_VARIANTS:-la lc ga gc}"
-export REPEATS="${REPEATS:-3}"
-export N_START="${N_START:-40}"
-export N_END="${N_END:-100}"
-export N_STEP="${N_STEP:-30}"
-export BSP_RANDOM_SETTINGS="${BSP_RANDOM_SETTINGS:-seed_only: rand_freq_0_01:--rand-freq=0.01}"
+# ==============================================================================
+# PARAMETRI MODIFICABILI
+#
+# Cambia questi valori per definire la matrice randomizzata di default.
+# Puoi ancora sovrascriverli da shell, per esempio:
+#   DEFAULT_REPEATS=5 ./benchmark_bsp_random.sh
+#   BSP_VARIANTS="la gc" ./benchmark_bsp_random.sh
+# ==============================================================================
+DEFAULT_BSP_VARIANTS="${DEFAULT_BSP_VARIANTS:-la lc ga gc}"
+DEFAULT_REPEATS="${DEFAULT_REPEATS:-3}"
+DEFAULT_N_START="${DEFAULT_N_START:-40}"
+DEFAULT_N_END="${DEFAULT_N_END:-100}"
+DEFAULT_N_STEP="${DEFAULT_N_STEP:-30}"
+DEFAULT_BSP_RANDOM_SETTINGS="${DEFAULT_BSP_RANDOM_SETTINGS:-seed_only: rand_freq_0_01:--rand-freq=0.01}"
+DEFAULT_RANDOM_CSV="${DEFAULT_RANDOM_CSV:-${TEST_ROOT}/results/bsp_random_results.csv}"
+DEFAULT_RANDOM_METADATA="${DEFAULT_RANDOM_METADATA:-${TEST_ROOT}/results/run_random_metadata.json}"
+DEFAULT_RANDOM_FAILURES="${DEFAULT_RANDOM_FAILURES:-${TEST_ROOT}/results/bsp_random_failures.txt}"
+# ==============================================================================
+
+export BSP_VARIANTS="${BSP_VARIANTS:-${DEFAULT_BSP_VARIANTS}}"
+export REPEATS="${REPEATS:-${DEFAULT_REPEATS}}"
+export N_START="${N_START:-${DEFAULT_N_START}}"
+export N_END="${N_END:-${DEFAULT_N_END}}"
+export N_STEP="${N_STEP:-${DEFAULT_N_STEP}}"
+export BSP_RANDOM_SETTINGS="${BSP_RANDOM_SETTINGS:-${DEFAULT_BSP_RANDOM_SETTINGS}}"
+export BSP_RESULTS_CSV="${BSP_RESULTS_CSV:-${DEFAULT_RANDOM_CSV}}"
+export BSP_METADATA_FILE="${BSP_METADATA_FILE:-${DEFAULT_RANDOM_METADATA}}"
+export BSP_FAILURES_FILE="${BSP_FAILURES_FILE:-${DEFAULT_RANDOM_FAILURES}}"
 
 exec "${SCRIPT_DIR}/benchmark_bsp.sh" "$@"

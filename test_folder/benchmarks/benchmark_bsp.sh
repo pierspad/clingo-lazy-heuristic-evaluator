@@ -71,8 +71,9 @@ export BSP_RANDOM_SETTINGS_EFFECTIVE
 ENC_DIR="${TEST_ROOT}/encodings/BSP"
 INSTANCE_RANGE="${TEST_ROOT}/instances/BSP_instances/BSP_range.lp"
 RESULTS_DIR="${TEST_ROOT}/results"
-CSV_FILE="${RESULTS_DIR}/bsp_results.csv"
-METADATA_FILE="${RESULTS_DIR}/run_metadata.json"
+CSV_FILE="${BSP_RESULTS_CSV:-${RESULTS_DIR}/bsp_results.csv}"
+METADATA_FILE="${BSP_METADATA_FILE:-${RESULTS_DIR}/run_metadata.json}"
+FAILURES_FILE="${BSP_FAILURES_FILE:-${RESULTS_DIR}/bsp_failures.txt}"
 
 declare -A VARIANT_FILES=(
     [gc_noheur]="${ENC_DIR}/BSP_gc_noheur.lp"
@@ -414,6 +415,7 @@ if [ "${#SETTING_NAMES[@]}" -eq 0 ]; then
 fi
 
 mkdir -p "${RESULTS_DIR}"
+mkdir -p "$(dirname "${CSV_FILE}")" "$(dirname "${METADATA_FILE}")" "$(dirname "${FAILURES_FILE}")"
 rm -f "${CSV_FILE}"
 write_run_metadata "${METADATA_FILE}"
 
@@ -521,20 +523,20 @@ done
 echo ""
 echo "Benchmark BSP completato. ${current_run} esecuzioni totali."
 if [ "${STOP_VARIANT_ON_LIMIT}" = "1" ]; then
-    > "${RESULTS_DIR}/bsp_failures.txt"
+    > "${FAILURES_FILE}"
     for setting in "${SETTING_NAMES[@]}"; do
         for variant in "${ENABLED_VARIANTS[@]}"; do
             variant_key="${setting}:${variant}"
             if [ "${VARIANT_STOPPED_BY_LIMIT[${variant_key}]}" = "1" ]; then
                 fn="${VARIANT_LIMIT_N[${variant_key}]}"
                 fr="${VARIANT_LIMIT_REASON[${variant_key}]}"
-                echo -e "${fn}\t${setting}\t${variant}\t${fr}" >> "${RESULTS_DIR}/bsp_failures.txt"
+                echo -e "${fn}\t${setting}\t${variant}\t${fr}" >> "${FAILURES_FILE}"
             fi
         done
     done
-    if [ -s "${RESULTS_DIR}/bsp_failures.txt" ]; then
+    if [ -s "${FAILURES_FILE}" ]; then
         echo "=== REPORT FALLIMENTI BSP (ordinato per N crescente) ==="
-        sort -n "${RESULTS_DIR}/bsp_failures.txt" | while read -r fn fs fv fr; do
+        sort -n "${FAILURES_FILE}" | while read -r fn fs fv fr; do
             echo " - Variante '${fv}' (${fs}) ha fallito a N=${fn} causa: ${fr}"
         done
         echo "========================================================"

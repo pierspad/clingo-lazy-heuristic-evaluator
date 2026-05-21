@@ -159,22 +159,33 @@ if [ "${RESET_GRAPHS}" = "1" ]; then
     "${PYTHON_BIN}" tools/gen_graphs.py --reset
 fi
 
-for graph_set in "${ACTIVE_BSP_GRAPH_SETS[@]}"; do
-    if [[ "${graph_set}" == *":"* ]]; then
-        set_name="${graph_set%%:*}"
-        excluded_variants="${graph_set#*:}"
-    else
-        set_name="custom"
-        excluded_variants="${graph_set}"
-    fi
+if [[ -f "${SCRIPT_DIR}/results/bsp_results.csv" ]]; then
+    for graph_set in "${ACTIVE_BSP_GRAPH_SETS[@]}"; do
+        if [[ "${graph_set}" == *":"* ]]; then
+            set_name="${graph_set%%:*}"
+            excluded_variants="${graph_set#*:}"
+        else
+            set_name="custom"
+            excluded_variants="${graph_set}"
+        fi
 
-    if [[ -z "${excluded_variants}" || "${excluded_variants}" == "__standard__" ]]; then
-        echo "Genero grafici BSP '${set_name}' senza esclusioni."
-        "${PYTHON_BIN}" tools/gen_graphs.py --type bsp
-    else
-        echo "Genero grafici BSP '${set_name}' escludendo: ${excluded_variants}"
-        "${PYTHON_BIN}" tools/gen_graphs.py --type bsp --exclude "${excluded_variants}"
-    fi
-done
+        if [[ -z "${excluded_variants}" || "${excluded_variants}" == "__standard__" ]]; then
+            echo "Genero grafici BSP '${set_name}' senza esclusioni."
+            "${PYTHON_BIN}" tools/gen_graphs.py --type bsp
+        else
+            echo "Genero grafici BSP '${set_name}' escludendo: ${excluded_variants}"
+            "${PYTHON_BIN}" tools/gen_graphs.py --type bsp --exclude "${excluded_variants}"
+        fi
+    done
+else
+    echo "CSV BSP completo non trovato: salto results/graphs/bsp."
+fi
+
+if [[ -f "${SCRIPT_DIR}/results/bsp_random_results.csv" ]]; then
+    echo "Genero grafici BSP randomici da bsp_random_results.csv."
+    "${PYTHON_BIN}" tools/gen_graphs.py --type bsp_random
+else
+    echo "CSV BSP randomico non trovato: salto results/graphs/bsp_random."
+fi
 
 copy_graphs_to_thesis
