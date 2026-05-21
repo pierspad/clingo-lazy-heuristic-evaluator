@@ -282,6 +282,7 @@ The benchmark is orchestrated by \path{test_folder/benchmarks/benchmark_bsp.sh}.
 \mintinline{text}|ground_lazy_heuristic_facts| & Number of \mintinline{text}|__heuristic| facts.\\
 \mintinline{text}|ground_lines| & Total number of lines in the textual ground program.\\
 \mintinline{text}|choices|, \mintinline{text}|conflicts|, \mintinline{text}|restarts| & Search behaviour reported by clingo.\\
+\mintinline{text}|solving_ms_per_choice| & Derived metric computed as $1000 \cdot$ \mintinline{text}|solving_s| / \mintinline{text}|choices|.\\
 \mintinline{text}|total_s| & The \mintinline{text}|Time.Total| field from clingo JSON statistics.\\
 \mintinline{text}|solving_s| & The \mintinline{text}|Time.Solve| field.\\
 \mintinline{text}|grounding_s| & Derived estimate \mintinline{text}|Time.Total - Time.Solve|, truncated to zero after rounding.\\

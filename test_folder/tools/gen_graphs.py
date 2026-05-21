@@ -268,11 +268,11 @@ INTERPRETIVE_PLOT_CONFIGS = [
         "filename": "grounding_time_vs_heuristic_size.png",
     },
     {
-        "kind": "lazy_solving_overhead",
-        "title": "Lazy Solving Overhead",
+        "kind": "lazy_standard_solving_time_ratio",
+        "title": "Lazy / Standard Solving-Time Ratio",
         "ylabel": "Lazy / standard solving time (x)",
-        "description": "Solving-time ratio for each lazy encoding against its paired standard encoding. Values above 1 indicate solving overhead.",
-        "filename": "lazy_solving_overhead.png",
+        "description": "Solving-time ratio for each lazy encoding against its paired standard encoding. Values above 1 indicate that the lazy run took longer in solving.",
+        "filename": "lazy_standard_solving_time_ratio.png",
     },
 ]
 
@@ -339,7 +339,7 @@ BSP_THEME = {
         ("gc", "lc", "gc / lc"),
         ("ga", "la", "ga / la"),
     ],
-    "lazy_solving_overhead_pairs": [
+    "lazy_standard_solving_time_ratio_pairs": [
         ("gc", "lc"),
         ("ga", "la"),
     ],
@@ -558,16 +558,12 @@ OFFSET_METRICS = {
     "variables",
 }
 ENDPOINT_LABEL_METRICS = {
-    "grounding_s",
-    "solving_ms_per_choice",
-    "ground_lines",
-    "memory_mb",
-    "ground_lazy_heuristic_facts",
-    "ground_heuristics",
-    "combined_heuristics",
-    "ground_facts",
+    config["metric"]
+    for config in PLOT_CONFIGS
 }
 ENDPOINT_LABEL_MIN_GAP_POINTS = 9.0
+ENDPOINT_LABEL_AXIS_PAD_POINTS = 4.0
+ENDPOINT_LABEL_X_GAP_POINTS = 18.0
 SHARED_Y_SCALE_METRIC_GROUPS = (
     ("ground_heuristics", "ground_lazy_heuristic_facts"),
 )
@@ -782,7 +778,9 @@ def _shared_y_scale_limits_by_metric(stats: dict, theme: dict) -> dict:
     return limits
 
 
-def _endpoint_label_offsets(ax, series) -> dict:
+def _endpoint_label_offsets(ax, series, visual_offsets=None) -> dict:
+
+    visual_offsets = visual_offsets or {}
 
     endpoints = []
     for item in series:
@@ -790,8 +788,9 @@ def _endpoint_label_offsets(ax, series) -> dict:
         if not points:
             continue
         x, y = points[-1]
-        _, y_px = ax.transData.transform((x, y))
-        endpoints.append((y_px, item["key"]))
+        x_px, y_px = ax.transData.transform((x, y))
+        y_px += visual_offsets.get(item["key"], 0.0) * ax.figure.dpi / 72.0
+        endpoints.append((x_px, y_px, item["key"]))
 
     offsets = {item["key"]: 0.0 for item in series}
     if not endpoints:
@@ -799,31 +798,71 @@ def _endpoint_label_offsets(ax, series) -> dict:
 
     point_to_px = ax.figure.dpi / 72.0
     min_gap_px = ENDPOINT_LABEL_MIN_GAP_POINTS * point_to_px
-    endpoints.sort()
+    x_gap_px = ENDPOINT_LABEL_X_GAP_POINTS * point_to_px
 
     groups = []
-    current = [endpoints[0]]
-    for endpoint in endpoints[1:]:
-        if endpoint[0] - current[-1][0] <= min_gap_px:
-            current.append(endpoint)
-        else:
-            groups.append(current)
-            current = [endpoint]
-    groups.append(current)
+    pending = set(range(len(endpoints)))
+    while pending:
+        seed = pending.pop()
+        group_indices = [seed]
+        stack = [seed]
+        while stack:
+            left = stack.pop()
+            left_x, left_y, _ = endpoints[left]
+            connected = [
+                right
+                for right in pending
+                if (
+                    abs(endpoints[right][1] - left_y) <= min_gap_px and
+                    abs(endpoints[right][0] - left_x) <= x_gap_px
+                )
+            ]
+            for right in connected:
+                pending.remove(right)
+                stack.append(right)
+                group_indices.append(right)
+        groups.append(sorted((endpoints[index] for index in group_indices), key=lambda item: item[1]))
+
+    ylim = ax.get_ylim()
+    y0_px = ax.transData.transform((0.0, ylim[0]))[1]
+    y1_px = ax.transData.transform((0.0, ylim[1]))[1]
+    axis_min_px, axis_max_px = sorted((y0_px, y1_px))
+    axis_pad_px = ENDPOINT_LABEL_AXIS_PAD_POINTS * point_to_px
 
     for group in groups:
         if len(group) <= 1:
             continue
         center = (len(group) - 1) / 2.0
-        for idx, (_, key) in enumerate(group):
-            offsets[key] = (idx - center) * ENDPOINT_LABEL_MIN_GAP_POINTS
+        group_offsets = []
+        for idx, (_, _, key) in enumerate(group):
+            group_offsets.append((key, (idx - center) * ENDPOINT_LABEL_MIN_GAP_POINTS))
+
+        bottom_px = min(
+            y_px + offset * point_to_px
+            for (_, y_px, _), (_, offset) in zip(group, group_offsets)
+        )
+        top_px = max(
+            y_px + offset * point_to_px
+            for (_, y_px, _), (_, offset) in zip(group, group_offsets)
+        )
+        shift_px = 0.0
+        if bottom_px < axis_min_px + axis_pad_px:
+            shift_px += axis_min_px + axis_pad_px - bottom_px
+        if top_px + shift_px > axis_max_px - axis_pad_px:
+            shift_px += axis_max_px - axis_pad_px - (top_px + shift_px)
+
+        shift_points = shift_px / point_to_px
+        for key, offset in group_offsets:
+            offsets[key] = offset + shift_points
 
     return offsets
 
 
-def _annotate_metric_endpoints(ax, series, theme, metric: str):
+def _annotate_series_endpoints(ax, series, *, label_fn, visual_offsets=None):
 
-    if metric not in ENDPOINT_LABEL_METRICS:
+    visual_offsets = visual_offsets or {}
+
+    if not series:
         return
 
     try:
@@ -831,7 +870,7 @@ def _annotate_metric_endpoints(ax, series, theme, metric: str):
     except ImportError:
         path_effects = None
 
-    offsets = _endpoint_label_offsets(ax, series)
+    offsets = _endpoint_label_offsets(ax, series, visual_offsets)
 
     for item in series:
         points = _finite_xy(item["x"], item["y"])
@@ -839,10 +878,11 @@ def _annotate_metric_endpoints(ax, series, theme, metric: str):
             continue
 
         x, y = points[-1]
+        visual_offset = visual_offsets.get(item["key"], 0.0)
         text = ax.annotate(
-            _endpoint_label(theme, item["variant"]),
+            label_fn(item),
             xy=(x, y),
-            xytext=(7, offsets.get(item["key"], 0.0)),
+            xytext=(7, visual_offset + offsets.get(item["key"], 0.0)),
             textcoords="offset points",
             color=item.get("color"),
             fontsize=item.get("fontsize", 7),
@@ -857,6 +897,19 @@ def _annotate_metric_endpoints(ax, series, theme, metric: str):
                 path_effects.Stroke(linewidth=2.5, foreground="white"),
                 path_effects.Normal(),
             ])
+
+
+def _annotate_metric_endpoints(ax, series, theme, metric: str, visual_offsets=None):
+
+    if metric not in ENDPOINT_LABEL_METRICS:
+        return
+
+    _annotate_series_endpoints(
+        ax,
+        series,
+        label_fn=lambda item: _endpoint_label(theme, item["variant"]),
+        visual_offsets=visual_offsets,
+    )
 
 
 def _expand_flat_integer_axis(ax, series, metric: str):
@@ -1425,15 +1478,15 @@ def generate_graphs(
             _expand_flat_integer_axis(ax, series, metric)
         if metric in ENDPOINT_LABEL_METRICS:
             ax.margins(x=0.12)
-            _annotate_metric_endpoints(ax, series, theme, metric)
-
-        _annotate_overlap_endpoints(
-            ax,
-            series,
-            offsets,
-            label_fn=lambda item: _endpoint_label(theme, item["variant"]),
-        )
-        if _has_visual_offsets(offsets):
+            _annotate_metric_endpoints(ax, series, theme, metric, visual_offsets=offsets)
+        else:
+            _annotate_overlap_endpoints(
+                ax,
+                series,
+                offsets,
+                label_fn=lambda item: _endpoint_label(theme, item["variant"]),
+            )
+        if _has_visual_offsets(offsets) and metric not in ENDPOINT_LABEL_METRICS:
             ax.margins(x=0.05)
 
         ax.set_title(_format_title(metric, config["title"]))
@@ -1601,15 +1654,15 @@ def _generate_single_chart(stats, graphs_dir, metric, title, ylabel, description
         _expand_flat_integer_axis(ax, series, metric)
     if metric in ENDPOINT_LABEL_METRICS:
         ax.margins(x=0.12)
-        _annotate_metric_endpoints(ax, series, theme, metric)
-
-    _annotate_overlap_endpoints(
-        ax,
-        series,
-        offsets,
-        label_fn=lambda item: _endpoint_label(theme, item["variant"]),
-    )
-    if _has_visual_offsets(offsets):
+        _annotate_metric_endpoints(ax, series, theme, metric, visual_offsets=offsets)
+    else:
+        _annotate_overlap_endpoints(
+            ax,
+            series,
+            offsets,
+            label_fn=lambda item: _endpoint_label(theme, item["variant"]),
+        )
+    if _has_visual_offsets(offsets) and metric not in ENDPOINT_LABEL_METRICS:
         ax.margins(x=0.05)
 
     ax.set_title(title, fontsize=13, fontweight="bold")
@@ -1674,8 +1727,8 @@ def _plot_interpretive_chart_on_axis(ax, stats, theme, config, xlabel, *, compac
     kind = config["kind"]
     if kind == "grounding_time_vs_heuristic_size":
         has_data = _plot_grounding_time_vs_heuristic_size(ax, stats, theme)
-    elif kind == "lazy_solving_overhead":
-        has_data = _plot_lazy_solving_overhead(ax, stats, theme)
+    elif kind == "lazy_standard_solving_time_ratio":
+        has_data = _plot_lazy_standard_solving_time_ratio(ax, stats, theme)
     else:
         has_data = False
 
@@ -1702,6 +1755,7 @@ def _plot_interpretive_chart_on_axis(ax, stats, theme, config, xlabel, *, compac
 def _plot_grounding_time_vs_heuristic_size(ax, stats, theme) -> bool:
 
     has_data = False
+    series = []
     for variant in _ordered_variants(stats, theme):
         heuristic_size = _effective_heuristic_map(stats, variant)
         grounding = _metric_mean_map(stats, variant, "grounding_s")
@@ -1730,18 +1784,32 @@ def _plot_grounding_time_vs_heuristic_size(ax, stats, theme) -> bool:
             alpha=0.92,
             label=theme["variant_labels"].get(variant, variant),
         )
+        series.append({
+            "key": variant,
+            "variant": variant,
+            "x": x_vals,
+            "y": y_vals,
+            "color": theme["variant_colors"].get(variant),
+        })
 
     if has_data:
         ax.set_xscale("log")
         ax.set_yscale("log")
+        ax.margins(x=0.12)
+        _annotate_series_endpoints(
+            ax,
+            series,
+            label_fn=lambda item: _endpoint_label(theme, item["variant"]),
+        )
     return has_data
 
 
-def _plot_lazy_solving_overhead(ax, stats, theme) -> bool:
+def _plot_lazy_standard_solving_time_ratio(ax, stats, theme) -> bool:
 
     has_data = False
-    pairs = _available_lazy_solving_overhead_pairs(stats, theme)
-    common_n = _common_lazy_solving_overhead_ns(stats, pairs)
+    pairs = _available_lazy_standard_solving_time_ratio_pairs(stats, theme)
+    common_n = _common_lazy_standard_solving_time_ratio_ns(stats, pairs)
+    series = []
     for standard, lazy in pairs:
         standard_map = _metric_mean_map(stats, standard, "solving_s")
         lazy_map = _metric_mean_map(stats, lazy, "solving_s")
@@ -1765,15 +1833,32 @@ def _plot_lazy_solving_overhead(ax, stats, theme) -> bool:
             markeredgewidth=0.8,
             label=f"{_variant_dir_identifier(theme, lazy)} / {_variant_dir_identifier(theme, standard)}",
         )
+        series.append({
+            "key": (standard, lazy),
+            "variant": lazy,
+            "standard": standard,
+            "x": n_vals,
+            "y": ratios,
+            "color": theme["variant_colors"].get(lazy),
+        })
 
     ax.axhline(1.0, color="#555", linewidth=1, linestyle="--")
     if has_data:
         ax.set_yscale("log")
         ax.set_xlim(min(common_n), max(common_n))
+        ax.margins(x=0.12)
+        _annotate_series_endpoints(
+            ax,
+            series,
+            label_fn=lambda item: (
+                f"{_endpoint_label(theme, item['variant'])}/"
+                f"{_endpoint_label(theme, item['standard'])}"
+            ),
+        )
     return has_data
 
 
-def _common_lazy_solving_overhead_ns(stats, pairs):
+def _common_lazy_standard_solving_time_ratio_ns(stats, pairs):
 
     import math
 
@@ -1794,9 +1879,9 @@ def _common_lazy_solving_overhead_ns(stats, pairs):
     return sorted(common_n or [])
 
 
-def _available_lazy_solving_overhead_pairs(stats, theme):
+def _available_lazy_standard_solving_time_ratio_pairs(stats, theme):
 
-    configured = theme.get("lazy_solving_overhead_pairs")
+    configured = theme.get("lazy_standard_solving_time_ratio_pairs")
     if configured is None:
         configured = [
             (standard, lazy)
@@ -1917,15 +2002,6 @@ def _generate_relative_vs_baseline_chart(stats, graphs_dir, baseline_variant, th
                         markeredgecolor="white", markeredgewidth=0.8,
                         transform=transform, label=item["label"])
 
-    _annotate_overlap_endpoints(
-        ax_speedup,
-        speedup_series,
-        speedup_offsets,
-        label_fn=lambda item: _endpoint_label(theme, item["variant"]),
-    )
-    if _has_visual_offsets(speedup_offsets):
-        ax_speedup.margins(x=0.05)
-
     ax_speedup.axhline(1.0, color="#555", linewidth=1, linestyle="--")
     ax_speedup.set_title(f"Total Time Speedup vs {labels.get(baseline_variant, baseline_variant)}")
     if has_positive_speedup:
@@ -1938,6 +2014,15 @@ def _generate_relative_vs_baseline_chart(stats, graphs_dir, baseline_variant, th
     total_domain = _all_metric_ns(stats, ["total_s"])
     if total_domain:
         ax_speedup.set_xlim(min(total_domain), max(total_domain))
+    ax_speedup.margins(x=0.12)
+    _annotate_series_endpoints(
+        ax_speedup,
+        speedup_series,
+        label_fn=lambda item: _endpoint_label(theme, item["variant"]),
+        visual_offsets=speedup_offsets,
+    )
+    if _has_visual_offsets(speedup_offsets):
+        ax_speedup.margins(x=0.05)
 
     reduction_series = []
 
@@ -1988,11 +2073,12 @@ def _generate_relative_vs_baseline_chart(stats, graphs_dir, baseline_variant, th
                           markeredgecolor="white", markeredgewidth=0.8,
                           transform=transform, label=item["label"])
 
-    _annotate_overlap_endpoints(
+    ax_reduction.margins(x=0.12)
+    _annotate_series_endpoints(
         ax_reduction,
         reduction_series,
-        reduction_offsets,
         label_fn=lambda item: f"{_endpoint_label(theme, item['variant'])} {item['kind']}",
+        visual_offsets=reduction_offsets,
     )
     if _has_visual_offsets(reduction_offsets):
         ax_reduction.margins(x=0.05)
@@ -2112,21 +2198,21 @@ def _generate_heuristics_vs_facts_chart(stats, graphs_dir, theme, filename, xlab
                 markeredgecolor="white", markeredgewidth=0.8,
                 transform=transform, label=item["label"])
 
-    _annotate_overlap_endpoints(
-        ax,
-        series,
-        offsets,
-        label_fn=lambda item: f"{_endpoint_label(theme, item['variant'])} {item['kind']}",
-    )
-    if _has_visual_offsets(offsets):
-        ax.margins(x=0.05)
-
     ax.set_title("Heuristic Grounding Weight vs Other Facts", fontsize=13, fontweight="bold")
     ax.set_xlabel(xlabel, fontsize=11)
     ax.set_ylabel("Ratio (%)")
     ax.grid(True, alpha=0.3, linestyle="--")
     if has_data:
         ax.set_yscale("log")
+        ax.margins(x=0.12)
+        _annotate_series_endpoints(
+            ax,
+            series,
+            label_fn=lambda item: f"{_endpoint_label(theme, item['variant'])} {item['kind']}",
+            visual_offsets=offsets,
+        )
+        if _has_visual_offsets(offsets):
+            ax.margins(x=0.05)
         ax.legend(fontsize=8, ncol=1)
     else:
         ax.text(0.5, 0.5, "No heuristic/fact data", transform=ax.transAxes,
@@ -2203,11 +2289,12 @@ def _generate_heuristic_reduction_chart(stats, graphs_dir, baseline_variant, the
                 transform=transform,
                 label=item["label"])
 
-    _annotate_overlap_endpoints(
+    ax.margins(x=0.12)
+    _annotate_series_endpoints(
         ax,
         series,
-        offsets,
         label_fn=lambda item: _endpoint_label(theme, item["variant"]),
+        visual_offsets=offsets,
     )
     if _has_visual_offsets(offsets):
         ax.margins(x=0.05)

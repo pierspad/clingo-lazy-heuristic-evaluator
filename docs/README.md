@@ -362,17 +362,15 @@ memory_comparison.png         memoria in GB
 choices_comparison.png
 conflicts_comparison.png
 restarts_comparison.png
+solving_cost_per_choice.png
 variables_comparison.png
-heuristic_expansion_factor.png
-additional_ground_lines_vs_lazy.png
 grounding_time_vs_heuristic_size.png
-lazy_solving_overhead.png
+lazy_standard_solving_time_ratio.png
 ```
 
-I quattro grafici interpretativi finali sono anche accodati in
-`benchmark_results.png`. `additional_ground_lines_vs_lazy.png` usa la
-controparte lazy disponibile nel CSV come controllo, non una baseline separata
-senza euristiche.
+I due grafici interpretativi finali sono anche accodati in
+`benchmark_results.png`. `solving_cost_per_choice.png` e' calcolato come
+`1000 * solving_s / choices`.
 
 Nei grafici di conteggio dove curve identiche o quasi identiche si
 sovrappongono (`ground_heuristics.png`,
