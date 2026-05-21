@@ -11,9 +11,9 @@ Il CSV viene prodotto da:
     test_folder/benchmarks/benchmark_bsp.sh
     test_folder/benchmarks/benchmark_runner.py
 
-Il generatore grafici non riesegue Clingo e non inventa metriche: legge le
-colonne numeriche gia' presenti nel CSV, raggruppa per (variant, n), calcola
-media e deviazione standard sui seed, e disegna le curve.
+Il generatore grafici non riesegue Clingo: legge le colonne numeriche gia'
+presenti nel CSV, calcola solo metriche derivate esplicite, raggruppa per
+(variant, n), calcola media e deviazione standard sui seed, e disegna le curve.
 
 Origine esatta delle colonne usate nei grafici BSP
 --------------------------------------------------
@@ -71,6 +71,10 @@ Origine esatta delle colonne usate nei grafici BSP
 12. combined_heuristics
     - Non e' una colonna del CSV: viene calcolata qui come
       `ground_heuristics + ground_lazy_heuristic_facts`.
+
+13. solving_ms_per_choice
+    - Non e' una colonna del CSV: viene calcolata qui come
+      `1000 * solving_s / choices` quando il numero di scelte e' positivo.
 
 Le colonne diagnostiche `status`, `failure_reason`, `exit_code` e
 `memory_limit_hit` sono usate dallo script di benchmark per fermare una variante
@@ -130,6 +134,7 @@ LOWER_IS_BETTER_METRICS = {
     "memory_mb",
     "combined_heuristics",
     "ground_lines",
+    "solving_ms_per_choice",
 }
 
 PLOT_CONFIGS = [
@@ -156,7 +161,7 @@ PLOT_CONFIGS = [
     },
     {
         "metric": "choices",
-        "title": "Choices (Decisions)",
+        "title": "Choices",
         "ylabel": "Number of choices",
         "description": "If the lazy heuristic guides the search correctly,\nchoices should remain comparable",
         "filename": "choices_comparison.png",
@@ -174,6 +179,13 @@ PLOT_CONFIGS = [
         "ylabel": "Number of restarts",
         "description": "Number of search restarts used by CDNL",
         "filename": "restarts_comparison.png",
+    },
+    {
+        "metric": "solving_ms_per_choice",
+        "title": "Solving Cost per Choice",
+        "ylabel": "Milliseconds per decision",
+        "description": "Derived as 1000 * solving_s / choices. Lower values mean that each solver decision is cheaper.",
+        "filename": "solving_cost_per_choice.png",
     },
     {
         "metric": "ground_lines",
@@ -239,7 +251,7 @@ MAIN_PLOT_LAYOUT = [
     PLOT_CONFIG_BY_METRIC["choices"],
     PLOT_CONFIG_BY_METRIC["conflicts"],
     PLOT_CONFIG_BY_METRIC["restarts"],
-    None,
+    PLOT_CONFIG_BY_METRIC["solving_ms_per_choice"],
     PLOT_CONFIG_BY_METRIC["ground_lines"],
     PLOT_CONFIG_BY_METRIC["variables"],
     PLOT_CONFIG_BY_METRIC["ground_facts"],
@@ -247,20 +259,6 @@ MAIN_PLOT_LAYOUT = [
 ]
 
 INTERPRETIVE_PLOT_CONFIGS = [
-    {
-        "kind": "heuristic_expansion_factor",
-        "title": "Heuristic Expansion Factor",
-        "ylabel": "Standard / lazy objects (x)",
-        "description": "Number of native #heuristic directives in the standard encoding divided by lazy __heuristic facts in the paired lazy encoding.",
-        "filename": "heuristic_expansion_factor.png",
-    },
-    {
-        "kind": "additional_ground_lines_vs_lazy",
-        "title": "Additional Ground Lines vs Lazy Counterpart",
-        "ylabel": "Extra ground lines",
-        "description": "Difference in total ground-program lines between a standard encoding and its paired lazy counterpart.",
-        "filename": "additional_ground_lines_vs_lazy.png",
-    },
     {
         "kind": "grounding_time_vs_heuristic_size",
         "title": "Grounding Time vs Heuristic Objects",
@@ -339,12 +337,11 @@ BSP_THEME = {
     "heuristic_baseline": "gc",
     "comparison_pairs": [
         ("gc", "lc", "gc / lc"),
-        ("ga_dyn", "la", "ga_dyn / la"),
+        ("ga", "la", "ga / la"),
     ],
     "lazy_solving_overhead_pairs": [
         ("gc", "lc"),
-        ("ga_dyn", "la"),
-        ("gc", "la"),
+        ("ga", "la"),
     ],
 }
 
@@ -443,6 +440,11 @@ def load_csv(csv_path: str):
                     except ValueError:
                         pass
 
+            solving = row_values.get("solving_s")
+            choices = row_values.get("choices")
+            if solving is not None and choices is not None and choices > 0:
+                row_values["solving_ms_per_choice"] = 1000.0 * solving / choices
+
             legacy_failed_run = _looks_like_legacy_failed_lazy_run(row_values)
 
             solver_status = row.get("solver_status", row.get("status", "")).strip()
@@ -463,6 +465,7 @@ def load_csv(csv_path: str):
                 "choices",
                 "conflicts",
                 "restarts",
+                "solving_ms_per_choice",
                 "rules",
                 "variables",
                 "memory_mb",
@@ -573,7 +576,13 @@ VARIANT_LINESTYLES = [
     (0, (3, 1, 1, 1)),
     (0, (1, 1)),
 ]
-THOUSAND_FORMAT_METRICS = set()
+THOUSAND_FORMAT_METRICS = {
+    "restarts",
+}
+MILLION_SUFFIX_FORMAT_METRICS = {
+    "choices",
+    "conflicts",
+}
 MILLION_FORMAT_METRICS = {
     "ground_lines",
     "variables",
@@ -946,6 +955,36 @@ def _format_millions(value, _pos=None):
     return f"{scaled:.3f}".rstrip("0").rstrip(".")
 
 
+def _format_fixed_thousands(value, _pos=None):
+
+    scaled = value / 1_000
+    abs_scaled = abs(scaled)
+    if value == 0:
+        return "0"
+    if abs_scaled >= 100 or scaled.is_integer():
+        return f"{scaled:.0f}K"
+    if abs_scaled >= 10:
+        return f"{scaled:.1f}".rstrip("0").rstrip(".") + "K"
+    if abs_scaled >= 1:
+        return f"{scaled:.2f}".rstrip("0").rstrip(".") + "K"
+    return f"{scaled:.3f}".rstrip("0").rstrip(".") + "K"
+
+
+def _format_fixed_millions(value, _pos=None):
+
+    scaled = value / 1_000_000
+    abs_scaled = abs(scaled)
+    if value == 0:
+        return "0"
+    if abs_scaled >= 100 or scaled.is_integer():
+        return f"{scaled:.0f}M"
+    if abs_scaled >= 10:
+        return f"{scaled:.1f}".rstrip("0").rstrip(".") + "M"
+    if abs_scaled >= 1:
+        return f"{scaled:.2f}".rstrip("0").rstrip(".") + "M"
+    return f"{scaled:.3f}".rstrip("0").rstrip(".") + "M"
+
+
 def _format_thousands(value, _pos=None):
 
     abs_value = abs(value)
@@ -987,7 +1026,10 @@ def _apply_y_axis_format(ax, metric: str):
         ax.yaxis.set_major_formatter(FuncFormatter(_format_memory_gb_from_mb))
     elif metric in THOUSAND_FORMAT_METRICS:
         ax.yaxis.set_major_locator(MaxNLocator(nbins=6, integer=True))
-        ax.yaxis.set_major_formatter(FuncFormatter(_format_thousands))
+        ax.yaxis.set_major_formatter(FuncFormatter(_format_fixed_thousands))
+    elif metric in MILLION_SUFFIX_FORMAT_METRICS:
+        ax.yaxis.set_major_locator(MaxNLocator(nbins=6, integer=True))
+        ax.yaxis.set_major_formatter(FuncFormatter(_format_fixed_millions))
     elif metric in MILLION_FORMAT_METRICS:
         ax.yaxis.set_major_locator(MaxNLocator(nbins=6, integer=True, prune="upper"))
         ax.yaxis.set_major_formatter(FuncFormatter(_format_millions))
@@ -1626,11 +1668,7 @@ def _generate_interpretive_chart(stats, graphs_dir, config, filename, theme, xla
 def _plot_interpretive_chart_on_axis(ax, stats, theme, config, xlabel, *, compact: bool):
 
     kind = config["kind"]
-    if kind == "heuristic_expansion_factor":
-        has_data = _plot_heuristic_expansion_factor(ax, stats, theme)
-    elif kind == "additional_ground_lines_vs_lazy":
-        has_data = _plot_additional_ground_lines_vs_lazy(ax, stats, theme)
-    elif kind == "grounding_time_vs_heuristic_size":
+    if kind == "grounding_time_vs_heuristic_size":
         has_data = _plot_grounding_time_vs_heuristic_size(ax, stats, theme)
     elif kind == "lazy_solving_overhead":
         has_data = _plot_lazy_solving_overhead(ax, stats, theme)
@@ -1655,85 +1693,6 @@ def _plot_interpretive_chart_on_axis(ax, stats, theme, config, xlabel, *, compac
             fontsize=12,
             color="#AAA",
         )
-
-
-def _plot_heuristic_expansion_factor(ax, stats, theme) -> bool:
-
-    has_data = False
-    for standard, lazy, label in _available_comparison_pairs(stats, theme):
-        n_vals, standard_size, lazy_size = _aligned_cross_metric_pair(
-            stats,
-            standard,
-            "ground_heuristics",
-            lazy,
-            "ground_lazy_heuristic_facts",
-        )
-        ratios = [
-            _positive_ratio(std, laz)
-            for std, laz in zip(standard_size, lazy_size)
-        ]
-        if not _has_positive_finite(ratios):
-            continue
-
-        has_data = True
-        ax.plot(
-            n_vals,
-            ratios,
-            marker=theme["variant_markers"].get(lazy, "o"),
-            linewidth=2,
-            color=theme["variant_colors"].get(standard),
-            linestyle="-",
-            markeredgecolor="white",
-            markeredgewidth=0.8,
-            label=label,
-        )
-
-    ax.axhline(1.0, color="#555", linewidth=1, linestyle="--")
-    if has_data:
-        ax.set_yscale("log")
-        domain = _all_metric_ns(stats, ["ground_heuristics", "ground_lazy_heuristic_facts"])
-        if domain:
-            ax.set_xlim(min(domain), max(domain))
-    return has_data
-
-
-def _plot_additional_ground_lines_vs_lazy(ax, stats, theme) -> bool:
-
-    has_data = False
-    for standard, lazy, label in _available_comparison_pairs(stats, theme):
-        n_vals, standard_lines, lazy_lines = _aligned_cross_metric_pair(
-            stats,
-            standard,
-            "ground_lines",
-            lazy,
-            "ground_lines",
-        )
-        extra = [
-            std - laz
-            for std, laz in zip(standard_lines, lazy_lines)
-        ]
-        if not _has_finite(extra):
-            continue
-
-        has_data = True
-        ax.plot(
-            n_vals,
-            extra,
-            marker=theme["variant_markers"].get(lazy, "o"),
-            linewidth=2,
-            color=theme["variant_colors"].get(standard),
-            linestyle="-",
-            markeredgecolor="white",
-            markeredgewidth=0.8,
-            label=label,
-        )
-
-    ax.axhline(0.0, color="#555", linewidth=1, linestyle="--")
-    _apply_compact_axis_formatter(ax)
-    domain = _all_metric_ns(stats, ["ground_lines"])
-    if domain:
-        ax.set_xlim(min(domain), max(domain))
-    return has_data
 
 
 def _plot_grounding_time_vs_heuristic_size(ax, stats, theme) -> bool:

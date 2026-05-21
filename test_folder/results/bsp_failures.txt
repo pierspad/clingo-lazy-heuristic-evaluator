@@ -1,0 +1,7 @@
+70	ga_dyn	TIMEOUT
+120	ga	TIMEOUT
+130	gc_noheur	TIMEOUT
+110	gc	TIMEOUT
+60	la_aux	TIMEOUT
+140	la	OOM
+130	lc	TIMEOUT

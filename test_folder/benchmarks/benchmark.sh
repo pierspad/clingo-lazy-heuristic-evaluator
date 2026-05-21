@@ -11,7 +11,7 @@ set -euo pipefail
 export RUN_BSP="true"
 export RUN_PUP="false"
 
-export TIMEOUT_SECONDS=120
+export TIMEOUT_SECONDS=180
 export REPEATS=2
 export MEM_LIMIT_BYTES=$((10 * 1024 * 1024 * 1024))
 export N_START=10
