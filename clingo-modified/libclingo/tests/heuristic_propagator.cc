@@ -206,6 +206,48 @@ TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
         REQUIRE(test_solve(ctl.solve(), models).is_satisfiable());
         REQUIRE(models == ModelVec({{Function("choose", {Number(2)})}}));
     }
+
+    SECTION("clingo-like string heuristic uses trail truth and false predicates") {
+        Control ctl{{"1", "--heuristic=Domain"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            item(1..2).
+            { a(X) } :- item(X).
+            { b(X) } :- item(X).
+            { c(X) } :- item(X).
+            b(1).
+            :- c(1).
+            heuristic("heuristic(a(X), 1, 10, true) :- item(X), b(X), not_c(X).").
+            #show a/1.
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE(test_solve(ctl.solve(), models).is_satisfiable());
+        REQUIRE(models == ModelVec({{Function("a", {Number(1)})}}));
+    }
+
+    SECTION("clingo-like string heuristic delegates aggregates to auxiliary clingo") {
+        Control ctl{{"1", "--heuristic=Domain"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            item(1..2).
+            val(10;20;30).
+            { a(X) } :- item(X).
+            { b(X) } :- item(X).
+            { c(X) } :- item(X).
+            { d(Y) } :- val(Y).
+            b(1).
+            d(10).
+            d(20).
+            :- c(1).
+            heuristic("heuristic(a(X), W, 10, true) :- item(X), b(X), not_c(X), W = #count { Y : d(Y) }.").
+            #show a/1.
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE(test_solve(ctl.solve(), models).is_satisfiable());
+        REQUIRE(models == ModelVec({{Function("a", {Number(1)})}}));
+    }
 }
 
 TEST_CASE("lazy-heuristic-syntax-validation", "[clingo][heuristic]") {

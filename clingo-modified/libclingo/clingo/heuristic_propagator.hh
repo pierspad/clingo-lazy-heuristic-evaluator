@@ -69,6 +69,18 @@ private:
         std::vector<CandidateAggregateBinding> aggregate_bindings;
     };
 
+    struct ClingoLikeHeuristicRule {
+        std::string original;
+        std::string normalized_rule;
+    };
+
+    struct ActiveHeuristic {
+        Clingo::Symbol target;
+        int weight = 0;
+        int priority = 0;
+        bool sign = true;
+    };
+
     struct DecisionRankGreater {
         bool operator()(DecisionRankKey const &a, DecisionRankKey const &b) const {
             if (a.level != b.level) return a.level > b.level;
@@ -93,10 +105,21 @@ private:
     std::unordered_map<RuntimeAggregateKey, std::unique_ptr<AggregateState>, RuntimeAggregateKeyHash> runtime_aggregate_states_;
     std::unordered_map<RuntimeAggregateKey, std::vector<Clingo::literal_t>, RuntimeAggregateKeyHash> aggregate_source_lits_;
     std::unordered_set<Clingo::literal_t> registered_watch_lits_;
+    std::vector<ClingoLikeHeuristicRule> clingo_like_heuristic_rules_;
+    std::vector<std::string> clingo_like_static_facts_;
+    std::unordered_map<Clingo::Symbol, Clingo::literal_t> solver_lit_by_symbol_;
+    std::vector<std::pair<Clingo::literal_t, Clingo::Symbol>> symbols_by_solver_lit_;
 
     void init_lazy_mode(Clingo::PropagateInit &init,
                         Clingo::SymbolicAtoms const &atoms,
                         std::vector<HeuristicRuleTemplate> rule_templates);
+    void init_clingo_like_mode(Clingo::PropagateInit &init, Clingo::SymbolicAtoms const &atoms);
+    std::vector<std::string> build_dynamic_trail_facts(Clingo::Assignment const &assignment) const;
+    std::vector<ActiveHeuristic> evaluate_active_heuristics_with_aux_clingo(
+        std::vector<std::string> const &dynamic_facts
+    ) const;
+    Clingo::literal_t decide_with_clingo_like_heuristics(Clingo::Assignment const &assignment,
+                                                         Clingo::literal_t fallback) const;
     std::unordered_set<Clingo::Symbol> collect_predicates_used_by_lazy_templates() const;
     GroundLiteralIndex build_ground_literal_index_for_predicates(Clingo::PropagateInit &init,
                                                                  Clingo::SymbolicAtoms const &atoms) const;
