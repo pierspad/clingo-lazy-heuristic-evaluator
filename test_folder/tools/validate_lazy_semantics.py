@@ -52,7 +52,7 @@ def run_clingo(clingo: str, files: list[str], seed: int, models: int, constants:
 
 
 def is_internal_symbol(symbol: str) -> bool:
-    return symbol.startswith("__")
+    return symbol.startswith("__") or symbol.startswith("heuristic(")
 
 
 def witness_sets(data: dict, ignore_internal: bool):

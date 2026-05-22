@@ -18,8 +18,7 @@ sumC(Sum) :- Sum = #sum{Y : c(Y)}.
 
 % heuristics
 % Originale: #heuristic b(X) : x(X), not c(X), S = #sum{Y : c(Y)}. [(((n+1)*S)+X), true]
-__heuristic(__target(b), x, __n_c, __bind(s, __sum(c, 0)),
-            __weight(__add(__mul(__add(n, 1), s), self)), __priority(0), __modifier(true), __semantics(clingo)).
+% TODO: aggiornare il converter BSP per emettere direttamente la sintassi stringa.
+heuristic(clingo, "heuristic(b(X), W, 0, true) :- x(X), not_c(X), S = #sum { Y : c(Y) }, W = ((n+1)*S)+X.").
 % Originale: #heuristic c(X) : x(X), not b(X), S = #sum{Y : b(Y)}. [(((n+1)*S)+X), true]
-__heuristic(__target(c), x, __n_b, __bind(s, __sum(b, 0)),
-            __weight(__add(__mul(__add(n, 1), s), self)), __priority(0), __modifier(true), __semantics(clingo)).
+heuristic(clingo, "heuristic(c(X), W, 0, true) :- x(X), not_b(X), S = #sum { Y : b(Y) }, W = ((n+1)*S)+X.").

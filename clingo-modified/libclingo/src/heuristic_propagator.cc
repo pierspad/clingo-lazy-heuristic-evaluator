@@ -4,6 +4,9 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdlib>
+#include <iostream>
+#include <iterator>
 #include <sstream>
 #include <stdexcept>
 #include <unordered_set>
@@ -37,7 +40,7 @@ static std::string normalize_clingo_like_heuristic_rule(std::string const &raw) 
     std::string normalized = trim_copy(raw);
     std::string const head_prefix = "heuristic(";
     if (normalized.compare(0, head_prefix.size(), head_prefix) != 0) {
-        throw std::runtime_error("Lazy heuristic clingo-like: la stringa deve iniziare con heuristic(...).");
+        throw std::runtime_error("Lazy heuristic clingo-like: the rule string must start with heuristic(...).");
     }
 
     normalized.insert(0, "active_");
@@ -56,6 +59,7 @@ static bool is_clingo_like_static_predicate(Clingo::Symbol const &symbol) {
     return (name == "x" && arity == 1) ||
            (name == "item" && arity == 1) ||
            (name == "dom" && arity == 1) ||
+           (name == "range" && arity == 1) ||
            (name == "val" && arity == 1);
 }
 
@@ -104,6 +108,27 @@ static bool parse_clingo_like_sign(Clingo::Symbol const &symbol, bool &sign) {
         }
     }
     return false;
+}
+
+static char const *heuristic_semantics_name(HeuristicSemantics semantics) {
+    return semantics == HeuristicSemantics::Alpha ? "alpha" : "clingo";
+}
+
+static bool lazy_heuristic_debug_enabled() {
+    char const *value = std::getenv("LAZY_HEURISTIC_DEBUG");
+    return value != nullptr && std::string(value) != "0";
+}
+
+static HeuristicSemantics parse_clingo_like_semantics(Clingo::Symbol const &symbol) {
+    if (!is_clingo_symbol_function(symbol) || !symbol.arguments().empty()) {
+        throw std::runtime_error("Lazy heuristic clingo-like: the first argument must be the nullary symbol alpha or clingo.");
+    }
+
+    std::string const name = symbol.name();
+    if (name == "alpha") return HeuristicSemantics::Alpha;
+    if (name == "clingo") return HeuristicSemantics::Clingo;
+
+    throw std::runtime_error("Lazy heuristic clingo-like: unsupported semantics '" + name + "'; expected alpha or clingo.");
 }
 
 enum class MatchKeySide {
@@ -371,6 +396,8 @@ void HeuristicPropagator::init(Clingo::PropagateInit &init) {
     clingo_like_static_facts_.clear();
     solver_lit_by_symbol_.clear();
     symbols_by_solver_lit_.clear();
+    clingo_like_has_n_ = false;
+    clingo_like_n_ = 0;
 
     std::vector<Clingo::Symbol> heuristic_symbols;
     auto const atoms = init.symbolic_atoms();
@@ -382,6 +409,10 @@ void HeuristicPropagator::init(Clingo::PropagateInit &init) {
 
     init_clingo_like_mode(init, atoms);
 
+    if (!heuristic_symbols.empty() && !clingo_like_heuristic_rules_.empty()) {
+        throw std::runtime_error("Lazy heuristic: do not mix __heuristic(...) and heuristic(...) string rules in the same run.");
+    }
+
     auto rule_templates = parse_lazy_heuristic_templates(heuristic_symbols);
     if (!rule_templates.empty()) {
         init_lazy_mode(init, atoms, std::move(rule_templates));
@@ -391,6 +422,7 @@ void HeuristicPropagator::init(Clingo::PropagateInit &init) {
 void HeuristicPropagator::init_clingo_like_mode(Clingo::PropagateInit &init,
                                                 Clingo::SymbolicAtoms const &atoms) {
     std::unordered_set<std::string> static_fact_set;
+    bool const debug = lazy_heuristic_debug_enabled();
 
     for (auto it = atoms.begin(); it != atoms.end(); ++it) {
         auto const symbol = it->symbol();
@@ -399,9 +431,26 @@ void HeuristicPropagator::init_clingo_like_mode(Clingo::PropagateInit &init,
             auto const args = symbol.arguments();
             if (args.size() == 1 && args[0].type() == Clingo::SymbolType::String) {
                 ClingoLikeHeuristicRule rule;
-                rule.original = args[0].string();
-                rule.normalized_rule = normalize_clingo_like_heuristic_rule(rule.original);
+                rule.semantics = HeuristicSemantics::Alpha;
+                rule.original_rule = args[0].string();
+                rule.normalized_rule = normalize_clingo_like_heuristic_rule(rule.original_rule);
                 clingo_like_heuristic_rules_.push_back(std::move(rule));
+            }
+            else {
+                throw std::runtime_error("Lazy heuristic clingo-like: heuristic/1 expects a string rule.");
+            }
+        }
+        else if (symbol.match("heuristic", 2)) {
+            auto const args = symbol.arguments();
+            if (args.size() == 2 && args[1].type() == Clingo::SymbolType::String) {
+                ClingoLikeHeuristicRule rule;
+                rule.semantics = parse_clingo_like_semantics(args[0]);
+                rule.original_rule = args[1].string();
+                rule.normalized_rule = normalize_clingo_like_heuristic_rule(rule.original_rule);
+                clingo_like_heuristic_rules_.push_back(std::move(rule));
+            }
+            else {
+                throw std::runtime_error("Lazy heuristic clingo-like: heuristic/2 expects heuristic(alpha|clingo, \"rule\").");
             }
         }
 
@@ -414,15 +463,38 @@ void HeuristicPropagator::init_clingo_like_mode(Clingo::PropagateInit &init,
 
         if (is_clingo_like_static_predicate(symbol)) {
             static_fact_set.insert(symbol_to_fact(symbol));
+
+            if (symbol.match("x", 1)) {
+                auto const args = symbol.arguments();
+                if (args.size() == 1 && args[0].type() == Clingo::SymbolType::Number) {
+                    clingo_like_n_ = std::max(clingo_like_n_, args[0].number());
+                    clingo_like_has_n_ = true;
+                }
+            }
         }
     }
 
     clingo_like_static_facts_.assign(static_fact_set.begin(), static_fact_set.end());
     std::sort(clingo_like_static_facts_.begin(), clingo_like_static_facts_.end());
+
+    if (debug && !clingo_like_heuristic_rules_.empty()) {
+        std::cerr << "[lazy-heuristic] collected " << clingo_like_heuristic_rules_.size()
+                  << " clingo-like string rule(s)\n";
+        for (size_t i = 0; i < clingo_like_heuristic_rules_.size(); ++i) {
+            auto const &rule = clingo_like_heuristic_rules_[i];
+            std::cerr << "  [" << i << "] semantics=" << heuristic_semantics_name(rule.semantics)
+                      << " original=" << rule.original_rule
+                      << " normalized=" << rule.normalized_rule << "\n";
+        }
+        if (clingo_like_has_n_) {
+            std::cerr << "[lazy-heuristic] inferred #const n=" << clingo_like_n_ << " from x/1\n";
+        }
+    }
 }
 
 std::vector<std::string> HeuristicPropagator::build_dynamic_trail_facts(
-    Clingo::Assignment const &assignment
+    Clingo::Assignment const &assignment,
+    HeuristicSemantics semantics
 ) const {
     std::vector<std::string> facts;
     facts.reserve(symbols_by_solver_lit_.size());
@@ -434,7 +506,8 @@ std::vector<std::string> HeuristicPropagator::build_dynamic_trail_facts(
         if (value == Clingo::TruthValue::True) {
             facts.push_back(symbol_to_fact(symbol));
         }
-        else if (value == Clingo::TruthValue::False) {
+        else if (value == Clingo::TruthValue::False ||
+                 (semantics == HeuristicSemantics::Alpha && value == Clingo::TruthValue::Free)) {
             std::string false_fact = false_symbol_to_fact(symbol);
             if (!false_fact.empty()) {
                 facts.push_back(std::move(false_fact));
@@ -449,9 +522,13 @@ std::vector<std::string> HeuristicPropagator::build_dynamic_trail_facts(
 
 std::vector<HeuristicPropagator::ActiveHeuristic>
 HeuristicPropagator::evaluate_active_heuristics_with_aux_clingo(
-    std::vector<std::string> const &dynamic_facts
+    std::vector<std::string> const &dynamic_facts,
+    HeuristicSemantics semantics
 ) const {
     std::ostringstream program;
+    if (clingo_like_has_n_) {
+        program << "#const n=" << clingo_like_n_ << ".\n";
+    }
     for (auto const &fact : clingo_like_static_facts_) {
         program << fact;
     }
@@ -459,16 +536,33 @@ HeuristicPropagator::evaluate_active_heuristics_with_aux_clingo(
         program << fact;
     }
     for (auto const &rule : clingo_like_heuristic_rules_) {
+        if (rule.semantics != semantics) continue;
         program << rule.normalized_rule << "\n";
     }
     program << "#show active_heuristic/4.\n";
 
-    Clingo::Control ctl{{"0"}, nullptr, 20};
     auto const program_string = program.str();
-    ctl.add("base", {}, program_string.c_str());
-    ctl.ground({{"base", {}}});
+    if (lazy_heuristic_debug_enabled()) {
+        std::cerr << "[lazy-heuristic] auxiliary program for "
+                  << heuristic_semantics_name(semantics) << ":\n"
+                  << program_string << "\n";
+    }
+
+    Clingo::Control ctl{{"0", "--warn=none"}, nullptr, 20};
+    try {
+        ctl.add("base", {}, program_string.c_str());
+        ctl.ground({{"base", {}}});
+    }
+    catch (std::exception const &ex) {
+        std::cerr << "[lazy-heuristic] auxiliary clingo failed for "
+                  << heuristic_semantics_name(semantics) << ": " << ex.what() << "\n"
+                  << "[lazy-heuristic] auxiliary program was:\n"
+                  << program_string << "\n";
+        throw;
+    }
 
     std::vector<ActiveHeuristic> result;
+    size_t emitted_index = 0;
     auto handle = ctl.solve();
     for (auto const &model : handle) {
         for (auto const &symbol : model.symbols()) {
@@ -478,16 +572,21 @@ HeuristicPropagator::evaluate_active_heuristics_with_aux_clingo(
             if (args.size() != 4 ||
                 args[1].type() != Clingo::SymbolType::Number ||
                 args[2].type() != Clingo::SymbolType::Number) {
-                continue;
+                throw std::runtime_error("Lazy heuristic clingo-like: active_heuristic/4 must have numeric Weight and Priority.");
             }
 
             ActiveHeuristic active;
             active.target = args[0];
             active.weight = args[1].number();
             active.priority = args[2].number();
-            if (!parse_clingo_like_sign(args[3], active.sign)) continue;
+            active.semantics = semantics;
+            active.rule_index = emitted_index;
+            if (!parse_clingo_like_sign(args[3], active.sign)) {
+                throw std::runtime_error("Lazy heuristic clingo-like: the fourth argument must be true or false.");
+            }
 
             result.push_back(std::move(active));
+            ++emitted_index;
         }
     }
     handle.get();
@@ -500,8 +599,21 @@ Clingo::literal_t HeuristicPropagator::decide_with_clingo_like_heuristics(
 ) const {
     static_cast<void>(fallback);
 
-    auto const dynamic_facts = build_dynamic_trail_facts(assignment);
-    auto candidates = evaluate_active_heuristics_with_aux_clingo(dynamic_facts);
+    std::vector<ActiveHeuristic> candidates;
+    for (HeuristicSemantics semantics : {HeuristicSemantics::Alpha, HeuristicSemantics::Clingo}) {
+        auto has_semantic_rules = std::any_of(
+            clingo_like_heuristic_rules_.begin(),
+            clingo_like_heuristic_rules_.end(),
+            [semantics](ClingoLikeHeuristicRule const &rule) { return rule.semantics == semantics; }
+        );
+        if (!has_semantic_rules) continue;
+
+        auto const dynamic_facts = build_dynamic_trail_facts(assignment, semantics);
+        auto semantic_candidates = evaluate_active_heuristics_with_aux_clingo(dynamic_facts, semantics);
+        candidates.insert(candidates.end(),
+                          std::make_move_iterator(semantic_candidates.begin()),
+                          std::make_move_iterator(semantic_candidates.end()));
+    }
 
     struct RankedCandidate {
         ActiveHeuristic active;
@@ -509,11 +621,16 @@ Clingo::literal_t HeuristicPropagator::decide_with_clingo_like_heuristics(
         std::string target_string;
     };
 
-    std::vector<RankedCandidate> ranked;
-    ranked.reserve(candidates.size());
+    std::unordered_map<std::string, RankedCandidate> best_by_target;
     for (auto const &candidate : candidates) {
         auto lit_it = solver_lit_by_symbol_.find(candidate.target);
-        if (lit_it == solver_lit_by_symbol_.end()) continue;
+        if (lit_it == solver_lit_by_symbol_.end()) {
+            if (lazy_heuristic_debug_enabled()) {
+                std::cerr << "[lazy-heuristic] discarding unmapped target "
+                          << candidate.target << "\n";
+            }
+            continue;
+        }
 
         Clingo::literal_t const lit = lit_it->second;
         if (lit == 0 || assignment.truth_value(lit) != Clingo::TruthValue::Free) continue;
@@ -522,15 +639,27 @@ Clingo::literal_t HeuristicPropagator::decide_with_clingo_like_heuristics(
         ranked_candidate.active = candidate;
         ranked_candidate.lit = lit;
         ranked_candidate.target_string = candidate.target.to_string();
-        ranked.push_back(std::move(ranked_candidate));
+
+        auto current = best_by_target.find(ranked_candidate.target_string);
+        if (current == best_by_target.end() ||
+            ranked_candidate.active.priority > current->second.active.priority ||
+            (ranked_candidate.active.priority == current->second.active.priority &&
+             ranked_candidate.active.weight > current->second.active.weight) ||
+            (ranked_candidate.active.priority == current->second.active.priority &&
+             ranked_candidate.active.weight == current->second.active.weight &&
+             ranked_candidate.active.rule_index < current->second.active.rule_index)) {
+            best_by_target[ranked_candidate.target_string] = std::move(ranked_candidate);
+        }
     }
 
-    if (ranked.empty()) return 0;
+    if (best_by_target.empty()) return 0;
 
+    std::vector<RankedCandidate> ranked;
+    ranked.reserve(best_by_target.size());
+    for (auto &entry : best_by_target) {
+        ranked.push_back(std::move(entry.second));
+    }
     std::sort(ranked.begin(), ranked.end(), [](RankedCandidate const &a, RankedCandidate const &b) {
-        if (a.active.priority != b.active.priority) {
-            return a.active.priority > b.active.priority;
-        }
         if (a.active.weight != b.active.weight) {
             return a.active.weight > b.active.weight;
         }
@@ -541,6 +670,14 @@ Clingo::literal_t HeuristicPropagator::decide_with_clingo_like_heuristics(
     });
 
     auto const &best = ranked.front();
+    if (lazy_heuristic_debug_enabled()) {
+        std::cerr << "[lazy-heuristic] decision target=" << best.active.target
+                  << " weight=" << best.active.weight
+                  << " local_priority=" << best.active.priority
+                  << " sign=" << (best.active.sign ? "true" : "false")
+                  << " semantics=" << heuristic_semantics_name(best.active.semantics)
+                  << "\n";
+    }
     return best.active.sign ? best.lit : -best.lit;
 }
 
@@ -1287,7 +1424,12 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
             }
         }
     }
+    catch (std::exception const &ex) {
+        std::cerr << "[lazy-heuristic] decide failed: " << ex.what() << "\n";
+        return 0;
+    }
     catch (...) {
+        std::cerr << "[lazy-heuristic] decide failed with an unknown exception\n";
         return 0;
     }
 

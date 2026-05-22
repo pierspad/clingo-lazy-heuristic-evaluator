@@ -248,6 +248,164 @@ TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
         REQUIRE(test_solve(ctl.solve(), models).is_satisfiable());
         REQUIRE(models == ModelVec({{Function("a", {Number(1)})}}));
     }
+
+    SECTION("clingo-like default syntax is alpha and sees free atoms as not_p") {
+        Control ctl{{"1", "--heuristic=Domain"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            item(1).
+            1 { a(1); z(1) } 1.
+            { c(1) }.
+            heuristic("heuristic(a(X), 10, 0, true) :- item(X), not_c(X).").
+            heuristic(alpha, "heuristic(z(1), 2, 0, true).").
+            #show a/1.
+            #show z/1.
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE(test_solve(ctl.solve(), models).is_satisfiable());
+        REQUIRE(models == ModelVec({{Function("a", {Number(1)})}}));
+    }
+
+    SECTION("clingo-like explicit alpha sees free atoms as not_p") {
+        Control ctl{{"1", "--heuristic=Domain"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            item(1).
+            1 { a(1); z(1) } 1.
+            { c(1) }.
+            heuristic(alpha, "heuristic(a(X), 10, 0, true) :- item(X), not_c(X).").
+            heuristic(alpha, "heuristic(z(1), 2, 0, true).").
+            #show a/1.
+            #show z/1.
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE(test_solve(ctl.solve(), models).is_satisfiable());
+        REQUIRE(models == ModelVec({{Function("a", {Number(1)})}}));
+    }
+
+    SECTION("clingo-like explicit clingo only sees false atoms as not_p") {
+        Control ctl{{"1", "--heuristic=Domain"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            item(1).
+            1 { a(1); z(1) } 1.
+            { c(1) }.
+            heuristic(clingo, "heuristic(a(X), 10, 0, true) :- item(X), not_c(X).").
+            heuristic(alpha, "heuristic(z(1), 2, 0, true).").
+            #show a/1.
+            #show z/1.
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE(test_solve(ctl.solve(), models).is_satisfiable());
+        REQUIRE(models == ModelVec({{Function("z", {Number(1)})}}));
+    }
+
+    SECTION("clingo-like explicit clingo sees false atoms as not_p") {
+        Control ctl{{"1", "--heuristic=Domain"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            item(1).
+            1 { a(1); z(1) } 1.
+            { c(1) }.
+            :- c(1).
+            heuristic(clingo, "heuristic(a(X), 10, 0, true) :- item(X), not_c(X).").
+            heuristic(alpha, "heuristic(z(1), 2, 0, true).").
+            #show a/1.
+            #show z/1.
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE(test_solve(ctl.solve(), models).is_satisfiable());
+        REQUIRE(models == ModelVec({{Function("a", {Number(1)})}}));
+    }
+
+    SECTION("clingo-like aggregate count determines global weight") {
+        Control ctl{{"1", "--heuristic=Domain"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            item(1).
+            val(10;20;30).
+            d(10;20).
+            { d(30) }.
+            :- d(30).
+            1 { a(1); z(1) } 1.
+            heuristic(alpha, "heuristic(a(X), W, 10, true) :- item(X), W = #count { Y : d(Y) }.").
+            heuristic(alpha, "heuristic(z(1), 1, 0, true).").
+            #show a/1.
+            #show z/1.
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE(test_solve(ctl.solve(), models).is_satisfiable());
+        REQUIRE(models == ModelVec({{Function("a", {Number(1)})}}));
+    }
+
+    SECTION("clingo-like auxiliary program receives n inferred from x domain") {
+        Control ctl{{"1", "--heuristic=Domain"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            x(1..3).
+            c(1).
+            { c(X) } :- x(X), X > 1.
+            1 { b(X) : x(X) } 1.
+            heuristic(alpha, "heuristic(b(X), W, 0, true) :- x(X), not_c(X), S = #sum { Y : c(Y) }, W = ((n+1)*S)+X.").
+            #show b/1.
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE(test_solve(ctl.solve(), models).is_satisfiable());
+        REQUIRE(models == ModelVec({{Function("b", {Number(3)})}}));
+    }
+
+    SECTION("clingo-like local priority resolves candidates for the same target before global weight") {
+        Control ctl{{"1", "--heuristic=Domain"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            1 { a(1); a(2) } 1.
+            heuristic(alpha, "heuristic(a(1), 10, 0, true).").
+            heuristic(alpha, "heuristic(a(1), 5, 100, false).").
+            heuristic(alpha, "heuristic(a(2), 6, 0, true).").
+            #show a/1.
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE(test_solve(ctl.solve(), models).is_satisfiable());
+        REQUIRE(models == ModelVec({{Function("a", {Number(2)})}}));
+    }
+
+    SECTION("clingo-like priority is not a global rank") {
+        Control ctl{{"1", "--heuristic=Domain"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            1 { a(1); a(2) } 1.
+            heuristic(alpha, "heuristic(a(1), 10, 0, true).").
+            heuristic(alpha, "heuristic(a(2), 5, 100, true).").
+            #show a/1.
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE(test_solve(ctl.solve(), models).is_satisfiable());
+        REQUIRE(models == ModelVec({{Function("a", {Number(1)})}}));
+    }
+
+    SECTION("clingo-like unmapped targets are ignored") {
+        Control ctl{{"1", "--heuristic=Domain"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            1 { a(1); z(1) } 1.
+            heuristic(alpha, "heuristic(unknown(1), 100, 0, true).").
+            heuristic(alpha, "heuristic(a(1), 1, 0, true).").
+            #show a/1.
+            #show z/1.
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE(test_solve(ctl.solve(), models).is_satisfiable());
+        REQUIRE(models == ModelVec({{Function("a", {Number(1)})}}));
+    }
 }
 
 TEST_CASE("lazy-heuristic-syntax-validation", "[clingo][heuristic]") {
@@ -268,6 +426,18 @@ TEST_CASE("lazy-heuristic-syntax-validation", "[clingo][heuristic]") {
                         __bind(s, __sum(dom, 0)),
                         __bind(s, __count(dom, 0)),
                         __weight(s), __modifier(true)).
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE_THROWS(test_solve(ctl.solve(), models));
+    }
+
+    SECTION("clingo-like malformed semantics is rejected") {
+        Control ctl{{"0"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            { a(1) }.
+            heuristic(beta, "heuristic(a(1), 1, 0, true).").
         )");
         ctl.ground({{"base", {}}}, nullptr);
         REQUIRE_THROWS(test_solve(ctl.solve(), models));

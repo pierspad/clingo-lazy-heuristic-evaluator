@@ -70,7 +70,8 @@ private:
     };
 
     struct ClingoLikeHeuristicRule {
-        std::string original;
+        HeuristicSemantics semantics = HeuristicSemantics::Alpha;
+        std::string original_rule;
         std::string normalized_rule;
     };
 
@@ -79,6 +80,8 @@ private:
         int weight = 0;
         int priority = 0;
         bool sign = true;
+        HeuristicSemantics semantics = HeuristicSemantics::Alpha;
+        size_t rule_index = 0;
     };
 
     struct DecisionRankGreater {
@@ -109,14 +112,18 @@ private:
     std::vector<std::string> clingo_like_static_facts_;
     std::unordered_map<Clingo::Symbol, Clingo::literal_t> solver_lit_by_symbol_;
     std::vector<std::pair<Clingo::literal_t, Clingo::Symbol>> symbols_by_solver_lit_;
+    bool clingo_like_has_n_ = false;
+    int clingo_like_n_ = 0;
 
     void init_lazy_mode(Clingo::PropagateInit &init,
                         Clingo::SymbolicAtoms const &atoms,
                         std::vector<HeuristicRuleTemplate> rule_templates);
     void init_clingo_like_mode(Clingo::PropagateInit &init, Clingo::SymbolicAtoms const &atoms);
-    std::vector<std::string> build_dynamic_trail_facts(Clingo::Assignment const &assignment) const;
+    std::vector<std::string> build_dynamic_trail_facts(Clingo::Assignment const &assignment,
+                                                       HeuristicSemantics semantics) const;
     std::vector<ActiveHeuristic> evaluate_active_heuristics_with_aux_clingo(
-        std::vector<std::string> const &dynamic_facts
+        std::vector<std::string> const &dynamic_facts,
+        HeuristicSemantics semantics
     ) const;
     Clingo::literal_t decide_with_clingo_like_heuristics(Clingo::Assignment const &assignment,
                                                          Clingo::literal_t fallback) const;
