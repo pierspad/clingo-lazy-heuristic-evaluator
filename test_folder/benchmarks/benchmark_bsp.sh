@@ -28,6 +28,7 @@ BSP_CONFIG_VARS=(
     BSP_N_END
     BSP_N_STEP
     BSP_STOP_VARIANT_ON_LIMIT
+    BSP_USE_SEED
     BSP_MEM_LIMIT_BYTES
     BSP_MEM_LIMIT_MB
     BSP_MEM_LIMIT_GB
@@ -40,19 +41,20 @@ BSP_CONFIG_VARS=(
 )
 capture_overrides "${BSP_CONFIG_VARS[@]}"
 
-BSP_TIMEOUT_SECONDS=180
-BSP_REPEATS=2
+BSP_TIMEOUT_SECONDS=120
+BSP_REPEATS=1
 BSP_N_START=10
 BSP_N_END=200
 BSP_N_STEP=10
 BSP_STOP_VARIANT_ON_LIMIT=1
+BSP_USE_SEED=0
 
 BSP_MEM_LIMIT_BYTES=
 BSP_MEM_LIMIT_MB=
 BSP_MEM_LIMIT_GB=10
 
 BSP_VARIANTS="ga_weak ga gc_noheur gc la_aux la_co la lc"
-BSP_RANDOM_SETTINGS="seed_only:"
+BSP_RANDOM_SETTINGS="default:"
 BSP_CLINGO_EXTRA_ARGS=
 
 BSP_RESULTS_CSV="test_folder/results/bsp_results.csv"
@@ -146,6 +148,7 @@ N_START="${BSP_N_START}"
 N_END="${BSP_N_END}"
 N_STEP="${BSP_N_STEP}"
 STOP_VARIANT_ON_LIMIT="${BSP_STOP_VARIANT_ON_LIMIT}"
+BSP_USE_SEED="${BSP_USE_SEED}"
 BSP_RANDOM_SETTINGS_EFFECTIVE="${BSP_RANDOM_SETTINGS}"
 BSP_RANDOM_SETTINGS="${BSP_RANDOM_SETTINGS_EFFECTIVE}"
 CLINGO_EXTRA_ARGS="${BSP_CLINGO_EXTRA_ARGS}"
@@ -157,6 +160,7 @@ require_positive_int "N_START" "${N_START}"
 require_positive_int "N_END" "${N_END}"
 require_positive_int "N_STEP" "${N_STEP}"
 require_bool01 "STOP_VARIANT_ON_LIMIT" "${STOP_VARIANT_ON_LIMIT}"
+require_bool01 "BSP_USE_SEED" "${BSP_USE_SEED}"
 if [ "${N_END}" -lt "${N_START}" ]; then
     echo "Errore: N_END (${N_END}) deve essere maggiore o uguale a N_START (${N_START})." >&2
     exit 1
@@ -177,6 +181,7 @@ export BSP_N_START="${N_START}"
 export BSP_N_END="${N_END}"
 export BSP_N_STEP="${N_STEP}"
 export BSP_STOP_VARIANT_ON_LIMIT="${STOP_VARIANT_ON_LIMIT}"
+export BSP_USE_SEED
 export BSP_MEM_LIMIT_BYTES="${MEM_LIMIT_BYTES}"
 export TIMEOUT_SECONDS
 export MEM_LIMIT_BYTES
@@ -378,6 +383,7 @@ for spec in variant_specs:
         "semantics": semantics,
     })
 
+use_seed = os.environ.get("BSP_USE_SEED", "0") == "1"
 runner_template = [
     python_bin,
     str(runner_path),
@@ -387,7 +393,10 @@ runner_template = [
     "--variant", "<variant>",
     "--semantics", "<semantics>",
     "--size", "<N>",
-    "--seed", "<seed>",
+]
+if use_seed:
+    runner_template.extend(["--seed", "<seed>"])
+runner_template.extend([
     "--setting", "<setting>",
     "--csv", str(csv_file),
     "--constant", "n=<N>",
@@ -397,7 +406,7 @@ runner_template = [
     "--domain-heuristic",
     "<setting-specific --clingo-option>",
     "<global --clingo-option>",
-]
+])
 clingo_json_template = [
     str(clingo_path),
     str(instance_range),
@@ -406,12 +415,15 @@ clingo_json_template = [
     "--heuristic=Domain",
     "--outf=2",
     "--stats=2",
-    "--seed=<seed>",
+]
+if use_seed:
+    clingo_json_template.append("--seed=<seed>")
+clingo_json_template.extend([
     "-n", "1",
     f"--time-limit={timeout_seconds}",
     "<setting-specific clingo options>",
     "<CLINGO_EXTRA_ARGS>",
-]
+])
 clingo_text_template = [
     str(clingo_path),
     str(instance_range),
@@ -449,7 +461,9 @@ metadata = {
     "build_type": build_type,
     "clingo_binary": str(clingo_path),
     "exact_command": launcher_command,
-    "random_settings": os.environ.get("BSP_RANDOM_SETTINGS_EFFECTIVE", "seed_only:"),
+    "settings": os.environ.get("BSP_RANDOM_SETTINGS_EFFECTIVE", "default:"),
+    "random_settings": os.environ.get("BSP_RANDOM_SETTINGS_EFFECTIVE", "default:"),
+    "use_seed": use_seed,
     "clingo_extra_args": os.environ.get("CLINGO_EXTRA_ARGS", ""),
     "commands": {
         "benchmark_launcher": launcher_command,
@@ -516,7 +530,7 @@ SETTING_EXTRA_ARGS=()
 for setting_spec in "${ACTIVE_SETTING_SPECS[@]}"; do
     setting_name="${setting_spec%%:*}"
     if [ -z "${setting_name}" ]; then
-        echo "Errore: setting random BSP non valido: '${setting_spec}'."
+        echo "Errore: setting BSP non valido: '${setting_spec}'."
         exit 1
     fi
     if [[ "${setting_spec}" == *":"* ]]; then
@@ -529,7 +543,7 @@ for setting_spec in "${ACTIVE_SETTING_SPECS[@]}"; do
 done
 
 if [ "${#SETTING_NAMES[@]}" -eq 0 ]; then
-    echo "Errore: nessun setting random BSP attivo."
+    echo "Errore: nessun setting BSP attivo."
     exit 1
 fi
 
@@ -539,9 +553,14 @@ rm -f "${CSV_FILE}"
 write_run_metadata "${METADATA_FILE}"
 
 echo "Varianti BSP attive: ${ENABLED_VARIANTS[*]}"
-echo "Setting random attivi: ${SETTING_NAMES[*]}"
+echo "Setting BSP attivi: ${SETTING_NAMES[*]}"
 MEM_LIMIT_GB="$("${PYTHON_BIN}" -c 'import sys; print(f"{int(sys.argv[1]) / (1024**3):.2f}")' "${MEM_LIMIT_BYTES}")"
 echo "Parametri: timeout=${TIMEOUT_SECONDS}s repeats=${REPEATS} n=${N_START}..${N_END} step=${N_STEP} mem=${MEM_LIMIT_GB} GB"
+if [ "${BSP_USE_SEED}" = "1" ]; then
+    echo "Seed Clingo: attivo (--seed=<repeat>)"
+else
+    echo "Seed Clingo: disattivo (nessun --seed)"
+fi
 if [ -n "${CLINGO_EXTRA_ARGS:-}" ]; then
     echo "Opzioni Clingo extra globali: ${CLINGO_EXTRA_ARGS}"
 fi
@@ -588,6 +607,12 @@ for setting_index in "${!SETTING_NAMES[@]}"; do
             fi
 
             for seed in $(seq 1 "${REPEATS}"); do
+                runner_seed_option=()
+                seed_label="none"
+                if [ "${BSP_USE_SEED}" = "1" ]; then
+                    runner_seed_option=(--seed "${seed}")
+                    seed_label="${seed}"
+                fi
                 runner_extra_options=()
                 for opt in "${SETTING_CLINGO_ARGS[@]}"; do
                     if [ -n "${opt}" ]; then
@@ -601,7 +626,7 @@ for setting_index in "${!SETTING_NAMES[@]}"; do
                 done
 
                 current_run=$((current_run + 1))
-                echo "--- ${variant} (run ${current_run}/${planned_runs}, setting ${setting}, seed ${seed}) ---"
+                echo "--- ${variant} (run ${current_run}/${planned_runs}, setting ${setting}, seed ${seed_label}) ---"
                 if "${PYTHON_BIN}" "${RUNNER}" \
                     --clingo "${CLINGO_MOD}" \
                     --encoding "${VARIANT_FILES[${variant}]}" \
@@ -609,7 +634,7 @@ for setting_index in "${!SETTING_NAMES[@]}"; do
                     --variant "${variant}" \
                     --semantics "${VARIANT_SEMANTICS[${variant}]}" \
                     --size "${n}" \
-                    --seed "${seed}" \
+                    "${runner_seed_option[@]}" \
                     --setting "${setting}" \
                     --csv "${CSV_FILE}" \
                     --constant "n=${n}" \

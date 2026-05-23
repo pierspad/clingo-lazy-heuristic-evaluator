@@ -98,7 +98,10 @@ def build_clingo_command(args, clingo: str, *, json_mode: bool) -> list[str]:
     if args.domain_heuristic:
         cmd.append("--heuristic=Domain")
     if json_mode:
-        cmd.extend(["--outf=2", "--stats=2", f"--seed={args.seed}", "-n", str(args.models)])
+        cmd.extend(["--outf=2", "--stats=2"])
+        if args.seed is not None:
+            cmd.append(f"--seed={args.seed}")
+        cmd.extend(["-n", str(args.models)])
         cmd.append(f"--time-limit={args.timeout}")
         cmd.extend(args.clingo_option)
     else:
@@ -202,7 +205,7 @@ def dump_json_failure(args, proc: subprocess.CompletedProcess[str]) -> tuple[Pat
         [
             sanitize_debug_name(args.variant),
             f"n{sanitize_debug_name(args.size)}",
-            f"seed{sanitize_debug_name(args.seed)}",
+            f"seed{sanitize_debug_name(seed_label(args))}",
             sanitize_debug_name(args.setting),
         ]
     )
@@ -323,10 +326,11 @@ def append_csv(csv_path: str, row: dict[str, str]):
 def run_benchmark(args) -> int:
     clingo = find_clingo(args.clingo)
     json_cmd = build_clingo_command(args, clingo, json_mode=True)
+    seed = seed_label(args)
     row = {
         "n": args.size,
         "variant": args.variant,
-        "seed": str(args.seed),
+        "seed": seed,
         "setting": args.setting,
         "clingo_extra_args": shlex.join(args.clingo_option) if args.clingo_option else "",
     }
@@ -334,7 +338,7 @@ def run_benchmark(args) -> int:
     failure_reason = ""
     exit_code = EXIT_OK
 
-    print(f"  [setting={args.setting} seed={args.seed}] {' '.join(json_cmd)}")
+    print(f"  [setting={args.setting} seed={seed}] {' '.join(json_cmd)}")
     try:
         proc = run_command(json_cmd, args.timeout + 5, args.memory_bytes)
     except subprocess.TimeoutExpired:
@@ -435,11 +439,11 @@ def parse_args():
     parser.add_argument("--instance", action="append", required=True, help="Instance/data file. Can be repeated.")
     parser.add_argument("--variant", required=True, help="Variant label written to the CSV.")
     parser.add_argument("--size", required=True, help="Instance size written to the CSV n column.")
-    parser.add_argument("--seed", type=int, required=True, help="Clingo random seed.")
+    parser.add_argument("--seed", type=int, help="Optional Clingo random seed.")
     parser.add_argument(
         "--setting",
-        default="seed_only",
-        help="Randomization setting label written to the CSV.",
+        default="default",
+        help="Setting label written to the CSV.",
     )
     parser.add_argument(
         "--clingo-option",
@@ -478,6 +482,10 @@ def parse_args():
         help="Order of input files passed to clingo. Default: instance-first.",
     )
     return parser.parse_args()
+
+
+def seed_label(args) -> str:
+    return str(args.seed) if args.seed is not None else "none"
 
 
 def main() -> int:
