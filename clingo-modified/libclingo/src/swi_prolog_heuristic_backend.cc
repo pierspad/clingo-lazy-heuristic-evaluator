@@ -42,7 +42,16 @@ namespace {
 
 bool debug_enabled() {
     char const *value = std::getenv("LAZY_HEURISTIC_DEBUG");
-    return value != nullptr && std::string(value) != "0";
+    if (value == nullptr) return false;
+
+    std::string text(value);
+    return text == "1" ||
+           text == "true" ||
+           text == "TRUE" ||
+           text == "on" ||
+           text == "ON" ||
+           text == "yes" ||
+           text == "YES";
 }
 
 char const *semantics_name(HeuristicSemantics semantics) {
@@ -135,8 +144,9 @@ std::string runtime_program(std::vector<QueryHeuristicRule> const &rules,
     out << ":- dynamic dyn_min/3.\n";
     out << ":- dynamic dyn_max/3.\n";
     out << ":- dynamic candidate/5.\n";
+    out << ":- use_module(library(aggregate)).\n";
     out << "holds_pos(A) :- true_atom(A).\n";
-    out << "holds_pos(A) :- static_atom(A).\n";
+    out << "holds_pos(A) :- static_atom(A), \\+ true_atom(A).\n";
     out << "holds_neg(alpha, A) :- \\+ holds_pos(A).\n";
     out << "holds_neg(clingo, A) :- false_atom(A).\n";
     out << "target_available(A) :- target_atom(A), \\+ true_atom(A), \\+ false_atom(A).\n";

@@ -36,6 +36,7 @@ CSV_FIELDS = [
     "memory_mb",
     "ground_heuristics",
     "ground_lazy_heuristic_facts",
+    "ground_prolog_heuristic_facts",
     "ground_facts",
     "ground_lines",
 ]
@@ -105,6 +106,9 @@ def build_clingo_command(args, clingo: str, *, json_mode: bool) -> list[str]:
 
 
 def run_command(cmd: list[str], timeout: int, memory_bytes: int | None) -> subprocess.CompletedProcess[str]:
+    env = os.environ.copy()
+    env["LC_ALL"] = "C"
+    env["LC_NUMERIC"] = "C"
     return subprocess.run(
         cmd,
         text=True,
@@ -112,6 +116,7 @@ def run_command(cmd: list[str], timeout: int, memory_bytes: int | None) -> subpr
         stderr=subprocess.PIPE,
         timeout=timeout,
         preexec_fn=set_memory_limit(memory_bytes),
+        env=env,
     )
 
 
@@ -177,9 +182,33 @@ def ground_failure_metrics() -> dict[str, str]:
     return {
         "ground_heuristics": "NA",
         "ground_lazy_heuristic_facts": "NA",
+        "ground_prolog_heuristic_facts": "NA",
         "ground_facts": "NA",
         "ground_lines": "NA",
     }
+
+
+def sanitize_debug_name(value: str) -> str:
+    return "".join(ch if ch.isalnum() or ch in ("-", "_") else "_" for ch in str(value))
+
+
+def dump_json_failure(args, proc: subprocess.CompletedProcess[str]) -> tuple[Path, Path]:
+    test_root = Path(__file__).resolve().parents[1]
+    debug_dir = test_root / "results" / "debug" / "json_failures"
+    debug_dir.mkdir(parents=True, exist_ok=True)
+    base = "_".join(
+        [
+            sanitize_debug_name(args.variant),
+            f"n{sanitize_debug_name(args.size)}",
+            f"seed{sanitize_debug_name(args.seed)}",
+            sanitize_debug_name(args.setting),
+        ]
+    )
+    stdout_path = debug_dir / f"{base}.stdout"
+    stderr_path = debug_dir / f"{base}.stderr"
+    stdout_path.write_text(proc.stdout, encoding="utf-8")
+    stderr_path.write_text(proc.stderr, encoding="utf-8")
+    return stdout_path, stderr_path
 
 
 def _contains_memory_error(*texts: str) -> bool:
@@ -230,6 +259,7 @@ def collect_ground_counts(args, clingo: str) -> tuple[dict[str, str], str]:
 
     heuristics = 0
     lazy_facts = 0
+    prolog_facts = 0
     facts = 0
     lines = 0
     for line in proc.stdout.splitlines():
@@ -242,6 +272,10 @@ def collect_ground_counts(args, clingo: str) -> tuple[dict[str, str], str]:
             lazy_facts += 1
             facts += 1
             continue
+        if stripped.startswith("prolog_heuristic("):
+            prolog_facts += 1
+            facts += 1
+            continue
         if not stripped or stripped.startswith("%"):
             continue
         if stripped.endswith(".") and ":-" not in stripped:
@@ -250,6 +284,7 @@ def collect_ground_counts(args, clingo: str) -> tuple[dict[str, str], str]:
     return {
         "ground_heuristics": str(heuristics),
         "ground_lazy_heuristic_facts": str(lazy_facts),
+        "ground_prolog_heuristic_facts": str(prolog_facts),
         "ground_facts": str(facts),
         "ground_lines": str(lines),
     }, "ok"
@@ -316,7 +351,12 @@ def run_benchmark(args) -> int:
             try:
                 data = json.loads(proc.stdout)
             except json.JSONDecodeError as exc:
-                print(f"    warning: cannot parse clingo JSON: {exc}", file=sys.stderr)
+                stdout_path, stderr_path = dump_json_failure(args, proc)
+                print(
+                    "    warning: cannot parse clingo JSON: "
+                    f"{exc}; stdout={stdout_path} stderr={stderr_path}",
+                    file=sys.stderr,
+                )
                 run_ok = False
         if run_ok and data.get("Result") != "UNKNOWN":
             row.update(parse_solver_metrics(data, memory_mb))
@@ -372,6 +412,7 @@ def run_benchmark(args) -> int:
         "choices={choices} conflicts={conflicts} restarts={restarts} "
         "rules={rules} vars={variables} mem={memory_gb}GB "
         "heur={ground_heuristics} lazy_facts={ground_lazy_heuristic_facts} "
+        "prolog_facts={ground_prolog_heuristic_facts} "
         "facts={ground_facts} ground_lines={ground_lines}".format(**display_row)
     )
     return exit_code

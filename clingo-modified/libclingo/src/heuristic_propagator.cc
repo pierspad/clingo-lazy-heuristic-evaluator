@@ -163,7 +163,16 @@ static char const *heuristic_semantics_name(HeuristicSemantics semantics) {
 
 static bool lazy_heuristic_debug_enabled() {
     char const *value = std::getenv("LAZY_HEURISTIC_DEBUG");
-    return value != nullptr && std::string(value) != "0";
+    if (value == nullptr) return false;
+
+    std::string text(value);
+    return text == "1" ||
+           text == "true" ||
+           text == "TRUE" ||
+           text == "on" ||
+           text == "ON" ||
+           text == "yes" ||
+           text == "YES";
 }
 
 static bool lazy_heuristic_use_prolog_backend() {

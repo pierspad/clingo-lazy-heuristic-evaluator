@@ -18,3 +18,8 @@ sumC(Sum) :- Sum = #sum{Y : c(Y)}.
 prolog_heuristic(clingo, "candidate(b(X), W, 0, true, clingo) :- holds_pos(x(X)), holds_neg(clingo, c(X)), dyn_sum(holds_pos(c(Y)), Y, S), n_value(N), W is ((N+1)*S)+X, target_available(b(X)).").
 
 prolog_heuristic(clingo, "candidate(c(X), W, 0, true, clingo) :- holds_pos(x(X)), holds_neg(clingo, b(X)), dyn_sum(holds_pos(b(Y)), Y, S), n_value(N), W is ((N+1)*S)+X, target_available(c(X)).").
+
+#show b/1.
+#show c/1.
+#show sumB/1.
+#show sumC/1.
