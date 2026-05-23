@@ -526,26 +526,56 @@ done
 
 echo ""
 echo "Benchmark BSP completato. ${current_run} esecuzioni totali."
-if [ "${STOP_VARIANT_ON_LIMIT}" = "1" ]; then
-    > "${FAILURES_FILE}"
-    for setting in "${SETTING_NAMES[@]}"; do
-        for variant in "${ENABLED_VARIANTS[@]}"; do
-            variant_key="${setting}:${variant}"
-            if [ "${VARIANT_STOPPED_BY_LIMIT[${variant_key}]}" = "1" ]; then
-                fn="${VARIANT_LIMIT_N[${variant_key}]}"
-                fr="${VARIANT_LIMIT_REASON[${variant_key}]}"
-                echo -e "${fn}\t${setting}\t${variant}\t${fr}" >> "${FAILURES_FILE}"
-            fi
-        done
-    done
-    if [ -s "${FAILURES_FILE}" ]; then
-        echo "=== REPORT FALLIMENTI BSP (ordinato per N crescente) ==="
-        sort -n "${FAILURES_FILE}" | while read -r fn fs fv fr; do
-            echo " - Variante '${fv}' (${fs}) ha fallito a N=${fn} causa: ${fr}"
-        done
-        echo "========================================================"
-    else
-        echo "=== Nessun fallimento registrato in BSP! ==="
-    fi
+"${PYTHON_BIN}" - "${CSV_FILE}" "${FAILURES_FILE}" <<'PY'
+import csv
+import sys
+from pathlib import Path
+
+csv_path = Path(sys.argv[1])
+failures_path = Path(sys.argv[2])
+rows = []
+if csv_path.is_file():
+    with csv_path.open(newline="", encoding="utf-8") as handle:
+        for row in csv.DictReader(handle):
+            if row.get("status") and row.get("status") != "ok":
+                rows.append(row)
+
+def sort_key(row):
+    try:
+        n = int(row.get("n", "0"))
+    except ValueError:
+        n = 0
+    return (
+        n,
+        row.get("setting", ""),
+        row.get("variant", ""),
+        row.get("seed", ""),
+    )
+
+rows.sort(key=sort_key)
+failures_path.parent.mkdir(parents=True, exist_ok=True)
+with failures_path.open("w", encoding="utf-8") as handle:
+    for row in rows:
+        handle.write(
+            "\t".join(
+                [
+                    row.get("n", "NA"),
+                    row.get("setting", "NA"),
+                    row.get("variant", "NA"),
+                    row.get("failure_reason", "NA") or "NA",
+                    row.get("status", "NA"),
+                ]
+            )
+            + "\n"
+        )
+PY
+if [ -s "${FAILURES_FILE}" ]; then
+    echo "=== REPORT FALLIMENTI BSP (ordinato per N crescente) ==="
+    while IFS=$'\t' read -r fn fs fv fr fst; do
+        echo " - N=${fn} setting=${fs} variant=${fv} status=${fst} failure_reason=${fr}"
+    done < "${FAILURES_FILE}"
+    echo "========================================================"
+else
+    echo "=== Nessun fallimento registrato in BSP! ==="
 fi
 echo "Risultati salvati in: ${CSV_FILE}"

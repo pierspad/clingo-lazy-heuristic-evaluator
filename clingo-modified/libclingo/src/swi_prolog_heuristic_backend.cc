@@ -40,6 +40,68 @@ SWIPrologHeuristicBackend::~SWIPrologHeuristicBackend() {
 #ifdef CLINGO_USE_SWIPL
 namespace {
 
+class PrologForeignFrame {
+public:
+    PrologForeignFrame()
+        : frame_(PL_open_foreign_frame()) {}
+
+    PrologForeignFrame(PrologForeignFrame const &) = delete;
+    PrologForeignFrame &operator=(PrologForeignFrame const &) = delete;
+
+    ~PrologForeignFrame() {
+        PL_discard_foreign_frame(frame_);
+    }
+
+private:
+    fid_t frame_;
+};
+
+class PrologQuery {
+public:
+    PrologQuery(predicate_t predicate, term_t args)
+        : query_(PL_open_query(nullptr, PL_Q_NORMAL, predicate, args)) {}
+
+    PrologQuery(PrologQuery const &) = delete;
+    PrologQuery &operator=(PrologQuery const &) = delete;
+
+    ~PrologQuery() {
+        if (query_ != 0) {
+            PL_cut_query(query_);
+        }
+    }
+
+    int next_solution() {
+        return PL_next_solution(query_);
+    }
+
+    void close() {
+        if (query_ != 0) {
+            PL_close_query(query_);
+            query_ = 0;
+        }
+    }
+
+private:
+    qid_t query_;
+};
+
+class PrologStringBuffers {
+public:
+    PrologStringBuffers() {
+        PL_mark_string_buffers(&mark_);
+    }
+
+    PrologStringBuffers(PrologStringBuffers const &) = delete;
+    PrologStringBuffers &operator=(PrologStringBuffers const &) = delete;
+
+    ~PrologStringBuffers() {
+        PL_release_string_buffers_from_mark(mark_);
+    }
+
+private:
+    buf_mark_t mark_;
+};
+
 bool debug_enabled() {
     char const *value = std::getenv("LAZY_HEURISTIC_DEBUG");
     if (value == nullptr) return false;
@@ -52,10 +114,6 @@ bool debug_enabled() {
            text == "ON" ||
            text == "yes" ||
            text == "YES";
-}
-
-char const *semantics_name(HeuristicSemantics semantics) {
-    return semantics == HeuristicSemantics::Alpha ? "alpha" : "clingo";
 }
 
 HeuristicSemantics parse_semantics_atom(char const *name) {
@@ -79,6 +137,7 @@ std::string ensure_period(std::string rule) {
 }
 
 void call_prolog(std::string const &goal) {
+    PrologForeignFrame frame;
     term_t term = PL_new_term_ref();
     if (!PL_chars_to_term(goal.c_str(), term)) {
         throw std::runtime_error("SWI-Prolog heuristic backend: cannot parse goal: " + goal);
@@ -203,7 +262,8 @@ Clingo::Symbol parse_symbol_from_term(term_t term) {
     if (!PL_get_chars(term, &chars, CVT_WRITE | REP_UTF8 | BUF_DISCARDABLE)) {
         throw std::runtime_error("SWI-Prolog heuristic backend: cannot print target term.");
     }
-    return Clingo::parse_term(chars);
+    std::string const text(chars);
+    return Clingo::parse_term(text.c_str());
 }
 
 } // namespace
@@ -281,52 +341,46 @@ std::vector<QueryHeuristicCandidate> SWIPrologHeuristicBackend::query_applicable
     std::vector<QueryHeuristicCandidate> result;
 
     predicate_t predicate = PL_predicate("candidate", 5, nullptr);
+    PrologForeignFrame frame;
     term_t av = PL_new_term_refs(5);
-    qid_t query = PL_open_query(nullptr, PL_Q_NORMAL, predicate, av);
+    PrologQuery query(predicate, av);
     size_t rule_index = 0;
-    while (PL_next_solution(query)) {
+    while (query.next_solution()) {
+        PrologForeignFrame solution_frame;
+        PrologStringBuffers string_buffers;
+
         int weight = 0;
         int priority = 0;
         if (!PL_get_integer(av + 1, &weight) ||
             !PL_get_integer(av + 2, &priority)) {
-            PL_close_query(query);
             throw std::runtime_error("SWI-Prolog heuristic backend: candidate weight and priority must be integers.");
         }
 
         bool sign = true;
         if (!get_bool_atom(av + 3, sign)) {
-            PL_close_query(query);
             throw std::runtime_error("SWI-Prolog heuristic backend: candidate modifier must be true or false.");
         }
 
         char *semantics_chars = nullptr;
         if (!PL_get_atom_chars(av + 4, &semantics_chars)) {
-            PL_close_query(query);
             throw std::runtime_error("SWI-Prolog heuristic backend: candidate semantics must be alpha or clingo.");
         }
+        std::string const semantics_text(semantics_chars);
 
         QueryHeuristicCandidate candidate;
         candidate.target = parse_symbol_from_term(av);
         candidate.weight = weight;
         candidate.priority = priority;
         candidate.sign = sign;
-        candidate.semantics = parse_semantics_atom(semantics_chars);
+        candidate.semantics = parse_semantics_atom(semantics_text.c_str());
         candidate.rule_index = rule_index++;
         result.push_back(std::move(candidate));
     }
-    PL_close_query(query);
+    query.close();
 
     if (debug_enabled()) {
         std::cerr << "[lazy-prolog] decide call " << impl_->query_count
                   << " produced " << result.size() << " candidate(s)\n";
-        for (auto const &candidate : result) {
-            std::cerr << "[lazy-prolog] candidate target=" << candidate.target
-                      << " weight=" << candidate.weight
-                      << " priority=" << candidate.priority
-                      << " modifier=" << (candidate.sign ? "true" : "false")
-                      << " semantics=" << semantics_name(candidate.semantics)
-                      << "\n";
-        }
     }
 
     return result;

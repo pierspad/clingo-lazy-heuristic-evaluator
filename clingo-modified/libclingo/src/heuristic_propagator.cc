@@ -175,6 +175,20 @@ static bool lazy_heuristic_debug_enabled() {
            text == "YES";
 }
 
+static bool lazy_prolog_stats_enabled() {
+    char const *value = std::getenv("LAZY_PROLOG_STATS");
+    if (value == nullptr) return false;
+
+    std::string text(value);
+    return text == "1" ||
+           text == "true" ||
+           text == "TRUE" ||
+           text == "on" ||
+           text == "ON" ||
+           text == "yes" ||
+           text == "YES";
+}
+
 static bool lazy_heuristic_use_prolog_backend() {
     char const *value = std::getenv("LAZY_HEURISTIC_BACKEND");
     return value != nullptr && std::string(value) == "prolog";
@@ -875,6 +889,9 @@ Clingo::literal_t HeuristicPropagator::decide_with_query_backend(
     static_cast<void>(fallback);
     if (!query_backend_) return 0;
 
+    static size_t decide_call_id = 0;
+    ++decide_call_id;
+
     auto candidates = query_backend_->query_applicable_candidates();
 
     struct RankedCandidate {
@@ -885,22 +902,19 @@ Clingo::literal_t HeuristicPropagator::decide_with_query_backend(
 
     std::vector<RankedCandidate> ranked;
     ranked.reserve(candidates.size());
+    size_t discarded_unmapped = 0;
+    size_t discarded_assigned = 0;
     for (auto const &candidate : candidates) {
         auto lit_it = solver_lit_by_symbol_.find(candidate.target);
         if (lit_it == solver_lit_by_symbol_.end()) {
-            if (lazy_heuristic_debug_enabled()) {
-                std::cerr << "[lazy-prolog] discarding unmapped target " << candidate.target << "\n";
-            }
+            ++discarded_unmapped;
             continue;
         }
 
         Clingo::literal_t const lit = lit_it->second;
         auto const value = assignment.truth_value(lit);
         if (lit == 0 || value != Clingo::TruthValue::Free) {
-            if (lazy_heuristic_debug_enabled()) {
-                std::cerr << "[lazy-prolog] discarding assigned target " << candidate.target
-                          << " lit=" << lit << "\n";
-            }
+            ++discarded_assigned;
             continue;
         }
 
@@ -909,6 +923,15 @@ Clingo::literal_t HeuristicPropagator::decide_with_query_backend(
         ranked_candidate.lit = lit;
         ranked_candidate.target_string = candidate.target.to_string();
         ranked.push_back(std::move(ranked_candidate));
+    }
+
+    if (lazy_prolog_stats_enabled() || lazy_heuristic_debug_enabled()) {
+        std::cerr << "[lazy-prolog] stats decide_call_id=" << decide_call_id
+                  << " produced=" << candidates.size()
+                  << " discarded_assigned=" << discarded_assigned
+                  << " discarded_unmapped=" << discarded_unmapped
+                  << " considered=" << ranked.size()
+                  << "\n";
     }
 
     if (ranked.empty()) return 0;
