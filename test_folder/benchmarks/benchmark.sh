@@ -1,34 +1,47 @@
 #!/usr/bin/env bash
-# Launcher ufficiale della suite benchmark.
-# La configurazione dei singoli benchmark vive negli script dedicati.
-
 set -euo pipefail
+
+capture_overrides() {
+  local name target
+  for name in "$@"; do
+    if [ "${!name+x}" ]; then
+      target="__OVERRIDE_${name}"
+      printf -v "${target}" "%s" "${!name}"
+    fi
+  done
+}
+
+apply_overrides() {
+  local name source
+  for name in "$@"; do
+    source="__OVERRIDE_${name}"
+    if [ "${!source+x}" ]; then
+      printf -v "${name}" "%s" "${!source}"
+    fi
+  done
+}
+
+LAUNCHER_CONFIG_VARS=(RUN_BSP RUN_PUP ALLOW_LAZY_DEBUG)
+capture_overrides "${LAUNCHER_CONFIG_VARS[@]}"
+
+RUN_BSP=true
+RUN_PUP=false
+ALLOW_LAZY_DEBUG=0
+
+apply_overrides "${LAUNCHER_CONFIG_VARS[@]}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 TEST_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 BSP_SCRIPT="${SCRIPT_DIR}/benchmark_bsp.sh"
 PUP_SCRIPT="${SCRIPT_DIR}/benchmark_pup.sh"
 
-# Disable verbose lazy heuristic debug during benchmark runs unless explicitly allowed.
-if [ "${ALLOW_LAZY_DEBUG:-0}" != "1" ]; then
+export RUN_BSP
+export RUN_PUP
+
+if [ "${ALLOW_LAZY_DEBUG}" != "1" ]; then
   unset LAZY_HEURISTIC_DEBUG
   unset LAZY_PROLOG_STATS
 fi
-
-# ==============================================================================
-# CONFIGURAZIONE LAUNCHER
-#
-# Questo file decide solo quali benchmark lanciare. I parametri BSP/PUP stanno
-# nei rispettivi script:
-#   test_folder/benchmarks/benchmark_bsp.sh
-#   test_folder/benchmarks/benchmark_pup.sh
-#
-# Override da shell:
-#   RUN_BSP=true RUN_PUP=false ./test_folder/benchmarks/benchmark.sh
-# ==============================================================================
-export RUN_BSP="${RUN_BSP:-true}"
-export RUN_PUP="${RUN_PUP:-false}"
-# ==============================================================================
 
 if [ ! -f "${BSP_SCRIPT}" ]; then
   echo "Errore: script BSP non trovato: ${BSP_SCRIPT}" >&2

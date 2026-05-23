@@ -1,126 +1,65 @@
 #!/usr/bin/env bash
-# BSP benchmark iterator. The per-run execution and JSON stats parsing live in
-# benchmark_runner.py.
-
 set -euo pipefail
 
-# ==============================================================================
-# PARAMETRI BSP MODIFICABILI
-#
-# Questo e' lo script principale per i benchmark BSP. I parametri pubblici sono
-# raggruppati con prefisso BSP_* per non confonderli con quelli di altri test.
-# Puoi cambiarli qui oppure sovrascriverli da shell:
-#
-#   BSP_TIMEOUT_SECONDS=60 BSP_N_END=100 ./test_folder/benchmarks/benchmark_bsp.sh
-#
-# Compatibilita': i vecchi nomi generici TIMEOUT_SECONDS, REPEATS, N_START,
-# N_END, N_STEP, MEM_LIMIT_BYTES, MEM_LIMIT_GB, MEM_LIMIT_MB e
-# STOP_VARIANT_ON_LIMIT continuano a funzionare come fallback. Se imposti sia
-# BSP_N_END sia N_END, vince BSP_N_END.
-#
-# Varianti:
-#   BSP_VARIANTS="gc_noheur gc ga la la_co lc"
-#   Varianti disponibili: gc_noheur gc ga ga_weak la la_aux la_co lc
-#
-# Varianti query-driven ufficiali:
-#   la  = alpha, sintassi Prolog-like
-#   lc  = clingo-like, sintassi Prolog-like
-#
-# Range N:
-#   BSP_N_START=10 BSP_N_END=100 BSP_N_STEP=10
-#
-# Limiti e ripetizioni:
-#   BSP_TIMEOUT_SECONDS=60 BSP_REPEATS=1
-#   BSP_MEM_LIMIT_BYTES=10737418240
-#   oppure BSP_MEM_LIMIT_GB=10 / BSP_MEM_LIMIT_MB=10240
-#
-# Output:
-#   BSP_RESULTS_CSV="test_folder/results/profiles/my_run_results.csv"
-#   BSP_METADATA_FILE="test_folder/results/profiles/my_run_metadata.json"
-#   BSP_FAILURES_FILE="test_folder/results/profiles/my_run_failures.txt"
-#
-# Per non sovrascrivere risultati precedenti, scegli nomi file diversi per
-# BSP_RESULTS_CSV/BSP_METADATA_FILE/BSP_FAILURES_FILE. Il comportamento base
-# resta quello storico: il CSV scelto viene rigenerato a inizio run.
-#
-# Opzioni clingo:
-#   BSP_RANDOM_SETTINGS="seed_only: rand_freq_0_01:--rand-freq=0.01"
-#   BSP_CLINGO_EXTRA_ARGS="--init-watches=rnd"
-#
-# Profili consigliati, eseguibili manualmente:
-#
-# Smoke:
-#   env -u LAZY_HEURISTIC_DEBUG \
-#   BSP_TIMEOUT_SECONDS=60 \
-#   BSP_VARIANTS="gc_noheur gc ga la la_co lc" \
-#   BSP_N_START=10 BSP_N_END=20 BSP_N_STEP=10 BSP_REPEATS=1 \
-#   BSP_RESULTS_CSV="test_folder/results/profiles/bsp_smoke_results.csv" \
-#   BSP_METADATA_FILE="test_folder/results/profiles/bsp_smoke_metadata.json" \
-#   BSP_FAILURES_FILE="test_folder/results/profiles/bsp_smoke_failures.txt" \
-#   ./test_folder/benchmarks/benchmark_bsp.sh
-#
-# Main:
-#   env -u LAZY_HEURISTIC_DEBUG \
-#   BSP_TIMEOUT_SECONDS=60 \
-#   BSP_VARIANTS="gc_noheur gc ga la la_co lc" \
-#   BSP_N_START=10 BSP_N_END=100 BSP_N_STEP=10 BSP_REPEATS=1 \
-#   BSP_RESULTS_CSV="test_folder/results/profiles/bsp_main_results.csv" \
-#   BSP_METADATA_FILE="test_folder/results/profiles/bsp_main_metadata.json" \
-#   BSP_FAILURES_FILE="test_folder/results/profiles/bsp_main_failures.txt" \
-#   ./test_folder/benchmarks/benchmark_bsp.sh
-#
-# Scaling:
-#   env -u LAZY_HEURISTIC_DEBUG \
-#   BSP_TIMEOUT_SECONDS=60 \
-#   BSP_VARIANTS="gc_noheur gc ga la la_co lc" \
-#   BSP_N_START=10 BSP_N_END=150 BSP_N_STEP=10 BSP_REPEATS=1 \
-#   BSP_RESULTS_CSV="test_folder/results/profiles/bsp_scaling_results.csv" \
-#   BSP_METADATA_FILE="test_folder/results/profiles/bsp_scaling_metadata.json" \
-#   BSP_FAILURES_FILE="test_folder/results/profiles/bsp_scaling_failures.txt" \
-#   ./test_folder/benchmarks/benchmark_bsp.sh
-#
-# Boundary alpha/clingo:
-#   env -u LAZY_HEURISTIC_DEBUG \
-#   BSP_TIMEOUT_SECONDS=120 \
-#   BSP_VARIANTS="la lc" \
-#   BSP_N_START=20 BSP_N_END=35 BSP_N_STEP=1 BSP_REPEATS=1 \
-#   BSP_RESULTS_CSV="test_folder/results/profiles/bsp_boundary_results.csv" \
-#   BSP_METADATA_FILE="test_folder/results/profiles/bsp_boundary_metadata.json" \
-#   BSP_FAILURES_FILE="test_folder/results/profiles/bsp_boundary_failures.txt" \
-#   ./test_folder/benchmarks/benchmark_bsp.sh
-#
-# Optional aux:
-#   env -u LAZY_HEURISTIC_DEBUG \
-#   BSP_TIMEOUT_SECONDS=120 \
-#   BSP_VARIANTS="la_aux la_co" \
-#   BSP_N_START=10 BSP_N_END=80 BSP_N_STEP=10 BSP_REPEATS=1 \
-#   BSP_RESULTS_CSV="test_folder/results/profiles/bsp_aux_results.csv" \
-#   BSP_METADATA_FILE="test_folder/results/profiles/bsp_aux_metadata.json" \
-#   BSP_FAILURES_FILE="test_folder/results/profiles/bsp_aux_failures.txt" \
-#   ./test_folder/benchmarks/benchmark_bsp.sh
-#
-# Nota: la_aux e' opzionale e puo' essere pesante. la_co resta nel main per
-# mostrare l'effetto del vincolo lineare ottimizzato.
-# ==============================================================================
-BSP_TIMEOUT_SECONDS="${BSP_TIMEOUT_SECONDS:-${TIMEOUT_SECONDS:-180}}"
-BSP_REPEATS="${BSP_REPEATS:-${REPEATS:-2}}"
-BSP_N_START="${BSP_N_START:-${N_START:-10}}"
-BSP_N_END="${BSP_N_END:-${N_END:-200}}"
-BSP_N_STEP="${BSP_N_STEP:-${N_STEP:-10}}"
-BSP_STOP_VARIANT_ON_LIMIT="${BSP_STOP_VARIANT_ON_LIMIT:-${STOP_VARIANT_ON_LIMIT:-1}}"
+capture_overrides() {
+    local name target
+    for name in "$@"; do
+        if [ "${!name+x}" ]; then
+            target="__OVERRIDE_${name}"
+            printf -v "${target}" "%s" "${!name}"
+        fi
+    done
+}
 
-BSP_MEM_LIMIT_BYTES="${BSP_MEM_LIMIT_BYTES:-${MEM_LIMIT_BYTES:-}}"
-BSP_MEM_LIMIT_MB="${BSP_MEM_LIMIT_MB:-${MEM_LIMIT_MB:-}}"
-BSP_MEM_LIMIT_GB="${BSP_MEM_LIMIT_GB:-${MEM_LIMIT_GB:-10}}"
+apply_overrides() {
+    local name source
+    for name in "$@"; do
+        source="__OVERRIDE_${name}"
+        if [ "${!source+x}" ]; then
+            printf -v "${name}" "%s" "${!source}"
+        fi
+    done
+}
 
-BSP_VARIANTS="${BSP_VARIANTS:-gc_noheur gc ga la la_co lc}"
-BSP_RANDOM_SETTINGS="${BSP_RANDOM_SETTINGS:-seed_only:}"
-BSP_CLINGO_EXTRA_ARGS="${BSP_CLINGO_EXTRA_ARGS:-${CLINGO_EXTRA_ARGS:-}}"
+BSP_CONFIG_VARS=(
+    BSP_TIMEOUT_SECONDS
+    BSP_REPEATS
+    BSP_N_START
+    BSP_N_END
+    BSP_N_STEP
+    BSP_STOP_VARIANT_ON_LIMIT
+    BSP_MEM_LIMIT_BYTES
+    BSP_MEM_LIMIT_MB
+    BSP_MEM_LIMIT_GB
+    BSP_VARIANTS
+    BSP_RANDOM_SETTINGS
+    BSP_CLINGO_EXTRA_ARGS
+    BSP_RESULTS_CSV
+    BSP_METADATA_FILE
+    BSP_FAILURES_FILE
+)
+capture_overrides "${BSP_CONFIG_VARS[@]}"
 
-BSP_RESULTS_CSV="${BSP_RESULTS_CSV:-test_folder/results/bsp_results.csv}"
-BSP_METADATA_FILE="${BSP_METADATA_FILE:-test_folder/results/run_metadata.json}"
-BSP_FAILURES_FILE="${BSP_FAILURES_FILE:-test_folder/results/bsp_failures.txt}"
-# ==============================================================================
+BSP_TIMEOUT_SECONDS=180
+BSP_REPEATS=2
+BSP_N_START=10
+BSP_N_END=200
+BSP_N_STEP=10
+BSP_STOP_VARIANT_ON_LIMIT=1
+
+BSP_MEM_LIMIT_BYTES=
+BSP_MEM_LIMIT_MB=
+BSP_MEM_LIMIT_GB=10
+
+BSP_VARIANTS="ga_weak ga gc_noheur gc la_aux la_co la lc"
+BSP_RANDOM_SETTINGS="seed_only:"
+BSP_CLINGO_EXTRA_ARGS=
+
+BSP_RESULTS_CSV="test_folder/results/bsp_results.csv"
+BSP_METADATA_FILE="test_folder/results/run_metadata.json"
+BSP_FAILURES_FILE="test_folder/results/bsp_failures.txt"
+
+apply_overrides "${BSP_CONFIG_VARS[@]}"
 
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
