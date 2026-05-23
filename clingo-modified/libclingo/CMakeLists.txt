@@ -11,10 +11,12 @@ set(header-group-clingo
     "${CMAKE_CURRENT_SOURCE_DIR}/clingo/control.hh"
     "${CMAKE_CURRENT_SOURCE_DIR}/clingo/gringo_options.hh"
     "${CMAKE_CURRENT_SOURCE_DIR}/clingo/heuristic_aggregate.hh"
+    "${CMAKE_CURRENT_SOURCE_DIR}/clingo/heuristic_evaluation_backend.hh"
     "${CMAKE_CURRENT_SOURCE_DIR}/clingo/heuristic_parser.hh"
     "${CMAKE_CURRENT_SOURCE_DIR}/clingo/heuristic_propagator.hh"
     "${CMAKE_CURRENT_SOURCE_DIR}/clingo/heuristic_symbol.hh"
     "${CMAKE_CURRENT_SOURCE_DIR}/clingo/heuristic_types.hh"
+    "${CMAKE_CURRENT_SOURCE_DIR}/clingo/swi_prolog_heuristic_backend.hh"
     "${CMAKE_CURRENT_SOURCE_DIR}/clingo/incmode.hh"
     "${CMAKE_CURRENT_SOURCE_DIR}/clingo/scripts.hh")
 source_group("${ide_header_group}\\clingo" FILES ${header-group-clingo})
@@ -38,7 +40,8 @@ set(source-group
     "${CMAKE_CURRENT_SOURCE_DIR}/src/heuristic_parser.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/heuristic_propagator.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/incmode.cc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/scripts.cc")
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/scripts.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/swi_prolog_heuristic_backend.cc")
 source_group("${ide_source_group}" FILES ${source-group})
 set(source
     ${source-group})
@@ -61,6 +64,11 @@ endif()
 add_library(libclingo ${clingo_lib_type})
 target_sources(libclingo ${clingo_private_scope_} ${header} ${source})
 target_link_libraries(libclingo ${clingo_private_scope_} libgringo libclasp)
+if (CLINGO_USE_SWIPL)
+    target_compile_definitions(libclingo PUBLIC CLINGO_USE_SWIPL)
+    target_include_directories(libclingo ${clingo_private_scope_} ${SWIPL_INCLUDE_DIRS})
+    target_link_libraries(libclingo ${clingo_private_scope_} ${SWIPL_LIBRARIES})
+endif()
 target_include_directories(libclingo
     ${clingo_public_scope_}
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"

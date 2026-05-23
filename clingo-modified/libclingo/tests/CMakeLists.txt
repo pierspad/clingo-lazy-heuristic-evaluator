@@ -14,6 +14,7 @@ set(source
 if(CLINGO_BUILD_SHARED)
     list(APPEND source "${CMAKE_CURRENT_SOURCE_DIR}/../src/heuristic_parser.cc")
     list(APPEND source "${CMAKE_CURRENT_SOURCE_DIR}/../src/heuristic_propagator.cc")
+    list(APPEND source "${CMAKE_CURRENT_SOURCE_DIR}/../src/swi_prolog_heuristic_backend.cc")
 endif()
 # ]]]
 

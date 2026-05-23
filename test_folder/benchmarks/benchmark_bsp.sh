@@ -84,6 +84,8 @@ declare -A VARIANT_FILES=(
     [lc]="${ENC_DIR}/BSP_lc.lp"
     [la_aux]="${ENC_DIR}/BSP_la_aux.lp"
     [la_co]="${ENC_DIR}/BSP_la_co.lp"
+    [lq_alpha]="${ENC_DIR}/BSP_lq_alpha.lp"
+    [lq_clingo]="${ENC_DIR}/BSP_lq_clingo.lp"
 )
 
 declare -A VARIANT_SEMANTICS=(
@@ -95,6 +97,8 @@ declare -A VARIANT_SEMANTICS=(
     [lc]="clingo"
     [la_aux]="alpha"
     [la_co]="alpha"
+    [lq_alpha]="alpha"
+    [lq_clingo]="clingo"
 )
 
 write_run_metadata() {

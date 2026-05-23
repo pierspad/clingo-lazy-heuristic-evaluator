@@ -1,5 +1,6 @@
 #pragma once
 
+#include "clingo/heuristic_evaluation_backend.hh"
 #include "clingo/heuristic_aggregate.hh"
 #include "clingo/heuristic_types.hh"
 #include <clingo.hh>
@@ -69,12 +70,6 @@ private:
         std::vector<CandidateAggregateBinding> aggregate_bindings;
     };
 
-    struct ClingoLikeHeuristicRule {
-        HeuristicSemantics semantics = HeuristicSemantics::Alpha;
-        std::string original_rule;
-        std::string normalized_rule;
-    };
-
     struct ActiveHeuristic {
         Clingo::Symbol target;
         int weight = 0;
@@ -108,10 +103,14 @@ private:
     std::unordered_map<RuntimeAggregateKey, std::unique_ptr<AggregateState>, RuntimeAggregateKeyHash> runtime_aggregate_states_;
     std::unordered_map<RuntimeAggregateKey, std::vector<Clingo::literal_t>, RuntimeAggregateKeyHash> aggregate_source_lits_;
     std::unordered_set<Clingo::literal_t> registered_watch_lits_;
-    std::vector<ClingoLikeHeuristicRule> clingo_like_heuristic_rules_;
+    std::vector<QueryHeuristicRule> clingo_like_heuristic_rules_;
     std::vector<std::string> clingo_like_static_facts_;
+    std::vector<Clingo::Symbol> clingo_like_static_symbols_;
     std::unordered_map<Clingo::Symbol, Clingo::literal_t> solver_lit_by_symbol_;
+    std::unordered_map<Clingo::literal_t, std::vector<Clingo::Symbol>> symbols_by_watched_solver_lit_;
     std::vector<std::pair<Clingo::literal_t, Clingo::Symbol>> symbols_by_solver_lit_;
+    std::unique_ptr<HeuristicEvaluationBackend> query_backend_;
+    bool use_prolog_query_backend_ = false;
     bool clingo_like_has_n_ = false;
     int clingo_like_n_ = 0;
 
@@ -127,6 +126,10 @@ private:
     ) const;
     Clingo::literal_t decide_with_clingo_like_heuristics(Clingo::Assignment const &assignment,
                                                          Clingo::literal_t fallback) const;
+    Clingo::literal_t decide_with_query_backend(Clingo::Assignment const &assignment,
+                                                Clingo::literal_t fallback);
+    void synchronize_query_backend_state(Clingo::Assignment const &assignment);
+    void synchronize_query_backend_literal(Clingo::literal_t lit, Clingo::Assignment const &assignment) noexcept;
     std::unordered_set<Clingo::Symbol> collect_predicates_used_by_lazy_templates() const;
     GroundLiteralIndex build_ground_literal_index_for_predicates(Clingo::PropagateInit &init,
                                                                  Clingo::SymbolicAtoms const &atoms) const;

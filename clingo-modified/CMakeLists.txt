@@ -103,6 +103,9 @@ set(LUACLINGO_SUFFIX CACHE STRING
 "Advanced variable to manually configure the suffix of the Lua module.")
 
 option(CLINGO_PROFILE "profile clingo" OFF)
+option(CLINGO_USE_SWIPL
+"Enable the experimental SWI-Prolog lazy heuristic query backend."
+OFF)
 
 mark_as_advanced(CLINGO_BUILD_WEB)
 mark_as_advanced(CLINGO_BUILD_STATIC)
@@ -115,6 +118,27 @@ mark_as_advanced(PYCLINGO_DYNAMIC_LOOKUP)
 mark_as_advanced(LUACLINGO_INSTALL_DIR)
 mark_as_advanced(LUACLINGO_SUFFIX)
 mark_as_advanced(CLINGO_PROFILE)
+mark_as_advanced(CLINGO_USE_SWIPL)
+
+if (CLINGO_USE_SWIPL)
+    find_package(PkgConfig QUIET)
+    if (PkgConfig_FOUND)
+        pkg_check_modules(SWIPL QUIET swipl)
+    endif()
+    if (NOT SWIPL_FOUND)
+        find_path(SWIPL_INCLUDE_DIR SWI-Prolog.h
+            PATH_SUFFIXES swi-prolog swi)
+        find_library(SWIPL_LIBRARY swipl)
+        if (SWIPL_INCLUDE_DIR AND SWIPL_LIBRARY)
+            set(SWIPL_FOUND TRUE)
+            set(SWIPL_INCLUDE_DIRS "${SWIPL_INCLUDE_DIR}")
+            set(SWIPL_LIBRARIES "${SWIPL_LIBRARY}")
+        endif()
+    endif()
+    if (NOT SWIPL_FOUND)
+        message(FATAL_ERROR "CLINGO_USE_SWIPL=ON requires SWI-Prolog headers and libswipl.")
+    endif()
+endif()
 
 # workaround to set custom ar and ranlib
 if (CLINGO_CMAKE_AR)
