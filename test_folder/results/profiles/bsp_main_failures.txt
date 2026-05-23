@@ -1,1 +1,0 @@
-30	seed_only	lq_alpha	clingo_time_limit	timeout

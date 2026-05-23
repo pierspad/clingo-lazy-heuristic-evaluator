@@ -1,0 +1,10 @@
+n,variant,seed,setting,clingo_extra_args,status,solver_status,ground_status,failure_reason,exit_code,memory_limit_hit,solving_s,total_s,grounding_s,choices,conflicts,restarts,rules,variables,memory_mb,ground_heuristics,ground_lazy_heuristic_facts,ground_prolog_heuristic_facts,ground_query_heuristic_facts,ground_facts,ground_lines
+10,gc_noheur,1,seed_only,,ok,ok,ok,,0,0,0.000000,0.004000,0.004000,21,15,0,3476,230,13.1680,0,0,0,0,10,3112
+10,gc,1,seed_only,,ok,ok,ok,,0,0,0.000000,0.006000,0.006000,60,55,0,4960,1366,13.0703,1120,0,0,0,10,4232
+10,ga,1,seed_only,,ok,ok,ok,,0,0,0.000000,0.005000,0.005000,10,0,0,4780,242,13.1680,1120,0,0,0,66,4288
+10,la,1,seed_only,,ok,ok,ok,,0,0,0.008000,0.026000,0.018000,137,126,2,3478,230,17.8008,0,0,2,2,16,3118
+10,la_co,1,seed_only,,ok,ok,ok,,0,0,0.000000,0.001000,0.001000,8,0,0,36,11,13.0859,0,2,0,0,12,33
+10,lc,1,seed_only,,ok,ok,ok,,0,0,0.001000,0.018000,0.017000,21,15,0,3478,230,17.7969,0,0,2,2,16,3118
+20,gc_noheur,1,seed_only,,ok,ok,ok,,0,0,0.013000,0.057000,0.044000,1510,1338,12,45706,860,17.3047,0,0,0,0,20,44372
+20,gc,1,seed_only,,ok,ok,ok,,0,0,0.010000,0.067000,0.057000,578,498,5,55480,9326,21.9688,8440,0,0,0,20,52812
+20,ga,1,seed_only,,ok,ok,ok,,0,0,0.000000,0.050000,0.050000,20,0,0,54815,882,18.3906,8440,0,0,0,231,53023
