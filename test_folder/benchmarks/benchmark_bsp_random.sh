@@ -26,10 +26,10 @@
 #       rilevanti. Si tiene fuori il resto per mantenere il test piccolo e
 #       leggibile.
 #
-#   DEFAULT_REPEATS = 3
+#   DEFAULT_BSP_REPEATS = 3
 #       Esegue i seed 1, 2 e 3. Nel CSV ogni riga conserva il seed usato.
 #
-#   DEFAULT_N_START=40, DEFAULT_N_END=100, DEFAULT_N_STEP=30
+#   DEFAULT_BSP_N_START=40, DEFAULT_BSP_N_END=100, DEFAULT_BSP_N_STEP=30
 #       Usa tre dimensioni: 40, 70 e 100. Sono abbastanza distanti da mostrare
 #       l'andamento senza trasformare questo esperimento in un benchmark enorme.
 #
@@ -78,14 +78,14 @@ TEST_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 #
 # Cambia questi valori per definire la matrice randomizzata di default.
 # Puoi ancora sovrascriverli da shell, per esempio:
-#   DEFAULT_REPEATS=5 ./benchmark_bsp_random.sh
+#   DEFAULT_BSP_REPEATS=5 ./benchmark_bsp_random.sh
 #   BSP_VARIANTS="la gc" ./benchmark_bsp_random.sh
 # ==============================================================================
 DEFAULT_BSP_VARIANTS="${DEFAULT_BSP_VARIANTS:-la lc ga gc}"
-DEFAULT_REPEATS="${DEFAULT_REPEATS:-3}"
-DEFAULT_N_START="${DEFAULT_N_START:-40}"
-DEFAULT_N_END="${DEFAULT_N_END:-100}"
-DEFAULT_N_STEP="${DEFAULT_N_STEP:-30}"
+DEFAULT_BSP_REPEATS="${DEFAULT_BSP_REPEATS:-${DEFAULT_REPEATS:-3}}"
+DEFAULT_BSP_N_START="${DEFAULT_BSP_N_START:-${DEFAULT_N_START:-40}}"
+DEFAULT_BSP_N_END="${DEFAULT_BSP_N_END:-${DEFAULT_N_END:-100}}"
+DEFAULT_BSP_N_STEP="${DEFAULT_BSP_N_STEP:-${DEFAULT_N_STEP:-30}}"
 DEFAULT_BSP_RANDOM_SETTINGS="${DEFAULT_BSP_RANDOM_SETTINGS:-seed_only: rand_freq_0_01:--rand-freq=0.01}"
 DEFAULT_RANDOM_CSV="${DEFAULT_RANDOM_CSV:-${TEST_ROOT}/results/bsp_random_results.csv}"
 DEFAULT_RANDOM_METADATA="${DEFAULT_RANDOM_METADATA:-${TEST_ROOT}/results/run_random_metadata.json}"
@@ -93,13 +93,18 @@ DEFAULT_RANDOM_FAILURES="${DEFAULT_RANDOM_FAILURES:-${TEST_ROOT}/results/bsp_ran
 # ==============================================================================
 
 export BSP_VARIANTS="${BSP_VARIANTS:-${DEFAULT_BSP_VARIANTS}}"
-export REPEATS="${REPEATS:-${DEFAULT_REPEATS}}"
-export N_START="${N_START:-${DEFAULT_N_START}}"
-export N_END="${N_END:-${DEFAULT_N_END}}"
-export N_STEP="${N_STEP:-${DEFAULT_N_STEP}}"
+export BSP_REPEATS="${BSP_REPEATS:-${REPEATS:-${DEFAULT_BSP_REPEATS}}}"
+export BSP_N_START="${BSP_N_START:-${N_START:-${DEFAULT_BSP_N_START}}}"
+export BSP_N_END="${BSP_N_END:-${N_END:-${DEFAULT_BSP_N_END}}}"
+export BSP_N_STEP="${BSP_N_STEP:-${N_STEP:-${DEFAULT_BSP_N_STEP}}}"
 export BSP_RANDOM_SETTINGS="${BSP_RANDOM_SETTINGS:-${DEFAULT_BSP_RANDOM_SETTINGS}}"
 export BSP_RESULTS_CSV="${BSP_RESULTS_CSV:-${DEFAULT_RANDOM_CSV}}"
 export BSP_METADATA_FILE="${BSP_METADATA_FILE:-${DEFAULT_RANDOM_METADATA}}"
 export BSP_FAILURES_FILE="${BSP_FAILURES_FILE:-${DEFAULT_RANDOM_FAILURES}}"
+
+export REPEATS="${BSP_REPEATS}"
+export N_START="${BSP_N_START}"
+export N_END="${BSP_N_END}"
+export N_STEP="${BSP_N_STEP}"
 
 exec "${SCRIPT_DIR}/benchmark_bsp.sh" "$@"

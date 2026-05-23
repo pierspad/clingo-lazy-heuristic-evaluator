@@ -5,10 +5,18 @@
 set -euo pipefail
 
 # ==============================================================================
-# CONFIGURAZIONE BENCHMARK BSP
+# PARAMETRI BSP MODIFICABILI
 #
-# Questo e' lo script principale per i benchmark BSP. Tutte le variabili qui
-# sotto sono default: puoi sovrascriverle da shell senza modificare il file.
+# Questo e' lo script principale per i benchmark BSP. I parametri pubblici sono
+# raggruppati con prefisso BSP_* per non confonderli con quelli di altri test.
+# Puoi cambiarli qui oppure sovrascriverli da shell:
+#
+#   BSP_TIMEOUT_SECONDS=60 BSP_N_END=100 ./test_folder/benchmarks/benchmark_bsp.sh
+#
+# Compatibilita': i vecchi nomi generici TIMEOUT_SECONDS, REPEATS, N_START,
+# N_END, N_STEP, MEM_LIMIT_BYTES, MEM_LIMIT_GB, MEM_LIMIT_MB e
+# STOP_VARIANT_ON_LIMIT continuano a funzionare come fallback. Se imposti sia
+# BSP_N_END sia N_END, vince BSP_N_END.
 #
 # Varianti:
 #   BSP_VARIANTS="gc_noheur gc ga la la_co lc"
@@ -19,12 +27,12 @@ set -euo pipefail
 #   lc  = clingo-like, sintassi Prolog-like
 #
 # Range N:
-#   N_START=10 N_END=100 N_STEP=10
+#   BSP_N_START=10 BSP_N_END=100 BSP_N_STEP=10
 #
 # Limiti e ripetizioni:
-#   TIMEOUT_SECONDS=60 REPEATS=1
-#   MEM_LIMIT_BYTES=10737418240
-#   oppure MEM_LIMIT_GB=10 / MEM_LIMIT_MB=10240
+#   BSP_TIMEOUT_SECONDS=60 BSP_REPEATS=1
+#   BSP_MEM_LIMIT_BYTES=10737418240
+#   oppure BSP_MEM_LIMIT_GB=10 / BSP_MEM_LIMIT_MB=10240
 #
 # Output:
 #   BSP_RESULTS_CSV="test_folder/results/profiles/my_run_results.csv"
@@ -37,15 +45,15 @@ set -euo pipefail
 #
 # Opzioni clingo:
 #   BSP_RANDOM_SETTINGS="seed_only: rand_freq_0_01:--rand-freq=0.01"
-#   CLINGO_EXTRA_ARGS="--init-watches=rnd"
+#   BSP_CLINGO_EXTRA_ARGS="--init-watches=rnd"
 #
 # Profili consigliati, eseguibili manualmente:
 #
 # Smoke:
 #   env -u LAZY_HEURISTIC_DEBUG \
-#   TIMEOUT_SECONDS=60 \
+#   BSP_TIMEOUT_SECONDS=60 \
 #   BSP_VARIANTS="gc_noheur gc ga la la_co lc" \
-#   N_START=10 N_END=20 N_STEP=10 REPEATS=1 \
+#   BSP_N_START=10 BSP_N_END=20 BSP_N_STEP=10 BSP_REPEATS=1 \
 #   BSP_RESULTS_CSV="test_folder/results/profiles/bsp_smoke_results.csv" \
 #   BSP_METADATA_FILE="test_folder/results/profiles/bsp_smoke_metadata.json" \
 #   BSP_FAILURES_FILE="test_folder/results/profiles/bsp_smoke_failures.txt" \
@@ -53,9 +61,9 @@ set -euo pipefail
 #
 # Main:
 #   env -u LAZY_HEURISTIC_DEBUG \
-#   TIMEOUT_SECONDS=60 \
+#   BSP_TIMEOUT_SECONDS=60 \
 #   BSP_VARIANTS="gc_noheur gc ga la la_co lc" \
-#   N_START=10 N_END=100 N_STEP=10 REPEATS=1 \
+#   BSP_N_START=10 BSP_N_END=100 BSP_N_STEP=10 BSP_REPEATS=1 \
 #   BSP_RESULTS_CSV="test_folder/results/profiles/bsp_main_results.csv" \
 #   BSP_METADATA_FILE="test_folder/results/profiles/bsp_main_metadata.json" \
 #   BSP_FAILURES_FILE="test_folder/results/profiles/bsp_main_failures.txt" \
@@ -63,9 +71,9 @@ set -euo pipefail
 #
 # Scaling:
 #   env -u LAZY_HEURISTIC_DEBUG \
-#   TIMEOUT_SECONDS=60 \
+#   BSP_TIMEOUT_SECONDS=60 \
 #   BSP_VARIANTS="gc_noheur gc ga la la_co lc" \
-#   N_START=10 N_END=150 N_STEP=10 REPEATS=1 \
+#   BSP_N_START=10 BSP_N_END=150 BSP_N_STEP=10 BSP_REPEATS=1 \
 #   BSP_RESULTS_CSV="test_folder/results/profiles/bsp_scaling_results.csv" \
 #   BSP_METADATA_FILE="test_folder/results/profiles/bsp_scaling_metadata.json" \
 #   BSP_FAILURES_FILE="test_folder/results/profiles/bsp_scaling_failures.txt" \
@@ -73,9 +81,9 @@ set -euo pipefail
 #
 # Boundary alpha/clingo:
 #   env -u LAZY_HEURISTIC_DEBUG \
-#   TIMEOUT_SECONDS=120 \
+#   BSP_TIMEOUT_SECONDS=120 \
 #   BSP_VARIANTS="la lc" \
-#   N_START=20 N_END=35 N_STEP=1 REPEATS=1 \
+#   BSP_N_START=20 BSP_N_END=35 BSP_N_STEP=1 BSP_REPEATS=1 \
 #   BSP_RESULTS_CSV="test_folder/results/profiles/bsp_boundary_results.csv" \
 #   BSP_METADATA_FILE="test_folder/results/profiles/bsp_boundary_metadata.json" \
 #   BSP_FAILURES_FILE="test_folder/results/profiles/bsp_boundary_failures.txt" \
@@ -83,9 +91,9 @@ set -euo pipefail
 #
 # Optional aux:
 #   env -u LAZY_HEURISTIC_DEBUG \
-#   TIMEOUT_SECONDS=120 \
+#   BSP_TIMEOUT_SECONDS=120 \
 #   BSP_VARIANTS="la_aux la_co" \
-#   N_START=10 N_END=80 N_STEP=10 REPEATS=1 \
+#   BSP_N_START=10 BSP_N_END=80 BSP_N_STEP=10 BSP_REPEATS=1 \
 #   BSP_RESULTS_CSV="test_folder/results/profiles/bsp_aux_results.csv" \
 #   BSP_METADATA_FILE="test_folder/results/profiles/bsp_aux_metadata.json" \
 #   BSP_FAILURES_FILE="test_folder/results/profiles/bsp_aux_failures.txt" \
@@ -94,15 +102,24 @@ set -euo pipefail
 # Nota: la_aux e' opzionale e puo' essere pesante. la_co resta nel main per
 # mostrare l'effetto del vincolo lineare ottimizzato.
 # ==============================================================================
-DEFAULT_TIMEOUT_SECONDS=180
-DEFAULT_REPEATS=2
-DEFAULT_N_START=10
-DEFAULT_N_END=200
-DEFAULT_N_STEP=10
-DEFAULT_MEM_LIMIT_BYTES=$((10 * 1024 * 1024 * 1024))
-DEFAULT_STOP_VARIANT_ON_LIMIT=1
-DEFAULT_BSP_VARIANTS="gc_noheur gc ga la la_co lc"
-DEFAULT_BSP_RANDOM_SETTINGS="seed_only:"
+BSP_TIMEOUT_SECONDS="${BSP_TIMEOUT_SECONDS:-${TIMEOUT_SECONDS:-180}}"
+BSP_REPEATS="${BSP_REPEATS:-${REPEATS:-2}}"
+BSP_N_START="${BSP_N_START:-${N_START:-10}}"
+BSP_N_END="${BSP_N_END:-${N_END:-200}}"
+BSP_N_STEP="${BSP_N_STEP:-${N_STEP:-10}}"
+BSP_STOP_VARIANT_ON_LIMIT="${BSP_STOP_VARIANT_ON_LIMIT:-${STOP_VARIANT_ON_LIMIT:-1}}"
+
+BSP_MEM_LIMIT_BYTES="${BSP_MEM_LIMIT_BYTES:-${MEM_LIMIT_BYTES:-}}"
+BSP_MEM_LIMIT_MB="${BSP_MEM_LIMIT_MB:-${MEM_LIMIT_MB:-}}"
+BSP_MEM_LIMIT_GB="${BSP_MEM_LIMIT_GB:-${MEM_LIMIT_GB:-10}}"
+
+BSP_VARIANTS="${BSP_VARIANTS:-gc_noheur gc ga la la_co lc}"
+BSP_RANDOM_SETTINGS="${BSP_RANDOM_SETTINGS:-seed_only:}"
+BSP_CLINGO_EXTRA_ARGS="${BSP_CLINGO_EXTRA_ARGS:-${CLINGO_EXTRA_ARGS:-}}"
+
+BSP_RESULTS_CSV="${BSP_RESULTS_CSV:-test_folder/results/bsp_results.csv}"
+BSP_METADATA_FILE="${BSP_METADATA_FILE:-test_folder/results/run_metadata.json}"
+BSP_FAILURES_FILE="${BSP_FAILURES_FILE:-test_folder/results/bsp_failures.txt}"
 # ==============================================================================
 
 PYTHON_BIN="${PYTHON_BIN:-python3}"
@@ -113,7 +130,40 @@ RUNNER="${SCRIPT_DIR}/benchmark_runner.py"
 printf -v BENCHMARK_LAUNCH_COMMAND "%q " "$0" "$@"
 BENCHMARK_LAUNCH_COMMAND="${BENCHMARK_LAUNCH_COMMAND% }"
 
-CLINGO_MOD="${CLINGO_MOD:-}"
+repo_path() {
+    case "$1" in
+        /*) printf '%s\n' "$1" ;;
+        *) printf '%s/%s\n' "${REPO_ROOT}" "$1" ;;
+    esac
+}
+
+command_path() {
+    case "$1" in
+        /*) printf '%s\n' "$1" ;;
+        */*) repo_path "$1" ;;
+        *) printf '%s\n' "$1" ;;
+    esac
+}
+
+require_positive_int() {
+    local name="$1"
+    local value="$2"
+    if ! [[ "${value}" =~ ^[0-9]+$ ]] || [ "${value}" -lt 1 ]; then
+        echo "Errore: ${name} deve essere un intero positivo, ricevuto '${value}'." >&2
+        exit 1
+    fi
+}
+
+require_bool01() {
+    local name="$1"
+    local value="$2"
+    if [ "${value}" != "0" ] && [ "${value}" != "1" ]; then
+        echo "Errore: ${name} deve valere 0 oppure 1, ricevuto '${value}'." >&2
+        exit 1
+    fi
+}
+
+CLINGO_MOD="$(command_path "${CLINGO_MOD:-}")"
 for candidate in \
     "${REPO_ROOT}/build/bin/clingo" \
     "${REPO_ROOT}/clingo-modified/build/bin/clingo"; do
@@ -126,37 +176,84 @@ if [ -z "${CLINGO_MOD}" ]; then
     echo "Errore: binario clingo modificato non trovato."
     exit 1
 fi
+if [[ "${CLINGO_MOD}" == */* ]]; then
+    if [ ! -x "${CLINGO_MOD}" ]; then
+        echo "Errore: binario clingo non eseguibile: ${CLINGO_MOD}"
+        exit 1
+    fi
+elif ! command -v "${CLINGO_MOD}" >/dev/null 2>&1; then
+    echo "Errore: binario clingo non trovato nel PATH: ${CLINGO_MOD}"
+    exit 1
+fi
 
 if [ ! -x "${RUNNER}" ]; then
     echo "Errore: runner benchmark non trovato: ${RUNNER}"
     exit 1
 fi
 
-TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-${DEFAULT_TIMEOUT_SECONDS}}"
-if [ -n "${MEM_LIMIT_BYTES:-}" ]; then
-    MEM_LIMIT_BYTES="${MEM_LIMIT_BYTES}"
-elif [ -n "${MEM_LIMIT_GB:-}" ]; then
-    MEM_LIMIT_BYTES="$("${PYTHON_BIN}" -c 'import sys; print(int(float(sys.argv[1]) * 1024**3))' "${MEM_LIMIT_GB}")"
-elif [ -n "${MEM_LIMIT_MB:-}" ]; then
-    MEM_LIMIT_BYTES="$("${PYTHON_BIN}" -c 'import sys; print(int(float(sys.argv[1]) * 1024**2))' "${MEM_LIMIT_MB}")"
+TIMEOUT_SECONDS="${BSP_TIMEOUT_SECONDS}"
+if [ -n "${BSP_MEM_LIMIT_BYTES:-}" ]; then
+    MEM_LIMIT_BYTES="${BSP_MEM_LIMIT_BYTES}"
+elif [ -n "${BSP_MEM_LIMIT_MB:-}" ]; then
+    MEM_LIMIT_BYTES="$("${PYTHON_BIN}" -c 'import sys; print(int(float(sys.argv[1]) * 1024**2))' "${BSP_MEM_LIMIT_MB}")"
+elif [ -n "${BSP_MEM_LIMIT_GB:-}" ]; then
+    MEM_LIMIT_BYTES="$("${PYTHON_BIN}" -c 'import sys; print(int(float(sys.argv[1]) * 1024**3))' "${BSP_MEM_LIMIT_GB}")"
 else
-    MEM_LIMIT_BYTES="${DEFAULT_MEM_LIMIT_BYTES}"
+    MEM_LIMIT_BYTES=$((10 * 1024 * 1024 * 1024))
 fi
 
-REPEATS="${REPEATS:-${DEFAULT_REPEATS}}"
-N_START="${N_START:-${DEFAULT_N_START}}"
-N_END="${N_END:-${DEFAULT_N_END}}"
-N_STEP="${N_STEP:-${DEFAULT_N_STEP}}"
-STOP_VARIANT_ON_LIMIT="${STOP_VARIANT_ON_LIMIT:-${DEFAULT_STOP_VARIANT_ON_LIMIT}}"
-BSP_RANDOM_SETTINGS_EFFECTIVE="${BSP_RANDOM_SETTINGS:-${DEFAULT_BSP_RANDOM_SETTINGS}}"
-export BSP_RANDOM_SETTINGS_EFFECTIVE
+REPEATS="${BSP_REPEATS}"
+N_START="${BSP_N_START}"
+N_END="${BSP_N_END}"
+N_STEP="${BSP_N_STEP}"
+STOP_VARIANT_ON_LIMIT="${BSP_STOP_VARIANT_ON_LIMIT}"
+BSP_RANDOM_SETTINGS_EFFECTIVE="${BSP_RANDOM_SETTINGS}"
+BSP_RANDOM_SETTINGS="${BSP_RANDOM_SETTINGS_EFFECTIVE}"
+CLINGO_EXTRA_ARGS="${BSP_CLINGO_EXTRA_ARGS}"
+
+require_positive_int "TIMEOUT_SECONDS" "${TIMEOUT_SECONDS}"
+require_positive_int "MEM_LIMIT_BYTES" "${MEM_LIMIT_BYTES}"
+require_positive_int "REPEATS" "${REPEATS}"
+require_positive_int "N_START" "${N_START}"
+require_positive_int "N_END" "${N_END}"
+require_positive_int "N_STEP" "${N_STEP}"
+require_bool01 "STOP_VARIANT_ON_LIMIT" "${STOP_VARIANT_ON_LIMIT}"
+if [ "${N_END}" -lt "${N_START}" ]; then
+    echo "Errore: N_END (${N_END}) deve essere maggiore o uguale a N_START (${N_START})." >&2
+    exit 1
+fi
 
 ENC_DIR="${TEST_ROOT}/encodings/BSP"
 INSTANCE_RANGE="${TEST_ROOT}/instances/BSP_instances/BSP_range.lp"
 RESULTS_DIR="${TEST_ROOT}/results"
-CSV_FILE="${BSP_RESULTS_CSV:-${RESULTS_DIR}/bsp_results.csv}"
-METADATA_FILE="${BSP_METADATA_FILE:-${RESULTS_DIR}/run_metadata.json}"
-FAILURES_FILE="${BSP_FAILURES_FILE:-${RESULTS_DIR}/bsp_failures.txt}"
+CSV_FILE="$(repo_path "${BSP_RESULTS_CSV}")"
+METADATA_FILE="$(repo_path "${BSP_METADATA_FILE}")"
+FAILURES_FILE="$(repo_path "${BSP_FAILURES_FILE}")"
+
+export PYTHON_BIN
+export CLINGO_MOD
+export BSP_TIMEOUT_SECONDS="${TIMEOUT_SECONDS}"
+export BSP_REPEATS="${REPEATS}"
+export BSP_N_START="${N_START}"
+export BSP_N_END="${N_END}"
+export BSP_N_STEP="${N_STEP}"
+export BSP_STOP_VARIANT_ON_LIMIT="${STOP_VARIANT_ON_LIMIT}"
+export BSP_MEM_LIMIT_BYTES="${MEM_LIMIT_BYTES}"
+export TIMEOUT_SECONDS
+export MEM_LIMIT_BYTES
+export REPEATS
+export N_START
+export N_END
+export N_STEP
+export STOP_VARIANT_ON_LIMIT
+export BSP_VARIANTS
+export BSP_RANDOM_SETTINGS
+export BSP_RANDOM_SETTINGS_EFFECTIVE
+export BSP_CLINGO_EXTRA_ARGS="${CLINGO_EXTRA_ARGS}"
+export CLINGO_EXTRA_ARGS
+export BSP_RESULTS_CSV="${CSV_FILE}"
+export BSP_METADATA_FILE="${METADATA_FILE}"
+export BSP_FAILURES_FILE="${FAILURES_FILE}"
 
 declare -A VARIANT_FILES=(
     [gc_noheur]="${ENC_DIR}/BSP_gc_noheur.lp"
@@ -447,7 +544,7 @@ metadata_path.write_text(
 PY
 }
 
-read -r -a ACTIVE_VARIANTS <<< "${BSP_VARIANTS:-${DEFAULT_BSP_VARIANTS}}"
+read -r -a ACTIVE_VARIANTS <<< "${BSP_VARIANTS}"
 read -r -a ACTIVE_SETTING_SPECS <<< "${BSP_RANDOM_SETTINGS_EFFECTIVE}"
 
 if [ ! -f "${INSTANCE_RANGE}" ]; then
