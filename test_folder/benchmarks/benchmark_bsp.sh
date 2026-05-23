@@ -11,9 +11,12 @@ set -euo pipefail
 # sotto sono default: puoi sovrascriverle da shell senza modificare il file.
 #
 # Varianti:
-#   BSP_VARIANTS="gc_noheur gc ga la la_co lc lq_alpha lq_clingo"
+#   BSP_VARIANTS="gc_noheur gc ga la la_co lc"
 #   Varianti disponibili: gc_noheur gc ga ga_weak la la_aux la_co lc
-#                         lq_alpha lq_clingo
+#
+# Varianti query-driven ufficiali:
+#   la  = alpha, sintassi Prolog-like
+#   lc  = clingo-like, sintassi Prolog-like
 #
 # Range N:
 #   N_START=10 N_END=100 N_STEP=10
@@ -41,7 +44,7 @@ set -euo pipefail
 # Smoke:
 #   env -u LAZY_HEURISTIC_DEBUG \
 #   TIMEOUT_SECONDS=60 \
-#   BSP_VARIANTS="gc_noheur gc ga la la_co lc lq_alpha lq_clingo" \
+#   BSP_VARIANTS="gc_noheur gc ga la la_co lc" \
 #   N_START=10 N_END=20 N_STEP=10 REPEATS=1 \
 #   BSP_RESULTS_CSV="test_folder/results/profiles/bsp_smoke_results.csv" \
 #   BSP_METADATA_FILE="test_folder/results/profiles/bsp_smoke_metadata.json" \
@@ -51,7 +54,7 @@ set -euo pipefail
 # Main:
 #   env -u LAZY_HEURISTIC_DEBUG \
 #   TIMEOUT_SECONDS=60 \
-#   BSP_VARIANTS="gc_noheur gc ga la la_co lc lq_alpha lq_clingo" \
+#   BSP_VARIANTS="gc_noheur gc ga la la_co lc" \
 #   N_START=10 N_END=100 N_STEP=10 REPEATS=1 \
 #   BSP_RESULTS_CSV="test_folder/results/profiles/bsp_main_results.csv" \
 #   BSP_METADATA_FILE="test_folder/results/profiles/bsp_main_metadata.json" \
@@ -61,22 +64,35 @@ set -euo pipefail
 # Scaling:
 #   env -u LAZY_HEURISTIC_DEBUG \
 #   TIMEOUT_SECONDS=60 \
-#   BSP_VARIANTS="gc_noheur gc ga la la_co lq_clingo" \
+#   BSP_VARIANTS="gc_noheur gc ga la la_co lc" \
 #   N_START=10 N_END=150 N_STEP=10 REPEATS=1 \
 #   BSP_RESULTS_CSV="test_folder/results/profiles/bsp_scaling_results.csv" \
 #   BSP_METADATA_FILE="test_folder/results/profiles/bsp_scaling_metadata.json" \
 #   BSP_FAILURES_FILE="test_folder/results/profiles/bsp_scaling_failures.txt" \
 #   ./test_folder/benchmarks/benchmark_bsp.sh
 #
-# Prolog-boundary:
+# Boundary alpha/clingo:
 #   env -u LAZY_HEURISTIC_DEBUG \
 #   TIMEOUT_SECONDS=120 \
-#   BSP_VARIANTS="lq_alpha lq_clingo" \
+#   BSP_VARIANTS="la lc" \
 #   N_START=20 N_END=35 N_STEP=1 REPEATS=1 \
-#   BSP_RESULTS_CSV="test_folder/results/profiles/bsp_prolog_boundary_results.csv" \
-#   BSP_METADATA_FILE="test_folder/results/profiles/bsp_prolog_boundary_metadata.json" \
-#   BSP_FAILURES_FILE="test_folder/results/profiles/bsp_prolog_boundary_failures.txt" \
+#   BSP_RESULTS_CSV="test_folder/results/profiles/bsp_boundary_results.csv" \
+#   BSP_METADATA_FILE="test_folder/results/profiles/bsp_boundary_metadata.json" \
+#   BSP_FAILURES_FILE="test_folder/results/profiles/bsp_boundary_failures.txt" \
 #   ./test_folder/benchmarks/benchmark_bsp.sh
+#
+# Optional aux:
+#   env -u LAZY_HEURISTIC_DEBUG \
+#   TIMEOUT_SECONDS=120 \
+#   BSP_VARIANTS="la_aux la_co" \
+#   N_START=10 N_END=80 N_STEP=10 REPEATS=1 \
+#   BSP_RESULTS_CSV="test_folder/results/profiles/bsp_aux_results.csv" \
+#   BSP_METADATA_FILE="test_folder/results/profiles/bsp_aux_metadata.json" \
+#   BSP_FAILURES_FILE="test_folder/results/profiles/bsp_aux_failures.txt" \
+#   ./test_folder/benchmarks/benchmark_bsp.sh
+#
+# Nota: la_aux e' opzionale e puo' essere pesante. la_co resta nel main per
+# mostrare l'effetto del vincolo lineare ottimizzato.
 # ==============================================================================
 DEFAULT_TIMEOUT_SECONDS=180
 DEFAULT_REPEATS=2
@@ -85,7 +101,7 @@ DEFAULT_N_END=200
 DEFAULT_N_STEP=10
 DEFAULT_MEM_LIMIT_BYTES=$((10 * 1024 * 1024 * 1024))
 DEFAULT_STOP_VARIANT_ON_LIMIT=1
-DEFAULT_BSP_VARIANTS="ga gc_noheur gc la_aux la_co la lc"
+DEFAULT_BSP_VARIANTS="gc_noheur gc ga la la_co lc"
 DEFAULT_BSP_RANDOM_SETTINGS="seed_only:"
 # ==============================================================================
 
@@ -151,8 +167,6 @@ declare -A VARIANT_FILES=(
     [lc]="${ENC_DIR}/BSP_lc.lp"
     [la_aux]="${ENC_DIR}/BSP_la_aux.lp"
     [la_co]="${ENC_DIR}/BSP_la_co.lp"
-    [lq_alpha]="${ENC_DIR}/BSP_lq_alpha.lp"
-    [lq_clingo]="${ENC_DIR}/BSP_lq_clingo.lp"
 )
 
 declare -A VARIANT_SEMANTICS=(
@@ -164,8 +178,6 @@ declare -A VARIANT_SEMANTICS=(
     [lc]="clingo"
     [la_aux]="alpha"
     [la_co]="alpha"
-    [lq_alpha]="alpha"
-    [lq_clingo]="clingo"
 )
 
 write_run_metadata() {

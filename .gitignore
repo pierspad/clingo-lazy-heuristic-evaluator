@@ -6,3 +6,9 @@ STUDIO
 _minted*/
 *.minted
 thesis/Tesi
+test_folder/results/debug/
+test_folder/results/profiles/
+test_folder/results/graphs/
+test_folder/results/*.csv
+test_folder/results/*.json
+test_folder/results/*.txt

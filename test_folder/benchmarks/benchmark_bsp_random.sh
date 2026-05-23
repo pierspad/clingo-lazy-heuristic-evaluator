@@ -44,8 +44,9 @@
 #
 # Output atteso
 # -------------
-# Lo script delega tutto a benchmark_bsp.sh, ma usa file dedicati per non
-# sovrascrivere il benchmark BSP completo:
+# Script opzionale: non e' il benchmark BSP principale. Delega tutto a
+# benchmark_bsp.sh, ma usa file dedicati per non sovrascrivere il benchmark BSP
+# completo:
 #   test_folder/results/bsp_random_results.csv
 #   test_folder/results/run_random_metadata.json
 #   test_folder/results/bsp_random_failures.txt

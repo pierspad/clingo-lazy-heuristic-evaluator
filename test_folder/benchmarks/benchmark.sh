@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # benchmark.sh
-# Launcher unico: esegue benchmark BSP e benchmark PUP in sequenza.
+# Wrapper storico BSP+PUP.
+# Per i benchmark BSP ufficiali usare direttamente benchmark_bsp.sh.
+# Il runner per una singola esecuzione resta benchmark_runner.py.
 
 set -euo pipefail
 
@@ -68,7 +70,7 @@ MINUTES=$(((TOTAL_SECONDS % 3600) / 60))
 SECONDS_REMAINING=$((TOTAL_SECONDS % 60))
 
 echo "==============================================================="
-echo " Benchmark completi (BSP + PUP)."
+echo " Wrapper benchmark completato."
 printf " Durata totale: %02d ore, %02d minuti, %02d secondi\n" "$HOURS" "$MINUTES" "$SECONDS_REMAINING"
 echo " Risultati disponibili in ${TEST_ROOT}/results"
 echo "==============================================================="
