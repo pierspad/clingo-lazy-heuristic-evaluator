@@ -1,3 +1,14 @@
+```bash
+cd /home/ribben/Desktop/clingo-lazy-heuristics
+
+rm -rf clingo-modified/build
+
+cmake -S clingo-modified -B clingo-modified/build -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCLINGO_USE_SWIPL=ON
+```
+
+
 # Build di `clingo-modified`
 
 Questi appunti servono per ricompilare la versione modificata di clingo che sta nella cartella `clingo-modified`.

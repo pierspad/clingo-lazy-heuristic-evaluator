@@ -67,6 +67,7 @@ target_link_libraries(libclingo ${clingo_private_scope_} libgringo libclasp)
 if (CLINGO_USE_SWIPL)
     target_compile_definitions(libclingo PUBLIC CLINGO_USE_SWIPL)
     target_include_directories(libclingo ${clingo_private_scope_} ${SWIPL_INCLUDE_DIRS})
+    target_link_directories(libclingo ${clingo_private_scope_} ${SWIPL_LIBRARY_DIRS})
     target_link_libraries(libclingo ${clingo_private_scope_} ${SWIPL_LIBRARIES})
 endif()
 target_include_directories(libclingo
