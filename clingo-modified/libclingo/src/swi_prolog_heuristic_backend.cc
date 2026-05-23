@@ -169,7 +169,11 @@ void retract_runtime_database() {
         "static_atom(_)",
         "target_atom(_)",
         "n_value(_)",
+        "n(_)",
+        "holds(_)",
         "holds_pos(_)",
+        "default_not(_)",
+        "default_not(_, _)",
         "holds_neg(_, _)",
         "target_available(_)",
         "dyn_sum(_, _, _)",
@@ -195,7 +199,11 @@ std::string runtime_program(std::vector<QueryHeuristicRule> const &rules,
     out << ":- dynamic static_atom/1.\n";
     out << ":- dynamic target_atom/1.\n";
     out << ":- dynamic n_value/1.\n";
+    out << ":- dynamic n/1.\n";
+    out << ":- dynamic holds/1.\n";
     out << ":- dynamic holds_pos/1.\n";
+    out << ":- dynamic default_not/1.\n";
+    out << ":- dynamic default_not/2.\n";
     out << ":- dynamic holds_neg/2.\n";
     out << ":- dynamic target_available/1.\n";
     out << ":- dynamic dyn_sum/3.\n";
@@ -204,10 +212,15 @@ std::string runtime_program(std::vector<QueryHeuristicRule> const &rules,
     out << ":- dynamic dyn_max/3.\n";
     out << ":- dynamic candidate/5.\n";
     out << ":- use_module(library(aggregate)).\n";
-    out << "holds_pos(A) :- true_atom(A).\n";
-    out << "holds_pos(A) :- static_atom(A), \\+ true_atom(A).\n";
-    out << "holds_neg(alpha, A) :- \\+ holds_pos(A).\n";
+    out << "holds(A) :- true_atom(A).\n";
+    out << "holds(A) :- static_atom(A), \\+ true_atom(A).\n";
+    out << "holds_pos(A) :- holds(A).\n";
+    out << "default_not(A) :- default_not(alpha, A).\n";
+    out << "default_not(alpha, A) :- \\+ holds(A).\n";
+    out << "default_not(clingo, A) :- false_atom(A).\n";
+    out << "holds_neg(alpha, A) :- default_not(alpha, A).\n";
     out << "holds_neg(clingo, A) :- false_atom(A).\n";
+    out << "n(N) :- n_value(N).\n";
     out << "target_available(A) :- target_atom(A), \\+ true_atom(A), \\+ false_atom(A).\n";
     out << "dyn_sum(Goal, Template, Sum) :- aggregate_all(sum(Template), Goal, Sum).\n";
     out << "dyn_count(Goal, Count) :- aggregate_all(count, Goal, Count).\n";

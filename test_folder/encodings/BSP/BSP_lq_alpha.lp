@@ -15,9 +15,9 @@ sumC(Sum) :- Sum = #sum{Y : c(Y)}.
 % constrain difference between sums
 :- sumB(SB), sumC(SC), (SB - SC)**2 > 1.
 
-prolog_heuristic(alpha, "candidate(b(X), W, 0, true, alpha) :- holds_pos(x(X)), holds_neg(alpha, c(X)), dyn_sum(holds_pos(c(Y)), Y, S), n_value(N), W is ((N+1)*S)+X, target_available(b(X)).").
+heuristic(alpha, "heuristic(b(X), W, 0, true) :- holds(x(X)), default_not(c(X)), aggregate_all(sum(Y), holds(c(Y)), S), n(N), W is (N + 1) * S + X, target_available(b(X)).").
 
-prolog_heuristic(alpha, "candidate(c(X), W, 0, true, alpha) :- holds_pos(x(X)), holds_neg(alpha, b(X)), dyn_sum(holds_pos(b(Y)), Y, S), n_value(N), W is ((N+1)*S)+X, target_available(c(X)).").
+heuristic(alpha, "heuristic(c(X), W, 0, true) :- holds(x(X)), default_not(b(X)), aggregate_all(sum(Y), holds(b(Y)), S), n(N), W is (N + 1) * S + X, target_available(c(X)).").
 
 #show b/1.
 #show c/1.

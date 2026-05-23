@@ -1,0 +1,43 @@
+clingo version 5.8.0
+Reading from ...r/instances/BSP_instances/BSP_range.lp ...
+[lazy-heuristic] collected 2 query string rule(s)
+  [0] semantics=alpha original=heuristic(b(X), W, 0, true) :- holds(x(X)), default_not(c(X)), aggregate_all(sum(Y), holds(c(Y)), S), n(N), W is (N + 1) * S + X, target_available(b(X)). normalized=candidate(b(X), W, 0, true, alpha) :- holds(x(X)), default_not(alpha, c(X)), aggregate_all(sum(Y), holds(c(Y)), S), n(N), W is (N + 1) * S + X, target_available(b(X)).
+  [1] semantics=alpha original=heuristic(c(X), W, 0, true) :- holds(x(X)), default_not(b(X)), aggregate_all(sum(Y), holds(b(Y)), S), n(N), W is (N + 1) * S + X, target_available(c(X)). normalized=candidate(c(X), W, 0, true, alpha) :- holds(x(X)), default_not(alpha, b(X)), aggregate_all(sum(Y), holds(b(Y)), S), n(N), W is (N + 1) * S + X, target_available(c(X)).
+[lazy-heuristic] inferred #const n=3 from x/1
+[lazy-prolog] relevant predicates: b/1 c/1 x/1
+[lazy-prolog] symbolic atoms considered=23 synchronized=9 ignored_irrelevant=14
+[lazy-prolog] ignored signatures: sumB/1 sumC/1
+[lazy-prolog] initialized with 2 rule(s), 3 static atom(s), 6 known atom(s)
+[lazy-prolog] runtime file /tmp/clingo_lazy_prolog_143049_0.pl
+[lazy-prolog] state free_atom(c(1))
+[lazy-prolog] state free_atom(c(2))
+[lazy-prolog] state free_atom(c(3))
+[lazy-prolog] state free_atom(b(1))
+[lazy-prolog] state free_atom(b(2))
+[lazy-prolog] state free_atom(b(3))
+Solving...
+[lazy-prolog] decide call 1 produced 6 candidate(s)
+[lazy-prolog] stats decide_call_id=1 produced=6 discarded_assigned=0 discarded_unmapped=0 considered=6
+[lazy-prolog] selected target=b(3) weight=3 priority=0 sign=true lit=-22
+[lazy-prolog] state false_atom(c(3))
+[lazy-prolog] decide call 2 produced 5 candidate(s)
+[lazy-prolog] stats decide_call_id=2 produced=5 discarded_assigned=1 discarded_unmapped=0 considered=4
+[lazy-prolog] selected target=b(2) weight=2 priority=0 sign=true lit=-7
+[lazy-prolog] state false_atom(c(2))
+[lazy-prolog] decide call 3 produced 4 candidate(s)
+[lazy-prolog] stats decide_call_id=3 produced=4 discarded_assigned=2 discarded_unmapped=0 considered=2
+[lazy-prolog] selected target=b(1) weight=1 priority=0 sign=true lit=-2
+[lazy-prolog] state free_atom(c(2))
+[lazy-prolog] state true_atom(c(2))
+[lazy-prolog] decide call 4 produced 3 candidate(s)
+[lazy-prolog] stats decide_call_id=4 produced=3 discarded_assigned=1 discarded_unmapped=0 considered=2
+[lazy-prolog] selected target=b(1) weight=9 priority=0 sign=true lit=-2
+[lazy-prolog] state true_atom(c(1))
+Answer: 1 (Time: 0,020s)
+c(1) c(2) b(3) sumC(3) sumB(3)
+SATISFIABLE
+
+Models       : 1+
+Calls        : 1
+Time         : 0,020s (Solving: 0,00s 1st Model: 0,00s Unsat: 0,00s)
+CPU Time     : 0,020s

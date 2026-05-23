@@ -3,23 +3,23 @@
     "gc_noheur",
     "gc",
     "ga",
+    "la",
     "la_aux",
     "la_co",
-    "la",
     "lc",
     "lq_alpha",
     "lq_clingo"
   ],
-  "benchmark_datetime": "2026-05-24T00:22:37+02:00",
+  "benchmark_datetime": "2026-05-24T00:02:37+02:00",
   "build_type": "Release",
   "clingo_binary": "/home/ribben/Desktop/clingo-lazy-heuristics/clingo-modified/build/bin/clingo",
   "clingo_extra_args": "",
   "cmake_cache": "/home/ribben/Desktop/clingo-lazy-heuristics/clingo-modified/build/CMakeCache.txt",
   "commands": {
-    "benchmark_launcher": "./test_folder/benchmarks/benchmark_bsp.sh",
+    "benchmark_launcher": "/home/ribben/Desktop/clingo-lazy-heuristics/test_folder/benchmarks/benchmark_bsp.sh",
     "clingo_json_template": "/home/ribben/Desktop/clingo-lazy-heuristics/clingo-modified/build/bin/clingo /home/ribben/Desktop/clingo-lazy-heuristics/test_folder/instances/BSP_instances/BSP_range.lp '<encoding_file>' -c 'n=<N>' --heuristic=Domain --outf=2 --stats=2 '--seed=<seed>' -n 1 --time-limit=60 '<setting-specific clingo options>' '<CLINGO_EXTRA_ARGS>'",
     "clingo_text_template": "/home/ribben/Desktop/clingo-lazy-heuristics/clingo-modified/build/bin/clingo /home/ribben/Desktop/clingo-lazy-heuristics/test_folder/instances/BSP_instances/BSP_range.lp '<encoding_file>' -c 'n=<N>' --heuristic=Domain --text",
-    "runner_template": "python3 /home/ribben/Desktop/clingo-lazy-heuristics/test_folder/benchmarks/benchmark_runner.py --clingo /home/ribben/Desktop/clingo-lazy-heuristics/clingo-modified/build/bin/clingo --encoding '<encoding_file>' --instance /home/ribben/Desktop/clingo-lazy-heuristics/test_folder/instances/BSP_instances/BSP_range.lp --variant '<variant>' --semantics '<semantics>' --size '<N>' --seed '<seed>' --setting '<setting>' --csv /home/ribben/Desktop/clingo-lazy-heuristics/test_folder/results/bsp_results.csv --constant 'n=<N>' --models 1 --timeout 60 --memory-bytes 10737418240 --domain-heuristic '<setting-specific --clingo-option>' '<global --clingo-option>'"
+    "runner_template": "python3 /home/ribben/Desktop/clingo-lazy-heuristics/test_folder/benchmarks/benchmark_runner.py --clingo /home/ribben/Desktop/clingo-lazy-heuristics/clingo-modified/build/bin/clingo --encoding '<encoding_file>' --instance /home/ribben/Desktop/clingo-lazy-heuristics/test_folder/instances/BSP_instances/BSP_range.lp --variant '<variant>' --semantics '<semantics>' --size '<N>' --seed '<seed>' --setting '<setting>' --csv /home/ribben/Desktop/clingo-lazy-heuristics/test_folder/results/profiles/bsp_smoke_results.csv --constant 'n=<N>' --models 1 --timeout 60 --memory-bytes 10737418240 --domain-heuristic '<setting-specific --clingo-option>' '<global --clingo-option>'"
   },
   "commit_hash": "1584d5a328aa8c39f0d590f647ea9ce79d7d8e47",
   "compiler": {
@@ -30,7 +30,7 @@
     "logical_cores": 8,
     "model": "11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz"
   },
-  "exact_command": "./test_folder/benchmarks/benchmark_bsp.sh",
+  "exact_command": "/home/ribben/Desktop/clingo-lazy-heuristics/test_folder/benchmarks/benchmark_bsp.sh",
   "git_dirty": true,
   "hostname": "riblap",
   "memory_limit": {
@@ -71,6 +71,11 @@
       "semantics": "alpha"
     },
     {
+      "encoding": "/home/ribben/Desktop/clingo-lazy-heuristics/test_folder/encodings/BSP/BSP_la.lp",
+      "name": "la",
+      "semantics": "alpha"
+    },
+    {
       "encoding": "/home/ribben/Desktop/clingo-lazy-heuristics/test_folder/encodings/BSP/BSP_la_aux.lp",
       "name": "la_aux",
       "semantics": "alpha"
@@ -78,11 +83,6 @@
     {
       "encoding": "/home/ribben/Desktop/clingo-lazy-heuristics/test_folder/encodings/BSP/BSP_la_co.lp",
       "name": "la_co",
-      "semantics": "alpha"
-    },
-    {
-      "encoding": "/home/ribben/Desktop/clingo-lazy-heuristics/test_folder/encodings/BSP/BSP_la.lp",
-      "name": "la",
       "semantics": "alpha"
     },
     {

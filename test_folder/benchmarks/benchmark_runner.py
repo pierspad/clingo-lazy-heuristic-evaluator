@@ -37,6 +37,7 @@ CSV_FIELDS = [
     "ground_heuristics",
     "ground_lazy_heuristic_facts",
     "ground_prolog_heuristic_facts",
+    "ground_query_heuristic_facts",
     "ground_facts",
     "ground_lines",
 ]
@@ -183,6 +184,7 @@ def ground_failure_metrics() -> dict[str, str]:
         "ground_heuristics": "NA",
         "ground_lazy_heuristic_facts": "NA",
         "ground_prolog_heuristic_facts": "NA",
+        "ground_query_heuristic_facts": "NA",
         "ground_facts": "NA",
         "ground_lines": "NA",
     }
@@ -260,6 +262,7 @@ def collect_ground_counts(args, clingo: str) -> tuple[dict[str, str], str]:
     heuristics = 0
     lazy_facts = 0
     prolog_facts = 0
+    query_facts = 0
     facts = 0
     lines = 0
     for line in proc.stdout.splitlines():
@@ -272,8 +275,11 @@ def collect_ground_counts(args, clingo: str) -> tuple[dict[str, str], str]:
             lazy_facts += 1
             facts += 1
             continue
-        if stripped.startswith("prolog_heuristic("):
+        if stripped.startswith("prolog_heuristic(") or (
+            stripped.startswith("heuristic(") and '"' in stripped
+        ):
             prolog_facts += 1
+            query_facts += 1
             facts += 1
             continue
         if not stripped or stripped.startswith("%"):
@@ -285,6 +291,7 @@ def collect_ground_counts(args, clingo: str) -> tuple[dict[str, str], str]:
         "ground_heuristics": str(heuristics),
         "ground_lazy_heuristic_facts": str(lazy_facts),
         "ground_prolog_heuristic_facts": str(prolog_facts),
+        "ground_query_heuristic_facts": str(query_facts),
         "ground_facts": str(facts),
         "ground_lines": str(lines),
     }, "ok"
@@ -412,7 +419,8 @@ def run_benchmark(args) -> int:
         "choices={choices} conflicts={conflicts} restarts={restarts} "
         "rules={rules} vars={variables} mem={memory_gb}GB "
         "heur={ground_heuristics} lazy_facts={ground_lazy_heuristic_facts} "
-        "prolog_facts={ground_prolog_heuristic_facts} "
+        "query_facts={ground_query_heuristic_facts} "
+        "prolog_compat_facts={ground_prolog_heuristic_facts} "
         "facts={ground_facts} ground_lines={ground_lines}".format(**display_row)
     )
     return exit_code

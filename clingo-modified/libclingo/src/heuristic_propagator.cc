@@ -37,6 +37,145 @@ static std::string trim_copy(std::string const &value) {
     return std::string(begin, end);
 }
 
+static bool is_identifier_start(char ch) {
+    return std::isalpha(static_cast<unsigned char>(ch)) || ch == '_';
+}
+
+static bool is_identifier_char(char ch) {
+    return std::isalnum(static_cast<unsigned char>(ch)) || ch == '_';
+}
+
+static size_t find_matching_paren(std::string const &text, size_t open_pos) {
+    int depth = 0;
+    for (size_t i = open_pos; i < text.size(); ++i) {
+        if (text[i] == '(') {
+            ++depth;
+        }
+        else if (text[i] == ')') {
+            --depth;
+            if (depth == 0) return i;
+        }
+    }
+    return std::string::npos;
+}
+
+static std::vector<std::string> split_top_level_args(std::string const &text) {
+    std::vector<std::string> args;
+    int paren_depth = 0;
+    int bracket_depth = 0;
+    size_t start = 0;
+    for (size_t i = 0; i < text.size(); ++i) {
+        char const ch = text[i];
+        if (ch == '(') {
+            ++paren_depth;
+        }
+        else if (ch == ')') {
+            --paren_depth;
+        }
+        else if (ch == '[' || ch == '{') {
+            ++bracket_depth;
+        }
+        else if (ch == ']' || ch == '}') {
+            --bracket_depth;
+        }
+        else if (ch == ',' && paren_depth == 0 && bracket_depth == 0) {
+            args.push_back(trim_copy(text.substr(start, i - start)));
+            start = i + 1;
+        }
+    }
+    args.push_back(trim_copy(text.substr(start)));
+    return args;
+}
+
+static std::string predicate_signature(std::string const &name, size_t arity) {
+    std::ostringstream out;
+    out << name << "/" << arity;
+    return out.str();
+}
+
+static std::string symbol_signature(Clingo::Symbol const &symbol) {
+    return predicate_signature(symbol.name(), symbol.arguments().size());
+}
+
+static bool extract_term_signature(std::string const &term, std::string &signature) {
+    std::string const trimmed = trim_copy(term);
+    if (trimmed.empty() || !is_identifier_start(trimmed.front())) return false;
+
+    size_t name_end = 1;
+    while (name_end < trimmed.size() && is_identifier_char(trimmed[name_end])) {
+        ++name_end;
+    }
+
+    std::string const name = trimmed.substr(0, name_end);
+    size_t pos = name_end;
+    while (pos < trimmed.size() && std::isspace(static_cast<unsigned char>(trimmed[pos]))) {
+        ++pos;
+    }
+
+    if (pos >= trimmed.size() || trimmed[pos] != '(') {
+        signature = predicate_signature(name, 0);
+        return true;
+    }
+
+    size_t const close_pos = find_matching_paren(trimmed, pos);
+    if (close_pos == std::string::npos) return false;
+
+    auto const args = split_top_level_args(trimmed.substr(pos + 1, close_pos - pos - 1));
+    signature = predicate_signature(name, args.size());
+    return true;
+}
+
+static void collect_term_signature(std::unordered_set<std::string> &signatures,
+                                   std::string const &term) {
+    std::string signature;
+    if (extract_term_signature(term, signature)) {
+        signatures.insert(std::move(signature));
+    }
+}
+
+static void collect_wrapper_argument_signatures(std::unordered_set<std::string> &signatures,
+                                                std::string const &rule,
+                                                std::string const &wrapper_name,
+                                                size_t term_arg_index) {
+    size_t pos = 0;
+    std::string const prefix = wrapper_name + "(";
+    while ((pos = rule.find(prefix, pos)) != std::string::npos) {
+        if (pos > 0 && is_identifier_char(rule[pos - 1])) {
+            pos += prefix.size();
+            continue;
+        }
+
+        size_t const open_pos = pos + wrapper_name.size();
+        size_t const close_pos = find_matching_paren(rule, open_pos);
+        if (close_pos == std::string::npos) break;
+
+        auto const args = split_top_level_args(rule.substr(open_pos + 1, close_pos - open_pos - 1));
+        if (term_arg_index < args.size()) {
+            collect_term_signature(signatures, args[term_arg_index]);
+        }
+        pos = close_pos + 1;
+    }
+}
+
+static void replace_all(std::string &text, std::string const &from, std::string const &to) {
+    if (from.empty()) return;
+
+    size_t pos = 0;
+    while ((pos = text.find(from, pos)) != std::string::npos) {
+        bool const left_boundary = pos == 0 || !is_identifier_char(text[pos - 1]);
+        bool const right_boundary = from.back() == '(' ||
+            pos + from.size() >= text.size() ||
+            !is_identifier_char(text[pos + from.size()]);
+        if (left_boundary && right_boundary) {
+            text.replace(pos, from.size(), to);
+            pos += to.size();
+        }
+        else {
+            pos += from.size();
+        }
+    }
+}
+
 static std::string normalize_clingo_like_heuristic_rule(std::string const &raw) {
     std::string normalized = trim_copy(raw);
     std::string const head_prefix = "heuristic(";
@@ -68,6 +207,9 @@ static size_t find_matching_head_paren(std::string const &rule, size_t open_pos)
 
 static std::string normalize_prolog_heuristic_rule(std::string const &raw, HeuristicSemantics semantics) {
     std::string normalized = trim_copy(raw);
+    std::string const semantics_name = semantics == HeuristicSemantics::Alpha ? "alpha" : "clingo";
+    replace_all(normalized, "default_not(", "default_not(" + semantics_name + ", ");
+
     if (normalized.compare(0, std::string("candidate(").size(), "candidate(") == 0) {
         if (normalized.empty() || normalized.back() != '.') {
             normalized.push_back('.');
@@ -88,7 +230,7 @@ static std::string normalize_prolog_heuristic_rule(std::string const &raw, Heuri
     std::string converted = "candidate(";
     converted += normalized.substr(head_prefix.size(), close_pos - head_prefix.size());
     converted += ", ";
-    converted += semantics == HeuristicSemantics::Alpha ? "alpha" : "clingo";
+    converted += semantics_name;
     converted += ")";
     converted += normalized.substr(close_pos + 1);
     if (converted.empty() || converted.back() != '.') {
@@ -107,6 +249,48 @@ static bool is_clingo_like_static_predicate(Clingo::Symbol const &symbol) {
            (name == "dom" && arity == 1) ||
            (name == "range" && arity == 1) ||
            (name == "val" && arity == 1);
+}
+
+static std::unordered_set<std::string> collect_query_relevant_predicate_signatures(
+    std::vector<QueryHeuristicRule> const &rules
+) {
+    std::unordered_set<std::string> signatures;
+
+    for (auto const &rule : rules) {
+        std::string const normalized = trim_copy(rule.original_rule);
+        if (normalized.compare(0, std::string("heuristic(").size(), "heuristic(") == 0) {
+            size_t const close_pos = find_matching_paren(normalized, std::string("heuristic").size());
+            if (close_pos != std::string::npos) {
+                auto const args = split_top_level_args(
+                    normalized.substr(std::string("heuristic(").size(),
+                                      close_pos - std::string("heuristic(").size())
+                );
+                if (!args.empty()) {
+                    collect_term_signature(signatures, args[0]);
+                }
+            }
+        }
+        else if (normalized.compare(0, std::string("candidate(").size(), "candidate(") == 0) {
+            size_t const close_pos = find_matching_paren(normalized, std::string("candidate").size());
+            if (close_pos != std::string::npos) {
+                auto const args = split_top_level_args(
+                    normalized.substr(std::string("candidate(").size(),
+                                      close_pos - std::string("candidate(").size())
+                );
+                if (!args.empty()) {
+                    collect_term_signature(signatures, args[0]);
+                }
+            }
+        }
+
+        collect_wrapper_argument_signatures(signatures, normalized, "holds", 0);
+        collect_wrapper_argument_signatures(signatures, normalized, "holds_pos", 0);
+        collect_wrapper_argument_signatures(signatures, normalized, "default_not", 0);
+        collect_wrapper_argument_signatures(signatures, normalized, "target_available", 0);
+        collect_wrapper_argument_signatures(signatures, normalized, "holds_neg", 1);
+    }
+
+    return signatures;
 }
 
 static bool is_internal_clingo_like_symbol(Clingo::Symbol const &symbol) {
@@ -510,8 +694,8 @@ void HeuristicPropagator::init_clingo_like_mode(Clingo::PropagateInit &init,
     std::unordered_set<std::string> static_fact_set;
     std::unordered_set<Clingo::Symbol> static_symbol_set;
     bool const debug = lazy_heuristic_debug_enabled();
-    bool const env_prolog_backend = lazy_heuristic_use_prolog_backend();
-    bool saw_prolog_heuristic = false;
+    bool const stats = lazy_prolog_stats_enabled();
+    bool saw_legacy_prolog_heuristic = false;
 
     for (auto it = atoms.begin(); it != atoms.end(); ++it) {
         auto const symbol = it->symbol();
@@ -522,14 +706,11 @@ void HeuristicPropagator::init_clingo_like_mode(Clingo::PropagateInit &init,
                 QueryHeuristicRule rule;
                 rule.semantics = HeuristicSemantics::Alpha;
                 rule.original_rule = args[0].string();
-                if (!env_prolog_backend) {
-                    rule.normalized_rule = normalize_clingo_like_heuristic_rule(rule.original_rule);
-                }
                 rule.prolog_rule = normalize_prolog_heuristic_rule(rule.original_rule, rule.semantics);
                 clingo_like_heuristic_rules_.push_back(std::move(rule));
             }
             else {
-                throw std::runtime_error("Lazy heuristic clingo-like: heuristic/1 expects a string rule.");
+                throw std::runtime_error("Lazy heuristic Prolog backend: heuristic/1 expects a string rule.");
             }
         }
         else if (symbol.match("heuristic", 2)) {
@@ -538,14 +719,11 @@ void HeuristicPropagator::init_clingo_like_mode(Clingo::PropagateInit &init,
                 QueryHeuristicRule rule;
                 rule.semantics = parse_clingo_like_semantics(args[0]);
                 rule.original_rule = args[1].string();
-                if (!env_prolog_backend) {
-                    rule.normalized_rule = normalize_clingo_like_heuristic_rule(rule.original_rule);
-                }
                 rule.prolog_rule = normalize_prolog_heuristic_rule(rule.original_rule, rule.semantics);
                 clingo_like_heuristic_rules_.push_back(std::move(rule));
             }
             else {
-                throw std::runtime_error("Lazy heuristic clingo-like: heuristic/2 expects heuristic(alpha|clingo, \"rule\").");
+                throw std::runtime_error("Lazy heuristic Prolog backend: heuristic/2 expects heuristic(alpha|clingo, \"rule\").");
             }
         }
         else if (symbol.match("prolog_heuristic", 1)) {
@@ -556,7 +734,7 @@ void HeuristicPropagator::init_clingo_like_mode(Clingo::PropagateInit &init,
                 rule.original_rule = args[0].string();
                 rule.prolog_rule = normalize_prolog_heuristic_rule(rule.original_rule, rule.semantics);
                 clingo_like_heuristic_rules_.push_back(std::move(rule));
-                saw_prolog_heuristic = true;
+                saw_legacy_prolog_heuristic = true;
             }
             else {
                 throw std::runtime_error("Lazy heuristic Prolog backend: prolog_heuristic/1 expects a string rule.");
@@ -570,19 +748,39 @@ void HeuristicPropagator::init_clingo_like_mode(Clingo::PropagateInit &init,
                 rule.original_rule = args[1].string();
                 rule.prolog_rule = normalize_prolog_heuristic_rule(rule.original_rule, rule.semantics);
                 clingo_like_heuristic_rules_.push_back(std::move(rule));
-                saw_prolog_heuristic = true;
+                saw_legacy_prolog_heuristic = true;
             }
             else {
                 throw std::runtime_error("Lazy heuristic Prolog backend: prolog_heuristic/2 expects prolog_heuristic(alpha|clingo, \"rule\").");
             }
         }
+    }
 
+    use_prolog_query_backend_ = !clingo_like_heuristic_rules_.empty();
+    auto const relevant_predicates = collect_query_relevant_predicate_signatures(clingo_like_heuristic_rules_);
+    size_t considered_atoms = 0;
+    size_t ignored_irrelevant_atoms = 0;
+    std::unordered_set<std::string> ignored_signatures;
+
+    for (auto it = atoms.begin(); it != atoms.end(); ++it) {
+        auto const symbol = it->symbol();
         if (!is_clingo_symbol_function(symbol) || is_internal_clingo_like_symbol(symbol)) continue;
+        ++considered_atoms;
 
-        Clingo::literal_t const solver_lit = init.solver_literal(it->literal());
-        if (solver_lit != 0 && solver_lit_by_symbol_.emplace(symbol, solver_lit).second) {
-            symbols_by_watched_solver_lit_[solver_lit].push_back(symbol);
-            symbols_by_solver_lit_.emplace_back(solver_lit, symbol);
+        if (use_prolog_query_backend_) {
+            std::string const signature = symbol_signature(symbol);
+            if (relevant_predicates.find(signature) == relevant_predicates.end()) {
+                ++ignored_irrelevant_atoms;
+                ignored_signatures.insert(signature);
+                if (symbol.match("x", 1)) {
+                    auto const args = symbol.arguments();
+                    if (args.size() == 1 && args[0].type() == Clingo::SymbolType::Number) {
+                        clingo_like_n_ = std::max(clingo_like_n_, args[0].number());
+                        clingo_like_has_n_ = true;
+                    }
+                }
+                continue;
+            }
         }
 
         if (is_clingo_like_static_predicate(symbol)) {
@@ -596,6 +794,13 @@ void HeuristicPropagator::init_clingo_like_mode(Clingo::PropagateInit &init,
                     clingo_like_has_n_ = true;
                 }
             }
+            continue;
+        }
+
+        Clingo::literal_t const solver_lit = init.solver_literal(it->literal());
+        if (solver_lit != 0 && solver_lit_by_symbol_.emplace(symbol, solver_lit).second) {
+            symbols_by_watched_solver_lit_[solver_lit].push_back(symbol);
+            symbols_by_solver_lit_.emplace_back(solver_lit, symbol);
         }
     }
 
@@ -606,20 +811,48 @@ void HeuristicPropagator::init_clingo_like_mode(Clingo::PropagateInit &init,
                                                                                          Clingo::Symbol const &b) {
         return a.to_string() < b.to_string();
     });
-    use_prolog_query_backend_ = saw_prolog_heuristic || env_prolog_backend;
-
     if (debug && !clingo_like_heuristic_rules_.empty()) {
         std::cerr << "[lazy-heuristic] collected " << clingo_like_heuristic_rules_.size()
-                  << (use_prolog_query_backend_ ? " query string rule(s)\n" : " clingo-like string rule(s)\n");
+                  << " query string rule(s)\n";
         for (size_t i = 0; i < clingo_like_heuristic_rules_.size(); ++i) {
             auto const &rule = clingo_like_heuristic_rules_[i];
             std::cerr << "  [" << i << "] semantics=" << heuristic_semantics_name(rule.semantics)
                       << " original=" << rule.original_rule
-                      << " normalized=" << (use_prolog_query_backend_ ? rule.prolog_rule : rule.normalized_rule)
+                      << " normalized=" << rule.prolog_rule
                       << "\n";
+        }
+        if (saw_legacy_prolog_heuristic) {
+            std::cerr << "[lazy-heuristic] prolog_heuristic/... accepted as legacy alias\n";
         }
         if (clingo_like_has_n_) {
             std::cerr << "[lazy-heuristic] inferred #const n=" << clingo_like_n_ << " from x/1\n";
+        }
+    }
+
+    if (stats && use_prolog_query_backend_) {
+        std::vector<std::string> relevant_sorted(relevant_predicates.begin(), relevant_predicates.end());
+        std::sort(relevant_sorted.begin(), relevant_sorted.end());
+        std::vector<std::string> ignored_sorted(ignored_signatures.begin(), ignored_signatures.end());
+        std::sort(ignored_sorted.begin(), ignored_sorted.end());
+
+        std::cerr << "[lazy-prolog] relevant predicates:";
+        for (auto const &signature : relevant_sorted) {
+            std::cerr << " " << signature;
+        }
+        std::cerr << "\n";
+        std::cerr << "[lazy-prolog] symbolic atoms considered=" << considered_atoms
+                  << " synchronized=" << (clingo_like_static_symbols_.size() + symbols_by_solver_lit_.size())
+                  << " ignored_irrelevant=" << ignored_irrelevant_atoms << "\n";
+        if (!ignored_sorted.empty()) {
+            std::cerr << "[lazy-prolog] ignored signatures:";
+            size_t const limit = std::min<size_t>(ignored_sorted.size(), 8);
+            for (size_t i = 0; i < limit; ++i) {
+                std::cerr << " " << ignored_sorted[i];
+            }
+            if (ignored_sorted.size() > limit) {
+                std::cerr << " ...";
+            }
+            std::cerr << "\n";
         }
     }
 

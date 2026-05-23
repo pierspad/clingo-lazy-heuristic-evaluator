@@ -52,6 +52,8 @@ def run_clingo(clingo: str, files: list[str], seed: int, models: int, constants:
 
 
 def is_internal_symbol(symbol: str) -> bool:
+    # Query-driven heuristic configuration facts are solver-side metadata, not
+    # part of the comparable ASP solution.
     return (
         symbol.startswith("__")
         or symbol.startswith("heuristic(")
@@ -194,7 +196,7 @@ def main() -> int:
     parser.add_argument(
         "--keep-internal",
         action="store_true",
-        help="Do not filter symbols whose printed name starts with '__'.",
+        help="Do not filter internal lazy/query heuristic configuration symbols.",
     )
     parser.add_argument(
         "extra",

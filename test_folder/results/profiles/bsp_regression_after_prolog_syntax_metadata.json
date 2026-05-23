@@ -10,7 +10,7 @@
     "lq_alpha",
     "lq_clingo"
   ],
-  "benchmark_datetime": "2026-05-24T00:22:37+02:00",
+  "benchmark_datetime": "2026-05-24T00:33:54+02:00",
   "build_type": "Release",
   "clingo_binary": "/home/ribben/Desktop/clingo-lazy-heuristics/clingo-modified/build/bin/clingo",
   "clingo_extra_args": "",
@@ -19,7 +19,7 @@
     "benchmark_launcher": "./test_folder/benchmarks/benchmark_bsp.sh",
     "clingo_json_template": "/home/ribben/Desktop/clingo-lazy-heuristics/clingo-modified/build/bin/clingo /home/ribben/Desktop/clingo-lazy-heuristics/test_folder/instances/BSP_instances/BSP_range.lp '<encoding_file>' -c 'n=<N>' --heuristic=Domain --outf=2 --stats=2 '--seed=<seed>' -n 1 --time-limit=60 '<setting-specific clingo options>' '<CLINGO_EXTRA_ARGS>'",
     "clingo_text_template": "/home/ribben/Desktop/clingo-lazy-heuristics/clingo-modified/build/bin/clingo /home/ribben/Desktop/clingo-lazy-heuristics/test_folder/instances/BSP_instances/BSP_range.lp '<encoding_file>' -c 'n=<N>' --heuristic=Domain --text",
-    "runner_template": "python3 /home/ribben/Desktop/clingo-lazy-heuristics/test_folder/benchmarks/benchmark_runner.py --clingo /home/ribben/Desktop/clingo-lazy-heuristics/clingo-modified/build/bin/clingo --encoding '<encoding_file>' --instance /home/ribben/Desktop/clingo-lazy-heuristics/test_folder/instances/BSP_instances/BSP_range.lp --variant '<variant>' --semantics '<semantics>' --size '<N>' --seed '<seed>' --setting '<setting>' --csv /home/ribben/Desktop/clingo-lazy-heuristics/test_folder/results/bsp_results.csv --constant 'n=<N>' --models 1 --timeout 60 --memory-bytes 10737418240 --domain-heuristic '<setting-specific --clingo-option>' '<global --clingo-option>'"
+    "runner_template": "python3 /home/ribben/Desktop/clingo-lazy-heuristics/test_folder/benchmarks/benchmark_runner.py --clingo /home/ribben/Desktop/clingo-lazy-heuristics/clingo-modified/build/bin/clingo --encoding '<encoding_file>' --instance /home/ribben/Desktop/clingo-lazy-heuristics/test_folder/instances/BSP_instances/BSP_range.lp --variant '<variant>' --semantics '<semantics>' --size '<N>' --seed '<seed>' --setting '<setting>' --csv test_folder/results/profiles/bsp_regression_after_prolog_syntax_results.csv --constant 'n=<N>' --models 1 --timeout 60 --memory-bytes 10737418240 --domain-heuristic '<setting-specific --clingo-option>' '<global --clingo-option>'"
   },
   "commit_hash": "1584d5a328aa8c39f0d590f647ea9ce79d7d8e47",
   "compiler": {

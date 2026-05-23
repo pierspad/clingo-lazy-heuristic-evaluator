@@ -1,0 +1,7 @@
+n,variant,seed,setting,clingo_extra_args,status,solver_status,ground_status,failure_reason,exit_code,memory_limit_hit,solving_s,total_s,grounding_s,choices,conflicts,restarts,rules,variables,memory_mb,ground_heuristics,ground_lazy_heuristic_facts,ground_prolog_heuristic_facts,ground_query_heuristic_facts,ground_facts,ground_lines
+20,la,1,seed_only,,ok,ok,ok,,0,0,1.804000,1.865000,0.061000,17298,16383,93,45708,860,22.7852,0,0,2,2,26,44378
+20,lc,1,seed_only,,ok,ok,ok,,0,0,0.091000,0.158000,0.067000,1510,1338,12,45708,860,22.9336,0,0,2,2,26,44378
+21,la,1,seed_only,,ok,ok,ok,,0,0,3.860000,3.930000,0.070000,34372,32751,157,55123,945,24.2734,0,0,2,2,27,53663
+21,lc,1,seed_only,,ok,ok,ok,,0,0,0.068000,0.138000,0.070000,1123,997,8,55123,945,24.3789,0,0,2,2,27,53663
+22,la,1,seed_only,,ok,ok,ok,,0,0,7.867000,7.951000,0.084000,67880,65023,261,65932,1034,25.6602,0,0,2,2,28,64336
+22,lc,1,seed_only,,ok,ok,ok,,0,0,0.172000,0.255000,0.083000,2766,2481,18,65932,1034,25.6016,0,0,2,2,28,64336

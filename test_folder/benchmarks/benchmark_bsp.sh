@@ -6,10 +6,77 @@ set -euo pipefail
 
 # ==============================================================================
 # CONFIGURAZIONE BENCHMARK BSP
-# Override rapido da shell, per esempio:
-#   BSP_VARIANTS="gc_noheur gc ga la lc la_aux" ./benchmark_bsp.sh
-#   BSP_RANDOM_SETTINGS="seed_only: rand_freq_0_01:--rand-freq=0.01" REPEATS=3 ./benchmark_bsp.sh
-#   CLINGO_EXTRA_ARGS="--init-watches=rnd" ./benchmark_bsp.sh
+#
+# Questo e' lo script principale per i benchmark BSP. Tutte le variabili qui
+# sotto sono default: puoi sovrascriverle da shell senza modificare il file.
+#
+# Varianti:
+#   BSP_VARIANTS="gc_noheur gc ga la la_co lc lq_alpha lq_clingo"
+#   Varianti disponibili: gc_noheur gc ga ga_weak la la_aux la_co lc
+#                         lq_alpha lq_clingo
+#
+# Range N:
+#   N_START=10 N_END=100 N_STEP=10
+#
+# Limiti e ripetizioni:
+#   TIMEOUT_SECONDS=60 REPEATS=1
+#   MEM_LIMIT_BYTES=10737418240
+#   oppure MEM_LIMIT_GB=10 / MEM_LIMIT_MB=10240
+#
+# Output:
+#   BSP_RESULTS_CSV="test_folder/results/profiles/my_run_results.csv"
+#   BSP_METADATA_FILE="test_folder/results/profiles/my_run_metadata.json"
+#   BSP_FAILURES_FILE="test_folder/results/profiles/my_run_failures.txt"
+#
+# Per non sovrascrivere risultati precedenti, scegli nomi file diversi per
+# BSP_RESULTS_CSV/BSP_METADATA_FILE/BSP_FAILURES_FILE. Il comportamento base
+# resta quello storico: il CSV scelto viene rigenerato a inizio run.
+#
+# Opzioni clingo:
+#   BSP_RANDOM_SETTINGS="seed_only: rand_freq_0_01:--rand-freq=0.01"
+#   CLINGO_EXTRA_ARGS="--init-watches=rnd"
+#
+# Profili consigliati, eseguibili manualmente:
+#
+# Smoke:
+#   env -u LAZY_HEURISTIC_DEBUG \
+#   TIMEOUT_SECONDS=60 \
+#   BSP_VARIANTS="gc_noheur gc ga la la_co lc lq_alpha lq_clingo" \
+#   N_START=10 N_END=20 N_STEP=10 REPEATS=1 \
+#   BSP_RESULTS_CSV="test_folder/results/profiles/bsp_smoke_results.csv" \
+#   BSP_METADATA_FILE="test_folder/results/profiles/bsp_smoke_metadata.json" \
+#   BSP_FAILURES_FILE="test_folder/results/profiles/bsp_smoke_failures.txt" \
+#   ./test_folder/benchmarks/benchmark_bsp.sh
+#
+# Main:
+#   env -u LAZY_HEURISTIC_DEBUG \
+#   TIMEOUT_SECONDS=60 \
+#   BSP_VARIANTS="gc_noheur gc ga la la_co lc lq_alpha lq_clingo" \
+#   N_START=10 N_END=100 N_STEP=10 REPEATS=1 \
+#   BSP_RESULTS_CSV="test_folder/results/profiles/bsp_main_results.csv" \
+#   BSP_METADATA_FILE="test_folder/results/profiles/bsp_main_metadata.json" \
+#   BSP_FAILURES_FILE="test_folder/results/profiles/bsp_main_failures.txt" \
+#   ./test_folder/benchmarks/benchmark_bsp.sh
+#
+# Scaling:
+#   env -u LAZY_HEURISTIC_DEBUG \
+#   TIMEOUT_SECONDS=60 \
+#   BSP_VARIANTS="gc_noheur gc ga la la_co lq_clingo" \
+#   N_START=10 N_END=150 N_STEP=10 REPEATS=1 \
+#   BSP_RESULTS_CSV="test_folder/results/profiles/bsp_scaling_results.csv" \
+#   BSP_METADATA_FILE="test_folder/results/profiles/bsp_scaling_metadata.json" \
+#   BSP_FAILURES_FILE="test_folder/results/profiles/bsp_scaling_failures.txt" \
+#   ./test_folder/benchmarks/benchmark_bsp.sh
+#
+# Prolog-boundary:
+#   env -u LAZY_HEURISTIC_DEBUG \
+#   TIMEOUT_SECONDS=120 \
+#   BSP_VARIANTS="lq_alpha lq_clingo" \
+#   N_START=20 N_END=35 N_STEP=1 REPEATS=1 \
+#   BSP_RESULTS_CSV="test_folder/results/profiles/bsp_prolog_boundary_results.csv" \
+#   BSP_METADATA_FILE="test_folder/results/profiles/bsp_prolog_boundary_metadata.json" \
+#   BSP_FAILURES_FILE="test_folder/results/profiles/bsp_prolog_boundary_failures.txt" \
+#   ./test_folder/benchmarks/benchmark_bsp.sh
 # ==============================================================================
 DEFAULT_TIMEOUT_SECONDS=180
 DEFAULT_REPEATS=2

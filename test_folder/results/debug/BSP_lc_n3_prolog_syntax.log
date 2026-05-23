@@ -1,0 +1,39 @@
+clingo version 5.8.0
+Reading from ...r/instances/BSP_instances/BSP_range.lp ...
+[lazy-heuristic] collected 2 query string rule(s)
+  [0] semantics=clingo original=heuristic(b(X), W, 0, true) :- holds(x(X)), default_not(c(X)), aggregate_all(sum(Y), holds(c(Y)), S), n(N), W is (N + 1) * S + X, target_available(b(X)). normalized=candidate(b(X), W, 0, true, clingo) :- holds(x(X)), default_not(clingo, c(X)), aggregate_all(sum(Y), holds(c(Y)), S), n(N), W is (N + 1) * S + X, target_available(b(X)).
+  [1] semantics=clingo original=heuristic(c(X), W, 0, true) :- holds(x(X)), default_not(b(X)), aggregate_all(sum(Y), holds(b(Y)), S), n(N), W is (N + 1) * S + X, target_available(c(X)). normalized=candidate(c(X), W, 0, true, clingo) :- holds(x(X)), default_not(clingo, b(X)), aggregate_all(sum(Y), holds(b(Y)), S), n(N), W is (N + 1) * S + X, target_available(c(X)).
+[lazy-heuristic] inferred #const n=3 from x/1
+[lazy-prolog] relevant predicates: b/1 c/1 x/1
+[lazy-prolog] symbolic atoms considered=23 synchronized=9 ignored_irrelevant=14
+[lazy-prolog] ignored signatures: sumB/1 sumC/1
+[lazy-prolog] initialized with 2 rule(s), 3 static atom(s), 6 known atom(s)
+[lazy-prolog] runtime file /tmp/clingo_lazy_prolog_143245_0.pl
+[lazy-prolog] state free_atom(c(1))
+[lazy-prolog] state free_atom(c(2))
+[lazy-prolog] state free_atom(c(3))
+[lazy-prolog] state free_atom(b(1))
+[lazy-prolog] state free_atom(b(2))
+[lazy-prolog] state free_atom(b(3))
+Solving...
+[lazy-prolog] decide call 1 produced 0 candidate(s)
+[lazy-prolog] stats decide_call_id=1 produced=0 discarded_assigned=0 discarded_unmapped=0 considered=0
+[lazy-prolog] state true_atom(c(3))
+[lazy-prolog] decide call 2 produced 0 candidate(s)
+[lazy-prolog] stats decide_call_id=2 produced=0 discarded_assigned=0 discarded_unmapped=0 considered=0
+[lazy-prolog] state true_atom(c(2))
+[lazy-prolog] decide call 3 produced 0 candidate(s)
+[lazy-prolog] stats decide_call_id=3 produced=0 discarded_assigned=0 discarded_unmapped=0 considered=0
+[lazy-prolog] state free_atom(c(2))
+[lazy-prolog] state false_atom(c(2))
+[lazy-prolog] decide call 4 produced 1 candidate(s)
+[lazy-prolog] stats decide_call_id=4 produced=1 discarded_assigned=1 discarded_unmapped=0 considered=0
+[lazy-prolog] state false_atom(c(1))
+Answer: 1 (Time: 0,018s)
+b(1) b(2) c(3) sumC(3) sumB(3)
+SATISFIABLE
+
+Models       : 1+
+Calls        : 1
+Time         : 0,019s (Solving: 0,00s 1st Model: 0,00s Unsat: 0,00s)
+CPU Time     : 0,018s

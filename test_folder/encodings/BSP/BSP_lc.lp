@@ -16,9 +16,11 @@ sumC(Sum) :- Sum = #sum{Y : c(Y)}.
 % constrain difference between sums
 :- sumB(SB), sumC(SC), (SB - SC)**2 > 1.
 
-% heuristics
-% Originale: #heuristic b(X) : x(X), not c(X), S = #sum{Y : c(Y)}. [(((n+1)*S)+X), true]
-% TODO: aggiornare il converter BSP per emettere direttamente la sintassi stringa.
-heuristic(clingo, "heuristic(b(X), W, 0, true) :- x(X), not_c(X), S = #sum { Y : c(Y) }, W = ((n+1)*S)+X.").
-% Originale: #heuristic c(X) : x(X), not b(X), S = #sum{Y : b(Y)}. [(((n+1)*S)+X), true]
-heuristic(clingo, "heuristic(c(X), W, 0, true) :- x(X), not_b(X), S = #sum { Y : b(Y) }, W = ((n+1)*S)+X.").
+% query-driven lazy heuristics, clingo-like default negation
+heuristic(clingo, "heuristic(b(X), W, 0, true) :- holds(x(X)), default_not(c(X)), aggregate_all(sum(Y), holds(c(Y)), S), n(N), W is (N + 1) * S + X, target_available(b(X)).").
+heuristic(clingo, "heuristic(c(X), W, 0, true) :- holds(x(X)), default_not(b(X)), aggregate_all(sum(Y), holds(b(Y)), S), n(N), W is (N + 1) * S + X, target_available(c(X)).").
+
+#show b/1.
+#show c/1.
+#show sumB/1.
+#show sumC/1.
