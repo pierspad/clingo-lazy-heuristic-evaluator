@@ -4,6 +4,7 @@
 % instances/BSP_instances/BSP_range.lp
 
 x(1..n).
+heuristic_base(Base) :- Base = n + 1.
 
 % guessing
 b(X) :- x(X), not c(X).
@@ -21,5 +22,5 @@ h_b(X,S) :- x(X), not c(X), S = #sum{Y : c(Y)}.
 h_c(X,S) :- x(X), not b(X), S = #sum{Y : b(Y)}.
 
 % query-driven lazy heuristics, alpha-like default negation
-heuristic(alpha, "heuristic(b(X), W, 0, true) :- holds(h_b(X,S)), n(N), target_available(b(X)), W is ((N+1)*S)+X.").
-heuristic(alpha, "heuristic(c(X), W, 0, true) :- holds(h_c(X,S)), n(N), target_available(c(X)), W is ((N+1)*S)+X.").
+heuristic(alpha, "heuristic(b(X), W, 0, true) :- holds(h_b(X,S)), holds(heuristic_base(Base)), target_available(b(X)), W is Base*S+X.").
+heuristic(alpha, "heuristic(c(X), W, 0, true) :- holds(h_c(X,S)), holds(heuristic_base(Base)), target_available(c(X)), W is Base*S+X.").
