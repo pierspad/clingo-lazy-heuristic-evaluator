@@ -20,9 +20,9 @@ sumC(Sum) :- Sum = #sum{Y : c(Y)}.
 h_b(X,S) :- x(X), not c(X), S = #sum{Y : c(Y)}.
 h_c(X,S) :- x(X), not b(X), S = #sum{Y : b(Y)}.
 
-% Originale: #heuristic b(X) : h_b(X,S). [(((n+1)*S)+X), true]
+% Originale: #heuristic b(X) : h_b(X,S). [X@S, true]
 __heuristic(__target(b), __body(h_b, __match(0, 0), __bind_arg(s, 1)),
-            __weight(__add(__mul(__add(n, 1), s), self)), __priority(0), __modifier(true), __semantics(alpha)).
-% Originale: #heuristic c(X) : h_c(X,S). [(((n+1)*S)+X), true]
+            __weight(self), __priority(s), __modifier(true), __semantics(alpha)).
+% Originale: #heuristic c(X) : h_c(X,S). [X@S, true]
 __heuristic(__target(c), __body(h_c, __match(0, 0), __bind_arg(s, 1)),
-            __weight(__add(__mul(__add(n, 1), s), self)), __priority(0), __modifier(true), __semantics(alpha)).
+            __weight(self), __priority(s), __modifier(true), __semantics(alpha)).

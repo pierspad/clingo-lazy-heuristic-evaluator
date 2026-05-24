@@ -2,20 +2,24 @@ Esecuzione passo-passo del lazy heuristic propagator
 Aggiornato: 2026-05-20
 
 Questo file descrive la semantica nuova del propagatore lazy.
-Il punto centrale e' che `__priority(P)` non e' piu' una chiave globale tra
-candidate diversi. Ora segue la semantica di clingo:
+Il punto centrale e' che il significato di `__priority(P)` dipende dalla
+semantica dichiarata:
+
+    __semantics(alpha)   -> P e' ranking globale, prima del weight
+    __semantics(clingo)  -> P e' priority locale tra modifiche dello stesso target
+
+La forma concettuale e':
 
     #heuristic A : Body. [W@P, M]
 
 dove:
 
     W  = bias/value della modifica euristica
-    P  = priority locale tra modifiche dello stesso target
+    P  = priority/level della direttiva
     M  = modifier: level, sign, true, false, init, factor
 
-Il ranking globale tra atomi e' il level risolto del target.
-La priority `@P` serve solo a scegliere quale modifica vince quando piu'
-direttive applicabili parlano dello stesso target e dello stesso modifier.
+In modalita' Alpha-like il ranking globale tra atomi e' `(P, W)`.
+In modalita' Clingo-like il ranking globale resta il level risolto del target.
 
 
 1. Forma lazy consigliata
@@ -28,24 +32,23 @@ La forma esplicita e' questa:
         x,
         __n_c,
         __bind(s, __sum(c, 0)),
-        __weight(__add(__mul(__add(n, 1), s), self)),
-        __priority(0),
+        __weight(self),
+        __priority(s),
         __modifier(true),
-        __semantics(clingo)
+        __semantics(alpha)
     ).
 
 Questa direttiva corrisponde a:
 
     #heuristic b(X) : x(X), not c(X), S = #sum{Y : c(Y)}.
-        [((n+1)*S)+X@0, true]
+        [X@S, true]
 
-La vecchia forma:
+La forma appiattita:
 
-    __weight(self), __priority(s), true
+    __weight(__add(__mul(__add(n, 1), s), self)), __priority(0), true
 
-non va piu' usata per imitare clingo, perche' metteva `s` nella vecchia
-priority globale. Ora il valore globale deve stare in `__weight(...)` quando
-il modifier e' `true`, `false` o `level`.
+resta utile solo per imitare un ranking clingo-like con una singola chiave
+globale; non e' la semantica qh-alpha del paper.
 
 
 2. Parsing
@@ -68,8 +71,7 @@ I campi importanti sono:
 
     semantics
         `alpha` oppure `clingo`. Questo campo regola la semantica di body
-        negativi e aggregati durante la valutazione lazy, non il significato
-        globale di `@priority`.
+        negativi, aggregati e ranking globale.
 
 Default attuale:
 
@@ -169,8 +171,10 @@ Questa funzione:
 
 1. rimuove l'eventuale vecchio rank globale del target;
 2. ricostruisce da zero lo stato del target leggendo tutti i suoi effect attivi;
-3. applica `@priority` solo localmente;
-4. reinserisce il target nel set globale solo se ha `level > 0`.
+3. con `__semantics(alpha)`, risolve il miglior effect del target con
+   priority massima e poi weight massimo;
+4. con `__semantics(clingo)`, applica `@priority` solo localmente;
+5. reinserisce il target nel set globale se il rank scelto e' positivo.
 
 Lo stato risolto e':
 
@@ -178,8 +182,11 @@ Lo stato risolto e':
         target_lit
         level
         sign
+        decision_priority
+        decision_weight
         decision_ranked
-        ranked_level
+        ranked_priority
+        ranked_weight
 
 `level` e `sign` sono `ResolvedModifierValue`:
 
@@ -342,30 +349,24 @@ I mode rimangono:
     la-aux
         lazy tramite predicato ausiliario.
 
-La distinzione Alpha/Clingo del mode non trasforma `@priority` in ranking
-globale: `@priority` resta sempre locale nel propagatore nuovo.
+Con `__semantics(alpha)`, `@priority` e' ranking globale: il propagatore
+sceglie prima la priority massima e poi il weight massimo, come in qh-alpha.
+Con `__semantics(clingo)`, `@priority` resta locale alla risoluzione delle
+modifiche dello stesso target.
 
 
 11. Promemoria per BSP
 ----------------------
 
-Per imitare clingo nativo su BSP, usare:
-
-    __weight(__add(__mul(__add(n, 1), s), self))
-    __priority(0)
-    __modifier(true)
-
-e non:
+Per imitare qh-alpha del paper su BSP, usare:
 
     __weight(self)
     __priority(s)
+    __modifier(true)
 
-Nel primo caso il level globale e':
-
-    ((n+1) * S) + X
-
-Nel secondo caso `S` finirebbe nella priority locale e non ordinerebbe piu'
-globalmente target diversi.
+Il ranking globale e' quindi esattamente `[X@S]`: prima S massimo, poi X
+massimo. La forma appiattita `((n+1) * S) + X` resta solo un trucco
+clingo-like, non la semantica Alpha-like del paper.
 
 
 12. Mappa dell'implementazione attuale

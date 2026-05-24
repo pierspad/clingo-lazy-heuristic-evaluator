@@ -36,6 +36,7 @@ private:
         int bias = 0;
         int local_priority = 0;
         HeuristicModifier modifier = HeuristicModifier::True;
+        HeuristicSemantics semantics = HeuristicSemantics::Clingo;
         size_t candidate_id = 0;
     };
 
@@ -50,12 +51,17 @@ private:
         Clingo::literal_t target_lit = 0;
         ResolvedModifierValue level;
         ResolvedModifierValue sign;
+        bool decision_active = false;
+        int decision_priority = 0;
+        int decision_weight = 0;
         bool decision_ranked = false;
-        int ranked_level = 0;
+        int ranked_priority = 0;
+        int ranked_weight = 0;
     };
 
     struct DecisionRankKey {
-        int level = 0;
+        int priority = 0;
+        int weight = 0;
         Clingo::literal_t target_lit = 0;
     };
 
@@ -81,7 +87,8 @@ private:
 
     struct DecisionRankGreater {
         bool operator()(DecisionRankKey const &a, DecisionRankKey const &b) const {
-            if (a.level != b.level) return a.level > b.level;
+            if (a.priority != b.priority) return a.priority > b.priority;
+            if (a.weight != b.weight) return a.weight > b.weight;
             return a.target_lit < b.target_lit;
         }
     };

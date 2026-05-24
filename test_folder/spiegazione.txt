@@ -1,8 +1,9 @@
 Ricapitolazione corretta del lazy heuristic propagator
 
-La versione attuale del propagatore non ordina piu' i candidate con una chiave
-globale `priority, weight`. Quella era la vecchia approssimazione, piu' vicina
-al comportamento Alpha-style, e non rispecchiava la semantica di clingo.
+La versione attuale del propagatore distingue esplicitamente semantica
+Alpha-like e Clingo-like. In `__semantics(alpha)`, i candidate vengono ordinati
+globalmente per `priority, weight`, come qh-alpha. In `__semantics(clingo)`,
+la priority resta locale alle modifiche dello stesso target.
 
 La forma concettuale da imitare e':
 
@@ -11,7 +12,7 @@ La forma concettuale da imitare e':
 dove:
 
     W = bias/value della modifica
-    P = priority locale tra modifiche dello stesso target
+    P = priority/level della direttiva
     M = modifier: level, sign, true, false, init, factor
 
 Il flusso ora e':
@@ -34,10 +35,11 @@ Il flusso ora e':
        target -> level risolto
        target -> sign risolto
 
-6. Solo dopo questa risoluzione locale il target entra nel ranking globale,
-   usando il suo level risolto.
-7. `decide()` sceglie il target con level positivo piu' alto e applica il sign
-   risolto.
+6. Con semantica Alpha-like, il target entra nel ranking globale usando prima
+   `P` e poi `W`.
+7. Con semantica Clingo-like, il target entra nel ranking globale usando il
+   suo level risolto.
+8. `decide()` sceglie il target migliore e applica il sign risolto.
 
 Quindi:
 
@@ -45,13 +47,13 @@ Quindi:
     clingo level     = ranking globale tra target
     clingo sign      = valore preferito quando il target viene scelto
 
-Per BSP, la forma lazy clingo-like deve essere:
+Per BSP qh-alpha, la forma lazy deve essere:
 
     __heuristic(__target(b), x, __n_c, __bind(s, __sum(c, 0)),
-                __weight(__add(__mul(__add(n, 1), s), self)),
-                __priority(0),
+                __weight(self),
+                __priority(s),
                 __modifier(true),
-                __semantics(clingo)).
+                __semantics(alpha)).
 
 Qui `self` indica sempre l'argomento 0 del target corrente. Per target con
 piu' argomenti si puo' rendere esplicito un argomento qualunque con:
@@ -60,12 +62,8 @@ piu' argomenti si puo' rendere esplicito un argomento qualunque con:
 
 e poi usare `var` in `__weight(...)` o `__priority(...)`.
 
-Non usare piu':
-
-    __weight(self), __priority(s), true
-
-perche' `s` sarebbe solo priority locale e non ordinerebbe globalmente target
-diversi.
+La forma `__weight(__add(__mul(__add(n, 1), s), self)), __priority(0)` e' una
+codifica appiattita clingo-like, non la semantica Alpha-like del paper.
 
 Nota importante:
 

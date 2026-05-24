@@ -1420,9 +1420,14 @@ void HeuristicPropagator::erase_target_decision_rank(Clingo::literal_t target_li
     auto state_it = target_states_.find(target_lit);
     if (state_it == target_states_.end() || !state_it->second.decision_ranked) return;
 
-    active_decision_ranks_.erase(DecisionRankKey{state_it->second.ranked_level, target_lit});
+    active_decision_ranks_.erase(DecisionRankKey{
+        state_it->second.ranked_priority,
+        state_it->second.ranked_weight,
+        target_lit
+    });
     state_it->second.decision_ranked = false;
-    state_it->second.ranked_level = 0;
+    state_it->second.ranked_priority = 0;
+    state_it->second.ranked_weight = 0;
 }
 
 bool HeuristicPropagator::candidate_target_is_free(RuntimeHeuristicCandidate const &candidate,
@@ -1542,6 +1547,7 @@ bool HeuristicPropagator::evaluate_candidate_effect(size_t candidate_id,
     effect.bias = evaluate_arithmetic_expression(tmpl.bias_expr, candidate.self_value, var_env);
     effect.local_priority = local_priority;
     effect.modifier = tmpl.modifier;
+    effect.semantics = tmpl.semantics;
     effect.candidate_id = candidate_id;
     return true;
 }
@@ -1609,6 +1615,17 @@ void HeuristicPropagator::refresh_target(Clingo::literal_t target_lit, Clingo::A
 
     TargetHeuristicState new_state;
     new_state.target_lit = target_lit;
+    CandidateHeuristicEffect best_alpha_effect;
+    auto alpha_rank_is_better = [](CandidateHeuristicEffect const &candidate,
+                                   CandidateHeuristicEffect const &current) {
+        return !current.active ||
+               candidate.local_priority > current.local_priority ||
+               (candidate.local_priority == current.local_priority &&
+                candidate.bias > current.bias) ||
+               (candidate.local_priority == current.local_priority &&
+                candidate.bias == current.bias &&
+                candidate.candidate_id < current.candidate_id);
+    };
 
     auto ids_it = candidate_ids_by_target_.find(target_lit);
     if (ids_it != candidate_ids_by_target_.end()) {
@@ -1618,19 +1635,58 @@ void HeuristicPropagator::refresh_target(Clingo::literal_t target_lit, Clingo::A
             auto const &effect = candidate_effects_[candidate_id];
             if (!effect.active) continue;
 
+            if (effect.semantics == HeuristicSemantics::Alpha &&
+                (effect.modifier == HeuristicModifier::Level ||
+                 effect.modifier == HeuristicModifier::True ||
+                 effect.modifier == HeuristicModifier::False)) {
+                if (alpha_rank_is_better(effect, best_alpha_effect)) {
+                    best_alpha_effect = effect;
+                }
+                continue;
+            }
+
             apply_effect_to_target_state(effect, new_state);
         }
     }
 
+    if (best_alpha_effect.active) {
+        new_state.level.active = true;
+        new_state.level.local_priority = best_alpha_effect.local_priority;
+        new_state.level.value = best_alpha_effect.bias;
+        new_state.level.source_candidate_id = best_alpha_effect.candidate_id;
+
+        if (best_alpha_effect.modifier == HeuristicModifier::True ||
+            best_alpha_effect.modifier == HeuristicModifier::False) {
+            new_state.sign.active = true;
+            new_state.sign.local_priority = best_alpha_effect.local_priority;
+            new_state.sign.value = best_alpha_effect.modifier == HeuristicModifier::True ? +1 : -1;
+            new_state.sign.source_candidate_id = best_alpha_effect.candidate_id;
+        }
+
+        new_state.decision_active = true;
+        new_state.decision_priority = best_alpha_effect.local_priority;
+        new_state.decision_weight = best_alpha_effect.bias;
+    }
+    else if (new_state.level.active) {
+        new_state.decision_active = true;
+        new_state.decision_priority = 0;
+        new_state.decision_weight = new_state.level.value;
+    }
+
     target_states_[target_lit] = new_state;
 
-    if (new_state.level.active &&
-        new_state.level.value > 0 &&
+    if (new_state.decision_active &&
+        (new_state.decision_priority > 0 || new_state.decision_weight > 0) &&
         assignment.truth_value(target_lit) == Clingo::TruthValue::Free) {
-        active_decision_ranks_.insert(DecisionRankKey{new_state.level.value, target_lit});
+        active_decision_ranks_.insert(DecisionRankKey{
+            new_state.decision_priority,
+            new_state.decision_weight,
+            target_lit
+        });
         auto &stored_state = target_states_[target_lit];
         stored_state.decision_ranked = true;
-        stored_state.ranked_level = new_state.level.value;
+        stored_state.ranked_priority = new_state.decision_priority;
+        stored_state.ranked_weight = new_state.decision_weight;
     }
 }
 
@@ -1958,8 +2014,10 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
             }
 
             if (!state.level.active ||
-                state.level.value != rank_key.level ||
-                state.level.value <= 0) {
+                !state.decision_active ||
+                state.decision_priority != rank_key.priority ||
+                state.decision_weight != rank_key.weight ||
+                (state.decision_priority <= 0 && state.decision_weight <= 0)) {
                 erase_target_decision_rank(rank_key.target_lit);
                 continue;
             }

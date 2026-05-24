@@ -376,7 +376,7 @@ TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
         REQUIRE(models == ModelVec({{Function("a", {Number(2)})}}));
     }
 
-    SECTION("clingo-like priority is not a global rank") {
+    SECTION("alpha string heuristic priority is a global rank") {
         Control ctl{{"1", "--heuristic=Domain"}, logger, 20};
         HeuristicPropagator propagator;
         ctl.register_propagator(propagator, true);
@@ -388,7 +388,26 @@ TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
         )");
         ctl.ground({{"base", {}}}, nullptr);
         REQUIRE(test_solve(ctl.solve(), models).is_satisfiable());
-        REQUIRE(models == ModelVec({{Function("a", {Number(1)})}}));
+        REQUIRE(models == ModelVec({{Function("a", {Number(2)})}}));
+    }
+
+    SECTION("__heuristic alpha priority is a global rank before weight") {
+        Control ctl{{"1", "--heuristic=Domain"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            dom(1..2).
+            hi(2).
+            1 { a(X) : dom(X) } 1.
+            __heuristic(__target(a), __body(dom, __match(0, 0)),
+                        __weight(self), __priority(0), __modifier(true), __semantics(alpha)).
+            __heuristic(__target(a), __body(hi, __match(0, 0)),
+                        __weight(1), __priority(100), __modifier(true), __semantics(alpha)).
+            #show a/1.
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE(test_solve(ctl.solve(), models).is_satisfiable());
+        REQUIRE(models == ModelVec({{Function("a", {Number(2)})}}));
     }
 
     SECTION("clingo-like unmapped targets are ignored") {
