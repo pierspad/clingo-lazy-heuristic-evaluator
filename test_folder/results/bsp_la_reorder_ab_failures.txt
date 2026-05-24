@@ -1,2 +1,0 @@
-120	default	la	clingo_time_limit	timeout
-120	default	la_reordered	clingo_time_limit	timeout

@@ -63,4 +63,4 @@ export BSP_RESULTS_CSV
 export BSP_METADATA_FILE
 export BSP_FAILURES_FILE
 
-exec "${SCRIPT_DIR}/benchmark_bsp.sh" "$@"
+exec "${SCRIPT_DIR}/1_benchmark_bsp.sh" "$@"

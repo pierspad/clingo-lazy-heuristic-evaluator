@@ -8,7 +8,7 @@ Per BSP, il file letto di default e':
 
 Il CSV viene prodotto da:
 
-    test_folder/benchmarks/benchmark_bsp.sh
+    test_folder/benchmarks/1_benchmark_bsp.sh
     test_folder/benchmarks/benchmark_runner.py
 
 Il generatore grafici non riesegue Clingo: legge le colonne numeriche gia'
@@ -3107,7 +3107,7 @@ def main():
 
     if not processed_any:
         print("\nNessun file CSV di risultati trovato.")
-        print("Esegui prima benchmarks/benchmark_bsp.sh e/o benchmarks/benchmark_pup.sh.")
+        print("Esegui prima benchmarks/1_benchmark_bsp.sh e/o benchmarks/3_benchmark_pup.sh.")
         sys.exit(1)
 
     print(f"\nDone. Tutti i grafici sono in '{base_out}/'.")

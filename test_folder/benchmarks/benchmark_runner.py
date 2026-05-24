@@ -134,10 +134,17 @@ def build_clingo_command(args, clingo: str, *, json_mode: bool) -> list[str]:
     return cmd
 
 
-def run_command(cmd: list[str], timeout: int, memory_bytes: int | None) -> subprocess.CompletedProcess[str]:
+def run_command(
+    cmd: list[str],
+    timeout: int,
+    memory_bytes: int | None,
+    extra_env: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess[str]:
     env = os.environ.copy()
     env["LC_ALL"] = "C"
     env["LC_NUMERIC"] = "C"
+    if extra_env:
+        env.update(extra_env)
     return subprocess.run(
         cmd,
         text=True,
@@ -396,7 +403,12 @@ def run_benchmark(args) -> int:
 
     print(f"  [setting={args.setting} seed={seed}] {' '.join(json_cmd)}")
     try:
-        proc = run_command(json_cmd, args.timeout + 5, args.memory_bytes)
+        proc = run_command(
+            json_cmd,
+            args.timeout + 5,
+            args.memory_bytes,
+            {"LAZY_PROLOG_STATS": "1"},
+        )
     except subprocess.TimeoutExpired:
         print("    warning: timeout; solver metrics marked as NA", file=sys.stderr)
         row.update(failure_metrics(child_memory_mb()))

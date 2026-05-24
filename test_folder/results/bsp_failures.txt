@@ -1,0 +1,5 @@
+60	default	ga	clingo_time_limit	timeout
+80	default	gc	clingo_time_limit	timeout
+80	default	gc_noheur	clingo_time_limit	timeout
+80	default	lc	clingo_time_limit	timeout
+90	default	la	clingo_time_limit	timeout

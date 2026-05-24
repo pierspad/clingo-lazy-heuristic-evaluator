@@ -32,8 +32,8 @@ apply_overrides "${LAUNCHER_CONFIG_VARS[@]}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 TEST_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-BSP_SCRIPT="${SCRIPT_DIR}/benchmark_bsp.sh"
-PUP_SCRIPT="${SCRIPT_DIR}/benchmark_pup.sh"
+BSP_SCRIPT="${SCRIPT_DIR}/1_benchmark_bsp.sh"
+PUP_SCRIPT="${SCRIPT_DIR}/3_benchmark_pup.sh"
 
 export RUN_BSP
 export RUN_PUP

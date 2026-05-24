@@ -413,7 +413,7 @@ I file principali sono:
         diagnostiche `#heuristic`, i fatti `__heuristic`, i fatti e le righe
         totali.
 
-    test_folder/benchmarks/benchmark_bsp.sh
+    test_folder/benchmarks/1_benchmark_bsp.sh
         Itera sulle varianti BSP e su `n`; passa seed a clingo solo quando
         `BSP_USE_SEED=1`, fermando una variante quando incontra timeout o
         limite memoria se `STOP_VARIANT_ON_LIMIT=1`.
@@ -422,7 +422,7 @@ I file principali sono:
 13. Stato dei benchmark BSP
 ---------------------------
 
-La configurazione corrente di `benchmark_bsp.sh` e':
+La configurazione corrente di `1_benchmark_bsp.sh` e':
 
     DEFAULT_TIMEOUT_SECONDS=120
     DEFAULT_REPEATS=1
@@ -438,7 +438,7 @@ Il CSV in `test_folder/results/bsp_results.csv` puo' essere vuoto se i risultati
 sono stati ripuliti dopo la generazione dei grafici. In quel caso, per
 ricostruire o rigenerare i dati bisogna rieseguire:
 
-    bash test_folder/benchmarks/benchmark_bsp.sh
+    bash test_folder/benchmarks/1_benchmark_bsp.sh
 
 e poi:
 

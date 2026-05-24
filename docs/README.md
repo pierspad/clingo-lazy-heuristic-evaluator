@@ -156,13 +156,13 @@ Questa sezione documenta la suite sperimentale BSP usata per confrontare:
 Gli script principali sono:
 
 ```bash
-test_folder/benchmarks/benchmark_bsp.sh
+test_folder/benchmarks/1_benchmark_bsp.sh
 test_folder/benchmarks/benchmark_runner.py
 test_folder/tools/gen_graphs.py
 test_folder/generate_graphs.sh
 ```
 
-`benchmark_bsp.sh` itera su varianti, valori di `n` e seed. `benchmark_runner.py` esegue una singola run, estrae le statistiche da Clingo e aggiunge una riga al CSV. `gen_graphs.py` legge il CSV e genera i grafici.
+`1_benchmark_bsp.sh` itera su varianti, valori di `n` e seed. `benchmark_runner.py` esegue una singola run, estrae le statistiche da Clingo e aggiunge una riga al CSV. `gen_graphs.py` legge il CSV e genera i grafici.
 
 I risultati BSP vengono salvati in:
 
@@ -184,13 +184,13 @@ Per ora la suite di default e' quella esplorativa da 60 secondi con una sola rip
 ```bash
 TIMEOUT_SECONDS=60 REPEATS=1 N_START=10 N_END=50 N_STEP=10 \
 BSP_VARIANTS="gc_noheur gc ga la lc la_aux" \
-bash test_folder/benchmarks/benchmark_bsp.sh
+bash test_folder/benchmarks/1_benchmark_bsp.sh
 ```
 
 Quindi dalla root del repository basta eseguire:
 
 ```bash
-bash test_folder/benchmarks/benchmark_bsp.sh
+bash test_folder/benchmarks/1_benchmark_bsp.sh
 ```
 
 Questo testa:
@@ -210,7 +210,7 @@ valore di `n` successivo. Per disattivare lo stop su memoria:
 
 ```bash
 STOP_VARIANT_ON_MEMORY=0 \
-bash test_folder/benchmarks/benchmark_bsp.sh
+bash test_folder/benchmarks/1_benchmark_bsp.sh
 ```
 
 Il limite superiore dello sweep resta `N_END`: per continuare a valori di `n` piu' grandi, aumenta `N_END`.
@@ -238,7 +238,7 @@ Per cambiare il set:
 
 ```bash
 BSP_VARIANTS="gc lc" \
-bash test_folder/benchmarks/benchmark_bsp.sh
+bash test_folder/benchmarks/1_benchmark_bsp.sh
 ```
 
 ## Parametri Utili
@@ -249,7 +249,7 @@ Cambiare intervallo di `n`:
 N_START=10 \
 N_END=100 \
 N_STEP=10 \
-bash test_folder/benchmarks/benchmark_bsp.sh
+bash test_folder/benchmarks/1_benchmark_bsp.sh
 ```
 
 Cambiare ripetizioni e timeout:
@@ -257,21 +257,21 @@ Cambiare ripetizioni e timeout:
 ```bash
 REPEATS=3 \
 TIMEOUT_SECONDS=300 \
-bash test_folder/benchmarks/benchmark_bsp.sh
+bash test_folder/benchmarks/1_benchmark_bsp.sh
 ```
 
 Cambiare limite memoria:
 
 ```bash
 MEM_LIMIT_BYTES=$((16 * 1024 * 1024 * 1024)) \
-bash test_folder/benchmarks/benchmark_bsp.sh
+bash test_folder/benchmarks/1_benchmark_bsp.sh
 ```
 
 Forzare un binario Clingo specifico:
 
 ```bash
 CLINGO_MOD=./clingo-modified/build/bin/clingo \
-bash test_folder/benchmarks/benchmark_bsp.sh
+bash test_folder/benchmarks/1_benchmark_bsp.sh
 ```
 
 ## Singola Run Manuale
@@ -398,7 +398,7 @@ Fase 2, confronto principale Clingo:
 ```bash
 TIMEOUT_SECONDS=120 REPEATS=1 N_START=10 N_END=100 N_STEP=10 \
 BSP_VARIANTS="gc lc" \
-bash test_folder/benchmarks/benchmark_bsp.sh
+bash test_folder/benchmarks/1_benchmark_bsp.sh
 ```
 
 Fase 2, confronto Alpha:
@@ -406,7 +406,7 @@ Fase 2, confronto Alpha:
 ```bash
 TIMEOUT_SECONDS=120 REPEATS=1 N_START=10 N_END=100 N_STEP=10 \
 BSP_VARIANTS="ga la" \
-bash test_folder/benchmarks/benchmark_bsp.sh
+bash test_folder/benchmarks/1_benchmark_bsp.sh
 ```
 
 Fase 2, confronto ausiliari:
@@ -414,7 +414,7 @@ Fase 2, confronto ausiliari:
 ```bash
 TIMEOUT_SECONDS=120 REPEATS=1 N_START=10 N_END=80 N_STEP=10 \
 BSP_VARIANTS="gc_noheur gc la la_aux" \
-bash test_folder/benchmarks/benchmark_bsp.sh
+bash test_folder/benchmarks/1_benchmark_bsp.sh
 ```
 
 Fase 3, run finale comparativo:
@@ -422,7 +422,7 @@ Fase 3, run finale comparativo:
 ```bash
 TIMEOUT_SECONDS=300 REPEATS=3 N_START=10 N_END=70 N_STEP=10 \
 BSP_VARIANTS="gc_noheur gc ga la lc la_aux" \
-bash test_folder/benchmarks/benchmark_bsp.sh
+bash test_folder/benchmarks/1_benchmark_bsp.sh
 ```
 
 Se troppe varianti ground vanno in timeout o memoria, usa un massimo comune piu' basso:
@@ -430,7 +430,7 @@ Se troppe varianti ground vanno in timeout o memoria, usa un massimo comune piu'
 ```bash
 TIMEOUT_SECONDS=300 REPEATS=3 N_START=10 N_END=50 N_STEP=10 \
 BSP_VARIANTS="gc_noheur gc ga la lc la_aux" \
-bash test_folder/benchmarks/benchmark_bsp.sh
+bash test_folder/benchmarks/1_benchmark_bsp.sh
 ```
 
 Run esteso solo lazy:
@@ -438,5 +438,5 @@ Run esteso solo lazy:
 ```bash
 TIMEOUT_SECONDS=300 REPEATS=3 N_START=80 N_END=200 N_STEP=20 \
 BSP_VARIANTS="la lc" \
-bash test_folder/benchmarks/benchmark_bsp.sh
+bash test_folder/benchmarks/1_benchmark_bsp.sh
 ```
