@@ -159,7 +159,15 @@ if [ "${RESET_GRAPHS}" = "1" ]; then
     "${PYTHON_BIN}" tools/gen_graphs.py --reset
 fi
 
-if [[ -f "${SCRIPT_DIR}/results/bsp_results.csv" ]]; then
+BSP_RESULTS_AVAILABLE=0
+for bsp_csv_name in bsp_results.csv bsp_main_results.csv bsp_main_micro_results.csv; do
+    if [[ -s "${SCRIPT_DIR}/results/${bsp_csv_name}" ]]; then
+        BSP_RESULTS_AVAILABLE=1
+        break
+    fi
+done
+
+if [[ "${BSP_RESULTS_AVAILABLE}" == "1" ]]; then
     for graph_set in "${ACTIVE_BSP_GRAPH_SETS[@]}"; do
         if [[ "${graph_set}" == *":"* ]]; then
             set_name="${graph_set%%:*}"
@@ -178,7 +186,7 @@ if [[ -f "${SCRIPT_DIR}/results/bsp_results.csv" ]]; then
         fi
     done
 else
-    echo "CSV BSP completo non trovato: salto results/graphs/bsp."
+    echo "CSV BSP completo non trovato o vuoto: salto results/graphs/bsp."
 fi
 
 if [[ -f "${SCRIPT_DIR}/results/bsp_random_results.csv" ]]; then

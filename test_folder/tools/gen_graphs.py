@@ -110,6 +110,11 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 TEST_ROOT = os.path.dirname(SCRIPT_DIR)
 DEFAULT_RESULTS_DIR = os.path.join(TEST_ROOT, "results")
 DEFAULT_GRAPHS_DIR = os.path.join(TEST_ROOT, "results", "graphs")
+BSP_RESULT_CSV_NAMES = (
+    "bsp_results.csv",
+    "bsp_main_results.csv",
+    "bsp_main_micro_results.csv",
+)
 
 METRIC_FIELDS = [
     "grounding_s",
@@ -2802,6 +2807,8 @@ def parse_args():
 
 {heading("Expected CSV files")}
   {value("bsp_results.csv")}          BSP benchmark results.
+  {value("bsp_main_results.csv")}     BSP benchmark fallback.
+  {value("bsp_main_micro_results.csv")}  BSP benchmark fallback.
   {value("bsp_random_results.csv")}   Randomized BSP benchmark results.
   {value("pup_double_results.csv")}   PUP Double-family benchmark results.
   {value("pup_doublev_results.csv")}  PUP DoubleV-family benchmark results.
@@ -2928,7 +2935,9 @@ def build_themes():
 
 
 def process_bsp(results_dir, base_out, exclude_selectors):
-    bsp_csv = os.path.join(results_dir, "bsp_results.csv")
+    bsp_csv = _first_nonempty_csv(results_dir, BSP_RESULT_CSV_NAMES)
+    if bsp_csv is None:
+        bsp_csv = os.path.join(results_dir, BSP_RESULT_CSV_NAMES[0])
     bsp_theme, _, _ = build_themes()
 
     bsp_user_excluded_order = resolve_excluded_variant_list_quiet(
@@ -2943,6 +2952,14 @@ def process_bsp(results_dir, base_out, exclude_selectors):
         exclusion_dir_name(bsp_theme, bsp_excluded, bsp_user_excluded_order),
     )
     return process_csv(bsp_csv, bsp_out, bsp_theme, bsp_label, excluded_variants=bsp_excluded)
+
+
+def _first_nonempty_csv(results_dir, csv_names):
+    for csv_name in csv_names:
+        csv_path = os.path.join(results_dir, csv_name)
+        if os.path.isfile(csv_path) and os.path.getsize(csv_path) > 0:
+            return csv_path
+    return None
 
 
 def process_bsp_random(results_dir, base_out, exclude_selectors):
@@ -3053,7 +3070,7 @@ def main():
         sys.exit(2)
 
     expected_csvs = [
-        os.path.join(results_dir, "bsp_results.csv"),
+        *(os.path.join(results_dir, name) for name in BSP_RESULT_CSV_NAMES),
         os.path.join(results_dir, "bsp_random_results.csv"),
         os.path.join(results_dir, "pup_double_results.csv"),
         os.path.join(results_dir, "pup_doublev_results.csv"),
