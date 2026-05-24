@@ -53,7 +53,7 @@ BSP_MEM_LIMIT_BYTES=
 BSP_MEM_LIMIT_MB=
 BSP_MEM_LIMIT_GB=10
 
-BSP_VARIANTS="ga_weak ga gc_noheur gc la_aux la_co la lc"
+BSP_VARIANTS="gc_noheur gc ga la lc la_co"
 BSP_RANDOM_SETTINGS="default:"
 BSP_CLINGO_EXTRA_ARGS=
 

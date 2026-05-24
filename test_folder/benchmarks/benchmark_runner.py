@@ -9,6 +9,7 @@ import shlex
 import signal
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +29,7 @@ CSV_FIELDS = [
     "solving_s",
     "total_s",
     "grounding_s",
+    "ground_text_wall_s",
     "choices",
     "conflicts",
     "restarts",
@@ -184,6 +186,7 @@ def failure_metrics(memory_mb: str = "NA") -> dict[str, str]:
 
 def ground_failure_metrics() -> dict[str, str]:
     return {
+        "ground_text_wall_s": "NA",
         "ground_heuristics": "NA",
         "ground_lazy_heuristic_facts": "NA",
         "ground_prolog_heuristic_facts": "NA",
@@ -251,16 +254,25 @@ def classify_process_failure(proc: subprocess.CompletedProcess[str]) -> tuple[st
 
 def collect_ground_counts(args, clingo: str) -> tuple[dict[str, str], str]:
     cmd = build_clingo_command(args, clingo, json_mode=False)
+    start = time.perf_counter()
     try:
         proc = run_command(cmd, args.timeout, args.memory_bytes)
     except subprocess.TimeoutExpired:
-        return ground_failure_metrics(), "timeout"
+        metrics = ground_failure_metrics()
+        metrics["ground_text_wall_s"] = format_float(time.perf_counter() - start)
+        return metrics, "timeout"
     except OSError:
-        return ground_failure_metrics(), "error"
+        metrics = ground_failure_metrics()
+        metrics["ground_text_wall_s"] = format_float(time.perf_counter() - start)
+        return metrics, "error"
+
+    ground_text_wall_s = format_float(time.perf_counter() - start)
 
     if proc.returncode not in SUCCESS_STATUSES:
         status, _reason = classify_process_failure(proc)
-        return ground_failure_metrics(), status
+        metrics = ground_failure_metrics()
+        metrics["ground_text_wall_s"] = ground_text_wall_s
+        return metrics, status
 
     heuristics = 0
     lazy_facts = 0
@@ -291,6 +303,7 @@ def collect_ground_counts(args, clingo: str) -> tuple[dict[str, str], str]:
             facts += 1
 
     return {
+        "ground_text_wall_s": ground_text_wall_s,
         "ground_heuristics": str(heuristics),
         "ground_lazy_heuristic_facts": str(lazy_facts),
         "ground_prolog_heuristic_facts": str(prolog_facts),
@@ -420,6 +433,7 @@ def run_benchmark(args) -> int:
     print(
         "    status={status} reason={failure_reason} "
         "    grounding={grounding_s}s solving={solving_s}s total={total_s}s "
+        "ground_text_wall={ground_text_wall_s}s "
         "choices={choices} conflicts={conflicts} restarts={restarts} "
         "rules={rules} vars={variables} mem={memory_gb}GB "
         "heur={ground_heuristics} lazy_facts={ground_lazy_heuristic_facts} "

@@ -32,7 +32,8 @@ Origine esatta delle colonne usate nei grafici BSP
 3. grounding_s
    - Comando sorgente: stesso run JSON di Clingo.
    - Calcolo in benchmark_runner.py: `Time.Total - Time.Solve`, troncato a 0
-     se serve per evitare piccoli valori negativi da arrotondamento.
+     se serve per evitare piccoli valori negativi da arrotondamento. E' una
+     metrica derivata dalle statistiche JSON, non un tempo di grounding puro.
 
 4. choices, conflicts, restarts
    - Comando sorgente: stesso run JSON di Clingo.
@@ -72,11 +73,22 @@ Origine esatta delle colonne usate nei grafici BSP
       testuale ground. Non viene usato come conteggio delle regole ground;
       per quello si usa sempre la colonna `rules` da Clingo stats.
 
-12. combined_heuristics
-    - Non e' una colonna del CSV: viene calcolata qui come
-      `ground_heuristics + ground_lazy_heuristic_facts`.
+12. ground_query_heuristic_facts
+    - Comando sorgente: stesso run `clingo --text`.
+    - Conteggio: fatti query-driven `heuristic(...)` usati dalle euristiche
+      lazy Alpha/Clingo-like.
 
-13. solving_ms_per_choice
+13. ground_text_wall_s
+    - Comando sorgente: stesso run `clingo --text`.
+    - Misura: tempo wall-clock del run testuale, inclusa produzione e cattura
+      dell'output.
+
+14. combined_heuristics
+    - Non e' una colonna del CSV: viene calcolata qui come
+      `ground_heuristics + ground_lazy_heuristic_facts +
+      ground_query_heuristic_facts`.
+
+15. solving_ms_per_choice
     - Non e' una colonna del CSV: viene calcolata qui come
       `1000 * solving_s / choices` quando il numero di scelte e' positivo.
 
@@ -109,8 +121,10 @@ METRIC_FIELDS = [
     "rules",
     "variables",
     "memory_mb",
+    "ground_text_wall_s",
     "ground_heuristics",
     "ground_lazy_heuristic_facts",
+    "ground_query_heuristic_facts",
     "ground_facts",
     "ground_lines",
 ]
@@ -122,6 +136,7 @@ INTEGER_METRICS = {
     "variables",
     "ground_heuristics",
     "ground_lazy_heuristic_facts",
+    "ground_query_heuristic_facts",
     "combined_heuristics",
     "ground_facts",
     "ground_lines",
@@ -230,7 +245,7 @@ PLOT_CONFIGS = [
         "metric": "combined_heuristics",
         "title": "Heuristic Grounding",
         "ylabel": "Ground heuristic entries (millions)",
-        "description": "Standard: native #heuristic directives\nLazy: __heuristic facts passed to the propagator",
+        "description": "Standard: native #heuristic directives\nLazy: __heuristic and query-driven heuristic facts passed to the propagator",
         "filename": "combined_heuristics.png",
     },
 ]
@@ -472,6 +487,7 @@ def load_csv(csv_path: str):
             ground_metrics = {
                 "ground_heuristics",
                 "ground_lazy_heuristic_facts",
+                "ground_query_heuristic_facts",
                 "ground_facts",
                 "ground_lines",
             }
@@ -493,7 +509,11 @@ def load_csv(csv_path: str):
 
             heuristic_values = [
                 row_values[m]
-                for m in ("ground_heuristics", "ground_lazy_heuristic_facts")
+                for m in (
+                    "ground_heuristics",
+                    "ground_lazy_heuristic_facts",
+                    "ground_query_heuristic_facts",
+                )
                 if m in row_values
             ]
             if heuristic_values:
@@ -899,7 +919,8 @@ def _include_variant_for_metric(stats: dict, variant: str, metric: str, theme: d
     if metric == "combined_heuristics":
         if (
             _has_positive_metric(stats, variant, "ground_heuristics") or
-            _has_positive_metric(stats, variant, "ground_lazy_heuristic_facts")
+            _has_positive_metric(stats, variant, "ground_lazy_heuristic_facts") or
+            _has_positive_metric(stats, variant, "ground_query_heuristic_facts")
         ):
             return True
         zero_metric_variants = (theme or {}).get("include_zero_metric_variants", {})
@@ -1985,12 +2006,14 @@ def _plot_lazy_standard_solving_time_ratio(ax, stats, theme) -> bool:
 
     has_data = False
     pairs = _available_lazy_standard_solving_time_ratio_pairs(stats, theme)
-    common_n = _common_lazy_standard_solving_time_ratio_ns(stats, pairs)
     series = []
+    all_n_vals = []
     for standard, lazy in pairs:
+        n_vals = _lazy_standard_solving_time_ratio_ns(stats, standard, lazy)
+        if not n_vals:
+            continue
         standard_map = _metric_mean_map(stats, standard, "solving_s")
         lazy_map = _metric_mean_map(stats, lazy, "solving_s")
-        n_vals = common_n
         ratios = [
             _positive_ratio(lazy_map[n], standard_map[n])
             for n in n_vals
@@ -2018,11 +2041,12 @@ def _plot_lazy_standard_solving_time_ratio(ax, stats, theme) -> bool:
             "y": ratios,
             "color": theme["variant_colors"].get(lazy),
         })
+        all_n_vals.extend(n_vals)
 
     ax.axhline(1.0, color="#555", linewidth=1, linestyle="--")
     if has_data:
         ax.set_yscale("log")
-        ax.set_xlim(min(common_n), max(common_n))
+        ax.set_xlim(min(all_n_vals), max(all_n_vals))
         ax.margins(x=0.12)
         _annotate_series_endpoints(
             ax,
@@ -2035,25 +2059,22 @@ def _plot_lazy_standard_solving_time_ratio(ax, stats, theme) -> bool:
     return has_data
 
 
-def _common_lazy_standard_solving_time_ratio_ns(stats, pairs):
+def _lazy_standard_solving_time_ratio_ns(stats, standard, lazy):
 
     import math
 
-    common_n = None
-    for standard, lazy in pairs:
-        standard_map = _metric_mean_map(stats, standard, "solving_s")
-        lazy_map = _metric_mean_map(stats, lazy, "solving_s")
-        valid_n = {
-            n
-            for n in set(standard_map.keys()) & set(lazy_map.keys())
-            if (
-                math.isfinite(ratio := _positive_ratio(lazy_map[n], standard_map[n]))
-                and ratio > 0
-            )
-        }
-        common_n = valid_n if common_n is None else common_n & valid_n
+    standard_map = _metric_mean_map(stats, standard, "solving_s")
+    lazy_map = _metric_mean_map(stats, lazy, "solving_s")
+    valid_n = {
+        n
+        for n in set(standard_map.keys()) & set(lazy_map.keys())
+        if (
+            math.isfinite(ratio := _positive_ratio(lazy_map[n], standard_map[n]))
+            and ratio > 0
+        )
+    }
 
-    return sorted(common_n or [])
+    return sorted(valid_n)
 
 
 def _available_lazy_standard_solving_time_ratio_pairs(stats, theme):

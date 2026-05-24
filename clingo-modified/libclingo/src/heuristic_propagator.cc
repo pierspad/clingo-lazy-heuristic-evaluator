@@ -1074,12 +1074,11 @@ void HeuristicPropagator::synchronize_query_backend_state(Clingo::Assignment con
     if (!query_backend_) return;
 
     for (auto const &entry : symbols_by_solver_lit_) {
-        auto const value = assignment.truth_value(entry.first);
         QueryAtomState state = QueryAtomState::Free;
-        if (value == Clingo::TruthValue::True) {
+        if (assignment.is_true(entry.first)) {
             state = QueryAtomState::True;
         }
-        else if (value == Clingo::TruthValue::False) {
+        else if (assignment.is_false(entry.first)) {
             state = QueryAtomState::False;
         }
         query_backend_->set_atom_state(entry.second, state);
@@ -1090,22 +1089,25 @@ void HeuristicPropagator::synchronize_query_backend_literal(Clingo::literal_t li
                                                             Clingo::Assignment const &assignment) noexcept {
     if (!query_backend_) return;
 
-    Clingo::literal_t const atom_lit = lit > 0 ? lit : -lit;
-    auto symbol_it = symbols_by_watched_solver_lit_.find(atom_lit);
-    if (symbol_it == symbols_by_watched_solver_lit_.end()) return;
-
     try {
-        auto const value = assignment.truth_value(atom_lit);
-        QueryAtomState state = QueryAtomState::Free;
-        if (value == Clingo::TruthValue::True) {
-            state = QueryAtomState::True;
-        }
-        else if (value == Clingo::TruthValue::False) {
-            state = QueryAtomState::False;
-        }
-        for (auto const &symbol : symbol_it->second) {
-            query_backend_->set_atom_state(symbol, state);
-        }
+        auto synchronize_one = [this, &assignment](Clingo::literal_t solver_lit) {
+            auto symbol_it = symbols_by_watched_solver_lit_.find(solver_lit);
+            if (symbol_it == symbols_by_watched_solver_lit_.end()) return;
+
+            QueryAtomState state = QueryAtomState::Free;
+            if (assignment.is_true(solver_lit)) {
+                state = QueryAtomState::True;
+            }
+            else if (assignment.is_false(solver_lit)) {
+                state = QueryAtomState::False;
+            }
+            for (auto const &symbol : symbol_it->second) {
+                query_backend_->set_atom_state(symbol, state);
+            }
+        };
+
+        synchronize_one(lit);
+        synchronize_one(-lit);
     }
     catch (std::exception const &ex) {
         std::cerr << "[lazy-prolog] synchronization failed: " << ex.what() << "\n";
@@ -1124,6 +1126,8 @@ Clingo::literal_t HeuristicPropagator::decide_with_query_backend(
 
     static size_t decide_call_id = 0;
     ++decide_call_id;
+
+    synchronize_query_backend_state(assignment);
 
     auto candidates = query_backend_->query_applicable_candidates();
 
@@ -1220,7 +1224,10 @@ Clingo::literal_t HeuristicPropagator::decide_with_query_backend(
                   << " weight=" << best.active.weight
                   << " priority=" << best.active.priority
                   << " sign=" << (best.active.sign ? "true" : "false")
-                  << " lit=" << best.lit << "\n";
+                  << " lit=" << best.lit
+                  << " assignment.is_true(L)=" << (assignment.is_true(best.lit) ? "true" : "false")
+                  << " assignment.is_false(L)=" << (assignment.is_false(best.lit) ? "true" : "false")
+                  << "\n";
     }
     return best.active.sign ? best.lit : -best.lit;
 }

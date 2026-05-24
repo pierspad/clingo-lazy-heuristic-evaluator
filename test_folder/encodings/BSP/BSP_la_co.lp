@@ -16,7 +16,9 @@ c(X) :- x(X), not b(X).
 % Check lineare equivalente al vincolo sulla differenza tra le somme.
 :- not min_val <= #sum{ Y : b(Y) } <= max_val.
 
-__heuristic(__target(b), x, __n_c, __bind(s, __sum(c, 0)),
-            __weight(self), __priority(s), __modifier(true), __semantics(alpha)).
-__heuristic(__target(c), x, __n_b, __bind(s, __sum(b, 0)),
-            __weight(self), __priority(s), __modifier(true), __semantics(alpha)).
+% query-driven lazy heuristics, alpha-like default negation
+heuristic(alpha, "heuristic(b(X), W, 0, true) :- holds(x(X)), default_not(c(X)), aggregate_all(sum(Y), holds(c(Y)), S), aggregate_all(max(Y), holds(x(Y)), N), W is ((N+1)*S)+X, target_available(b(X)).").
+heuristic(alpha, "heuristic(c(X), W, 0, true) :- holds(x(X)), default_not(b(X)), aggregate_all(sum(Y), holds(b(Y)), S), aggregate_all(max(Y), holds(x(Y)), N), W is ((N+1)*S)+X, target_available(c(X)).").
+
+#show b/1.
+#show c/1.
