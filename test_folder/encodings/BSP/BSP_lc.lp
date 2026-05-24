@@ -17,8 +17,8 @@ sumC(Sum) :- Sum = #sum{Y : c(Y)}.
 :- sumB(SB), sumC(SC), (SB - SC)**2 > 1.
 
 % query-driven lazy heuristics, clingo-like default negation
-heuristic(clingo, "heuristic(b(X), W, 0, true) :- holds(x(X)), default_not(c(X)), aggregate_all(sum(Y), holds(c(Y)), S), aggregate_all(max(Y), holds(x(Y)), N), W is ((N+1)*S)+X, target_available(b(X)).").
-heuristic(clingo, "heuristic(c(X), W, 0, true) :- holds(x(X)), default_not(b(X)), aggregate_all(sum(Y), holds(b(Y)), S), aggregate_all(max(Y), holds(x(Y)), N), W is ((N+1)*S)+X, target_available(c(X)).").
+heuristic(clingo, "heuristic(b(X), W, 0, true) :- aggregate_all(sum(Y), holds(c(Y)), S), aggregate_all(max(Y), holds(x(Y)), N), holds(x(X)), target_available(b(X)), default_not(c(X)), W is ((N+1)*S)+X.").
+heuristic(clingo, "heuristic(c(X), W, 0, true) :- aggregate_all(sum(Y), holds(b(Y)), S), aggregate_all(max(Y), holds(x(Y)), N), holds(x(X)), target_available(c(X)), default_not(b(X)), W is ((N+1)*S)+X.").
 
 #show b/1.
 #show c/1.

@@ -240,89 +240,108 @@ def _format_positive_body(pred: BodyPredicate, directive: HeuristicDirective) ->
 
 
 def generate_lazy_heuristic(directive: HeuristicDirective, semantics: str = "alpha") -> list:
+    return generate_prolog_heuristic(directive, semantics=semantics)
 
 
-    warnings = []
-    lazy_neg_body = [p for p in directive.neg_body if _matches_target_tuple(p, directive)]
-    lazy_pos_args = []
-    body_vars = {}
-
-    for pred in directive.pos_body:
-        body_arg, pred_body_vars, pred_warnings = _format_positive_body(pred, directive)
-        warnings.extend(pred_warnings)
-        if body_arg:
-            lazy_pos_args.append(body_arg)
-            for name, var in pred_body_vars.items():
-                body_vars[name] = var
+def _quote_asp_string(text: str) -> str:
+    return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
-    if len(lazy_pos_args) > 1:
-        warnings.append(
-            f"% INFO: body positivi multipli ({_predicate_names(directive.pos_body)}) "
-            f"gestiti come congiunzione sulla stessa tupla.\n"
-        )
-        print(
-            f"  INFO: body positivi multipli ({_predicate_names(directive.pos_body)}) "
-            f"gestiti come congiunzione dal propagatore.",
-            file=sys.stderr
-        )
+def _prolog_expr(expr: str) -> str:
+    return re.sub(r'\bn\b', 'N', expr.strip())
 
 
-    if not lazy_pos_args:
-        warnings.append(
-            f"% WARNING: euristica senza body positivo. "
-            f"Non sarà mai attivata nel modo lazy (nessun trigger).\n"
-        )
-        print(
-            f"  ⚠ WARNING: euristica per '{directive.target_pred}' senza body positivo. "
-            f"Non sarà mai attivata nel modo lazy.",
-            file=sys.stderr
-        )
-
-    args = [f"__target({directive.target_pred})"]
+def _prolog_uses_n(*exprs: str) -> bool:
+    return any(re.search(r'\bn\b', expr) for expr in exprs)
 
 
-    args.extend(lazy_pos_args)
+def _prolog_atom(pred_name: str, args: list) -> str:
+    if not args:
+        return pred_name
+    return f"{pred_name}({','.join(args)})"
 
 
-    for pred in lazy_neg_body:
-        args.append(f"__n_{pred.pred_name}")
+def _prolog_aggregate_literal(binding: AggregateBinding, directive: HeuristicDirective) -> str:
+    template = "Y"
+    if binding.arg_index is None:
+        atom = binding.pred_name
+    else:
+        max_index = binding.arg_index
+        for source_idx, _target_idx, _offset in binding.filters:
+            max_index = max(max_index, source_idx)
+        args = ["_" for _ in range(max_index + 1)]
+        args[binding.arg_index] = template
+        for source_idx, target_idx, offset in binding.filters:
+            target_arg = directive.target_args[target_idx]
+            args[source_idx] = target_arg if offset == 0 else f"({target_arg}+{offset})"
+        atom = _prolog_atom(binding.pred_name, args)
+
+    goal = f"holds({atom})"
+    if binding.agg_type == "count":
+        return f"aggregate_all(count, {goal}, {binding.var_name})"
+    return f"aggregate_all({binding.agg_type}({template}), {goal}, {binding.var_name})"
 
 
-    target_binding_vars = {}
-    for var_name, target_idx, var_lower in _target_arg_bindings_used(directive):
-        target_binding_vars[var_name] = var_lower
-        args.append(f"__bind_target_arg({var_lower}, {target_idx})")
+def _prolog_body_predicate(pred: BodyPredicate, wrapper: str) -> str:
+    return f"{wrapper}({_prolog_atom(pred.pred_name, pred.args)})"
 
 
-    binding_vars = {}
-    for b in directive.bindings:
-        var_lower = b.var_name.lower()
-        binding_vars[b.var_name] = var_lower
-        args.append(_format_binding(b, var_lower))
+def _prolog_assignment(var_name: str, expr: str) -> str:
+    converted = _prolog_expr(expr)
+    try:
+        int(converted)
+        return ""
+    except ValueError:
+        pass
+    if converted == var_name:
+        return ""
+    return f"{var_name} is {converted}"
 
 
-    bias_conv = _convert_arith_expr(
-        directive.bias_expr, directive.target_var, binding_vars, body_vars, target_binding_vars
-    )
-    args.append(f"__weight({bias_conv})")
+def _prolog_head_terms(directive: HeuristicDirective) -> tuple[str, str, str, list]:
+    assignments = []
+
+    try:
+        int(directive.bias_expr)
+        weight = directive.bias_expr
+    except ValueError:
+        weight = "W"
+        assignment = _prolog_assignment("W", directive.bias_expr)
+        if assignment:
+            assignments.append(assignment)
+
+    try:
+        int(directive.local_priority_expr)
+        priority = directive.local_priority_expr
+    except ValueError:
+        priority = "P"
+        assignment = _prolog_assignment("P", directive.local_priority_expr)
+        if assignment:
+            assignments.append(assignment)
+
+    return weight, priority, directive.modifier, assignments
 
 
-    local_priority_conv = _convert_arith_expr(
-        directive.local_priority_expr, directive.target_var, binding_vars, body_vars, target_binding_vars
-    )
-    args.append(f"__priority({local_priority_conv})")
+def generate_prolog_heuristic(directive: HeuristicDirective, semantics: str = "alpha") -> list:
+    body_parts = []
+    body_parts.extend(_prolog_aggregate_literal(binding, directive) for binding in directive.bindings)
+    if _prolog_uses_n(directive.bias_expr, directive.local_priority_expr):
+        body_parts.append("n(N)")
+    body_parts.extend(_prolog_body_predicate(pred, "holds") for pred in directive.pos_body)
+    body_parts.append(f"target_available({directive.target_text})")
+    body_parts.extend(_prolog_body_predicate(pred, "default_not") for pred in directive.neg_body)
 
+    weight, priority, modifier, assignments = _prolog_head_terms(directive)
+    body_parts.extend(assignments)
 
-    args.append(f"__modifier({directive.modifier})")
-
-    args.append(f"__semantics({semantics})")
-
-    result_line = f"__heuristic({', '.join(args)})."
-    return warnings, result_line
+    body = ", ".join(body_parts) if body_parts else "true"
+    rule = f"heuristic({directive.target_text}, {weight}, {priority}, {modifier}) :- {body}."
+    return [], f"heuristic({semantics}, {_quote_asp_string(rule)})."
 
 
 def _aux_name(directive: HeuristicDirective, idx: int, suffix: str = "") -> str:
+    if suffix == "lazy":
+        return f"h_{directive.target_pred}_{idx}_{suffix}"
     clean_suffix = f"_{suffix}" if suffix else ""
     return f"__h_{directive.target_pred}_{idx}{clean_suffix}"
 
@@ -404,7 +423,7 @@ def generate_lazy_aux_heuristic(directive: HeuristicDirective, idx: int) -> list
         body_str=f"{aux}({aux_args})",
         original_line=directive.original_line,
     )
-    warnings, lazy_line = generate_lazy_heuristic(aux_directive)
+    warnings, lazy_line = generate_prolog_heuristic(aux_directive, semantics="alpha")
     return warnings, f"{aux_rule}\n{lazy_line}"
 
 
@@ -421,9 +440,9 @@ def _validate_mode(mode: str) -> str:
 def _generate_directive_output(directive: HeuristicDirective, idx: int, mode: str) -> tuple:
     mode = _validate_mode(mode)
     if mode == "la":
-        return generate_lazy_heuristic(directive)
+        return generate_prolog_heuristic(directive)
     if mode == "lc":
-        return generate_lazy_heuristic(directive, semantics="clingo")
+        return generate_prolog_heuristic(directive, semantics="clingo")
     if mode == "aux":
         return generate_aux_heuristic(directive, idx)
     if mode == "la-aux":
@@ -769,8 +788,8 @@ def main():
       Show the conversions that would be performed, without writing files.
 
 {heading("Rewrite modes")}
-  {value("la")}            lazy grounding with Alpha body/aggregate semantics; emits clingo-like __heuristic/N facts.
-  {value("lc")}            lazy grounding with Clingo body/aggregate semantics; emits clingo-like __heuristic/N facts.
+  {value("la")}            lazy grounding with Alpha body/aggregate semantics; emits reordered Prolog heuristic/2 rules.
+  {value("lc")}            lazy grounding with Clingo body/aggregate semantics; emits reordered Prolog heuristic/2 rules.
   {value("aux")}           ground and solve with an auxiliary predicate; emits native #heuristic.
   {value("la-aux")}        lazy grounding with Alpha body/aggregate semantics through an auxiliary predicate.
 
@@ -792,13 +811,13 @@ def main():
 
 {heading("Examples")}
   {cmd("%(prog)s test_folder/encodings/BSP/BSP_gc.lp --mode la -o test_folder/encodings/BSP/BSP_la.lp")}
-      Convert to lazy grounding with Alpha body/aggregate semantics and local @priority.
+      Convert to query-driven lazy grounding with Alpha semantics.
 
   {cmd("%(prog)s test_folder/encodings/BSP/BSP_gc.lp --mode la-aux -o test_folder/encodings/BSP/BSP_la_aux.lp")}
       Convert through an auxiliary lazy body predicate.
 
   {cmd("%(prog)s test_folder/encodings/BSP/BSP_gc.lp --mode lc -o test_folder/encodings/BSP/BSP_lc.lp")}
-      Convert to lazy syntax with Clingo body/aggregate semantics and local @priority.
+      Convert to query-driven lazy grounding with Clingo semantics.
 
   {cmd("%(prog)s test_folder/encodings/BSP/BSP_gc.lp --dry-run")}
       Check what would change before writing anything.

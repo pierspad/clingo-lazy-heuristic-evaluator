@@ -42,6 +42,29 @@ CSV_FIELDS = [
     "ground_query_heuristic_facts",
     "ground_facts",
     "ground_lines",
+    "decide_calls",
+    "total_decide_time_ms",
+    "total_state_sync_time_ms",
+    "total_prolog_query_time_ms",
+    "total_candidate_scan_time_ms",
+    "total_literal_lookup_time_ms",
+    "total_candidate_selection_time_ms",
+    "total_candidates_seen",
+    "max_candidates_seen",
+    "avg_candidates_per_decide",
+]
+
+LAZY_PROLOG_STAT_FIELDS = [
+    "decide_calls",
+    "total_decide_time_ms",
+    "total_state_sync_time_ms",
+    "total_prolog_query_time_ms",
+    "total_candidate_scan_time_ms",
+    "total_literal_lookup_time_ms",
+    "total_candidate_selection_time_ms",
+    "total_candidates_seen",
+    "max_candidates_seen",
+    "avg_candidates_per_decide",
 ]
 
 SUCCESS_STATUSES = {0, 10, 20, 30}
@@ -196,6 +219,25 @@ def ground_failure_metrics() -> dict[str, str]:
     }
 
 
+def lazy_prolog_failure_metrics() -> dict[str, str]:
+    return {field: "NA" for field in LAZY_PROLOG_STAT_FIELDS}
+
+
+def parse_lazy_prolog_metrics(stderr: str) -> dict[str, str]:
+    metrics = lazy_prolog_failure_metrics()
+    for line in stderr.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("[lazy-prolog] summary "):
+            continue
+        for part in stripped.split()[2:]:
+            if "=" not in part:
+                continue
+            key, value = part.split("=", 1)
+            if key in metrics:
+                metrics[key] = value
+    return metrics
+
+
 def sanitize_debug_name(value: str) -> str:
     return "".join(ch if ch.isalnum() or ch in ("-", "_") else "_" for ch in str(value))
 
@@ -347,6 +389,7 @@ def run_benchmark(args) -> int:
         "setting": args.setting,
         "clingo_extra_args": shlex.join(args.clingo_option) if args.clingo_option else "",
     }
+    row.update(lazy_prolog_failure_metrics())
     status = "ok"
     failure_reason = ""
     exit_code = EXIT_OK
@@ -370,6 +413,7 @@ def run_benchmark(args) -> int:
         exit_code = EXIT_ERROR
     else:
         memory_mb = child_memory_mb()
+        row.update(parse_lazy_prolog_metrics(proc.stderr))
         run_ok = proc.returncode in SUCCESS_STATUSES
         if run_ok:
             try:

@@ -85,6 +85,19 @@ private:
         size_t rule_index = 0;
     };
 
+    struct QueryBackendStats {
+        bool used = false;
+        size_t decide_calls = 0;
+        double total_decide_time_ms = 0.0;
+        double total_state_sync_time_ms = 0.0;
+        double total_prolog_query_time_ms = 0.0;
+        double total_candidate_scan_time_ms = 0.0;
+        double total_literal_lookup_time_ms = 0.0;
+        double total_candidate_selection_time_ms = 0.0;
+        size_t total_candidates_seen = 0;
+        size_t max_candidates_seen = 0;
+    };
+
     struct DecisionRankGreater {
         bool operator()(DecisionRankKey const &a, DecisionRankKey const &b) const {
             if (a.priority != b.priority) return a.priority > b.priority;
@@ -117,6 +130,7 @@ private:
     std::unordered_map<Clingo::literal_t, std::vector<Clingo::Symbol>> symbols_by_watched_solver_lit_;
     std::vector<std::pair<Clingo::literal_t, Clingo::Symbol>> symbols_by_solver_lit_;
     std::unique_ptr<HeuristicEvaluationBackend> query_backend_;
+    QueryBackendStats query_backend_stats_;
     bool use_prolog_query_backend_ = false;
     bool clingo_like_has_n_ = false;
     int clingo_like_n_ = 0;
@@ -213,9 +227,10 @@ private:
     void refresh_candidates_for_aggregate_noexcept(RuntimeAggregateKey const &runtime_key,
                                                    Clingo::Assignment const &assignment) noexcept;
     void refresh_all_candidates(Clingo::Assignment const &assignment);
+    void print_query_backend_stats() const;
 
 public:
-    ~HeuristicPropagator() override = default;
+    ~HeuristicPropagator() override;
 
     void init(Clingo::PropagateInit &init) override;
     void propagate(Clingo::PropagateControl &control, Clingo::LiteralSpan changes) override;

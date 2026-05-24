@@ -16,13 +16,10 @@ sumC(Sum) :- Sum = #sum{Y : c(Y)}.
 % constrain difference between sums
 :- sumB(SB), sumC(SC), (SB - SC)**2 > 1.
 
-% euristiche riscritte tramite predicati ausiliari
+% euristiche lazy query-driven tramite predicati ausiliari
 h_b(X,S) :- x(X), not c(X), S = #sum{Y : c(Y)}.
 h_c(X,S) :- x(X), not b(X), S = #sum{Y : b(Y)}.
 
-% Originale: #heuristic b(X) : h_b(X,S). [X@S, true]
-__heuristic(__target(b), __body(h_b, __match(0, 0), __bind_arg(s, 1)),
-            __weight(self), __priority(s), __modifier(true), __semantics(alpha)).
-% Originale: #heuristic c(X) : h_c(X,S). [X@S, true]
-__heuristic(__target(c), __body(h_c, __match(0, 0), __bind_arg(s, 1)),
-            __weight(self), __priority(s), __modifier(true), __semantics(alpha)).
+% query-driven lazy heuristics, alpha-like default negation
+heuristic(alpha, "heuristic(b(X), W, 0, true) :- holds(h_b(X,S)), n(N), target_available(b(X)), W is ((N+1)*S)+X.").
+heuristic(alpha, "heuristic(c(X), W, 0, true) :- holds(h_c(X,S)), n(N), target_available(c(X)), W is ((N+1)*S)+X.").

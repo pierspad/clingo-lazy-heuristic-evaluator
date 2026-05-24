@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <chrono>
 #include <cstdlib>
 #include <iostream>
 #include <iterator>
@@ -12,6 +13,36 @@
 #include <stdexcept>
 #include <unordered_set>
 #include <utility>
+
+namespace {
+using LazyStatsClock = std::chrono::steady_clock;
+
+double elapsed_ms(LazyStatsClock::time_point start) {
+    return std::chrono::duration<double, std::milli>(LazyStatsClock::now() - start).count();
+}
+
+class ScopedLazyStatsTimer {
+public:
+    ScopedLazyStatsTimer(bool active, double &target)
+        : active_(active)
+        , target_(target)
+        , start_(active ? LazyStatsClock::now() : LazyStatsClock::time_point{}) {}
+
+    ScopedLazyStatsTimer(ScopedLazyStatsTimer const &) = delete;
+    ScopedLazyStatsTimer &operator=(ScopedLazyStatsTimer const &) = delete;
+
+    ~ScopedLazyStatsTimer() {
+        if (active_) {
+            target_ += elapsed_ms(start_);
+        }
+    }
+
+private:
+    bool active_;
+    double &target_;
+    LazyStatsClock::time_point start_;
+};
+} // namespace
 
 static int normalize_sign(int value) {
     if (value > 0) return +1;
@@ -665,6 +696,7 @@ void HeuristicPropagator::init(Clingo::PropagateInit &init) {
     symbols_by_watched_solver_lit_.clear();
     symbols_by_solver_lit_.clear();
     query_backend_.reset();
+    query_backend_stats_ = QueryBackendStats{};
     use_prolog_query_backend_ = false;
     clingo_like_has_n_ = false;
     clingo_like_n_ = 0;
@@ -1089,6 +1121,9 @@ void HeuristicPropagator::synchronize_query_backend_literal(Clingo::literal_t li
                                                             Clingo::Assignment const &assignment) noexcept {
     if (!query_backend_) return;
 
+    bool const stats = lazy_prolog_stats_enabled();
+    ScopedLazyStatsTimer sync_timer(stats, query_backend_stats_.total_state_sync_time_ms);
+
     try {
         auto synchronize_one = [this, &assignment](Clingo::literal_t solver_lit) {
             auto symbol_it = symbols_by_watched_solver_lit_.find(solver_lit);
@@ -1124,12 +1159,31 @@ Clingo::literal_t HeuristicPropagator::decide_with_query_backend(
     static_cast<void>(fallback);
     if (!query_backend_) return 0;
 
+    bool const stats = lazy_prolog_stats_enabled();
+    query_backend_stats_.used = true;
+    if (stats) {
+        ++query_backend_stats_.decide_calls;
+    }
+    ScopedLazyStatsTimer decide_timer(stats, query_backend_stats_.total_decide_time_ms);
+
     static size_t decide_call_id = 0;
     ++decide_call_id;
 
-    synchronize_query_backend_state(assignment);
+    {
+        ScopedLazyStatsTimer sync_timer(stats, query_backend_stats_.total_state_sync_time_ms);
+        synchronize_query_backend_state(assignment);
+    }
 
-    auto candidates = query_backend_->query_applicable_candidates();
+    std::vector<QueryHeuristicCandidate> candidates;
+    {
+        ScopedLazyStatsTimer query_timer(stats, query_backend_stats_.total_prolog_query_time_ms);
+        candidates = query_backend_->query_applicable_candidates();
+    }
+    if (stats) {
+        query_backend_stats_.total_candidates_seen += candidates.size();
+        query_backend_stats_.max_candidates_seen = std::max(query_backend_stats_.max_candidates_seen,
+                                                            candidates.size());
+    }
 
     struct RankedCandidate {
         QueryHeuristicCandidate active;
@@ -1141,25 +1195,38 @@ Clingo::literal_t HeuristicPropagator::decide_with_query_backend(
     ranked.reserve(candidates.size());
     size_t discarded_unmapped = 0;
     size_t discarded_assigned = 0;
-    for (auto const &candidate : candidates) {
-        auto lit_it = solver_lit_by_symbol_.find(candidate.target);
-        if (lit_it == solver_lit_by_symbol_.end()) {
-            ++discarded_unmapped;
-            continue;
-        }
+    {
+        ScopedLazyStatsTimer scan_timer(stats, query_backend_stats_.total_candidate_scan_time_ms);
+        for (auto const &candidate : candidates) {
+            LazyStatsClock::time_point literal_lookup_start;
+            if (stats) {
+                literal_lookup_start = LazyStatsClock::now();
+            }
+            auto lit_it = solver_lit_by_symbol_.find(candidate.target);
+            if (lit_it == solver_lit_by_symbol_.end()) {
+                if (stats) {
+                    query_backend_stats_.total_literal_lookup_time_ms += elapsed_ms(literal_lookup_start);
+                }
+                ++discarded_unmapped;
+                continue;
+            }
 
-        Clingo::literal_t const lit = lit_it->second;
-        auto const value = assignment.truth_value(lit);
-        if (lit == 0 || value != Clingo::TruthValue::Free) {
-            ++discarded_assigned;
-            continue;
-        }
+            Clingo::literal_t const lit = lit_it->second;
+            auto const value = assignment.truth_value(lit);
+            if (stats) {
+                query_backend_stats_.total_literal_lookup_time_ms += elapsed_ms(literal_lookup_start);
+            }
+            if (lit == 0 || value != Clingo::TruthValue::Free) {
+                ++discarded_assigned;
+                continue;
+            }
 
-        RankedCandidate ranked_candidate;
-        ranked_candidate.active = candidate;
-        ranked_candidate.lit = lit;
-        ranked_candidate.target_string = candidate.target.to_string();
-        ranked.push_back(std::move(ranked_candidate));
+            RankedCandidate ranked_candidate;
+            ranked_candidate.active = candidate;
+            ranked_candidate.lit = lit;
+            ranked_candidate.target_string = candidate.target.to_string();
+            ranked.push_back(std::move(ranked_candidate));
+        }
     }
 
     if (lazy_prolog_stats_enabled() || lazy_heuristic_debug_enabled()) {
@@ -1173,49 +1240,52 @@ Clingo::literal_t HeuristicPropagator::decide_with_query_backend(
 
     if (ranked.empty()) return 0;
 
-    if (!lazy_prolog_alpha_query_ranking()) {
-        std::unordered_map<std::string, RankedCandidate> best_by_target;
-        for (auto &candidate : ranked) {
-            auto current = best_by_target.find(candidate.target_string);
-            if (current == best_by_target.end() ||
-                candidate.active.priority > current->second.active.priority ||
-                (candidate.active.priority == current->second.active.priority &&
-                 candidate.active.weight > current->second.active.weight) ||
-                (candidate.active.priority == current->second.active.priority &&
-                 candidate.active.weight == current->second.active.weight &&
-                 candidate.active.rule_index < current->second.active.rule_index)) {
-                best_by_target[candidate.target_string] = std::move(candidate);
+    {
+        ScopedLazyStatsTimer selection_timer(stats, query_backend_stats_.total_candidate_selection_time_ms);
+        if (!lazy_prolog_alpha_query_ranking()) {
+            std::unordered_map<std::string, RankedCandidate> best_by_target;
+            for (auto &candidate : ranked) {
+                auto current = best_by_target.find(candidate.target_string);
+                if (current == best_by_target.end() ||
+                    candidate.active.priority > current->second.active.priority ||
+                    (candidate.active.priority == current->second.active.priority &&
+                     candidate.active.weight > current->second.active.weight) ||
+                    (candidate.active.priority == current->second.active.priority &&
+                     candidate.active.weight == current->second.active.weight &&
+                     candidate.active.rule_index < current->second.active.rule_index)) {
+                    best_by_target[candidate.target_string] = std::move(candidate);
+                }
             }
-        }
 
-        ranked.clear();
-        ranked.reserve(best_by_target.size());
-        for (auto &entry : best_by_target) {
-            ranked.push_back(std::move(entry.second));
+            ranked.clear();
+            ranked.reserve(best_by_target.size());
+            for (auto &entry : best_by_target) {
+                ranked.push_back(std::move(entry.second));
+            }
+            std::sort(ranked.begin(), ranked.end(), [](RankedCandidate const &a, RankedCandidate const &b) {
+                if (a.active.weight != b.active.weight) {
+                    return a.active.weight > b.active.weight;
+                }
+                if (a.target_string != b.target_string) {
+                    return a.target_string < b.target_string;
+                }
+                return a.lit < b.lit;
+            });
         }
-        std::sort(ranked.begin(), ranked.end(), [](RankedCandidate const &a, RankedCandidate const &b) {
-            if (a.active.weight != b.active.weight) {
-                return a.active.weight > b.active.weight;
-            }
-            if (a.target_string != b.target_string) {
-                return a.target_string < b.target_string;
-            }
-            return a.lit < b.lit;
-        });
-    }
-    else {
-        std::sort(ranked.begin(), ranked.end(), [](RankedCandidate const &a, RankedCandidate const &b) {
-            if (a.active.priority != b.active.priority) {
-                return a.active.priority > b.active.priority;
-            }
-            if (a.active.weight != b.active.weight) {
-                return a.active.weight > b.active.weight;
-            }
-            if (a.target_string != b.target_string) {
-                return a.target_string < b.target_string;
-            }
-            return a.lit < b.lit;
-        });
+        else {
+            std::sort(ranked.begin(), ranked.end(), [](RankedCandidate const &a, RankedCandidate const &b) {
+                if (a.active.priority != b.active.priority) {
+                    return a.active.priority > b.active.priority;
+                }
+                if (a.active.weight != b.active.weight) {
+                    return a.active.weight > b.active.weight;
+                }
+                if (a.target_string != b.target_string) {
+                    return a.target_string < b.target_string;
+                }
+                return a.lit < b.lit;
+            });
+        }
     }
 
     auto const &best = ranked.front();
@@ -1230,6 +1300,32 @@ Clingo::literal_t HeuristicPropagator::decide_with_query_backend(
                   << "\n";
     }
     return best.active.sign ? best.lit : -best.lit;
+}
+
+HeuristicPropagator::~HeuristicPropagator() {
+    print_query_backend_stats();
+}
+
+void HeuristicPropagator::print_query_backend_stats() const {
+    if (!lazy_prolog_stats_enabled() || !query_backend_stats_.used) return;
+
+    double const avg_candidates = query_backend_stats_.decide_calls == 0
+        ? 0.0
+        : static_cast<double>(query_backend_stats_.total_candidates_seen) /
+              static_cast<double>(query_backend_stats_.decide_calls);
+
+    std::cerr << "[lazy-prolog] summary"
+              << " decide_calls=" << query_backend_stats_.decide_calls
+              << " total_decide_time_ms=" << query_backend_stats_.total_decide_time_ms
+              << " total_state_sync_time_ms=" << query_backend_stats_.total_state_sync_time_ms
+              << " total_prolog_query_time_ms=" << query_backend_stats_.total_prolog_query_time_ms
+              << " total_candidate_scan_time_ms=" << query_backend_stats_.total_candidate_scan_time_ms
+              << " total_literal_lookup_time_ms=" << query_backend_stats_.total_literal_lookup_time_ms
+              << " total_candidate_selection_time_ms=" << query_backend_stats_.total_candidate_selection_time_ms
+              << " total_candidates_seen=" << query_backend_stats_.total_candidates_seen
+              << " max_candidates_seen=" << query_backend_stats_.max_candidates_seen
+              << " avg_candidates_per_decide=" << avg_candidates
+              << "\n";
 }
 
 std::unordered_set<Clingo::Symbol> HeuristicPropagator::collect_predicates_used_by_lazy_templates() const {

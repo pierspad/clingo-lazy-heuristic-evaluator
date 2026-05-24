@@ -53,7 +53,7 @@ BSP_MEM_LIMIT_BYTES=
 BSP_MEM_LIMIT_MB=
 BSP_MEM_LIMIT_GB=10
 
-BSP_VARIANTS="gc_noheur gc ga la lc lc_reordered la_co"
+BSP_VARIANTS="gc_noheur gc ga la lc la_co"
 BSP_RANDOM_SETTINGS="default:"
 BSP_CLINGO_EXTRA_ARGS=
 
@@ -206,7 +206,6 @@ declare -A VARIANT_FILES=(
     [ga_weak]="${ENC_DIR}/BDP_ga_weak.lp"
     [la]="${ENC_DIR}/BSP_la.lp"
     [lc]="${ENC_DIR}/BSP_lc.lp"
-    [lc_reordered]="${ENC_DIR}/BSP_lc_reordered.lp"
     [la_aux]="${ENC_DIR}/BSP_la_aux.lp"
     [la_co]="${ENC_DIR}/BSP_la_co.lp"
 )
@@ -218,7 +217,6 @@ declare -A VARIANT_SEMANTICS=(
     [ga_weak]="alpha"
     [la]="alpha"
     [lc]="clingo"
-    [lc_reordered]="clingo"
     [la_aux]="alpha"
     [la_co]="alpha"
 )
