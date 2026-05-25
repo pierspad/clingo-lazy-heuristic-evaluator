@@ -53,6 +53,7 @@ DEFAULT_BSP_GRAPH_SETS=(
     "no_la_co:la_co"
     "no_la_co_no_ga_weak:la_co,ga_weak"
     "no_la_co_no_ga_weak_no_la_aux:la_co,ga_weak,la_aux"
+    "no_la_co_no_ga_weak_no_la_aux:la_co,ga_weak,la_aux,ga"
 )
 # ==============================================================================
 

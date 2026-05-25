@@ -1,23 +1,26 @@
 {
   "active_variants": [
+    "ga_weak",
     "ga",
     "gc_noheur",
     "gc",
+    "la_aux",
+    "la_co",
     "la",
     "lc"
   ],
-  "benchmark_datetime": "2026-05-25T00:07:23+02:00",
+  "benchmark_datetime": "2026-05-25T00:21:59+02:00",
   "build_type": "Release",
   "clingo_binary": "/home/ribben/Desktop/clingo-lazy-heuristics/clingo-modified/build/bin/clingo",
   "clingo_extra_args": "",
   "cmake_cache": "/home/ribben/Desktop/clingo-lazy-heuristics/clingo-modified/build/CMakeCache.txt",
   "commands": {
     "benchmark_launcher": "/home/ribben/Desktop/clingo-lazy-heuristics/test_folder/benchmarks/1_benchmark_bsp.sh",
-    "clingo_json_template": "/home/ribben/Desktop/clingo-lazy-heuristics/clingo-modified/build/bin/clingo /home/ribben/Desktop/clingo-lazy-heuristics/test_folder/instances/BSP_instances/BSP_range.lp '<encoding_file>' -c 'n=<N>' --heuristic=Domain --outf=2 --stats=2 -n 1 --time-limit=30 '<setting-specific clingo options>' '<CLINGO_EXTRA_ARGS>'",
+    "clingo_json_template": "/home/ribben/Desktop/clingo-lazy-heuristics/clingo-modified/build/bin/clingo /home/ribben/Desktop/clingo-lazy-heuristics/test_folder/instances/BSP_instances/BSP_range.lp '<encoding_file>' -c 'n=<N>' --heuristic=Domain --outf=2 --stats=2 -n 1 --time-limit=240 '<setting-specific clingo options>' '<CLINGO_EXTRA_ARGS>'",
     "clingo_text_template": "/home/ribben/Desktop/clingo-lazy-heuristics/clingo-modified/build/bin/clingo /home/ribben/Desktop/clingo-lazy-heuristics/test_folder/instances/BSP_instances/BSP_range.lp '<encoding_file>' -c 'n=<N>' --heuristic=Domain --text",
-    "runner_template": "python3 /home/ribben/Desktop/clingo-lazy-heuristics/test_folder/benchmarks/benchmark_runner.py --clingo /home/ribben/Desktop/clingo-lazy-heuristics/clingo-modified/build/bin/clingo --encoding '<encoding_file>' --instance /home/ribben/Desktop/clingo-lazy-heuristics/test_folder/instances/BSP_instances/BSP_range.lp --variant '<variant>' --semantics '<semantics>' --size '<N>' --setting '<setting>' --csv /home/ribben/Desktop/clingo-lazy-heuristics/test_folder/results/bsp_results.csv --constant 'n=<N>' --models 1 --timeout 30 --memory-bytes 10737418240 --domain-heuristic '<setting-specific --clingo-option>' '<global --clingo-option>'"
+    "runner_template": "python3 /home/ribben/Desktop/clingo-lazy-heuristics/test_folder/benchmarks/benchmark_runner.py --clingo /home/ribben/Desktop/clingo-lazy-heuristics/clingo-modified/build/bin/clingo --encoding '<encoding_file>' --instance /home/ribben/Desktop/clingo-lazy-heuristics/test_folder/instances/BSP_instances/BSP_range.lp --variant '<variant>' --semantics '<semantics>' --size '<N>' --setting '<setting>' --csv /home/ribben/Desktop/clingo-lazy-heuristics/test_folder/results/bsp_results.csv --constant 'n=<N>' --models 1 --timeout 240 --memory-bytes 10737418240 --domain-heuristic '<setting-specific --clingo-option>' '<global --clingo-option>'"
   },
-  "commit_hash": "8aea3b270a17f03b154c780925848e05cd752bee",
+  "commit_hash": "91a255b2d4316a92f9ad0710473b4c1875ba4813",
   "compiler": {
     "path": "/usr/bin/c++",
     "version": "c++ (GCC) 16.1.1 20260430"
@@ -47,12 +50,17 @@
     "total_human": "15.39 GiB"
   },
   "random_settings": "default:",
-  "repeats": 1,
+  "repeats": 2,
   "settings": "default:",
   "stop_variant_on_limit": true,
-  "timeout_seconds": 30,
+  "timeout_seconds": 240,
   "use_seed": false,
   "variant_details": [
+    {
+      "encoding": "/home/ribben/Desktop/clingo-lazy-heuristics/test_folder/encodings/BSP/BDP_ga_weak.lp",
+      "name": "ga_weak",
+      "semantics": "alpha"
+    },
     {
       "encoding": "/home/ribben/Desktop/clingo-lazy-heuristics/test_folder/encodings/BSP/BSP_ga.lp",
       "name": "ga",
@@ -67,6 +75,16 @@
       "encoding": "/home/ribben/Desktop/clingo-lazy-heuristics/test_folder/encodings/BSP/BSP_gc.lp",
       "name": "gc",
       "semantics": "clingo"
+    },
+    {
+      "encoding": "/home/ribben/Desktop/clingo-lazy-heuristics/test_folder/encodings/BSP/BSP_la_aux.lp",
+      "name": "la_aux",
+      "semantics": "alpha"
+    },
+    {
+      "encoding": "/home/ribben/Desktop/clingo-lazy-heuristics/test_folder/encodings/BSP/BSP_la_co.lp",
+      "name": "la_co",
+      "semantics": "alpha"
     },
     {
       "encoding": "/home/ribben/Desktop/clingo-lazy-heuristics/test_folder/encodings/BSP/BSP_la.lp",
