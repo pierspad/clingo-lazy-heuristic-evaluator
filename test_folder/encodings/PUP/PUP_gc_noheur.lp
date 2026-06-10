@@ -1,24 +1,52 @@
 
-elem(z,Z) :- zone2sensor(Z,D).
-elem(s,D) :- zone2sensor(Z,D).
+elem(z,ZoneID) :- zone2sensor(ZoneID,SensorID).
+elem(s,SensorID) :- zone2sensor(ZoneID,SensorID).
 
-{ assign(U,T,X) } :- elem(T,X), comUnit(U).
+{ assign(UnitID,ElementType,ElementID) } :-
+    elem(ElementType,ElementID),
+    comUnit(UnitID).
 
 % every comUnit can have a maximum of two zones and two sensors
 % every zone must be assignet to exactly one comUnit
-:- assign(U,T,X1), assign(U,T,X2), assign(U,T,X3), X1<X2, X2<X3.
-:- assign(U1,T,X), assign(U2,T,X), U1<U2.
-atLeastOneUnit(T,X):- assign(_,T,X).
-:- elem(T,X), not atLeastOneUnit(T,X).
+:- assign(UnitID,ElementType,ElementID1),
+   assign(UnitID,ElementType,ElementID2),
+   assign(UnitID,ElementType,ElementID3),
+   ElementID1<ElementID2,
+   ElementID2<ElementID3.
+
+:- assign(UnitID1,ElementType,ElementID),
+   assign(UnitID2,ElementType,ElementID),
+   UnitID1<UnitID2.
+
+atLeastOneUnit(ElementType,ElementID) :-
+    assign(_,ElementType,ElementID).
+
+:- elem(ElementType,ElementID),
+   not atLeastOneUnit(ElementType,ElementID).
 
 % if comUnit U handles a zone and comUnit P (P!=U) handles a sensor and
 % in the real world the sensor belongs to that zone then we call
 % the comUnit as "Partners" 
 % no more than 2 partners are allowed
-partnerunits(U,P) :- assign(U,z,Z), assign(P,s,D), zone2sensor(Z,D), U!=P.
-partnerunits(U,P) :- partnerunits(P,U).
-:- partnerunits(U,P1), partnerunits(U,P2), partnerunits(U,P3), P1<P2, P2<P3.
-	
 
-assigned_zone_unit(Z, U) :- assign(U,z,Z).
-assigned_zone_unit(S, U) :- assign(U,s,S).
+partnerUnits(UnitID1,UnitID2) :-
+    assign(UnitID1,z,ZoneID),
+    assign(UnitID2,s,SensorID),
+    zone2sensor(ZoneID,SensorID),
+    UnitID1 != UnitID2.
+
+partnerUnits(UnitID1,UnitID2) :-
+    partnerUnits(UnitID2,UnitID1).
+
+:- partnerUnits(UnitID,Partner1),
+   partnerUnits(UnitID,Partner2),
+   partnerUnits(UnitID,Partner3),
+   Partner1<Partner2,
+   Partner2<Partner3.
+
+
+assignedZoneUnit(ZoneID,UnitID) :-
+    assign(UnitID,z,ZoneID).
+
+assignedZoneUnit(SensorID,UnitID) :-
+    assign(UnitID,s,SensorID).

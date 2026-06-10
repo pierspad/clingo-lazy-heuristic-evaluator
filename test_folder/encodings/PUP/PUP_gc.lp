@@ -28,53 +28,131 @@ atLeastOneUnit(ElementType,ElementID) :-
 % in the real world the sensor belongs to that zone then we call
 % the comUnit as "Partners" 
 % no more than 2 partners are allowed
-partnerunits(UID1,UID2) :- assign(UID1,z,ZoneID), assign(UID2,s,SensorID), zone2sensor(ZoneID,SensorID), UID1!=UID2.
-partnerunits(UID1,UID2) :- partnerunits(UID2,UID1).
-:- partnerunits(UID1,UID2), partnerunits(UID1,UID3), partnerunits(UID1,UID4), UID2<UID3, UID3<UID4.
+
+partnerUnits(UnitID1,UnitID2) :-
+    assign(UnitID1,z,ZoneID),
+    assign(UnitID2,s,SensorID),
+    zone2sensor(ZoneID,SensorID),
+    UnitID1 != UnitID2.
+
+partnerUnits(UnitID1,UnitID2) :-
+    partnerUnits(UnitID2,UnitID1).
+
+:- partnerUnits(UnitID,Partner1),
+   partnerUnits(UnitID,Partner2),
+   partnerUnits(UnitID,Partner3),
+   Partner1<Partner2,
+   Partner2<Partner3.
 
 
-	
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 % breadth-order
-cover(MinZone,z,1) :- MinZone=#min{ZoneID : elem(z,ZoneID)}.
-cover(SensorID,s,N+1) :- cover(ZoneID,z,N), zone2sensor(ZoneID,SensorID), N<#count{ElementID,Type : elem(Type,ElementID)}.
-cover(ZoneID,z,N+1) :- cover(SensorID,s,N), zone2sensor(ZoneID,SensorID), N<#count{ElementID,Type : elem(Type,ElementID)}.
 
-order(ElementID,Type,OrderLevel) :- elem(Type,ElementID), OrderLevel = #min{ Level : cover(ElementID,Type,Level) }.
-maxOrder(M) :- M=#max{OrderLevel : order(_,_,OrderLevel)}.
-maxUnit(M) :- M=#max{UID : comUnit(UID)}.
-maxElem(M) :- M=#max{ElementID : elem(_,ElementID)}.
+% start BFS from the smallest zone id
 
-% assign first zone in the order to the first unit.
-#heuristic assign(1,Type,ElementID) : order(ElementID,Type,1). [1000, true]
+cover(MinZoneID,z,1) :-
+    MinZoneID=#min{ZoneID : elem(z,ZoneID)}.
 
-% Assign in the order:
-% h1: try preceding units first.
 
-% The experiment showed that priorities do not work as expected for ground atoms also. Maybe due to some bug in the implementation.
-% Therefore, a hand-crafted formula for computing level weights is used.
+% from a zone go to connected sensors
 
-h_assign_1(U1,T,X,W) :- order(X,T,O), assign(U,T1,Y), order(Y,T1,O-1), maxOrder(M), maxUnit(MU), comUnit(U1), U1<=U, maxElem(ME), W=10*MU*(M-O)+2*(ME-X)+U1. 
+cover(SensorID,s,Level+1) :-
+    cover(ZoneID,z,Level),
+    zone2sensor(ZoneID,SensorID),
+    Level<#count{ElementID,Type : elem(Type,ElementID)}.
 
-#heuristic assign(U,T,X) : h_assign_1(U,T,X,W). [W, true]
 
-% h2: assign to an unused unit.
+% from a sensor go to connected zones
 
-% Cannot specify "unused" without NAF or aggregates in the heuristic. Therefore, define an ascending order of units by weights.
-% This assumes that all assigned units were already tried by the solver while evaluating the 
-% first heuristic and created conflicts will not allow the solver to check make those assignments one more time.
-% If the assumption works, then the solver should prefer the first unused unit.
+cover(ZoneID,z,Level+1) :-
+    cover(SensorID,s,Level),
+    zone2sensor(ZoneID,SensorID),
+    Level<#count{ElementID,Type : elem(Type,ElementID)}.
 
-h_assign_2(U+1,T,X,W) :- order(X,T,O), assign(U,T1,Y), order(Y,T1,O-1), maxOrder(M), maxUnit(MU), comUnit(U+1), maxElem(ME), W=10*MU*(M-O)+2*(ME-X).
 
-#heuristic assign(U,T,X) : h_assign_2(U,T,X,W). [W, true]
+
+% convert BFS levels into ordering
+
+elementOrder(ElementID,ElementType,OrderLevel) :-
+    elem(ElementType,ElementID),
+    OrderLevel=#min{Level : cover(ElementID,ElementType,Level)}.
+
+
+maxOrder(MaxOrder) :-
+    MaxOrder=#max{OrderLevel : elementOrder(_,_,OrderLevel)}.
+
+maxUnit(MaxUnitID) :-
+    MaxUnitID=#max{UnitID : comUnit(UnitID)}.
+
+maxElem(MaxElementID) :-
+    MaxElementID=#max{ElementID : elem(_,ElementID)}.
+
+
+
+% assign first element in BFS order to first unit
+
+#heuristic assign(1,ElementType,ElementID) :
+    elementOrder(ElementID,ElementType,1).
+    [1000,true]
+
+
+
+% h1: prefer previous units first
+
+heuristicAssignPrevious(
+    PreferredUnit,
+    ElementType,
+    ElementID,
+    Weight
+) :-
+    elementOrder(ElementID,ElementType,OrderLevel),
+    assign(CurrentUnit,CurrentType,CurrentElement),
+    elementOrder(CurrentElement,CurrentType,OrderLevel-1),
+    maxOrder(MaxOrder),
+    maxUnit(MaxUnit),
+    comUnit(PreferredUnit),
+    PreferredUnit<=CurrentUnit,
+    maxElem(MaxElement),
+    Weight=10*MaxUnit*(MaxOrder-OrderLevel)
+           +2*(MaxElement-ElementID)
+           +PreferredUnit.
+
+
+#heuristic assign(UnitID,ElementType,ElementID) :
+    heuristicAssignPrevious(UnitID,ElementType,ElementID,Weight).
+    [Weight,true]
+
+
+
+% h2: prefer creating a new unused unit
+
+heuristicAssignNew(
+    UnitID+1,
+    ElementType,
+    ElementID,
+    Weight
+) :-
+    elementOrder(ElementID,ElementType,OrderLevel),
+    assign(UnitID,CurrentType,CurrentElement),
+    elementOrder(CurrentElement,CurrentType,OrderLevel-1),
+    maxOrder(MaxOrder),
+    maxUnit(MaxUnit),
+    comUnit(UnitID+1),
+    maxElem(MaxElement),
+    Weight=10*MaxUnit*(MaxOrder-OrderLevel)
+           +2*(MaxElement-ElementID).
+
+
+#heuristic assign(UnitID,ElementType,ElementID) :
+    heuristicAssignNew(UnitID,ElementType,ElementID,Weight).
+    [Weight,true]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
+assignedZoneUnit(ZoneID,UnitID) :-
+    assign(UnitID,z,ZoneID).
 
-
-
-assigned_zone_unit(Z, U) :- assign(U,z,Z).
-assigned_zone_unit(S, U) :- assign(U,s,S).
+assignedZoneUnit(SensorID,UnitID) :-
+    assign(UnitID,s,SensorID).
