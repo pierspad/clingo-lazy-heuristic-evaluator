@@ -2,18 +2,17 @@
 elem(z,ZoneID) :- zone2sensor(ZoneID,SensorID).
 elem(s,SensorID) :- zone2sensor(ZoneID,SensorID).
 
-{ assign(UID,Type,ElementID) } :- 
-    elem(Type,ElementID), 
-    comUnit(UID).
+{ assign(UnitID,ElementType,ElementID) } :-
+    elem(ElementType,ElementID),
+    comUnit(UnitID).
 
 % every comUnit can have a maximum of two zones and two sensors
 % every zone must be assignet to exactly one comUnit
-:- assign(UID,Type,ElementID1), 
-   assign(UID,Type,ElementID2), 
-   assign(UID,Type,ElementID3), 
-   ElementID1<ElementID2, 
+:- assign(UnitID,ElementType,ElementID1),
+   assign(UnitID,ElementType,ElementID2),
+   assign(UnitID,ElementType,ElementID3),
+   ElementID1<ElementID2,
    ElementID2<ElementID3.
-
 
 :- assign(UID1,Type,ElementID), 
    assign(UID2,Type,ElementID), 
