@@ -159,6 +159,10 @@ void ensure_engine() {
     if (!PL_initialise(3, plav)) {
         throw std::runtime_error("SWI-Prolog heuristic backend: PL_initialise failed.");
     }
+    call_prolog("set_prolog_flag(verbose, silent)");
+    call_prolog("set_prolog_flag(unknown, fail)");
+    call_prolog("set_prolog_flag(verbose, normal)");
+    call_prolog("set_prolog_flag(debug_on_error, false)");
 }
 
 void retract_runtime_database() {

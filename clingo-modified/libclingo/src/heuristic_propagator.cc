@@ -738,6 +738,7 @@ void HeuristicPropagator::init_clingo_like_mode(Clingo::PropagateInit &init,
                 QueryHeuristicRule rule;
                 rule.semantics = HeuristicSemantics::Alpha;
                 rule.original_rule = args[0].string();
+                rule.normalized_rule = normalize_clingo_like_heuristic_rule(rule.original_rule);
                 rule.prolog_rule = normalize_prolog_heuristic_rule(rule.original_rule, rule.semantics);
                 clingo_like_heuristic_rules_.push_back(std::move(rule));
             }
@@ -751,6 +752,7 @@ void HeuristicPropagator::init_clingo_like_mode(Clingo::PropagateInit &init,
                 QueryHeuristicRule rule;
                 rule.semantics = parse_clingo_like_semantics(args[0]);
                 rule.original_rule = args[1].string();
+                rule.normalized_rule = normalize_clingo_like_heuristic_rule(rule.original_rule);
                 rule.prolog_rule = normalize_prolog_heuristic_rule(rule.original_rule, rule.semantics);
                 clingo_like_heuristic_rules_.push_back(std::move(rule));
             }
@@ -764,6 +766,7 @@ void HeuristicPropagator::init_clingo_like_mode(Clingo::PropagateInit &init,
                 QueryHeuristicRule rule;
                 rule.semantics = HeuristicSemantics::Alpha;
                 rule.original_rule = args[0].string();
+                rule.normalized_rule = normalize_clingo_like_heuristic_rule(rule.original_rule);
                 rule.prolog_rule = normalize_prolog_heuristic_rule(rule.original_rule, rule.semantics);
                 clingo_like_heuristic_rules_.push_back(std::move(rule));
                 saw_legacy_prolog_heuristic = true;
@@ -778,6 +781,7 @@ void HeuristicPropagator::init_clingo_like_mode(Clingo::PropagateInit &init,
                 QueryHeuristicRule rule;
                 rule.semantics = parse_clingo_like_semantics(args[0]);
                 rule.original_rule = args[1].string();
+                rule.normalized_rule = normalize_clingo_like_heuristic_rule(rule.original_rule);
                 rule.prolog_rule = normalize_prolog_heuristic_rule(rule.original_rule, rule.semantics);
                 clingo_like_heuristic_rules_.push_back(std::move(rule));
                 saw_legacy_prolog_heuristic = true;
@@ -788,7 +792,7 @@ void HeuristicPropagator::init_clingo_like_mode(Clingo::PropagateInit &init,
         }
     }
 
-    use_prolog_query_backend_ = !clingo_like_heuristic_rules_.empty();
+    use_prolog_query_backend_ = !clingo_like_heuristic_rules_.empty() && lazy_heuristic_use_prolog_backend();
     auto const relevant_predicates = collect_query_relevant_predicate_signatures(clingo_like_heuristic_rules_);
     size_t considered_atoms = 0;
     size_t ignored_irrelevant_atoms = 0;
@@ -1081,6 +1085,9 @@ Clingo::literal_t HeuristicPropagator::decide_with_clingo_like_heuristics(
         ranked.push_back(std::move(entry.second));
     }
     std::sort(ranked.begin(), ranked.end(), [](RankedCandidate const &a, RankedCandidate const &b) {
+        if (a.active.priority != b.active.priority) {
+            return a.active.priority > b.active.priority;
+        }
         if (a.active.weight != b.active.weight) {
             return a.active.weight > b.active.weight;
         }
@@ -1169,10 +1176,11 @@ Clingo::literal_t HeuristicPropagator::decide_with_query_backend(
     static size_t decide_call_id = 0;
     ++decide_call_id;
 
-    {
-        ScopedLazyStatsTimer sync_timer(stats, query_backend_stats_.total_state_sync_time_ms);
-        synchronize_query_backend_state(assignment);
-    }
+    // Full sync is redundant as state is kept in sync incrementally via propagate() and undo()
+    // {
+    //     ScopedLazyStatsTimer sync_timer(stats, query_backend_stats_.total_state_sync_time_ms);
+    //     synchronize_query_backend_state(assignment);
+    // }
 
     std::vector<QueryHeuristicCandidate> candidates;
     {
@@ -1263,6 +1271,9 @@ Clingo::literal_t HeuristicPropagator::decide_with_query_backend(
                 ranked.push_back(std::move(entry.second));
             }
             std::sort(ranked.begin(), ranked.end(), [](RankedCandidate const &a, RankedCandidate const &b) {
+                if (a.active.priority != b.active.priority) {
+                    return a.active.priority > b.active.priority;
+                }
                 if (a.active.weight != b.active.weight) {
                     return a.active.weight > b.active.weight;
                 }

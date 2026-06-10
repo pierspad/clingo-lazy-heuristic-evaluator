@@ -173,6 +173,7 @@ RESULTS_DIR="${TEST_ROOT}/results"
 CSV_FILE="$(repo_path "${BSP_RESULTS_CSV}")"
 METADATA_FILE="$(repo_path "${BSP_METADATA_FILE}")"
 FAILURES_FILE="$(repo_path "${BSP_FAILURES_FILE}")"
+export LAZY_HEURISTIC_BACKEND="prolog"
 
 export PYTHON_BIN
 export CLINGO_MOD

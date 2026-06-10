@@ -23,6 +23,12 @@ target_link_libraries(test_clingo PRIVATE libclingo Catch2::Catch2WithMain)
 target_include_directories(test_clingo PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
+if (CLINGO_USE_SWIPL)
+    target_compile_definitions(test_clingo PRIVATE CLINGO_USE_SWIPL)
+    target_include_directories(test_clingo PRIVATE ${SWIPL_INCLUDE_DIRS})
+    target_link_directories(test_clingo PRIVATE ${SWIPL_LIBRARY_DIRS})
+    target_link_libraries(test_clingo PRIVATE ${SWIPL_LIBRARIES})
+endif()
 set_target_properties(test_clingo PROPERTIES FOLDER test)
 if(MSVC)
     target_compile_definitions(test_clingo PRIVATE _SCL_SECURE_NO_WARNINGS)

@@ -1,3 +1,6 @@
+LINK DA NON ELIMINARE; DA LASCIARE QUI
+https://github.com/tilmanni/Alpha/tree/domspec_heuristics_extended_prolog/Evaluation
+
 Esecuzione passo-passo del lazy heuristic propagator
 Aggiornato: 2026-05-20
 

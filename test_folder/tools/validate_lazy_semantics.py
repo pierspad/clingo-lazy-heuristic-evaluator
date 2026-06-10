@@ -34,7 +34,8 @@ def run_clingo(clingo: str, files: list[str], seed: int, models: int, constants:
         cmd.extend(["-c", const])
     cmd.extend(extra)
 
-    proc = subprocess.run(cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    env = dict(os.environ, LC_ALL="C")
+    proc = subprocess.run(cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
     if proc.returncode not in SUCCESS_STATUSES:
         raise RuntimeError(
             "clingo failed with status "
