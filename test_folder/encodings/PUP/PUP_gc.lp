@@ -1,34 +1,40 @@
-%% original file is:
-% clingo-lazy-heuristics/ALPHA/Evaluation/PUP/encoding-hclingo.asp
 
-elem(z,Z) :- zone2sensor(Z,D).
-elem(s,D) :- zone2sensor(Z,D).
+elem(z,ZoneID) :- zone2sensor(ZoneID,SensorID).
+elem(s,SensorID) :- zone2sensor(ZoneID,SensorID).
 
-{ assign(U,T,X) } :- elem(T,X), comUnit(U).
+{ assign(UID,Type,ElementID) } :- elem(Type,ElementID), comUnit(UID).
 
-:- assign(U,T,X1), assign(U,T,X2), assign(U,T,X3), X1<X2, X2<X3.
-:- assign(U1,T,X), assign(U2,T,X), U1<U2.
-atLeastOneUnit(T,X):- assign(_,T,X).
-:- elem(T,X), not atLeastOneUnit(T,X).
+% every comUnit can have a maximum of two zones and two sensors
+% every zone must be assignet to exactly one comUnit
+:- assign(UID,Type,ElementID1), assign(UID,Type,ElementID2), assign(UID,Type,ElementID3), ElementID1<ElementID2, ElementID2<ElementID3.
+:- assign(UID1,Type,ElementID), assign(UID2,Type,ElementID), UID1<UID2.
+atLeastOneUnit(Type,ElementID):- assign(_,Type,ElementID).
+:- elem(Type,ElementID), not atLeastOneUnit(Type,ElementID).
 
-partnerunits(U,P) :- assign(U,z,Z), assign(P,s,D), zone2sensor(Z,D), U!=P.
-partnerunits(U,P) :- partnerunits(P,U).
-:- partnerunits(U,P1), partnerunits(U,P2), partnerunits(U,P3), P1<P2, P2<P3.
+% if comUnit U handles a zone and comUnit P (P!=U) handles a sensor and
+% in the real world the sensor belongs to that zone then we call
+% the comUnit as "Partners" 
+% no more than 2 partners are allowed
+partnerunits(UID1,UID2) :- assign(UID1,z,ZoneID), assign(UID2,s,SensorID), zone2sensor(ZoneID,SensorID), UID1!=UID2.
+partnerunits(UID1,UID2) :- partnerunits(UID2,UID1).
+:- partnerunits(UID1,UID2), partnerunits(UID1,UID3), partnerunits(UID1,UID4), UID2<UID3, UID3<UID4.
+
+
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % breadth-order
-cover(Z,z,1) :- Z=#min{K : elem(z,K)}.
-cover(Y,s,N+1) :- cover(X,z,N), zone2sensor(X,Y), N<#count{Z,T : elem(T,Z)}.
-cover(Y,z,N+1) :- cover(X,s,N), zone2sensor(Y,X), N<#count{Z,T : elem(T,Z)}.
+cover(MinZone,z,1) :- MinZone=#min{ZoneID : elem(z,ZoneID)}.
+cover(SensorID,s,N+1) :- cover(ZoneID,z,N), zone2sensor(ZoneID,SensorID), N<#count{ElementID,Type : elem(Type,ElementID)}.
+cover(ZoneID,z,N+1) :- cover(SensorID,s,N), zone2sensor(ZoneID,SensorID), N<#count{ElementID,Type : elem(Type,ElementID)}.
 
-order(X,T,O) :- elem(T,X), O = #min{ L : cover(X,T,L) }.
-maxOrder(M) :- M=#max{N : order(_,_,N)}.
-maxUnit(M) :- M=#max{N : comUnit(N)}.
-maxElem(M) :- M=#max{N : elem(_,N)}.
+order(ElementID,Type,OrderLevel) :- elem(Type,ElementID), OrderLevel = #min{ Level : cover(ElementID,Type,Level) }.
+maxOrder(M) :- M=#max{OrderLevel : order(_,_,OrderLevel)}.
+maxUnit(M) :- M=#max{UID : comUnit(UID)}.
+maxElem(M) :- M=#max{ElementID : elem(_,ElementID)}.
 
 % assign first zone in the order to the first unit.
-#heuristic assign(1,T,X) : order(X,T,1). [1000, true]
+#heuristic assign(1,Type,ElementID) : order(ElementID,Type,1). [1000, true]
 
 % Assign in the order:
 % h1: try preceding units first.
@@ -50,6 +56,12 @@ h_assign_1(U1,T,X,W) :- order(X,T,O), assign(U,T1,Y), order(Y,T1,O-1), maxOrder(
 h_assign_2(U+1,T,X,W) :- order(X,T,O), assign(U,T1,Y), order(Y,T1,O-1), maxOrder(M), maxUnit(MU), comUnit(U+1), maxElem(ME), W=10*MU*(M-O)+2*(ME-X).
 
 #heuristic assign(U,T,X) : h_assign_2(U,T,X,W). [W, true]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
 
 assigned_zone_unit(Z, U) :- assign(U,z,Z).
 assigned_zone_unit(S, U) :- assign(U,s,S).
