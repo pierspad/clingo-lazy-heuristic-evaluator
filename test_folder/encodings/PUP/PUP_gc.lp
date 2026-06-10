@@ -14,15 +14,15 @@ elem(s,SensorID) :- zone2sensor(ZoneID,SensorID).
    ElementID1<ElementID2,
    ElementID2<ElementID3.
 
-:- assign(UID1,Type,ElementID), 
-   assign(UID2,Type,ElementID), 
-   UID1<UID2.
+:- assign(UnitID1,ElementType,ElementID),
+   assign(UnitID2,ElementType,ElementID),
+   UnitID1<UnitID2.
 
-atLeastOneUnit(Type,ElementID):- 
-   assign(_,Type,ElementID).
+atLeastOneUnit(ElementType,ElementID) :-
+    assign(_,ElementType,ElementID).
 
-:- elem(Type,ElementID), 
-   not atLeastOneUnit(Type,ElementID).
+:- elem(ElementType,ElementID),
+   not atLeastOneUnit(ElementType,ElementID).
 
 % if comUnit U handles a zone and comUnit P (P!=U) handles a sensor and
 % in the real world the sensor belongs to that zone then we call
