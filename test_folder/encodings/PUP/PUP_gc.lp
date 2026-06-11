@@ -90,8 +90,7 @@ maxElem(MaxElementID) :-
 
 
 
-% assign first element in BFS order to first unit
-
+% assign first element in BFS order to first controlUnit
 #heuristic assign(1,ElementType,ElementID) :
     elementOrder(ElementID,ElementType,1).
     [1000,true]
