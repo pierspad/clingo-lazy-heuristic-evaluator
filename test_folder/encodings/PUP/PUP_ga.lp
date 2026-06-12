@@ -1,3 +1,4 @@
+% hclingo
 
 elem(z,ZoneID) :- zone2sensor(ZoneID,SensorID).
 elem(s,SensorID) :- zone2sensor(ZoneID,SensorID).
