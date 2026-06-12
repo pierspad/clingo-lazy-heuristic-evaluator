@@ -237,20 +237,12 @@ static size_t find_matching_head_paren(std::string const &rule, size_t open_pos)
 }
 
 static std::string normalize_prolog_heuristic_rule(std::string const &raw, HeuristicSemantics semantics) {
+    static_cast<void>(semantics);
     std::string normalized = trim_copy(raw);
-    std::string const semantics_name = semantics == HeuristicSemantics::Alpha ? "alpha" : "clingo";
-    replace_all(normalized, "default_not(", "default_not(" + semantics_name + ", ");
-
-    if (normalized.compare(0, std::string("candidate(").size(), "candidate(") == 0) {
-        if (normalized.empty() || normalized.back() != '.') {
-            normalized.push_back('.');
-        }
-        return normalized;
-    }
 
     std::string const head_prefix = "heuristic(";
     if (normalized.compare(0, head_prefix.size(), head_prefix) != 0) {
-        throw std::runtime_error("Lazy heuristic Prolog backend: the rule string must start with heuristic(...) or candidate(...).");
+        throw std::runtime_error("Lazy heuristic Prolog backend: the rule string must start with heuristic(...).");
     }
 
     size_t const close_pos = find_matching_head_paren(normalized, head_prefix.size() - 1);
@@ -258,16 +250,10 @@ static std::string normalize_prolog_heuristic_rule(std::string const &raw, Heuri
         throw std::runtime_error("Lazy heuristic Prolog backend: malformed heuristic(...) rule head.");
     }
 
-    std::string converted = "candidate(";
-    converted += normalized.substr(head_prefix.size(), close_pos - head_prefix.size());
-    converted += ", ";
-    converted += semantics_name;
-    converted += ")";
-    converted += normalized.substr(close_pos + 1);
-    if (converted.empty() || converted.back() != '.') {
-        converted.push_back('.');
+    if (normalized.empty() || normalized.back() != '.') {
+        normalized.push_back('.');
     }
-    return converted;
+    return normalized;
 }
 
 static bool is_clingo_like_static_predicate(Clingo::Symbol const &symbol) {
@@ -301,24 +287,12 @@ static std::unordered_set<std::string> collect_query_relevant_predicate_signatur
                 }
             }
         }
-        else if (normalized.compare(0, std::string("candidate(").size(), "candidate(") == 0) {
-            size_t const close_pos = find_matching_paren(normalized, std::string("candidate").size());
-            if (close_pos != std::string::npos) {
-                auto const args = split_top_level_args(
-                    normalized.substr(std::string("candidate(").size(),
-                                      close_pos - std::string("candidate(").size())
-                );
-                if (!args.empty()) {
-                    collect_term_signature(signatures, args[0]);
-                }
-            }
-        }
 
         collect_wrapper_argument_signatures(signatures, normalized, "holds", 0);
         collect_wrapper_argument_signatures(signatures, normalized, "holds_pos", 0);
-        collect_wrapper_argument_signatures(signatures, normalized, "default_not", 0);
+        collect_wrapper_argument_signatures(signatures, normalized, "clingo_not", 0);
+        collect_wrapper_argument_signatures(signatures, normalized, "alpha_not", 0);
         collect_wrapper_argument_signatures(signatures, normalized, "target_available", 0);
-        collect_wrapper_argument_signatures(signatures, normalized, "holds_neg", 1);
     }
 
     return signatures;
@@ -736,8 +710,13 @@ void HeuristicPropagator::init_clingo_like_mode(Clingo::PropagateInit &init,
             auto const args = symbol.arguments();
             if (args.size() == 1 && args[0].type() == Clingo::SymbolType::String) {
                 QueryHeuristicRule rule;
-                rule.semantics = HeuristicSemantics::Alpha;
                 rule.original_rule = args[0].string();
+                if (rule.original_rule.find("clingo_not(") != std::string::npos) {
+                    rule.semantics = HeuristicSemantics::Clingo;
+                }
+                else {
+                    rule.semantics = HeuristicSemantics::Alpha;
+                }
                 rule.normalized_rule = normalize_clingo_like_heuristic_rule(rule.original_rule);
                 rule.prolog_rule = normalize_prolog_heuristic_rule(rule.original_rule, rule.semantics);
                 clingo_like_heuristic_rules_.push_back(std::move(rule));
@@ -746,26 +725,17 @@ void HeuristicPropagator::init_clingo_like_mode(Clingo::PropagateInit &init,
                 throw std::runtime_error("Lazy heuristic Prolog backend: heuristic/1 expects a string rule.");
             }
         }
-        else if (symbol.match("heuristic", 2)) {
-            auto const args = symbol.arguments();
-            if (args.size() == 2 && args[1].type() == Clingo::SymbolType::String) {
-                QueryHeuristicRule rule;
-                rule.semantics = parse_clingo_like_semantics(args[0]);
-                rule.original_rule = args[1].string();
-                rule.normalized_rule = normalize_clingo_like_heuristic_rule(rule.original_rule);
-                rule.prolog_rule = normalize_prolog_heuristic_rule(rule.original_rule, rule.semantics);
-                clingo_like_heuristic_rules_.push_back(std::move(rule));
-            }
-            else {
-                throw std::runtime_error("Lazy heuristic Prolog backend: heuristic/2 expects heuristic(alpha|clingo, \"rule\").");
-            }
-        }
         else if (symbol.match("prolog_heuristic", 1)) {
             auto const args = symbol.arguments();
             if (args.size() == 1 && args[0].type() == Clingo::SymbolType::String) {
                 QueryHeuristicRule rule;
-                rule.semantics = HeuristicSemantics::Alpha;
                 rule.original_rule = args[0].string();
+                if (rule.original_rule.find("clingo_not(") != std::string::npos) {
+                    rule.semantics = HeuristicSemantics::Clingo;
+                }
+                else {
+                    rule.semantics = HeuristicSemantics::Alpha;
+                }
                 rule.normalized_rule = normalize_clingo_like_heuristic_rule(rule.original_rule);
                 rule.prolog_rule = normalize_prolog_heuristic_rule(rule.original_rule, rule.semantics);
                 clingo_like_heuristic_rules_.push_back(std::move(rule));
@@ -773,21 +743,6 @@ void HeuristicPropagator::init_clingo_like_mode(Clingo::PropagateInit &init,
             }
             else {
                 throw std::runtime_error("Lazy heuristic Prolog backend: prolog_heuristic/1 expects a string rule.");
-            }
-        }
-        else if (symbol.match("prolog_heuristic", 2)) {
-            auto const args = symbol.arguments();
-            if (args.size() == 2 && args[1].type() == Clingo::SymbolType::String) {
-                QueryHeuristicRule rule;
-                rule.semantics = parse_clingo_like_semantics(args[0]);
-                rule.original_rule = args[1].string();
-                rule.normalized_rule = normalize_clingo_like_heuristic_rule(rule.original_rule);
-                rule.prolog_rule = normalize_prolog_heuristic_rule(rule.original_rule, rule.semantics);
-                clingo_like_heuristic_rules_.push_back(std::move(rule));
-                saw_legacy_prolog_heuristic = true;
-            }
-            else {
-                throw std::runtime_error("Lazy heuristic Prolog backend: prolog_heuristic/2 expects prolog_heuristic(alpha|clingo, \"rule\").");
             }
         }
     }
@@ -945,6 +900,18 @@ std::vector<std::string> HeuristicPropagator::build_dynamic_trail_facts(
     return facts;
 }
 
+static std::unordered_set<std::string> collect_negated_predicate_signatures(
+    std::vector<QueryHeuristicRule> const &rules
+) {
+    std::unordered_set<std::string> signatures;
+    for (auto const &rule : rules) {
+        std::string const normalized = trim_copy(rule.original_rule);
+        collect_wrapper_argument_signatures(signatures, normalized, "clingo_not", 0);
+        collect_wrapper_argument_signatures(signatures, normalized, "alpha_not", 0);
+    }
+    return signatures;
+}
+
 std::vector<HeuristicPropagator::ActiveHeuristic>
 HeuristicPropagator::evaluate_active_heuristics_with_aux_clingo(
     std::vector<std::string> const &dynamic_facts,
@@ -960,6 +927,27 @@ HeuristicPropagator::evaluate_active_heuristics_with_aux_clingo(
     for (auto const &fact : dynamic_facts) {
         program << fact;
     }
+
+    auto const negated_predicates = collect_negated_predicate_signatures(clingo_like_heuristic_rules_);
+    for (auto const &sig_str : negated_predicates) {
+        size_t slash = sig_str.find('/');
+        if (slash == std::string::npos) continue;
+        std::string name = sig_str.substr(0, slash);
+        int arity = std::stoi(sig_str.substr(slash + 1));
+
+        std::string args;
+        if (arity > 0) {
+            args += "(";
+            for (int i = 0; i < arity; ++i) {
+                if (i > 0) args += ",";
+                args += "X" + std::to_string(i);
+            }
+            args += ")";
+        }
+        program << "clingo_not(" << name << args << ") :- not_" << name << args << ".\n";
+        program << "alpha_not(" << name << args << ") :- not_" << name << args << ".\n";
+    }
+
     for (auto const &rule : clingo_like_heuristic_rules_) {
         if (rule.semantics != semantics) continue;
         program << rule.normalized_rule << "\n";

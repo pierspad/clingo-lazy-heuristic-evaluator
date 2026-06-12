@@ -92,7 +92,7 @@ maxElem(MaxElementID) :-
 
 % assign first element in BFS order to first controlUnit
 % Originale: #heuristic assign(1,ElementType,ElementID) : elementOrder(ElementID,ElementType,1). [1000,true]
-heuristic(alpha, "heuristic(assign(1, ElementType, ElementID), 1000, 0, true) :- holds(elementOrder(ElementID,ElementType,1)), target_available(assign(1, ElementType, ElementID)).").
+heuristic("heuristic(assign(1, ElementType, ElementID), 1000, 0, true) :- holds(elementOrder(ElementID,ElementType,1)), target_available(assign(1, ElementType, ElementID)).").
 
 
 
@@ -119,7 +119,7 @@ heuristicAssignPrevious(
 
 
 % Originale: #heuristic assign(UnitID,ElementType,ElementID) : heuristicAssignPrevious(UnitID,ElementType,ElementID,Weight). [Weight,true]
-heuristic(alpha, "heuristic(assign(UnitID, ElementType, ElementID), W, 0, true) :- holds(heuristicAssignPrevious(UnitID,ElementType,ElementID,Weight)), target_available(assign(UnitID, ElementType, ElementID)), W is Weight.").
+heuristic("heuristic(assign(UnitID, ElementType, ElementID), W, 0, true) :- holds(heuristicAssignPrevious(UnitID,ElementType,ElementID,Weight)), target_available(assign(UnitID, ElementType, ElementID)), W is Weight.").
 
 
 
@@ -144,7 +144,7 @@ heuristicAssignNew(
 
 
 % Originale: #heuristic assign(UnitID,ElementType,ElementID) : heuristicAssignNew(UnitID,ElementType,ElementID,Weight). [Weight,true]
-heuristic(alpha, "heuristic(assign(UnitID, ElementType, ElementID), W, 0, true) :- holds(heuristicAssignNew(UnitID,ElementType,ElementID,Weight)), target_available(assign(UnitID, ElementType, ElementID)), W is Weight.").
+heuristic("heuristic(assign(UnitID, ElementType, ElementID), W, 0, true) :- holds(heuristicAssignNew(UnitID,ElementType,ElementID,Weight)), target_available(assign(UnitID, ElementType, ElementID)), W is Weight.").
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

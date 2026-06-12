@@ -257,8 +257,8 @@ TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
             item(1).
             1 { a(1); z(1) } 1.
             { c(1) }.
-            heuristic("heuristic(a(X), 10, 0, true) :- item(X), not_c(X).").
-            heuristic(alpha, "heuristic(z(1), 2, 0, true).").
+            heuristic("heuristic(a(X), 10, 0, true) :- item(X), alpha_not(c(X)).").
+            heuristic("heuristic(z(1), 2, 0, true).").
             #show a/1.
             #show z/1.
         )");
@@ -275,8 +275,8 @@ TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
             item(1).
             1 { a(1); z(1) } 1.
             { c(1) }.
-            heuristic(alpha, "heuristic(a(X), 10, 0, true) :- item(X), not_c(X).").
-            heuristic(alpha, "heuristic(z(1), 2, 0, true).").
+            heuristic("heuristic(a(X), 10, 0, true) :- item(X), alpha_not(c(X)).").
+            heuristic("heuristic(z(1), 2, 0, true).").
             #show a/1.
             #show z/1.
         )");
@@ -293,8 +293,8 @@ TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
             item(1).
             1 { a(1); z(1) } 1.
             { c(1) }.
-            heuristic(clingo, "heuristic(a(X), 10, 0, true) :- item(X), not_c(X).").
-            heuristic(alpha, "heuristic(z(1), 2, 0, true).").
+            heuristic("heuristic(a(X), 10, 0, true) :- item(X), clingo_not(c(X)).").
+            heuristic("heuristic(z(1), 2, 0, true).").
             #show a/1.
             #show z/1.
         )");
@@ -312,8 +312,8 @@ TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
             1 { a(1); z(1) } 1.
             { c(1) }.
             :- c(1).
-            heuristic(clingo, "heuristic(a(X), 10, 0, true) :- item(X), not_c(X).").
-            heuristic(alpha, "heuristic(z(1), 2, 0, true).").
+            heuristic("heuristic(a(X), 10, 0, true) :- item(X), clingo_not(c(X)).").
+            heuristic("heuristic(z(1), 2, 0, true).").
             #show a/1.
             #show z/1.
         )");
@@ -333,8 +333,8 @@ TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
             { d(30) }.
             :- d(30).
             1 { a(1); z(1) } 1.
-            heuristic(alpha, "heuristic(a(X), W, 10, true) :- item(X), W = #count { Y : d(Y) }.").
-            heuristic(alpha, "heuristic(z(1), 1, 0, true).").
+            heuristic("heuristic(a(X), W, 10, true) :- item(X), W = #count { Y : d(Y) }.").
+            heuristic("heuristic(z(1), 1, 0, true).").
             #show a/1.
             #show z/1.
         )");
@@ -352,7 +352,7 @@ TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
             c(1).
             { c(X) } :- x(X), X > 1.
             1 { b(X) : x(X) } 1.
-            heuristic(alpha, "heuristic(b(X), W, 0, true) :- x(X), not_c(X), S = #sum { Y : c(Y) }, W = ((n+1)*S)+X.").
+            heuristic("heuristic(b(X), W, 0, true) :- x(X), alpha_not(c(X)), S = #sum { Y : c(Y) }, W = ((n+1)*S)+X.").
             #show b/1.
         )");
         ctl.ground({{"base", {}}}, nullptr);
@@ -366,9 +366,9 @@ TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
         ctl.register_propagator(propagator, true);
         ctl.add("base", {}, R"(
             1 { a(1); a(2) } 1.
-            heuristic(alpha, "heuristic(a(1), 10, 0, true).").
-            heuristic(alpha, "heuristic(a(1), 5, 100, false).").
-            heuristic(alpha, "heuristic(a(2), 6, 0, true).").
+            heuristic("heuristic(a(1), 10, 0, true).").
+            heuristic("heuristic(a(1), 5, 100, false).").
+            heuristic("heuristic(a(2), 6, 0, true).").
             #show a/1.
         )");
         ctl.ground({{"base", {}}}, nullptr);
@@ -382,8 +382,8 @@ TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
         ctl.register_propagator(propagator, true);
         ctl.add("base", {}, R"(
             1 { a(1); a(2) } 1.
-            heuristic(alpha, "heuristic(a(1), 10, 0, true).").
-            heuristic(alpha, "heuristic(a(2), 5, 100, true).").
+            heuristic("heuristic(a(1), 10, 0, true).").
+            heuristic("heuristic(a(2), 5, 100, true).").
             #show a/1.
         )");
         ctl.ground({{"base", {}}}, nullptr);
@@ -416,8 +416,8 @@ TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
         ctl.register_propagator(propagator, true);
         ctl.add("base", {}, R"(
             1 { a(1); z(1) } 1.
-            heuristic(alpha, "heuristic(unknown(1), 100, 0, true).").
-            heuristic(alpha, "heuristic(a(1), 1, 0, true).").
+            heuristic("heuristic(unknown(1), 100, 0, true).").
+            heuristic("heuristic(a(1), 1, 0, true).").
             #show a/1.
             #show z/1.
         )");
@@ -450,13 +450,13 @@ TEST_CASE("lazy-heuristic-syntax-validation", "[clingo][heuristic]") {
         REQUIRE_THROWS(test_solve(ctl.solve(), models));
     }
 
-    SECTION("clingo-like malformed semantics is rejected") {
+    SECTION("clingo-like malformed rule string is rejected") {
         Control ctl{{"0"}, logger, 20};
         HeuristicPropagator propagator;
         ctl.register_propagator(propagator, true);
         ctl.add("base", {}, R"(
             { a(1) }.
-            heuristic(beta, "heuristic(a(1), 1, 0, true).").
+            heuristic("invalid(a(1), 1, 0, true).").
         )");
         ctl.ground({{"base", {}}}, nullptr);
         REQUIRE_THROWS(test_solve(ctl.solve(), models));

@@ -176,15 +176,14 @@ void retract_runtime_database() {
         "n(_)",
         "holds(_)",
         "holds_pos(_)",
-        "default_not(_)",
-        "default_not(_, _)",
-        "holds_neg(_, _)",
+        "clingo_not(_)",
+        "alpha_not(_)",
         "target_available(_)",
         "dyn_sum(_, _, _)",
         "dyn_count(_, _)",
         "dyn_min(_, _, _)",
         "dyn_max(_, _, _)",
-        "candidate(_,_,_,_,_)"
+        "heuristic(_,_,_,_)"
     };
     for (auto const &predicate : predicates) {
         call_prolog("retractall(" + predicate + ")");
@@ -206,24 +205,20 @@ std::string runtime_program(std::vector<QueryHeuristicRule> const &rules,
     out << ":- dynamic n/1.\n";
     out << ":- dynamic holds/1.\n";
     out << ":- dynamic holds_pos/1.\n";
-    out << ":- dynamic default_not/1.\n";
-    out << ":- dynamic default_not/2.\n";
-    out << ":- dynamic holds_neg/2.\n";
+    out << ":- dynamic clingo_not/1.\n";
+    out << ":- dynamic alpha_not/1.\n";
     out << ":- dynamic target_available/1.\n";
     out << ":- dynamic dyn_sum/3.\n";
     out << ":- dynamic dyn_count/2.\n";
     out << ":- dynamic dyn_min/3.\n";
     out << ":- dynamic dyn_max/3.\n";
-    out << ":- dynamic candidate/5.\n";
+    out << ":- dynamic heuristic/4.\n";
     out << ":- use_module(library(aggregate)).\n";
     out << "holds(A) :- true_atom(A).\n";
     out << "holds(A) :- static_atom(A), \\+ true_atom(A).\n";
     out << "holds_pos(A) :- holds(A).\n";
-    out << "default_not(A) :- default_not(alpha, A).\n";
-    out << "default_not(alpha, A) :- \\+ holds(A).\n";
-    out << "default_not(clingo, A) :- false_atom(A).\n";
-    out << "holds_neg(alpha, A) :- default_not(alpha, A).\n";
-    out << "holds_neg(clingo, A) :- false_atom(A).\n";
+    out << "clingo_not(A) :- false_atom(A).\n";
+    out << "alpha_not(A)  :- \\+ holds(A).\n";
     out << "n(N) :- n_value(N).\n";
     out << "target_available(A) :- target_atom(A), \\+ true_atom(A), \\+ false_atom(A).\n";
     out << "dyn_sum(Goal, Template, Sum) :- aggregate_all(sum(Template), Goal, Sum).\n";
@@ -357,9 +352,9 @@ std::vector<QueryHeuristicCandidate> SWIPrologHeuristicBackend::query_applicable
     ++impl_->query_count;
     std::vector<QueryHeuristicCandidate> result;
 
-    predicate_t predicate = PL_predicate("candidate", 5, nullptr);
+    predicate_t predicate = PL_predicate("heuristic", 4, nullptr);
     PrologForeignFrame frame;
-    term_t av = PL_new_term_refs(5);
+    term_t av = PL_new_term_refs(4);
     PrologQuery query(predicate, av);
     size_t rule_index = 0;
     while (query.next_solution()) {
@@ -370,26 +365,20 @@ std::vector<QueryHeuristicCandidate> SWIPrologHeuristicBackend::query_applicable
         int priority = 0;
         if (!PL_get_integer(av + 1, &weight) ||
             !PL_get_integer(av + 2, &priority)) {
-            throw std::runtime_error("SWI-Prolog heuristic backend: candidate weight and priority must be integers.");
+            throw std::runtime_error("SWI-Prolog heuristic backend: heuristic weight and priority must be integers.");
         }
 
         bool sign = true;
         if (!get_bool_atom(av + 3, sign)) {
-            throw std::runtime_error("SWI-Prolog heuristic backend: candidate modifier must be true or false.");
+            throw std::runtime_error("SWI-Prolog heuristic backend: heuristic modifier must be true or false.");
         }
-
-        char *semantics_chars = nullptr;
-        if (!PL_get_atom_chars(av + 4, &semantics_chars)) {
-            throw std::runtime_error("SWI-Prolog heuristic backend: candidate semantics must be alpha or clingo.");
-        }
-        std::string const semantics_text(semantics_chars);
 
         QueryHeuristicCandidate candidate;
         candidate.target = parse_symbol_from_term(av);
         candidate.weight = weight;
         candidate.priority = priority;
         candidate.sign = sign;
-        candidate.semantics = parse_semantics_atom(semantics_text.c_str());
+        candidate.semantics = HeuristicSemantics::Alpha;
         candidate.rule_index = rule_index++;
         result.push_back(std::move(candidate));
     }

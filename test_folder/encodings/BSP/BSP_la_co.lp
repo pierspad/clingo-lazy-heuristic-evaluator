@@ -18,8 +18,8 @@ c(X) :- x(X), not b(X).
 :- not min_val <= #sum{ Y : b(Y) } <= max_val.
 
 % query-driven lazy heuristics, alpha-like default negation
-heuristic(alpha, "heuristic(b(X), W, 0, true) :- aggregate_all(sum(Y), holds(c(Y)), S), holds(heuristic_base(Base)), holds(x(X)), target_available(b(X)), default_not(c(X)), W is Base*S+X.").
-heuristic(alpha, "heuristic(c(X), W, 0, true) :- aggregate_all(sum(Y), holds(b(Y)), S), holds(heuristic_base(Base)), holds(x(X)), target_available(c(X)), default_not(b(X)), W is Base*S+X.").
+heuristic("heuristic(b(X), W, 0, true) :- aggregate_all(sum(Y), holds(c(Y)), S), holds(heuristic_base(Base)), holds(x(X)), target_available(b(X)), alpha_not(c(X)), W is Base*S+X.").
+heuristic("heuristic(c(X), W, 0, true) :- aggregate_all(sum(Y), holds(b(Y)), S), holds(heuristic_base(Base)), holds(x(X)), target_available(c(X)), alpha_not(b(X)), W is Base*S+X.").
 
 #show b/1.
 #show c/1.

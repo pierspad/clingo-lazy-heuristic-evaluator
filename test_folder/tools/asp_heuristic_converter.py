@@ -329,14 +329,14 @@ def generate_prolog_heuristic(directive: HeuristicDirective, semantics: str = "a
         body_parts.append("n(N)")
     body_parts.extend(_prolog_body_predicate(pred, "holds") for pred in directive.pos_body)
     body_parts.append(f"target_available({directive.target_text})")
-    body_parts.extend(_prolog_body_predicate(pred, "default_not") for pred in directive.neg_body)
+    body_parts.extend(_prolog_body_predicate(pred, f"{semantics}_not") for pred in directive.neg_body)
 
     weight, priority, modifier, assignments = _prolog_head_terms(directive)
     body_parts.extend(assignments)
 
     body = ", ".join(body_parts) if body_parts else "true"
     rule = f"heuristic({directive.target_text}, {weight}, {priority}, {modifier}) :- {body}."
-    return [], f"heuristic({semantics}, {_quote_asp_string(rule)})."
+    return [], f"heuristic({_quote_asp_string(rule)})."
 
 
 def _aux_name(directive: HeuristicDirective, idx: int, suffix: str = "") -> str:

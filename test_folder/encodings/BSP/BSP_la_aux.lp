@@ -22,5 +22,5 @@ h_b(X,S) :- x(X), not c(X), S = #sum{Y : c(Y)}.
 h_c(X,S) :- x(X), not b(X), S = #sum{Y : b(Y)}.
 
 % query-driven lazy heuristics, alpha-like default negation
-heuristic(alpha, "heuristic(b(X), W, 0, true) :- holds(h_b(X,S)), holds(heuristic_base(Base)), target_available(b(X)), W is Base*S+X.").
-heuristic(alpha, "heuristic(c(X), W, 0, true) :- holds(h_c(X,S)), holds(heuristic_base(Base)), target_available(c(X)), W is Base*S+X.").
+heuristic("heuristic(b(X), W, 0, true) :- holds(h_b(X,S)), holds(heuristic_base(Base)), target_available(b(X)), W is Base*S+X.").
+heuristic("heuristic(c(X), W, 0, true) :- holds(h_c(X,S)), holds(heuristic_base(Base)), target_available(c(X)), W is Base*S+X.").
