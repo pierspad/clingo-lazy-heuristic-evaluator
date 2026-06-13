@@ -309,7 +309,7 @@ BSP_THEME = {
         "gc_noheur": "encodings/BSP/BSP_gc_noheur.lp",
         "gc": "encodings/BSP/BSP_gc.lp",
         "ga": "encodings/BSP/BSP_ga.lp",
-        "ga_weak": "encodings/BSP/BDP_ga_weak.lp",
+        "ga_weak": "encodings/BSP/BSP_ga_weak.lp",
         "la": "encodings/BSP/BSP_la.lp",
         "lc": "encodings/BSP/BSP_lc.lp",
         "la_aux": "encodings/BSP/BSP_la_aux.lp",
@@ -1496,7 +1496,7 @@ def _variant_dir_identifier(theme: dict, variant: str) -> str:
     if filename:
         basename = os.path.basename(filename.replace("\\", "/"))
         stem, _ = os.path.splitext(basename)
-        for prefix in ("BSP_", "BDP_"):
+        for prefix in ("BSP_",):
             if stem.startswith(prefix):
                 stem = stem[len(prefix):]
                 break

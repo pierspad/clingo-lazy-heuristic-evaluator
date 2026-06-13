@@ -1,169 +1,148 @@
+% ============================================================
+% PUP (Partner Units Problem) - LAZY CLINGO (lc, backend Prolog).
+% Architettura: ALPHA/Evaluation/PUP/encoding-alpha-prologheu-double.asp
+%
+% Logica di dominio e predicati ausiliari IDENTICI a PUP_gc.lp, ma
+% nessuna direttiva #heuristic nativa: le euristiche sono iniettate
+% come stringhe Prolog tramite heuristic("...") e valutate a runtime
+% dal propagatore (LAZY_HEURISTIC_BACKEND=prolog). Il grounder non
+% vede alcun aggregato euristico: niente esplosione combinatoria.
+%
+% Traduzione degli aggregati (runtime SWI-Prolog):
+%   #count{...}  -> aggregate_all(count, (holds(...), ...), V)
+%   #max{0; ...} -> dyn_max(holds(...), N, V)   (0 se l'insieme e' vuoto)
+% Condizioni negative con semantica CLINGO:
+%   not p(X)     -> clingo_not(p(X))   (vera solo se p(X) e' assegnato falso)
+% Sicurezza a runtime: target_available(...) garantisce che il target
+% sia ancora libero (ne' vero ne' falso).
+%
+% Ranking globale del backend: (Priority, Weight) decrescenti; la
+% priorita' 1 delle zone replica nativamente [W@1] > [W@0] del file
+% originale (in gc/ga e' appiattita nel peso con offset +100000).
+%
+% Stessi adattamenti di dominio di PUP_gc.lp: !=, sensorNumbers(0..2).
+% Le istanze forniscono: comUnit/1, zone2sensor/2.
+% ============================================================
 
-elem(z,ZoneID) :- zone2sensor(ZoneID,SensorID).
-elem(s,SensorID) :- zone2sensor(ZoneID,SensorID).
+%%% initial assignment
 
-{ assign(UnitID,ElementType,ElementID) } :-
-    elem(ElementType,ElementID),
-    comUnit(UnitID).
-
-% every comUnit can have a maximum of two zones and two sensors
-% every zone must be assignet to exactly one comUnit
-:- assign(UnitID,ElementType,ElementID1),
-   assign(UnitID,ElementType,ElementID2),
-   assign(UnitID,ElementType,ElementID3),
-   ElementID1<ElementID2,
-   ElementID2<ElementID3.
-
-:- assign(UnitID1,ElementType,ElementID),
-   assign(UnitID2,ElementType,ElementID),
-   UnitID1<UnitID2.
-
-atLeastOneUnit(ElementType,ElementID) :-
-    assign(_,ElementType,ElementID).
-
-:- elem(ElementType,ElementID),
-   not atLeastOneUnit(ElementType,ElementID).
-
-% if comUnit U handles a zone and comUnit P (P!=U) handles a sensor and
-% in the real world the sensor belongs to that zone then we call
-% the comUnit as "Partners" 
-% no more than 2 partners are allowed
-
-partnerUnits(UnitID1,UnitID2) :-
-    assign(UnitID1,z,ZoneID),
-    assign(UnitID2,s,SensorID),
-    zone2sensor(ZoneID,SensorID),
-    UnitID1 != UnitID2.
-
-partnerUnits(UnitID1,UnitID2) :-
-    partnerUnits(UnitID2,UnitID1).
-
-:- partnerUnits(UnitID,Partner1),
-   partnerUnits(UnitID,Partner2),
-   partnerUnits(UnitID,Partner3),
-   Partner1<Partner2,
-   Partner2<Partner3.
+assigned_zone_unit(1,1).
 
 
+%%% assign zones
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% breadth-order
+assignable_zone_unit(Z,U)   :- zone2sensor(Z,S), assigned_sensor_unit(S,U).
+assignable_zone_unit(Z,U-1) :- zone2sensor(Z,S), assigned_sensor_unit(S,U), comUnit(U-1).
+assignable_zone_unit(Z,U+1) :- zone2sensor(Z,S), assigned_sensor_unit(S,U), comUnit(U+1).
 
-% start BFS from the smallest zone id
+zone_blocked_on_unit(Z,UZ) :- assigned_sensor_unit(S,US), zone2sensor(Z,S),
+    comUnit(UZ), (US-UZ)**2 > 1.
 
-cover(MinZoneID,z,1) :-
-    MinZoneID=#min{ZoneID : elem(z,ZoneID)}.
+zone_blocked_on_unit(Z,UZ) :- assigned_zone_unit(Z1,UZ1), zone2sensor(Z,S),
+    zone2sensor(Z1,S), comUnit(UZ), (UZ-UZ1)**2 > 4.
 
+zone_blocked_on_unit(Z,U) :- zone2sensor(Z,_), comUnit(U),
+    2 <= #count{Z1: assigned_zone_unit(Z1,U), Z1 != Z}.
+zone_blocked_on_unit(Z,U) :- assigned_zone_unit(Z,U1), comUnit(U), U1 != U.
 
-% from a zone go to connected sensors
+%%% zone choice
 
-cover(SensorID,s,Level+1) :-
-    cover(ZoneID,z,Level),
-    zone2sensor(ZoneID,SensorID),
-    Level<#count{ElementID,Type : elem(Type,ElementID)}.
-
-
-% from a sensor go to connected zones
-
-cover(ZoneID,z,Level+1) :-
-    cover(SensorID,s,Level),
-    zone2sensor(ZoneID,SensorID),
-    Level<#count{ElementID,Type : elem(Type,ElementID)}.
+assigned_zone_unit(Z,U)     :- assignable_zone_unit(Z,U), not not_assigned_zone_unit(Z,U), 0 < U.
+not_assigned_zone_unit(Z,U) :- assignable_zone_unit(Z,U), not assigned_zone_unit(Z,U), 0 < U.
+not_assigned_zone_unit(Z,U) :- zone_blocked_on_unit(Z,U).
 
 
+%%% assign sensors
 
-% convert BFS levels into ordering
+assignable_sensor_unit(S,U)   :- zone2sensor(Z,S), assigned_zone_unit(Z,U).
+assignable_sensor_unit(S,U-1) :- zone2sensor(Z,S), assigned_zone_unit(Z,U), comUnit(U-1).
+assignable_sensor_unit(S,U+1) :- zone2sensor(Z,S), assigned_zone_unit(Z,U), comUnit(U+1).
 
-elementOrder(ElementID,ElementType,OrderLevel) :-
-    elem(ElementType,ElementID),
-    OrderLevel=#min{Level : cover(ElementID,ElementType,Level)}.
+sensor_blocked_on_unit(S,US) :- assigned_zone_unit(Z,UZ), zone2sensor(Z,S),
+    comUnit(US), (UZ-US)**2 > 1.
 
+sensor_blocked_on_unit(S,US) :- assigned_sensor_unit(S1,US1), zone2sensor(Z,S),
+    zone2sensor(Z,S1), comUnit(US), (US-US1)**2 > 4.
 
-maxOrder(MaxOrder) :-
-    MaxOrder=#max{OrderLevel : elementOrder(_,_,OrderLevel)}.
+sensor_blocked_on_unit(S,U) :- zone2sensor(_,S), comUnit(U),
+    2 <= #count{S1: assigned_sensor_unit(S1,U), S1 != S}.
+sensor_blocked_on_unit(S,U) :- assigned_sensor_unit(S,U1), comUnit(U), U1 != U.
 
-maxUnit(MaxUnitID) :-
-    MaxUnitID=#max{UnitID : comUnit(UnitID)}.
+%%% sensor choice
 
-maxElem(MaxElementID) :-
-    MaxElementID=#max{ElementID : elem(_,ElementID)}.
-
-
-
-% assign first element in BFS order to first controlUnit
-heuristic("heuristic(assign(1, ElementType, ElementID), 1000, 0, true) :- holds(elementOrder(ElementID,ElementType,1)), target_available(assign(1, ElementType, ElementID)).").
-
-% heuristic(assign(1, ElementType, ElementID), 1000, 0, true) :- 
-%     holds(elementOrder(ElementID,ElementType,1)), 
-%     target_available(assign(1, ElementType, ElementID)).
+assigned_sensor_unit(S,U)     :- assignable_sensor_unit(S,U), not not_assigned_sensor_unit(S,U), 0 < U.
+not_assigned_sensor_unit(S,U) :- assignable_sensor_unit(S,U), not assigned_sensor_unit(S,U), 0 < U.
+not_assigned_sensor_unit(S,U) :- sensor_blocked_on_unit(S,U).
 
 
-
-% h1: prefer previous units first
-
-heuristicAssignPrevious(
-    PreferredUnit,
-    ElementType,
-    ElementID,
-    Weight
-) :-
-    elementOrder(ElementID,ElementType,OrderLevel),
-    assign(CurrentUnit,CurrentType,CurrentElement),
-    elementOrder(CurrentElement,CurrentType,OrderLevel-1),
-    maxOrder(MaxOrder),
-    maxUnit(MaxUnit),
-    comUnit(PreferredUnit),
-    PreferredUnit<=CurrentUnit,
-    maxElem(MaxElement),
-    Weight=10*MaxUnit*(MaxOrder-OrderLevel)
-           +2*(MaxElement-ElementID)
-           +PreferredUnit.
+assigned_zone(Z)   :- assigned_zone_unit(Z,U).
+assigned_sensor(S) :- assigned_sensor_unit(S,U).
 
 
+%%% auxiliary predicates for heuristics
 
-heuristic("heuristic(assign(UnitID, ElementType, ElementID), W, 0, true) :- holds(heuristicAssignPrevious(UnitID,ElementType,ElementID,Weight)), target_available(assign(UnitID, ElementType, ElementID)), W is Weight.").
+% capacita' di una unit: al massimo 2 sensori (vedi header).
+sensorNumbers(0..2).
 
-% heuristic(assign(UnitID, ElementType, ElementID), W, 0, true) :- 
-%     holds(heuristicAssignPrevious(UnitID,ElementType,ElementID,Weight)), 
-%     target_available(assign(UnitID, ElementType, ElementID)), 
-%     W is Weight.").
+num_sensors_on_unit(N,U) :- comUnit(U), sensorNumbers(N),
+    N <= #count{S1: assigned_sensor_unit(S1,U)}.
+num_sensors_on_unit(2,0).
 
+num_forbidden_places_of_sensors(S,N+N1+N2) :- assignable_sensor_unit(S,_),
+    zone2sensor(Z,S), assigned_zone_unit(Z,U),
+    num_sensors_on_unit(N,U), num_sensors_on_unit(N1,U-1), num_sensors_on_unit(N2,U+1), U > 1.
 
+num_forbidden_places_of_sensors(S,N+2+N2) :- assignable_sensor_unit(S,_),
+    zone2sensor(Z,S), assigned_zone_unit(Z,U),
+    num_sensors_on_unit(N,U), num_sensors_on_unit(N2,U+1), U = 1.
 
-% h2: prefer creating a new unused unit
+num_forbidden_places_of_sensors(S,N+N1+2) :- assignable_sensor_unit(S,_),
+    zone2sensor(Z1,S), zone2sensor(Z2,S),
+    assigned_zone_unit(Z1,U), assigned_zone_unit(Z2,U+1),
+    num_sensors_on_unit(N,U),
+    num_sensors_on_unit(N1,U+1).
 
-heuristicAssignNew(
-    UnitID+1,
-    ElementType,
-    ElementID,
-    Weight
-) :-
-    elementOrder(ElementID,ElementType,OrderLevel),
-    assign(UnitID,CurrentType,CurrentElement),
-    elementOrder(CurrentElement,CurrentType,OrderLevel-1),
-    maxOrder(MaxOrder),
-    maxUnit(MaxUnit),
-    comUnit(UnitID+1),
-    maxElem(MaxElement),
-    Weight=10*MaxUnit*(MaxOrder-OrderLevel)
-           +2*(MaxElement-ElementID).
+num_forbidden_places_of_sensors(S,N1+4) :- assignable_sensor_unit(S,_),
+    zone2sensor(Z,S), zone2sensor(Z2,S),
+    assigned_zone_unit(Z,U), assigned_zone_unit(Z2,U+2),
+    num_sensors_on_unit(N1,U+1).
 
+%%% constraints
 
-heuristic("heuristic(assign(UnitID, ElementType, ElementID), W, 0, true) :- holds(heuristicAssignNew(UnitID,ElementType,ElementID,Weight)), target_available(assign(UnitID, ElementType, ElementID)), W is Weight.").
+:- zone2sensor(Z,_), not assigned_zone(Z).
+:- zone2sensor(_,S), not assigned_sensor(S).
 
-
-% heuristic(assign(UnitID, ElementType, ElementID), W, 0, true) :- 
-%     holds(heuristicAssignNew(UnitID,ElementType,ElementID,Weight)), 
-%     target_available(assign(UnitID, ElementType, ElementID)), 
-%     W is Weight.
+:- zone2sensor(Z,S), assigned_sensor_unit(S,U1), assigned_zone_unit(Z,U2), (U1-U2)**2 > 1.
 
 
+%%% heuristics (stringhe Prolog, semantica clingo: clingo_not)
+% head is heuristic(Target, Weight, Priority, Modifier)
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+heuristic("heuristic(assigned_sensor_unit(S,U), W, 0, true) :- holds(assignable_sensor_unit(S,U)), target_available(assigned_sensor_unit(S,U)), clingo_not(not_assigned_sensor_unit(S,U)), aggregate_all(count, (holds(zone2sensor(Z,S)), holds(assigned_zone_unit(Z,_))), Deg), dyn_max(holds(num_forbidden_places_of_sensors(S,N)), N, Forb), aggregate_all(count, holds(assigned_sensor_unit(SN,U)), Cnt), aggregate_all(count, (holds(assigned_zone_unit(Z1,U)), holds(zone2sensor(Z1,S))), Direct), W is Deg*10000 + Forb*1000 + Cnt*100 + Direct*10.").
 
+% heuristic(assigned_sensor_unit(S,U), W, 0, true) :-
+%     holds(assignable_sensor_unit(S,U)),
+%     target_available(assigned_sensor_unit(S,U)),
+%     clingo_not(not_assigned_sensor_unit(S,U)),
+%     aggregate_all(count, (holds(zone2sensor(Z,S)), holds(assigned_zone_unit(Z,_))), Deg),
+%     dyn_max(holds(num_forbidden_places_of_sensors(S,N)), N, Forb),
+%     aggregate_all(count, holds(assigned_sensor_unit(SN,U)), Cnt),
+%     aggregate_all(count, (holds(assigned_zone_unit(Z1,U)), holds(zone2sensor(Z1,S))), Direct),
+%     W is Deg*10000 + Forb*1000 + Cnt*100 + Direct*10.
 
-assignedZoneUnit(ZoneID,UnitID) :-
-    assign(UnitID,z,ZoneID).
+heuristic("heuristic(assigned_zone_unit(Z,U), W, 1, true) :- holds(assignable_zone_unit(Z,U)), target_available(assigned_zone_unit(Z,U)), clingo_not(not_assigned_zone_unit(Z,U)), aggregate_all(count, holds(assigned_zone_unit(ZN,U)), A), U1 is U - 1, U2 is U + 1, dyn_max(holds(num_sensors_on_unit(N0,U)), N0, M0), dyn_max(holds(num_sensors_on_unit(N1,U1)), N1, M1), dyn_max(holds(num_sensors_on_unit(N2,U2)), N2, M2), Avail is 6 - (M0 + M1 + M2), W is A*10 + Avail.").
 
-assignedZoneUnit(SensorID,UnitID) :-
-    assign(UnitID,s,SensorID).
+% heuristic(assigned_zone_unit(Z,U), W, 1, true) :-
+%     holds(assignable_zone_unit(Z,U)),
+%     target_available(assigned_zone_unit(Z,U)),
+%     clingo_not(not_assigned_zone_unit(Z,U)),
+%     aggregate_all(count, holds(assigned_zone_unit(ZN,U)), A),
+%     U1 is U - 1, U2 is U + 1,
+%     dyn_max(holds(num_sensors_on_unit(N0,U)), N0, M0),
+%     dyn_max(holds(num_sensors_on_unit(N1,U1)), N1, M1),
+%     dyn_max(holds(num_sensors_on_unit(N2,U2)), N2, M2),
+%     Avail is 6 - (M0 + M1 + M2),
+%     W is A*10 + Avail.
+
+#show assigned_zone_unit/2.
+#show assigned_sensor_unit/2.

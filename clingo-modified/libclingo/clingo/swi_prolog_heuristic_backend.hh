@@ -2,6 +2,8 @@
 
 #include "clingo/heuristic_evaluation_backend.hh"
 
+#include <memory>
+
 class SWIPrologHeuristicBackend : public HeuristicEvaluationBackend {
 public:
     SWIPrologHeuristicBackend();
@@ -17,6 +19,6 @@ public:
 
 private:
     struct Impl;
-    Impl *impl_;
+    std::unique_ptr<Impl> impl_;
 };
 

@@ -236,8 +236,7 @@ static size_t find_matching_head_paren(std::string const &rule, size_t open_pos)
     return std::string::npos;
 }
 
-static std::string normalize_prolog_heuristic_rule(std::string const &raw, HeuristicSemantics semantics) {
-    static_cast<void>(semantics);
+static std::string normalize_prolog_heuristic_rule(std::string const &raw) {
     std::string normalized = trim_copy(raw);
 
     std::string const head_prefix = "heuristic(";
@@ -254,6 +253,20 @@ static std::string normalize_prolog_heuristic_rule(std::string const &raw, Heuri
         normalized.push_back('.');
     }
     return normalized;
+}
+
+// Costruisce una QueryHeuristicRule da una stringa heuristic("...").
+// La semantica e' dedotta dalla presenza di clingo_not(...) nel corpo:
+// in sua assenza vale la semantica Alpha (alpha_not o nessuna negazione).
+static QueryHeuristicRule make_query_heuristic_rule(std::string original_rule) {
+    QueryHeuristicRule rule;
+    rule.original_rule = std::move(original_rule);
+    rule.semantics = rule.original_rule.find("clingo_not(") != std::string::npos
+        ? HeuristicSemantics::Clingo
+        : HeuristicSemantics::Alpha;
+    rule.normalized_rule = normalize_clingo_like_heuristic_rule(rule.original_rule);
+    rule.prolog_rule = normalize_prolog_heuristic_rule(rule.original_rule);
+    return rule;
 }
 
 static bool is_clingo_like_static_predicate(Clingo::Symbol const &symbol) {
@@ -350,11 +363,14 @@ static char const *heuristic_semantics_name(HeuristicSemantics semantics) {
     return semantics == HeuristicSemantics::Alpha ? "alpha" : "clingo";
 }
 
-static bool lazy_heuristic_debug_enabled() {
-    char const *value = std::getenv("LAZY_HEURISTIC_DEBUG");
+// I flag d'ambiente sono letti una sola volta: non cambiano a processo
+// avviato e queste funzioni sono chiamate nei percorsi caldi
+// (propagate/undo/decide).
+static bool env_flag_enabled(char const *name) {
+    char const *value = std::getenv(name);
     if (value == nullptr) return false;
 
-    std::string text(value);
+    std::string const text(value);
     return text == "1" ||
            text == "true" ||
            text == "TRUE" ||
@@ -362,32 +378,32 @@ static bool lazy_heuristic_debug_enabled() {
            text == "ON" ||
            text == "yes" ||
            text == "YES";
+}
+
+static bool lazy_heuristic_debug_enabled() {
+    static bool const enabled = env_flag_enabled("LAZY_HEURISTIC_DEBUG");
+    return enabled;
 }
 
 static bool lazy_prolog_stats_enabled() {
-    char const *value = std::getenv("LAZY_PROLOG_STATS");
-    if (value == nullptr) return false;
-
-    std::string text(value);
-    return text == "1" ||
-           text == "true" ||
-           text == "TRUE" ||
-           text == "on" ||
-           text == "ON" ||
-           text == "yes" ||
-           text == "YES";
+    static bool const enabled = env_flag_enabled("LAZY_PROLOG_STATS");
+    return enabled;
 }
 
 static bool lazy_heuristic_use_prolog_backend() {
-    char const *value = std::getenv("LAZY_HEURISTIC_BACKEND");
-    return value != nullptr && std::string(value) == "prolog";
+    static bool const enabled = [] {
+        char const *value = std::getenv("LAZY_HEURISTIC_BACKEND");
+        return value != nullptr && std::string(value) == "prolog";
+    }();
+    return enabled;
 }
 
 static bool lazy_prolog_alpha_query_ranking() {
-    char const *value = std::getenv("LAZY_PROLOG_RANKING");
-    if (value == nullptr) return true;
-    std::string text(value);
-    return text != "clingo-like";
+    static bool const enabled = [] {
+        char const *value = std::getenv("LAZY_PROLOG_RANKING");
+        return value == nullptr || std::string(value) != "clingo-like";
+    }();
+    return enabled;
 }
 
 static HeuristicSemantics parse_clingo_like_semantics(Clingo::Symbol const &symbol) {
@@ -706,44 +722,17 @@ void HeuristicPropagator::init_clingo_like_mode(Clingo::PropagateInit &init,
     for (auto it = atoms.begin(); it != atoms.end(); ++it) {
         auto const symbol = it->symbol();
 
-        if (symbol.match("heuristic", 1)) {
+        bool const is_heuristic = symbol.match("heuristic", 1);
+        bool const is_legacy_heuristic = !is_heuristic && symbol.match("prolog_heuristic", 1);
+        if (is_heuristic || is_legacy_heuristic) {
             auto const args = symbol.arguments();
-            if (args.size() == 1 && args[0].type() == Clingo::SymbolType::String) {
-                QueryHeuristicRule rule;
-                rule.original_rule = args[0].string();
-                if (rule.original_rule.find("clingo_not(") != std::string::npos) {
-                    rule.semantics = HeuristicSemantics::Clingo;
-                }
-                else {
-                    rule.semantics = HeuristicSemantics::Alpha;
-                }
-                rule.normalized_rule = normalize_clingo_like_heuristic_rule(rule.original_rule);
-                rule.prolog_rule = normalize_prolog_heuristic_rule(rule.original_rule, rule.semantics);
-                clingo_like_heuristic_rules_.push_back(std::move(rule));
+            if (args.size() != 1 || args[0].type() != Clingo::SymbolType::String) {
+                throw std::runtime_error(std::string("Lazy heuristic Prolog backend: ") +
+                                         (is_heuristic ? "heuristic/1" : "prolog_heuristic/1") +
+                                         " expects a string rule.");
             }
-            else {
-                throw std::runtime_error("Lazy heuristic Prolog backend: heuristic/1 expects a string rule.");
-            }
-        }
-        else if (symbol.match("prolog_heuristic", 1)) {
-            auto const args = symbol.arguments();
-            if (args.size() == 1 && args[0].type() == Clingo::SymbolType::String) {
-                QueryHeuristicRule rule;
-                rule.original_rule = args[0].string();
-                if (rule.original_rule.find("clingo_not(") != std::string::npos) {
-                    rule.semantics = HeuristicSemantics::Clingo;
-                }
-                else {
-                    rule.semantics = HeuristicSemantics::Alpha;
-                }
-                rule.normalized_rule = normalize_clingo_like_heuristic_rule(rule.original_rule);
-                rule.prolog_rule = normalize_prolog_heuristic_rule(rule.original_rule, rule.semantics);
-                clingo_like_heuristic_rules_.push_back(std::move(rule));
-                saw_legacy_prolog_heuristic = true;
-            }
-            else {
-                throw std::runtime_error("Lazy heuristic Prolog backend: prolog_heuristic/1 expects a string rule.");
-            }
+            clingo_like_heuristic_rules_.push_back(make_query_heuristic_rule(args[0].string()));
+            saw_legacy_prolog_heuristic = saw_legacy_prolog_heuristic || is_legacy_heuristic;
         }
     }
 
@@ -848,15 +837,12 @@ void HeuristicPropagator::init_clingo_like_mode(Clingo::PropagateInit &init,
     }
 
     if (use_prolog_query_backend_ && !clingo_like_heuristic_rules_.empty()) {
-        for (auto const &entry : symbols_by_solver_lit_) {
-            add_solver_watch(init, entry.first);
-            add_solver_watch(init, -entry.first);
-        }
-
         std::vector<Clingo::Symbol> known_atoms;
         known_atoms.reserve(symbols_by_solver_lit_.size());
-        for (auto const &entry : symbols_by_solver_lit_) {
-            known_atoms.push_back(entry.second);
+        for (auto const &[lit, symbol] : symbols_by_solver_lit_) {
+            add_solver_watch(init, lit);
+            add_solver_watch(init, -lit);
+            known_atoms.push_back(symbol);
         }
         std::sort(known_atoms.begin(), known_atoms.end(), [](Clingo::Symbol const &a, Clingo::Symbol const &b) {
             return a.to_string() < b.to_string();
@@ -879,9 +865,7 @@ std::vector<std::string> HeuristicPropagator::build_dynamic_trail_facts(
     std::vector<std::string> facts;
     facts.reserve(symbols_by_solver_lit_.size());
 
-    for (auto const &entry : symbols_by_solver_lit_) {
-        Clingo::literal_t const lit = entry.first;
-        auto const &symbol = entry.second;
+    for (auto const &[lit, symbol] : symbols_by_solver_lit_) {
         auto const value = assignment.truth_value(lit);
         if (value == Clingo::TruthValue::True) {
             facts.push_back(symbol_to_fact(symbol));
@@ -898,6 +882,36 @@ std::vector<std::string> HeuristicPropagator::build_dynamic_trail_facts(
     std::sort(facts.begin(), facts.end());
     facts.erase(std::unique(facts.begin(), facts.end()), facts.end());
     return facts;
+}
+
+// Ordinamento condiviso dei candidati euristici (Prolog e clingo-like):
+// priority decrescente, poi weight decrescente, poi tie-break deterministico.
+// Ranked deve esporre .active{priority, weight, rule_index}, .target_string, .lit.
+template <class Ranked>
+static bool ranked_candidate_better(Ranked const &a, Ranked const &b) {
+    if (a.active.priority != b.active.priority) {
+        return a.active.priority > b.active.priority;
+    }
+    if (a.active.weight != b.active.weight) {
+        return a.active.weight > b.active.weight;
+    }
+    if (a.target_string != b.target_string) {
+        return a.target_string < b.target_string;
+    }
+    return a.lit < b.lit;
+}
+
+// Variante usata per scegliere il miglior candidato di uno stesso target:
+// a parita' di (priority, weight) vince la regola dichiarata prima.
+template <class Ranked>
+static bool ranked_candidate_beats_best(Ranked const &candidate, Ranked const &best) {
+    if (candidate.active.priority != best.active.priority) {
+        return candidate.active.priority > best.active.priority;
+    }
+    if (candidate.active.weight != best.active.weight) {
+        return candidate.active.weight > best.active.weight;
+    }
+    return candidate.active.rule_index < best.active.rule_index;
 }
 
 static std::unordered_set<std::string> collect_negated_predicate_signatures(
@@ -1055,12 +1069,7 @@ Clingo::literal_t HeuristicPropagator::decide_with_clingo_like_heuristics(
 
         auto current = best_by_target.find(ranked_candidate.target_string);
         if (current == best_by_target.end() ||
-            ranked_candidate.active.priority > current->second.active.priority ||
-            (ranked_candidate.active.priority == current->second.active.priority &&
-             ranked_candidate.active.weight > current->second.active.weight) ||
-            (ranked_candidate.active.priority == current->second.active.priority &&
-             ranked_candidate.active.weight == current->second.active.weight &&
-             ranked_candidate.active.rule_index < current->second.active.rule_index)) {
+            ranked_candidate_beats_best(ranked_candidate, current->second)) {
             best_by_target[ranked_candidate.target_string] = std::move(ranked_candidate);
         }
     }
@@ -1072,18 +1081,7 @@ Clingo::literal_t HeuristicPropagator::decide_with_clingo_like_heuristics(
     for (auto &entry : best_by_target) {
         ranked.push_back(std::move(entry.second));
     }
-    std::sort(ranked.begin(), ranked.end(), [](RankedCandidate const &a, RankedCandidate const &b) {
-        if (a.active.priority != b.active.priority) {
-            return a.active.priority > b.active.priority;
-        }
-        if (a.active.weight != b.active.weight) {
-            return a.active.weight > b.active.weight;
-        }
-        if (a.target_string != b.target_string) {
-            return a.target_string < b.target_string;
-        }
-        return a.lit < b.lit;
-    });
+    std::sort(ranked.begin(), ranked.end(), ranked_candidate_better<RankedCandidate>);
 
     auto const &best = ranked.front();
     if (lazy_heuristic_debug_enabled()) {
@@ -1100,15 +1098,15 @@ Clingo::literal_t HeuristicPropagator::decide_with_clingo_like_heuristics(
 void HeuristicPropagator::synchronize_query_backend_state(Clingo::Assignment const &assignment) {
     if (!query_backend_) return;
 
-    for (auto const &entry : symbols_by_solver_lit_) {
+    for (auto const &[lit, symbol] : symbols_by_solver_lit_) {
         QueryAtomState state = QueryAtomState::Free;
-        if (assignment.is_true(entry.first)) {
+        if (assignment.is_true(lit)) {
             state = QueryAtomState::True;
         }
-        else if (assignment.is_false(entry.first)) {
+        else if (assignment.is_false(lit)) {
             state = QueryAtomState::False;
         }
-        query_backend_->set_atom_state(entry.second, state);
+        query_backend_->set_atom_state(symbol, state);
     }
 }
 
@@ -1156,13 +1154,8 @@ Clingo::literal_t HeuristicPropagator::decide_with_query_backend(
 
     bool const stats = lazy_prolog_stats_enabled();
     query_backend_stats_.used = true;
-    if (stats) {
-        ++query_backend_stats_.decide_calls;
-    }
+    ++query_backend_stats_.decide_calls;
     ScopedLazyStatsTimer decide_timer(stats, query_backend_stats_.total_decide_time_ms);
-
-    static size_t decide_call_id = 0;
-    ++decide_call_id;
 
     // Full sync is redundant as state is kept in sync incrementally via propagate() and undo()
     // {
@@ -1225,8 +1218,8 @@ Clingo::literal_t HeuristicPropagator::decide_with_query_backend(
         }
     }
 
-    if (lazy_prolog_stats_enabled() || lazy_heuristic_debug_enabled()) {
-        std::cerr << "[lazy-prolog] stats decide_call_id=" << decide_call_id
+    if (stats || lazy_heuristic_debug_enabled()) {
+        std::cerr << "[lazy-prolog] stats decide_call_id=" << query_backend_stats_.decide_calls
                   << " produced=" << candidates.size()
                   << " discarded_assigned=" << discarded_assigned
                   << " discarded_unmapped=" << discarded_unmapped
@@ -1243,12 +1236,7 @@ Clingo::literal_t HeuristicPropagator::decide_with_query_backend(
             for (auto &candidate : ranked) {
                 auto current = best_by_target.find(candidate.target_string);
                 if (current == best_by_target.end() ||
-                    candidate.active.priority > current->second.active.priority ||
-                    (candidate.active.priority == current->second.active.priority &&
-                     candidate.active.weight > current->second.active.weight) ||
-                    (candidate.active.priority == current->second.active.priority &&
-                     candidate.active.weight == current->second.active.weight &&
-                     candidate.active.rule_index < current->second.active.rule_index)) {
+                    ranked_candidate_beats_best(candidate, current->second)) {
                     best_by_target[candidate.target_string] = std::move(candidate);
                 }
             }
@@ -1258,33 +1246,8 @@ Clingo::literal_t HeuristicPropagator::decide_with_query_backend(
             for (auto &entry : best_by_target) {
                 ranked.push_back(std::move(entry.second));
             }
-            std::sort(ranked.begin(), ranked.end(), [](RankedCandidate const &a, RankedCandidate const &b) {
-                if (a.active.priority != b.active.priority) {
-                    return a.active.priority > b.active.priority;
-                }
-                if (a.active.weight != b.active.weight) {
-                    return a.active.weight > b.active.weight;
-                }
-                if (a.target_string != b.target_string) {
-                    return a.target_string < b.target_string;
-                }
-                return a.lit < b.lit;
-            });
         }
-        else {
-            std::sort(ranked.begin(), ranked.end(), [](RankedCandidate const &a, RankedCandidate const &b) {
-                if (a.active.priority != b.active.priority) {
-                    return a.active.priority > b.active.priority;
-                }
-                if (a.active.weight != b.active.weight) {
-                    return a.active.weight > b.active.weight;
-                }
-                if (a.target_string != b.target_string) {
-                    return a.target_string < b.target_string;
-                }
-                return a.lit < b.lit;
-            });
-        }
+        std::sort(ranked.begin(), ranked.end(), ranked_candidate_better<RankedCandidate>);
     }
 
     auto const &best = ranked.front();

@@ -26,7 +26,7 @@ struct SWIPrologHeuristicBackend::Impl {
 };
 
 SWIPrologHeuristicBackend::SWIPrologHeuristicBackend()
-    : impl_(new Impl) {}
+    : impl_(std::make_unique<Impl>()) {}
 
 SWIPrologHeuristicBackend::~SWIPrologHeuristicBackend() {
 #ifdef CLINGO_USE_SWIPL
@@ -34,7 +34,6 @@ SWIPrologHeuristicBackend::~SWIPrologHeuristicBackend() {
         std::remove(impl_->runtime_path.c_str());
     }
 #endif
-    delete impl_;
 }
 
 #ifdef CLINGO_USE_SWIPL
@@ -103,23 +102,22 @@ private:
 };
 
 bool debug_enabled() {
-    char const *value = std::getenv("LAZY_HEURISTIC_DEBUG");
-    if (value == nullptr) return false;
+    // Letto una sola volta: la variabile d'ambiente non cambia a processo avviato
+    // e questa funzione e' chiamata su ogni sincronizzazione di stato.
+    static bool const enabled = [] {
+        char const *value = std::getenv("LAZY_HEURISTIC_DEBUG");
+        if (value == nullptr) return false;
 
-    std::string text(value);
-    return text == "1" ||
-           text == "true" ||
-           text == "TRUE" ||
-           text == "on" ||
-           text == "ON" ||
-           text == "yes" ||
-           text == "YES";
-}
-
-HeuristicSemantics parse_semantics_atom(char const *name) {
-    if (std::string(name) == "alpha") return HeuristicSemantics::Alpha;
-    if (std::string(name) == "clingo") return HeuristicSemantics::Clingo;
-    throw std::runtime_error(std::string("SWI-Prolog heuristic backend: unsupported semantics '") + name + "'.");
+        std::string const text(value);
+        return text == "1" ||
+               text == "true" ||
+               text == "TRUE" ||
+               text == "on" ||
+               text == "ON" ||
+               text == "yes" ||
+               text == "YES";
+    }();
+    return enabled;
 }
 
 std::string atom_term(Clingo::Symbol const &symbol) {
@@ -169,7 +167,6 @@ void retract_runtime_database() {
     std::vector<std::string> predicates = {
         "true_atom(_)",
         "false_atom(_)",
-        "free_atom(_)",
         "static_atom(_)",
         "target_atom(_)",
         "n_value(_)",
@@ -198,7 +195,6 @@ std::string runtime_program(std::vector<QueryHeuristicRule> const &rules,
     std::ostringstream out;
     out << ":- dynamic true_atom/1.\n";
     out << ":- dynamic false_atom/1.\n";
-    out << ":- dynamic free_atom/1.\n";
     out << ":- dynamic static_atom/1.\n";
     out << ":- dynamic target_atom/1.\n";
     out << ":- dynamic n_value/1.\n";
@@ -322,20 +318,19 @@ void SWIPrologHeuristicBackend::set_atom_state(Clingo::Symbol const &atom, Query
     static_cast<void>(state);
     throw std::runtime_error("SWI-Prolog heuristic backend requested, but clingo was built without CLINGO_USE_SWIPL.");
 #else
+    // Un solo goal per aggiornamento: PL_chars_to_term/PL_call sono il collo
+    // di bottiglia della sincronizzazione, quindi retract e assert vengono
+    // combinati in un'unica congiunzione. Lo stato Free e' rappresentato
+    // dall'assenza dell'atomo da true_atom/1 e false_atom/1.
     std::string const term = atom_term(atom);
-    call_prolog("retractall(true_atom(" + term + "))");
-    call_prolog("retractall(false_atom(" + term + "))");
-    call_prolog("retractall(free_atom(" + term + "))");
-
+    std::string goal = "retractall(true_atom(" + term + ")), retractall(false_atom(" + term + "))";
     if (state == QueryAtomState::True) {
-        call_prolog("assertz(true_atom(" + term + "))");
+        goal += ", assertz(true_atom(" + term + "))";
     }
     else if (state == QueryAtomState::False) {
-        call_prolog("assertz(false_atom(" + term + "))");
+        goal += ", assertz(false_atom(" + term + "))";
     }
-    else {
-        call_prolog("assertz(free_atom(" + term + "))");
-    }
+    call_prolog(goal);
 
     if (debug_enabled()) {
         char const *state_name = state == QueryAtomState::True ? "true" :
