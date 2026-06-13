@@ -1,0 +1,33 @@
+
+
+Sto sviluppando la mia tesi su clingo, l'obiettivo è implementare la gestione dinamica degli aggregati su clingo tramite un propagatore, basandomi sui paper: "Domain-Specific Heuristics in Answer Set Programming:
+A Declarative Non-Monotonic Approach" e "Dynamic Aggregates in Expressive ASP Heuristics for
+Configuration Problems".
+
+Il focus del paper è il risparmio di memoria che si ottiene risparmiandoci l'esplosione combinatoria delle euristiche ground
+
+Nei miei testing analizzo 2 diversi approcci (ground and solve e lazy (dynamic aggregates)) e due semantiche (clingo-like semantics e alpha-like semantics)
+
+L'asse semantico è "come si tratta l'informazione parziale?"
+Nella semantica clingo-like, gli aggregati e la negazione sono valutati come nella semantica standard di clingo, cioè rispetto a falsità accertata, non rispetto all'informazione parziale. per cui, per le clingo-like semantics:
+1) not a è soddisfatto solo se a è assegnato a falso
+2) l'aggregato non è dinamico, ma è quello dato dall'assegnamento completo
+
+alpha invece permette il lazy grounding e l'utilizzo di questi aggregati dinamici, per cui:
+1) not a è soddisfatto se a non è assegnato a vero
+2) l'aggregato si valuta sugli atomi attualmente veri nell'assegnamento parziale e cambia durante la ricerca
+
+Tutti gli encoding verranno runnati su clingo con un propagatore cust che entra in gioco quando ci sono degli specifici fatti del tipo heuristic("heuristic(...) :- ...")
+
+Come vedi negli encoding BSP_la,lc,ga,gc (la "g" e la "l" rappresentano gli approcci e "a" e "c" rappresentano le semantiche) abbiamo:
+- la versione gc classica
+- la versione ga che è un adattamento artificioso, non c'è il not nell'euristica e c'è il calcolo di una soglia con quel "sum_value(S), S <= #sum{...}" e l'obiettivo è quello di "ricostruire" il valore corrente dell'aggregato dinamico assicurandoci quindi che l'euristica si attivi durante il solving nonappena la soglia viene superata
+La soglia esiste solo nelle varianti g*, perchè clingo nativo non può esprimere la somma sugli atomi correntemente veri, che è invece compito de lazy, nelle l* infatti sparisce.
+
+Inoltre, rispetto ai paper di riferimento c'è il flattening del weight level, questo poichè le euristiche in alha permettono di utilizzare un (W,P) dove la Priority è un discriminatore globale tra atomi diversi, ad esempio tutti i P = 2 precedono P = 1, la W invece è un discriminante a parità di P.
+in clingo invece la Priority agisce soltanto per preferire due atomi identici e W invece agisce globalmente, per cui è necessario modificare il modo in cui viene calcolato il W per simulare il comportamento inteso nell'encoding originale
+
+W_flat = W + (P*(W+1)) 
+W+1 così che ogni livello di priorità inferiore possa mai superare un peso di livello superiore
+
+è inoltre necessario usare "#max{0;...}" in clingo perchè max su insiemi vuoti in alpha restituisce 0, in clingo restituisce #inf
