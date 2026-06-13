@@ -363,6 +363,14 @@ def collect_ground_counts(args, clingo: str) -> tuple[dict[str, str], str]:
 
 
 def child_memory_mb() -> str:
+    # Peak RSS of the whole solver child process, end-to-end: grounding +
+    # CDNL search + the custom propagator. For lazy variants SWI-Prolog runs
+    # in-process (same clingo process), so this figure also covers the Prolog
+    # engine, the asserted database and the /tmp runtime files -- it is NOT
+    # grounding-only memory. RUSAGE_CHILDREN reports the max ru_maxrss over the
+    # children reaped so far by this runner; we read it right after the JSON
+    # solver run and before collect_ground_counts spawns the second clingo, so
+    # the value reflects that solver run's peak.
     usage = resource.getrusage(resource.RUSAGE_CHILDREN)
     # Linux reports ru_maxrss in KiB.
     return f"{usage.ru_maxrss / 1024:.4f}"

@@ -52,6 +52,16 @@ Origine esatta delle colonne usate nei grafici BSP
    - Comando sorgente: processo Clingo lanciato da benchmark_runner.py.
    - Misura: `resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss / 1024`.
      Su Linux `ru_maxrss` e' in KiB, quindi il valore salvato nel CSV e' in MB.
+   - SIGNIFICATO ONESTO DELLA MISURA: e' il picco RSS *end-to-end* dell'intero
+     processo solver (grounding + search + propagatore custom), non la memoria
+     del solo grounding. Per le varianti lazy (la, lc, la_aux, la_co) SWI-Prolog
+     gira in-process nello stesso processo clingo, quindi questo RSS include
+     anche l'engine Prolog, il database asserito e i file runtime in /tmp. E' un
+     confronto corretto purche' dichiarato cosi': "picco memoria del processo
+     solver", non "memoria del solo grounding". Conseguenza pratica: l'overhead
+     fisso dell'engine fa si' che a n piccolo il lazy possa consumare PIU' RSS
+     dello standard; il risparmio e' asintotico ed emerge quando l'esplosione
+     combinatoria delle euristiche ground dello standard supera quell'overhead.
 
 8. ground_heuristics
    - Comando sorgente: benchmark_runner.py riesegue Clingo con `--text`.
@@ -92,6 +102,19 @@ Origine esatta delle colonne usate nei grafici BSP
     - Non e' una colonna del CSV: viene calcolata qui come
       `1000 * solving_s / choices` quando il numero di scelte e' positivo.
 
+16. total_prolog_query_time_ms (e le altre LAZY_PROLOG_METRIC_FIELDS)
+    - Comando sorgente: stesso run JSON di Clingo; il propagatore lazy stampa su
+      stderr la riga `[lazy-prolog] summary ...` quando LAZY_PROLOG_STATS=1.
+    - Significato: tempo wall speso nell'engine SWI-Prolog in-process per
+      rispondere alle query euristiche per-decisione. Definito solo per le
+      varianti lazy; per gli encoding standard non c'e' nessuna query Prolog.
+
+17. prolog_ms_per_decide
+    - Non e' una colonna del CSV: calcolata qui come
+      `total_prolog_query_time_ms / decide_calls` quando decide_calls > 0.
+    - E' il costo per-decisione del lazy, cioe' il prezzo in tempo che si paga
+      per il grounding sub-lineare: la meta' "tempo" del trade-off di memoria.
+
 Le colonne diagnostiche `status`, `failure_reason`, `exit_code` e
 `memory_limit_hit` sono usate dallo script di benchmark per fermare una variante
 dopo un hit di memoria; questo script le ignora nei grafici.
@@ -116,6 +139,23 @@ BSP_RESULT_CSV_NAMES = (
     "bsp_main_micro_results.csv",
 )
 
+# Strumentazione per-decisione emessa dal propagatore lazy tramite la riga
+# stderr "[lazy-prolog] summary ..." (presente solo per le varianti lazy).
+# Quantifica il rovescio della medaglia del lazy grounding: il costo in tempo
+# delle query Prolog pagato a ogni decisione del solver.
+LAZY_PROLOG_METRIC_FIELDS = [
+    "decide_calls",
+    "total_decide_time_ms",
+    "total_state_sync_time_ms",
+    "total_prolog_query_time_ms",
+    "total_candidate_scan_time_ms",
+    "total_literal_lookup_time_ms",
+    "total_candidate_selection_time_ms",
+    "total_candidates_seen",
+    "max_candidates_seen",
+    "avg_candidates_per_decide",
+]
+
 METRIC_FIELDS = [
     "grounding_s",
     "solving_s",
@@ -132,6 +172,7 @@ METRIC_FIELDS = [
     "ground_query_heuristic_facts",
     "ground_facts",
     "ground_lines",
+    *LAZY_PROLOG_METRIC_FIELDS,
 ]
 INTEGER_METRICS = {
     "choices",
@@ -145,6 +186,9 @@ INTEGER_METRICS = {
     "combined_heuristics",
     "ground_facts",
     "ground_lines",
+    "decide_calls",
+    "total_candidates_seen",
+    "max_candidates_seen",
 }
 LOWER_IS_BETTER_METRICS = {
     "grounding_s",
@@ -159,6 +203,9 @@ LOWER_IS_BETTER_METRICS = {
     "combined_heuristics",
     "ground_lines",
     "solving_ms_per_choice",
+    "total_prolog_query_time_ms",
+    "total_decide_time_ms",
+    "prolog_ms_per_decide",
 }
 
 PLOT_CONFIGS = [
@@ -229,7 +276,7 @@ PLOT_CONFIGS = [
         "metric": "memory_mb",
         "title": "RSS Memory",
         "ylabel": "Memory (GB)",
-        "description": "Peak resident memory usage",
+        "description": "Peak RSS of the whole solver process (grounding + search + propagator).\nFor lazy variants it also includes the in-process SWI-Prolog engine, its\nasserted DB and /tmp runtime files; not grounding-only memory.",
         "filename": "memory_comparison.png",
     },
     {
@@ -253,6 +300,20 @@ PLOT_CONFIGS = [
         "description": "Standard: native #heuristic directives\nLazy: __heuristic and query-driven heuristic facts passed to the propagator",
         "filename": "combined_heuristics.png",
     },
+    {
+        "metric": "prolog_ms_per_decide",
+        "title": "Prolog Query Cost per Decision",
+        "ylabel": "Milliseconds per decision",
+        "description": "Derived as total_prolog_query_time_ms / decide_calls. The price the\nlazy approach pays for sub-linear grounding: defined only for lazy\nvariants, since standard encodings issue no per-decision Prolog query.",
+        "filename": "prolog_ms_per_decide.png",
+    },
+    {
+        "metric": "total_prolog_query_time_ms",
+        "title": "Total Prolog Query Time",
+        "ylabel": "Time (ms)",
+        "description": "Wall time spent inside the in-process SWI-Prolog engine answering\nper-decision heuristic queries. Lazy variants only; the standard\nground-and-solve encodings never call Prolog during search.",
+        "filename": "total_prolog_query_time.png",
+    },
 ]
 
 PLOT_CONFIG_BY_METRIC = {
@@ -269,6 +330,8 @@ MAIN_PLOT_LAYOUT = [
     PLOT_CONFIG_BY_METRIC["conflicts"],
     PLOT_CONFIG_BY_METRIC["restarts"],
     PLOT_CONFIG_BY_METRIC["solving_ms_per_choice"],
+    PLOT_CONFIG_BY_METRIC["prolog_ms_per_decide"],
+    PLOT_CONFIG_BY_METRIC["total_prolog_query_time_ms"],
     PLOT_CONFIG_BY_METRIC["rules"],
     PLOT_CONFIG_BY_METRIC["combined_heuristics"],
 ]
@@ -463,6 +526,13 @@ def load_csv(csv_path: str):
             if solving is not None and choices is not None and choices > 0:
                 row_values["solving_ms_per_choice"] = 1000.0 * solving / choices
 
+            # total_prolog_query_time_ms is already in milliseconds and
+            # decide_calls is a pure count, so the ratio is ms per decision.
+            prolog_query_ms = row_values.get("total_prolog_query_time_ms")
+            decide_calls = row_values.get("decide_calls")
+            if prolog_query_ms is not None and decide_calls is not None and decide_calls > 0:
+                row_values["prolog_ms_per_decide"] = prolog_query_ms / decide_calls
+
             legacy_failed_run = _looks_like_legacy_failed_lazy_run(row_values)
 
             solver_status = row.get("solver_status", row.get("status", "")).strip()
@@ -487,6 +557,10 @@ def load_csv(csv_path: str):
                 "rules",
                 "variables",
                 "memory_mb",
+                # Per-decision propagator stats come from the same JSON solver
+                # run (its stderr), so they share its validity.
+                *LAZY_PROLOG_METRIC_FIELDS,
+                "prolog_ms_per_decide",
             }
             
             ground_metrics = {
