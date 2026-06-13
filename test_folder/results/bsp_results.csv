@@ -1,9 +1,0 @@
-n,variant,seed,setting,clingo_extra_args,status,solver_status,ground_status,failure_reason,exit_code,memory_limit_hit,solving_s,total_s,grounding_s,ground_text_wall_s,choices,conflicts,restarts,rules,variables,memory_mb,ground_heuristics,ground_lazy_heuristic_facts,ground_prolog_heuristic_facts,ground_query_heuristic_facts,ground_facts,ground_lines,decide_calls,total_decide_time_ms,total_state_sync_time_ms,total_prolog_query_time_ms,total_candidate_scan_time_ms,total_literal_lookup_time_ms,total_candidate_selection_time_ms,total_candidates_seen,max_candidates_seen,avg_candidates_per_decide
-10,ga_weak,none,default,,ok,ok,ok,,0,0,0.000000,0.006000,0.006000,0.009983,52,46,0,4960,246,13.2266,1120,0,0,0,10,4232,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-10,ga,none,default,,ok,ok,ok,,0,0,0.000000,0.007000,0.007000,0.011739,10,0,0,4780,242,13.1250,1120,0,0,0,66,4288,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-10,gc_noheur,none,default,,ok,ok,ok,,0,0,0.000000,0.004000,0.004000,0.006900,21,15,0,3476,230,13.2266,0,0,0,0,10,3112,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-10,gc,none,default,,ok,ok,ok,,0,0,0.001000,0.007000,0.006000,0.010022,60,55,0,4960,1366,13.2227,1120,0,0,0,10,4232,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-10,la_aux,none,default,,ok,ok,ok,,0,0,0.094000,0.154000,0.060000,0.010221,60,55,0,4963,1356,19.5742,0,0,2,2,13,4235,60,0.504613,91.0365,0.13258,0.001304,0,0,0,0,0
-10,la_co,none,default,,ok,ok,ok,,0,0,0.001000,0.020000,0.019000,0.004998,8,0,0,37,11,17.0898,0,0,2,2,15,36,8,0.506497,0.178636,0.399296,0.044942,0.007175,0.008727,102,20,12.75
-10,la,none,default,,ok,ok,ok,,0,0,0.001000,0.024000,0.023000,0.006865,10,0,0,3479,230,17.7773,0,0,2,2,17,3119,10,0.530599,0.184454,0.419197,0.047047,0.007082,0.008769,110,20,11
-10,lc,none,default,,ok,ok,ok,,0,0,0.001000,0.026000,0.025000,0.006758,21,15,0,3479,230,17.7383,0,0,2,2,17,3119,21,0.363227,0.700479,0.254909,0.000457,0,0,0,0,0

@@ -90,8 +90,9 @@ def find_clingo(explicit_path: str | None) -> str:
     test_root = Path(__file__).resolve().parents[1]
     repo_root = test_root.parent
     candidates = [
+        repo_root / "clingo-native" / "build" / "bin" / "clingo",
+        repo_root / "clingo-prolog" / "build" / "bin" / "clingo",
         repo_root / "build" / "bin" / "clingo",
-        repo_root / "clingo-modified" / "build" / "bin" / "clingo",
     ]
     for candidate in candidates:
         if candidate.is_file() and os.access(candidate, os.X_OK):
