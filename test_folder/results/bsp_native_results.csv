@@ -1,7 +1,0 @@
-n,variant,seed,setting,clingo_extra_args,status,solver_status,ground_status,failure_reason,exit_code,memory_limit_hit,solving_s,total_s,grounding_s,ground_text_wall_s,choices,conflicts,restarts,rules,variables,memory_mb,ground_heuristics,ground_lazy_heuristic_facts,ground_prolog_heuristic_facts,ground_query_heuristic_facts,ground_facts,ground_lines,decide_calls,total_decide_time_ms,total_state_sync_time_ms,total_prolog_query_time_ms,total_candidate_scan_time_ms,total_literal_lookup_time_ms,total_candidate_selection_time_ms,total_candidates_seen,max_candidates_seen,avg_candidates_per_decide
-3,gc,none,native,,ok,ok,ok,,0,0,0.000000,0.002000,0.002000,0.007976,4,2,0,203,106,13.3438,42,0,0,0,3,95,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-3,la,none,native,,ok,ok,ok,,0,0,0.000000,0.001000,0.001000,0.003050,3,0,0,109,37,13.3438,0,2,0,0,9,59,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-3,lc,none,native,,ok,ok,ok,,0,0,0.000000,0.001000,0.001000,0.003622,4,2,0,109,37,13.3438,0,2,0,0,9,59,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-4,gc,none,native,,ok,ok,ok,,0,0,0.000000,0.001000,0.001000,0.003145,7,4,0,456,216,13.2617,88,0,0,0,4,212,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-4,la,none,native,,ok,ok,ok,,0,0,0.000000,0.001000,0.001000,0.002909,4,0,0,248,76,13.3477,0,2,0,0,10,130,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
-4,lc,none,native,,ok,ok,ok,,0,0,0.000000,0.001000,0.001000,0.003016,7,4,0,248,76,13.3438,0,2,0,0,10,130,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA

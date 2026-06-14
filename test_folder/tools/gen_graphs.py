@@ -1,14 +1,26 @@
 """
 DESCRIZIONE E ORIGINE DEI DATI DEI GRAFICI
 ==========================================
-Questo script genera grafici PNG a partire dai CSV in test_folder/results/.
-Per BSP, il file letto di default e':
+Questo script genera grafici PNG a partire dai CSV per-backend prodotti dai
+benchmark. Il layout dei dati e' uno per backend:
 
-    test_folder/results/bsp_results.csv
+    test_folder/results-native/1_BSP_native.csv
+    test_folder/results-native/2_PUP_native.csv
+    test_folder/results-prolog/1_BSP_prolog.csv
+    test_folder/results-prolog/2_PUP_prolog.csv
+    test_folder/results-<backend>/1_BSP_<backend>_random.csv   (multi-seed)
 
-Il CSV viene prodotto da:
+I grafici vengono scritti in tre alberi distinti:
 
-    test_folder/benchmarks/1_benchmark_bsp.sh
+    test_folder/graphs-native/{1_BSP,2_PUP}/         tutte le varianti, backend native
+    test_folder/graphs-prolog/{1_BSP,2_PUP}/         tutte le varianti, backend prolog
+    test_folder/graphs-native-prolog/{1_BSP,2_PUP}/  confronto native vs prolog,
+                                                     solo varianti lazy
+
+I CSV vengono prodotti da:
+
+    test_folder/benchmarks/0_benchmark.sh  (orchestratore)
+    test_folder/benchmarks/{1,2}_{native,prolog}_{bsp,pup}.sh
     test_folder/benchmarks/benchmark_runner.py
 
 Il generatore grafici non riesegue Clingo: legge le colonne numeriche gia'
@@ -131,13 +143,32 @@ from collections import defaultdict
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 TEST_ROOT = os.path.dirname(SCRIPT_DIR)
-DEFAULT_RESULTS_DIR = os.path.join(TEST_ROOT, "results")
-DEFAULT_GRAPHS_DIR = os.path.join(TEST_ROOT, "results", "graphs")
-BSP_RESULT_CSV_NAMES = (
-    "bsp_results.csv",
-    "bsp_main_results.csv",
-    "bsp_main_micro_results.csv",
-)
+
+# Layout per-backend dei risultati e dei grafici.
+BACKENDS = ("native", "prolog")
+
+
+def results_dir_for(backend: str) -> str:
+    return os.path.join(TEST_ROOT, f"results-{backend}")
+
+
+def graphs_dir_for(backend: str) -> str:
+    return os.path.join(TEST_ROOT, f"graphs-{backend}")
+
+
+GRAPHS_COMPARE_DIR = os.path.join(TEST_ROOT, "graphs-native-prolog")
+
+# Nomi CSV per (problema, backend).
+BSP_CSV_TMPL = "1_BSP_{backend}.csv"
+PUP_CSV_TMPL = "2_PUP_{backend}.csv"
+BSP_RANDOM_CSV_TMPL = "1_BSP_{backend}_random.csv"
+
+# Sottocartelle per problema dentro ogni albero di grafici.
+BSP_SUBDIR = "1_BSP"
+PUP_SUBDIR = "2_PUP"
+
+# Varianti lazy (usate dal confronto native-vs-prolog).
+LAZY_VARIANTS = ("la", "lc", "la_aux", "la_co")
 
 # Strumentazione per-decisione emessa dal propagatore lazy tramite la riga
 # stderr "[lazy-prolog] summary ..." (presente solo per le varianti lazy).
@@ -369,14 +400,14 @@ BSP_THEME = {
         "la_co": "Lazy + Alpha sem + Constr Opt",
     },
     "variant_files": {
-        "gc_noheur": "encodings/BSP/BSP_gc_noheur.lp",
-        "gc": "encodings/BSP/BSP_gc.lp",
-        "ga": "encodings/BSP/BSP_ga.lp",
-        "ga_weak": "encodings/BSP/BSP_ga_weak.lp",
-        "la": "encodings/BSP/BSP_la.lp",
-        "lc": "encodings/BSP/BSP_lc.lp",
-        "la_aux": "encodings/BSP/BSP_la_aux.lp",
-        "la_co": "encodings/BSP/BSP_la_co.lp",
+        "gc_noheur": "encodings-native/1_BSP/BSP_gc_noheur.lp",
+        "gc": "encodings-native/1_BSP/BSP_gc.lp",
+        "ga": "encodings-native/1_BSP/BSP_ga.lp",
+        "ga_weak": "encodings-native/1_BSP/BSP_ga_weak.lp",
+        "la": "encodings-native/1_BSP/BSP_la.lp",
+        "lc": "encodings-native/1_BSP/BSP_lc.lp",
+        "la_aux": "encodings-native/1_BSP/BSP_la_aux.lp",
+        "la_co": "encodings-native/1_BSP/BSP_la_co.lp",
     },
     "variant_colors": {
         "gc_noheur": "#34495E",
@@ -427,74 +458,60 @@ BSP_THEME = {
 }
 
 
+# PUP usa lo STESSO schema di varianti di BSP (gc_noheur, gc, ga, la, lc):
+# standard ground-and-solve (gc/ga) contro lazy (la/lc), piu' il baseline
+# senza euristica (gc_noheur). Non esistono piu' le famiglie pup_double*.
 PUP_THEME = {
     "variant_labels": {
-        "pup":        "Dichiarativo (PUP.lp)",
-        "pup_heur":   "Euristiche Statiche (PUP_heur.lp)",
-        "pup_double_std": "PUP Double #heuristic",
-        "pup_double_aux": "PUP Double #heuristic + Aux",
-        "pup_double": "Aggregati Dinamici (PUP_double_l.lp)",
-        "pup_double_aux_l": "Aggregati Dinamici + Aux",
-        "pup_doublev_std": "PUP DoubleV #heuristic",
-        "pup_doublev_aux": "PUP DoubleV #heuristic + Aux",
-        "pup_doublev":"Aggregati Dinamici Variante (PUP_double_variant_l.lp)",
-        "pup_doublev_aux_l": "Aggregati Dinamici Variante + Aux",
+        "gc_noheur": "G&S + Clingo sem (no heur)",
+        "gc": "G&S + Clingo sem",
+        "ga": "G&S + Alpha sem",
+        "la": "Lazy + Alpha sem",
+        "lc": "Lazy + Clingo sem",
     },
     "variant_files": {
-        "pup": "encodings/PUP/PUP.lp",
-        "pup_heur": "encodings/PUP/PUP_heur.lp",
-        "pup_double_std": "encodings/PUP/PUP_double.lp",
-        "pup_double_aux": "encodings/PUP/PUP_double_aux.lp",
-        "pup_double": "encodings/PUP/PUP_double_l.lp",
-        "pup_double_aux_l": "encodings/PUP/PUP_double_aux_l.lp",
-        "pup_doublev_std": "encodings/PUP/PUP_double_variant.lp",
-        "pup_doublev_aux": "encodings/PUP/PUP_double_variant_aux.lp",
-        "pup_doublev": "encodings/PUP/PUP_double_variant_l.lp",
-        "pup_doublev_aux_l": "encodings/PUP/PUP_double_variant_aux_l.lp",
+        "gc_noheur": "encodings-native/2_PUP/PUP_gc_noheur.lp",
+        "gc": "encodings-native/2_PUP/PUP_gc.lp",
+        "ga": "encodings-native/2_PUP/PUP_ga.lp",
+        "la": "encodings-native/2_PUP/PUP_la.lp",
+        "lc": "encodings-native/2_PUP/PUP_lc.lp",
     },
     "variant_colors": {
-        "pup":        "#E74C3C",
-        "pup_heur":   "#F39C12",
-        "pup_double_std": "#8E44AD",
-        "pup_double_aux": "#6C3483",
-        "pup_double": "#2ECC71",
-        "pup_double_aux_l": "#16A085",
-        "pup_doublev_std": "#8E44AD",
-        "pup_doublev_aux": "#6C3483",
-        "pup_doublev":"#9B59B6",
-        "pup_doublev_aux_l": "#16A085",
+        "gc_noheur": "#34495E",
+        "gc": "#E74C3C",
+        "ga": "#F39C12",
+        "la": "#2ECC71",
+        "lc": "#9B59B6",
     },
     "variant_markers": {
-        "pup":        "o",
-        "pup_heur":   "D",
-        "pup_double_std": "X",
-        "pup_double_aux": "P",
-        "pup_double": "s",
-        "pup_double_aux_l": "*",
-        "pup_doublev_std": "X",
-        "pup_doublev_aux": "P",
-        "pup_doublev":"^",
-        "pup_doublev_aux_l": "*",
+        "gc_noheur": "X",
+        "gc": "o",
+        "ga": "^",
+        "la": "o",
+        "lc": "s",
     },
-    "variant_order": [
-        "pup",
-        "pup_heur",
-        "pup_double_std",
-        "pup_double_aux",
-        "pup_double",
-        "pup_double_aux_l",
-        "pup_doublev_std",
-        "pup_doublev_aux",
-        "pup_doublev",
-        "pup_doublev_aux_l",
-    ],
+    "variant_linestyles": {
+        "gc_noheur": ":",
+        "gc": "--",
+        "ga": "--",
+        "la": "-",
+        "lc": "-",
+    },
+    "variant_order": ["gc_noheur", "gc", "ga", "la", "lc"],
+    "include_zero_metric_variants": {
+        "combined_heuristics": ["gc_noheur"],
+    },
     "xlabel": "Instance size (N)",
-    "baseline": "pup",
+    "suptitle": "PUP Benchmark: Standard vs Lazy Heuristic Grounding",
+    "baseline": "gc_noheur",
+    "heuristic_baseline": "gc",
     "comparison_pairs": [
-        ("pup_double_std", "pup_double", "double std / lazy"),
-        ("pup_double_aux", "pup_double_aux_l", "double aux std / lazy"),
-        ("pup_doublev_std", "pup_doublev", "doublev std / lazy"),
-        ("pup_doublev_aux", "pup_doublev_aux_l", "doublev aux std / lazy"),
+        ("gc", "lc", "gc / lc"),
+        ("ga", "la", "ga / la"),
+    ],
+    "lazy_standard_solving_time_ratio_pairs": [
+        ("gc", "lc"),
+        ("ga", "la"),
     ],
 }
 
@@ -2776,6 +2793,158 @@ def ensure_plot_dependencies():
         sys.exit(1)
 
 
+# ==========================================================================
+# Confronto native vs prolog (solo varianti lazy) -> graphs-native-prolog/
+# ==========================================================================
+COMPARE_METRICS = [
+    ("total_s", "Total Time", "Time (seconds)"),
+    ("solving_s", "Solving Time", "Time (seconds)"),
+    ("grounding_s", "Grounding Time (proxy)", "Time (seconds)"),
+    ("choices", "Choices", "Number of choices"),
+    ("conflicts", "Conflicts", "Number of conflicts"),
+    ("memory_mb", "RSS Memory", "Memory (GB)"),
+    ("combined_heuristics", "Heuristic Grounding", "Ground heuristic entries"),
+    ("prolog_ms_per_decide", "Prolog Query Cost / Decision", "ms per decision"),
+]
+
+# Stile per backend nel confronto: native linea piena, prolog tratteggiata.
+COMPARE_BACKEND_STYLE = {
+    "native": {"linestyle": "-", "fill": False, "alpha": 1.0},
+    "prolog": {"linestyle": "--", "fill": True, "alpha": 0.9},
+}
+
+
+def load_stats(csv_path, theme):
+    """Carica un CSV e ritorna stats ristrette alle varianti note del tema."""
+    if not os.path.isfile(csv_path) or os.path.getsize(csv_path) == 0:
+        return None
+    raw = load_csv(csv_path)
+    if not raw:
+        return None
+    stats = compute_stats(raw)
+    known = set(theme.get("variant_order", []))
+    return {v: data for v, data in stats.items() if v in known}
+
+
+def _plot_compare_metric(ax, metric, stats_by_backend, lazy_variants, theme):
+    import numpy as np
+
+    colors = theme["variant_colors"]
+    markers = theme["variant_markers"]
+    labels = theme["variant_labels"]
+    has_data = False
+
+    for variant in lazy_variants:
+        for backend, stats in stats_by_backend.items():
+            data = stats.get(variant, {}).get(metric)
+            if not data or not data["n"]:
+                continue
+            style = COMPARE_BACKEND_STYLE.get(backend, {"linestyle": "-", "fill": False})
+            x = np.array(data["n"])
+            mean = np.array(data["mean"])
+            sd = np.array(data["gc"])
+            color = colors.get(variant)
+            ax.plot(
+                x, mean,
+                marker=markers.get(variant, "o"),
+                markersize=5, markeredgecolor="white", markeredgewidth=0.7,
+                linewidth=1.9, linestyle=style["linestyle"], color=color,
+                label=f"{labels.get(variant, variant)} [{backend}]",
+            )
+            ax.fill_between(x, mean - sd, mean + sd, color=color,
+                            alpha=VARIANT_FILL_ALPHA)
+            has_data = True
+
+    _apply_y_axis_format(ax, metric)
+    return has_data
+
+
+def generate_comparison_graphs(stats_by_backend, out_dir, theme, problem_label, lazy_variants):
+    """Confronta le stesse varianti lazy tra backend native e prolog."""
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+    except ImportError:
+        print("Matplotlib non installato: salto i grafici di confronto.")
+        return False
+
+    present = {b: s for b, s in stats_by_backend.items() if s}
+    if len(present) < 2:
+        print(f"  [SKIP] confronto {problem_label}: servono entrambi i backend "
+              f"(trovati: {', '.join(present) or 'nessuno'}).")
+        return False
+
+    ordered_lazy = [v for v in theme.get("variant_order", []) if v in lazy_variants]
+    ordered_lazy = [
+        v for v in ordered_lazy
+        if any(v in present[b] for b in present)
+    ]
+    if not ordered_lazy:
+        print(f"  [SKIP] confronto {problem_label}: nessuna variante lazy nei dati.")
+        return False
+
+    os.makedirs(out_dir, exist_ok=True)
+    xlabel = theme.get("xlabel", "Problem size (N)")
+
+    plt.rcParams.update({
+        "font.family": "sans-serif", "font.size": 10,
+        "figure.facecolor": "white", "axes.facecolor": "#FAFAFA",
+        "axes.grid": True, "grid.alpha": 0.3, "grid.linestyle": "--",
+    })
+
+    n_cols = 2
+    n_rows = (len(COMPARE_METRICS) + n_cols - 1) // n_cols
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(14, 4.6 * n_rows))
+    axes_flat = axes.flatten()
+
+    for idx, (metric, title, ylabel) in enumerate(COMPARE_METRICS):
+        ax = axes_flat[idx]
+        has_data = _plot_compare_metric(ax, metric, present, ordered_lazy, theme)
+        ax.set_title(_format_title(metric, title), fontsize=12, fontweight="bold")
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        if has_data:
+            ax.legend(fontsize=8, loc="best")
+        else:
+            ax.text(0.5, 0.5, "No data", transform=ax.transAxes,
+                    ha="center", va="center", fontsize=13, color="#CCC")
+
+    for ax in axes_flat[len(COMPARE_METRICS):]:
+        ax.axis("off")
+
+    fig.suptitle(
+        f"{problem_label}: confronto backend Native vs Prolog (varianti lazy)\n"
+        "linea piena = native, tratteggiata = prolog; banda = ±σ sui seed",
+        fontsize=14, fontweight="bold", y=0.99,
+    )
+    plt.tight_layout(rect=[0, 0.01, 1, 0.95], h_pad=3.0, w_pad=3.0)
+    main_path = os.path.join(out_dir, "comparison_native_vs_prolog.png")
+    plt.savefig(main_path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  Comparison chart saved to '{main_path}'.")
+
+    # Singoli grafici per le metriche piu' importanti del confronto.
+    for metric, title, ylabel in COMPARE_METRICS:
+        fig, ax = plt.subplots(figsize=(8, 5))
+        has_data = _plot_compare_metric(ax, metric, present, ordered_lazy, theme)
+        ax.set_title(_format_title(metric, title), fontsize=13, fontweight="bold")
+        ax.set_xlabel(xlabel, fontsize=11)
+        ax.set_ylabel(ylabel, fontsize=11)
+        if has_data:
+            ax.legend(fontsize=9)
+        else:
+            ax.text(0.5, 0.5, "No data", transform=ax.transAxes,
+                    ha="center", va="center", fontsize=13, color="#AAA")
+        plt.tight_layout()
+        out_path = os.path.join(out_dir, f"{metric}.png")
+        plt.savefig(out_path, dpi=200, bbox_inches="tight")
+        plt.close(fig)
+
+    print(f"  Confronto {problem_label}: {len(COMPARE_METRICS)} metriche in '{out_dir}'.")
+    return True
+
+
 def process_csv(
     csv_path,
     graphs_dir,
@@ -2856,105 +3025,58 @@ def parse_args():
 
     parser = argparse.ArgumentParser(
         prog="gen_graphs.py",
-        description="Generate BSP/PUP benchmark charts from CSV result files.",
+        description="Genera i grafici BSP/PUP dai CSV per-backend (native/prolog).",
         epilog=f"""
-{heading("Commands")}
+{heading("Comandi")}
   {cmd("%(prog)s")}
-      Generate every standard chart: BSP and PUP, without exclusions.
+      Genera tutto: BSP e PUP per ogni backend presente, piu' il confronto
+      native-vs-prolog. Legge anche i CSV randomici se presenti.
 
   {cmd("%(prog)s --reset")}
-      Empty the graph output directory and exit. This is the only command
-      that removes existing graph files.
+      Svuota gli alberi grafici (graphs-native, graphs-prolog,
+      graphs-native-prolog) ed esce. Unico comando che cancella file.
 
-  {cmd("%(prog)s --type bsp")}
-      Generate only standard BSP charts.
+  {cmd("%(prog)s --backend native --type bsp")}
+      Solo BSP, solo backend native.
 
-  {cmd("%(prog)s --type bsp_random")}
-      Generate only randomized BSP charts from bsp_random_results.csv.
+  {cmd("%(prog)s --type compare")}
+      Solo i grafici di confronto native-vs-prolog (varianti lazy).
 
-  {cmd("%(prog)s --type bsp --exclude bspga,bspgcnoheur")}
-      Generate BSP charts in a separate exclusion directory, without the
-      selected variants.
+{heading("CSV attesi")}
+  {value("results-native/1_BSP_native.csv")}   BSP, backend native.
+  {value("results-native/2_PUP_native.csv")}   PUP, backend native.
+  {value("results-prolog/1_BSP_prolog.csv")}   BSP, backend prolog.
+  {value("results-prolog/2_PUP_prolog.csv")}   PUP, backend prolog.
+  {value("results-<b>/1_BSP_<b>_random.csv")}  BSP randomico/multi-seed.
 
-  {cmd("%(prog)s --results-dir DIR --out DIR")}
-      Read result CSV files from a custom directory and write charts elsewhere.
+{heading("Cartelle di output")}
+  {value("graphs-native/1_BSP/")}            BSP, tutte le varianti, native.
+  {value("graphs-native/2_PUP/")}            PUP, tutte le varianti, native.
+  {value("graphs-prolog/1_BSP/")}            BSP, tutte le varianti, prolog.
+  {value("graphs-prolog/2_PUP/")}            PUP, tutte le varianti, prolog.
+  {value("graphs-native-prolog/1_BSP/")}     Confronto native-vs-prolog (lazy).
+  {value("graphs-native-prolog/2_PUP/")}     Confronto native-vs-prolog (lazy).
 
-{heading("Expected CSV files")}
-  {value("bsp_results.csv")}          BSP benchmark results.
-  {value("bsp_main_results.csv")}     BSP benchmark fallback.
-  {value("bsp_main_micro_results.csv")}  BSP benchmark fallback.
-  {value("bsp_random_results.csv")}   Randomized BSP benchmark results.
-  {value("pup_double_results.csv")}   PUP Double-family benchmark results.
-  {value("pup_doublev_results.csv")}  PUP DoubleV-family benchmark results.
-  {value("results.csv")}              legacy BSP fallback.
-
-{heading("Output directories")}
-  {value("results/graphs/bsp/standard/")}      BSP charts with all variants.
-  {value("results/graphs/bsp/no_<variant>/")}  BSP charts with selected variants removed.
-  {value("results/graphs/bsp_random/standard/")}  Randomized BSP charts.
-  {value("results/graphs/pup/")}               PUP Double and DoubleV charts.
-
-{heading("Options")}
-  {opt("--results-dir DIR")}
-      Directory containing benchmark CSV files. Default: results/.
-
-  {opt("--out DIR")}
-      Base output directory for generated PNG charts. Default: graphs.
-
-  {opt("--type {bsp,bsp_random,pup}")}
-      Restrict generation to one benchmark family. Required when using
-      --exclude.
-
-  {opt("--reset")}
-      Empty the graph output directory and exit.
-
-  {opt("--exclude SELECTOR")}
-      Exclude matching variants for the selected --type. Accepts exact filenames with
-      extension, variant ids such as ga_weak/la_co, or compact file stems:
-      lowercase, without spaces, underscores, or extension. Can be repeated
-      or comma-separated.
-
-{heading("Selector examples")}
-  {value("la_co")}                     BSP variant id.
-  {value("ga_weak,la_aux")}            comma-separated BSP variant ids.
-  {value("BSP_ga.lp")}                  exact filename.
-  {value("bspga")}                      compact BSP file stem.
-  {value("PUP_double_aux_l.lp")}        exact filename.
-  {value("pupdoubleauxl")}              compact PUP file stem.
-
-{heading("Examples")}
-  {cmd("%(prog)s")}
-      Generate every chart with default paths.
-
-  {cmd("%(prog)s --results-dir ../results --out ../results/graphs")}
-      Explicit paths when running from test_folder/tools.
-
-  {cmd("%(prog)s --type bsp --exclude BSP_lc.lp")}
-      Exclude the BSP_lc.lp variant from a separate BSP graph set.
-
-  {cmd("%(prog)s --type bsp --exclude la_co,ga_weak,la_aux")}
-      Exclude several BSP variants with a comma-separated list.
-
-  {cmd("%(prog)s --type bsp --exclude la --exclude gc_noheur")}
-      Exclude several variants in one run.
+{heading("Opzioni")}
+  {opt("--backend {{native,prolog}}")}  Limita a un backend. Default: entrambi.
+  {opt("--type {{bsp,pup,bsp_random,compare}}")}  Limita a una famiglia.
+  {opt("--out-root DIR")}            Radice degli alberi grafici. Default: test_folder.
+  {opt("--exclude SELECTOR")}        Esclude varianti (sottocartella no_<variante>).
+  {opt("--reset")}                   Svuota gli alberi grafici ed esce.
         """.strip(),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        "--results-dir",
-        default=DEFAULT_RESULTS_DIR,
-        metavar="DIR",
-        help=(
-            f"Directory containing benchmark CSV files. Default: {DEFAULT_RESULTS_DIR}."
-        ),
+        "--backend",
+        choices=BACKENDS,
+        default=None,
+        help="Limita a un solo backend. Default: tutti quelli con CSV presenti.",
     )
     parser.add_argument(
-        "--out",
-        default=DEFAULT_GRAPHS_DIR,
+        "--out-root",
+        default=TEST_ROOT,
         metavar="DIR",
-        help=(
-            f"Base directory for generated PNG charts. Default: {DEFAULT_GRAPHS_DIR}."
-        ),
+        help=f"Radice in cui creare graphs-<backend>/ e graphs-native-prolog/. Default: {TEST_ROOT}.",
     )
     parser.add_argument(
         "--exclude",
@@ -2963,228 +3085,156 @@ def parse_args():
         default=[],
         metavar="SELECTOR",
         help=(
-            "Exclude variants for the selected --type. Accepts exact filenames with extension "
-            "variant ids such as ga_weak/la_co, or compact file stems: lowercase, "
-            "without spaces, underscores, or extension. Repeat it or use comma-separated "
-            "values."
+            "Esclude varianti per la famiglia scelta. Accetta id variante "
+            "(la, lc, ga, ...), nome file (BSP_lc.lp) o stem compatto. Ripetibile "
+            "o separato da virgole."
         ),
     )
     parser.add_argument(
         "--type",
-        choices=("bsp", "bsp_random", "pup"),
+        choices=("bsp", "pup", "bsp_random", "compare"),
         default=None,
-        help=(
-            "Generate only one benchmark family. Required when using --exclude. "
-            "Without --type and without --exclude, all standard charts are generated."
-        ),
+        help="Genera solo una famiglia. Senza --type vengono generati tutti i grafici.",
     )
     parser.add_argument(
         "--reset",
         action="store_true",
-        help="Empty the graph output directory and exit.",
+        help="Svuota gli alberi grafici ed esce.",
     )
 
     args = parser.parse_args()
     exclude_selectors = _split_exclude_selectors(args.exclude)
-    if args.reset and (args.type or exclude_selectors):
-        parser.error("--reset deve essere usato da solo: non combinare --reset con --type o --exclude.")
-    if exclude_selectors and not args.type:
-        parser.error("--exclude richiede --type bsp, --type bsp_random oppure --type pup.")
+    if args.reset and (args.type or exclude_selectors or args.backend):
+        parser.error("--reset va usato da solo.")
+    if exclude_selectors and args.type not in ("bsp", "pup"):
+        parser.error("--exclude richiede --type bsp oppure --type pup.")
     return args
 
 
 def build_themes():
     bsp_theme = BSP_THEME.copy()
     bsp_theme["suptitle"] = "BSP Benchmark: Standard vs Lazy Heuristic Grounding"
-
-    pup_double_theme = PUP_THEME.copy()
-    pup_double_theme["suptitle"] = "PUP Benchmark — Double Family"
-    pup_double_theme["heuristic_baseline"] = "pup_double_std"
-
-    pup_doublev_theme = PUP_THEME.copy()
-    pup_doublev_theme["suptitle"] = "PUP Benchmark — DoubleV Family"
-    pup_doublev_theme["heuristic_baseline"] = "pup_doublev_std"
-
-    return bsp_theme, pup_double_theme, pup_doublev_theme
+    pup_theme = PUP_THEME.copy()
+    pup_theme["suptitle"] = "PUP Benchmark: Standard vs Lazy Heuristic Grounding"
+    return bsp_theme, pup_theme
 
 
-def process_bsp(results_dir, base_out, exclude_selectors):
-    bsp_csv = _first_nonempty_csv(results_dir, BSP_RESULT_CSV_NAMES)
-    if bsp_csv is None:
-        bsp_csv = os.path.join(results_dir, BSP_RESULT_CSV_NAMES[0])
-    bsp_theme, _, _ = build_themes()
-
-    bsp_user_excluded_order = resolve_excluded_variant_list_quiet(
-        bsp_theme,
-        exclude_selectors,
-    )
-    bsp_excluded = set(bsp_user_excluded_order)
-    bsp_label = "BSP (Balanced Sum Partition)"
-    bsp_out = os.path.join(
-        base_out,
-        "bsp",
-        exclusion_dir_name(bsp_theme, bsp_excluded, bsp_user_excluded_order),
-    )
-    return process_csv(bsp_csv, bsp_out, bsp_theme, bsp_label, excluded_variants=bsp_excluded)
+# Descrittore per problema: tema, template CSV, sottocartella, etichetta.
+PROBLEM_SPECS = {
+    "bsp": {"theme_index": 0, "csv": BSP_CSV_TMPL, "subdir": BSP_SUBDIR, "label": "BSP"},
+    "pup": {"theme_index": 1, "csv": PUP_CSV_TMPL, "subdir": PUP_SUBDIR, "label": "PUP"},
+}
 
 
-def _first_nonempty_csv(results_dir, csv_names):
-    for csv_name in csv_names:
-        csv_path = os.path.join(results_dir, csv_name)
-        if os.path.isfile(csv_path) and os.path.getsize(csv_path) > 0:
-            return csv_path
-    return None
+def _theme_for(problem):
+    bsp_theme, pup_theme = build_themes()
+    return (bsp_theme, pup_theme)[PROBLEM_SPECS[problem]["theme_index"]]
 
 
-def process_bsp_random(results_dir, base_out, exclude_selectors):
-    bsp_csv = os.path.join(results_dir, "bsp_random_results.csv")
-    bsp_theme, _, _ = build_themes()
-    bsp_theme["suptitle"] = "BSP Randomized Search Sensitivity"
+def process_problem(backend, problem, exclude_selectors, out_root):
+    spec = PROBLEM_SPECS[problem]
+    theme = _theme_for(problem)
+    csv_path = os.path.join(results_dir_for(backend), spec["csv"].format(backend=backend))
 
-    bsp_user_excluded_order = resolve_excluded_variant_list_quiet(
-        bsp_theme,
-        exclude_selectors,
-    )
-    bsp_excluded = set(bsp_user_excluded_order)
-    bsp_label = "BSP Randomized Search"
-    bsp_out = os.path.join(
-        base_out,
-        "bsp_random",
-        exclusion_dir_name(bsp_theme, bsp_excluded, bsp_user_excluded_order),
-    )
+    excluded_order = resolve_excluded_variant_list_quiet(theme, exclude_selectors)
+    excluded = set(excluded_order)
+    out = os.path.join(out_root, f"graphs-{backend}", spec["subdir"])
+    if excluded:
+        out = os.path.join(out, exclusion_dir_name(theme, excluded, excluded_order))
+    label = f"{spec['label']} [{backend}]"
+    return process_csv(csv_path, out, theme, label, excluded_variants=excluded)
+
+
+def process_bsp_random(backend, out_root):
+    theme = _theme_for("bsp")
+    theme = theme.copy()
+    theme["suptitle"] = "BSP Randomized Search Sensitivity"
+    csv_path = os.path.join(results_dir_for(backend),
+                            BSP_RANDOM_CSV_TMPL.format(backend=backend))
+    out = os.path.join(out_root, f"graphs-{backend}", BSP_SUBDIR, "random")
     return process_csv(
-        bsp_csv,
-        bsp_out,
-        bsp_theme,
-        bsp_label,
+        csv_path, out, theme, f"BSP Randomized Search [{backend}]",
         title_suffix="Randomized Search",
-        excluded_variants=bsp_excluded,
         include_random_variability=True,
     )
 
 
-def process_pup(results_dir, base_out, exclude_selectors):
-    _, pup_double_theme, pup_doublev_theme = build_themes()
-
-    pup_double_excluded_order = resolve_excluded_variant_list_quiet(
-        pup_double_theme,
-        exclude_selectors,
+def process_compare(problem, out_root):
+    spec = PROBLEM_SPECS[problem]
+    theme = _theme_for(problem)
+    stats_by_backend = {}
+    for backend in BACKENDS:
+        csv_path = os.path.join(results_dir_for(backend), spec["csv"].format(backend=backend))
+        stats = load_stats(csv_path, theme)
+        if stats:
+            stats_by_backend[backend] = stats
+    out = os.path.join(out_root, "graphs-native-prolog", spec["subdir"])
+    print(f"\n{'='*60}\n  Confronto {spec['label']} native vs prolog\n  Output: {out}\n{'='*60}")
+    return generate_comparison_graphs(
+        stats_by_backend, out, theme, spec["label"], LAZY_VARIANTS
     )
-    pup_doublev_excluded_order = resolve_excluded_variant_list_quiet(
-        pup_doublev_theme,
-        exclude_selectors,
-    )
-    seen_double_exclusions = set(pup_double_excluded_order)
-    ordered_exclusions = pup_double_excluded_order + [
-        variant
-        for variant in pup_doublev_excluded_order
-        if variant not in seen_double_exclusions
-    ]
-    pup_excluded = set(ordered_exclusions)
 
-    pup_out = os.path.join(base_out, "pup")
-    if pup_excluded:
-        pup_out = os.path.join(
-            pup_out,
-            exclusion_dir_name(pup_double_theme, pup_excluded, ordered_exclusions),
-        )
 
-    processed_any = False
-    pup_double_csv = os.path.join(results_dir, "pup_double_results.csv")
-    if process_csv(
-        pup_double_csv,
-        pup_out,
-        pup_double_theme,
-        "PUP Double",
-        title_suffix="Double",
-        excluded_variants=set(pup_double_excluded_order),
-    ):
-        processed_any = True
-
-    pup_doublev_csv = os.path.join(results_dir, "pup_doublev_results.csv")
-    if process_csv(
-        pup_doublev_csv,
-        pup_out,
-        pup_doublev_theme,
-        "PUP DoubleV",
-        title_suffix="DoubleV",
-        excluded_variants=set(pup_doublev_excluded_order),
-    ):
-        processed_any = True
-
-    return processed_any
+def _backend_has_csv(backend):
+    for tmpl in (BSP_CSV_TMPL, PUP_CSV_TMPL, BSP_RANDOM_CSV_TMPL):
+        path = os.path.join(results_dir_for(backend), tmpl.format(backend=backend))
+        if os.path.isfile(path) and os.path.getsize(path) > 0:
+            return True
+    return False
 
 
 def main():
     args = parse_args()
-    results_dir = args.results_dir
-    base_out = args.out
-    global_exclude_selectors = _split_exclude_selectors(args.exclude)
+    out_root = args.out_root
+    exclude_selectors = _split_exclude_selectors(args.exclude)
+
+    graph_trees = [os.path.join(out_root, f"graphs-{b}") for b in BACKENDS]
+    graph_trees.append(GRAPHS_COMPARE_DIR if out_root == TEST_ROOT
+                       else os.path.join(out_root, "graphs-native-prolog"))
 
     if args.reset:
-        reset_graphs_dir(base_out)
+        for tree in graph_trees:
+            reset_graphs_dir(tree)
         return
 
-    bsp_theme, pup_double_theme, pup_doublev_theme = build_themes()
-    selected_themes = {
-        "bsp": [bsp_theme],
-        "bsp_random": [bsp_theme],
-        "pup": [pup_double_theme, pup_doublev_theme],
-        None: [bsp_theme, pup_double_theme, pup_doublev_theme],
-    }[args.type]
-    unknown_exclude_selectors = unmatched_exclude_selectors(
-        global_exclude_selectors,
-        selected_themes,
-    )
-    if unknown_exclude_selectors:
-        print(
-            "[ERROR] exclude selector non validi per "
-            f"--type {args.type}: {', '.join(unknown_exclude_selectors)}"
-        )
-        sys.exit(2)
+    # Valida i selettori --exclude contro il tema della famiglia scelta.
+    if exclude_selectors:
+        theme = _theme_for(args.type)
+        unknown = unmatched_exclude_selectors(exclude_selectors, [theme])
+        if unknown:
+            print(f"[ERROR] exclude selector non validi per --type {args.type}: "
+                  f"{', '.join(unknown)}")
+            sys.exit(2)
 
-    expected_csvs = [
-        *(os.path.join(results_dir, name) for name in BSP_RESULT_CSV_NAMES),
-        os.path.join(results_dir, "bsp_random_results.csv"),
-        os.path.join(results_dir, "pup_double_results.csv"),
-        os.path.join(results_dir, "pup_doublev_results.csv"),
-        os.path.join(results_dir, "results.csv"),
-    ]
-    if any(os.path.isfile(path) for path in expected_csvs):
+    backends = [args.backend] if args.backend else list(BACKENDS)
+    if any(_backend_has_csv(b) for b in backends):
         ensure_plot_dependencies()
 
+    want = args.type  # None => tutto
     processed_any = False
-    if args.type in (None, "bsp"):
-        if process_bsp(results_dir, base_out, global_exclude_selectors):
-            processed_any = True
 
-    if args.type in (None, "bsp_random"):
-        if process_bsp_random(results_dir, base_out, global_exclude_selectors):
-            processed_any = True
+    for backend in backends:
+        if want in (None, "bsp"):
+            processed_any |= process_problem(backend, "bsp", exclude_selectors, out_root)
+        if want in (None, "pup"):
+            processed_any |= process_problem(backend, "pup", exclude_selectors, out_root)
+        if want in (None, "bsp_random"):
+            processed_any |= process_bsp_random(backend, out_root)
 
-    if args.type in (None, "pup"):
-        if process_pup(results_dir, base_out, global_exclude_selectors):
-            processed_any = True
-
-    legacy_csv = os.path.join(results_dir, "results.csv")
-    if args.type in (None, "bsp") and not processed_any and os.path.isfile(legacy_csv):
-        print(f"\n[FALLBACK] Trovato file legacy '{legacy_csv}', lo processo come BSP...")
-        legacy_out = os.path.join(base_out, "bsp", "standard")
-        process_csv(legacy_csv, legacy_out, BSP_THEME,
-                    "BSP (Legacy)", title_suffix="legacy",
-                    excluded_variants=resolve_excluded_variants(
-                        BSP_THEME,
-                        global_exclude_selectors,
-                        context="BSP legacy",
-                    ))
-        processed_any = True
+    if want in (None, "compare") and not args.backend:
+        for problem in ("bsp", "pup"):
+            processed_any |= process_compare(problem, out_root)
 
     if not processed_any:
-        print("\nNessun file CSV di risultati trovato.")
-        print("Esegui prima benchmarks/1_benchmark_bsp.sh e/o benchmarks/3_benchmark_pup.sh.")
+        print("\nNessun CSV di risultati trovato.")
+        print("Esegui prima i benchmark, ad esempio: benchmarks/0_benchmark.sh")
         sys.exit(1)
 
-    print(f"\nDone. Tutti i grafici sono in '{base_out}/'.")
+    print("\nFatto. Grafici in:")
+    for backend in backends:
+        print(f"  {os.path.join(out_root, f'graphs-{backend}')}/")
+    if want in (None, "compare") and not args.backend:
+        print(f"  {os.path.join(out_root, 'graphs-native-prolog')}/")
 
 
 if __name__ == "__main__":

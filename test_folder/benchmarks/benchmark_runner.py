@@ -251,8 +251,9 @@ def sanitize_debug_name(value: str) -> str:
 
 
 def dump_json_failure(args, proc: subprocess.CompletedProcess[str]) -> tuple[Path, Path]:
-    test_root = Path(__file__).resolve().parents[1]
-    debug_dir = test_root / "results" / "debug" / "json_failures"
+    # I file di debug vanno accanto al CSV di destinazione (results-<backend>/),
+    # non in una cartella results/ fissa che non esiste piu'.
+    debug_dir = Path(args.csv).resolve().parent / "debug" / "json_failures"
     debug_dir.mkdir(parents=True, exist_ok=True)
     base = "_".join(
         [
@@ -302,11 +303,24 @@ def classify_process_failure(proc: subprocess.CompletedProcess[str]) -> tuple[st
     return "error", f"exit_{proc.returncode}"
 
 
+def resolve_ground_timeout(args) -> int:
+    # Il run testuale di conteggio del grounding e' la sorgente della metrica
+    # bandiera (ground_heuristics vs ground_lazy_heuristic_facts). Per gli
+    # encoding standard a n grande il programma ground delle euristiche e'
+    # enorme (O(n^2)/O(n^3) regole) e stamparlo/parsarlo e' molto piu' lento
+    # del solving: con il solo timeout di solving la metrica diventerebbe NA
+    # proprio sul baseline che vogliamo confrontare. Diamogli quindi un budget
+    # separato e piu' ampio.
+    explicit = getattr(args, "ground_timeout", None)
+    return explicit if explicit else args.timeout
+
+
 def collect_ground_counts(args, clingo: str) -> tuple[dict[str, str], str]:
     cmd = build_clingo_command(args, clingo, json_mode=False)
+    ground_timeout = resolve_ground_timeout(args)
     start = time.perf_counter()
     try:
-        proc = run_command(cmd, args.timeout, args.memory_bytes)
+        proc = run_command(cmd, ground_timeout, args.memory_bytes)
     except subprocess.TimeoutExpired:
         metrics = ground_failure_metrics()
         metrics["ground_text_wall_s"] = format_float(time.perf_counter() - start)
@@ -534,7 +548,15 @@ def parse_args():
     parser.add_argument("--semantics", default="native", help="Semantic label for logs and benchmark configs.")
     parser.add_argument("--csv", required=True, help="CSV file to append.")
     parser.add_argument("--models", type=int, default=DEFAULT_MODELS, help=f"Number of models requested. Default: {DEFAULT_MODELS}.")
-    parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT, help=f"Timeout in seconds. Default: {DEFAULT_TIMEOUT}.")
+    parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT, help=f"Solving timeout in seconds. Default: {DEFAULT_TIMEOUT}.")
+    parser.add_argument(
+        "--ground-timeout",
+        type=int,
+        default=None,
+        help="Timeout (s) per il run testuale di conteggio del grounding. "
+             "Default: uguale a --timeout. Conviene piu' alto per gli encoding "
+             "standard a n grande (la metrica di grounding delle euristiche).",
+    )
     parser.add_argument(
         "--memory-bytes",
         type=int,

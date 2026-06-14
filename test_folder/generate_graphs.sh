@@ -1,79 +1,52 @@
 #!/usr/bin/env bash
-
+# ============================================================
+# Genera tutti i grafici dai CSV per-backend e (opzionale) copia i grafici
+# BSP nativi nella tesi in versione HD + SD.
+#
+# Struttura prodotta da tools/gen_graphs.py:
+#   graphs-native/{1_BSP,2_PUP}/         tutte le varianti, backend native
+#   graphs-prolog/{1_BSP,2_PUP}/         tutte le varianti, backend prolog
+#   graphs-native-prolog/{1_BSP,2_PUP}/  confronto native-vs-prolog (lazy)
+#
+# Override da shell:
+#   RESET_GRAPHS=0            non svuotare gli alberi grafici prima di generare.
+#   PYTHON_BIN=/path/python   interprete con matplotlib/numpy installati.
+#   COPY_THESIS_GRAPHS=0      disattiva la copia nella tesi.
+#   THESIS_GRAPHS_DIR=...     cartella di destinazione (default figures/bsp).
+#   THESIS_GRAPHS_SRC=...     sorgente da copiare (default graphs-native/1_BSP).
+#   THESIS_SD_MAX_WIDTH=900   larghezza massima delle copie SD.
+# ============================================================
 set -euo pipefail
 
-# ==============================================================================
-# CONFIGURAZIONE GRAFICI
-#
-# Ogni voce di DEFAULT_BSP_GRAPH_SETS ha la forma:
-#
-#   nome_set:variante_da_escludere,variante_da_escludere,...
-#
-# - La parte prima di ":" serve solo come etichetta leggibile nei log.
-# - La parte dopo ":" e' la lista delle varianti BSP da togliere dai grafici.
-# - Lascia la parte dopo ":" vuota per generare il set completo standard.
-# - Per aggiungere un nuovo set, aggiungi una nuova riga all'array.
-# - Per non generare piu' un set, commenta o rimuovi la riga.
-#
-# Varianti BSP valide:
-#   gc_noheur gc ga ga_weak la lc la_aux la_co
-#
-# Esempi:
-#   "standard:"                         -> tutte le varianti
-#   "no_la_co:la_co"                    -> esclude solo la_co
-#   "core_only:la_co,ga_weak,la_aux"    -> esclude tre varianti
-#
-# Override rapido da shell:
-#   BSP_GRAPH_SETS="standard: core_only:la_co,ga_weak,la_aux" ./generate_graphs.sh
-#
-# Compatibilita' legacy:
-#   BSP_GRAPH_EXCLUDES="__standard__ bsplaco" ./generate_graphs.sh
-#
-# Copia automatica nella tesi:
-#   COPY_THESIS_GRAPHS=0 ./generate_graphs.sh
-#       disattiva la copia in thesis/Tesi_Lazy_Heuristics.
-#
-#   THESIS_GRAPHS_DIR=/path/tesi/figures/bsp ./generate_graphs.sh
-#       cambia la cartella di destinazione.
-#
-#   THESIS_SD_MAX_WIDTH=900 ./generate_graphs.sh
-#       cambia la larghezza massima delle copie SD.
-#
-# La struttura prodotta e':
-#   thesis/Tesi_Lazy_Heuristics/figures/bsp/HD/<set>/*.png
-#   thesis/Tesi_Lazy_Heuristics/figures/bsp/SD/<set>/*.png
-# ==============================================================================
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+cd "${SCRIPT_DIR}"
+
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 RESET_GRAPHS="${RESET_GRAPHS:-1}"
 COPY_THESIS_GRAPHS="${COPY_THESIS_GRAPHS:-1}"
 THESIS_GRAPHS_RESET="${THESIS_GRAPHS_RESET:-1}"
 THESIS_SD_MAX_WIDTH="${THESIS_SD_MAX_WIDTH:-900}"
-DEFAULT_BSP_GRAPH_SETS=(
-    "standard:"
-    "no_la_co:la_co"
-    "no_la_co_no_ga_weak:la_co,ga_weak"
-    "no_la_co_no_ga_weak_no_la_aux:la_co,ga_weak,la_aux"
-    "no_la_co_no_ga_weak_no_la_aux:la_co,ga_weak,la_aux,ga"
-)
-# ==============================================================================
+THESIS_GRAPHS_DIR="${THESIS_GRAPHS_DIR:-${SCRIPT_DIR}/thesis/Tesi_Lazy_Heuristics/figures/bsp}"
+THESIS_GRAPHS_SRC="${THESIS_GRAPHS_SRC:-${SCRIPT_DIR}/graphs-native/1_BSP}"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
-cd "${SCRIPT_DIR}"
-THESIS_GRAPHS_DIR="${THESIS_GRAPHS_DIR:-${SCRIPT_DIR}/../thesis/Tesi_Lazy_Heuristics/figures/bsp}"
+if [ "${RESET_GRAPHS}" = "1" ]; then
+    "${PYTHON_BIN}" tools/gen_graphs.py --reset
+fi
+
+# Genera tutto: BSP+PUP per ogni backend con CSV presenti, piu' il confronto.
+"${PYTHON_BIN}" tools/gen_graphs.py
 
 copy_graphs_to_thesis() {
     if [[ "${COPY_THESIS_GRAPHS}" != "1" ]]; then
         echo "Copia grafici nella tesi disattivata (COPY_THESIS_GRAPHS=${COPY_THESIS_GRAPHS})."
         return 0
     fi
-
-    local source_dir="${SCRIPT_DIR}/results/graphs/bsp"
-    if [[ ! -d "${source_dir}" ]]; then
-        echo "Nessuna directory BSP trovata in '${source_dir}', salto la copia nella tesi."
+    if [[ ! -d "${THESIS_GRAPHS_SRC}" ]]; then
+        echo "Sorgente grafici '${THESIS_GRAPHS_SRC}' assente, salto la copia nella tesi."
         return 0
     fi
 
-    "${PYTHON_BIN}" - "${source_dir}" "${THESIS_GRAPHS_DIR}" "${THESIS_SD_MAX_WIDTH}" "${THESIS_GRAPHS_RESET}" <<'PY'
+    "${PYTHON_BIN}" - "${THESIS_GRAPHS_SRC}" "${THESIS_GRAPHS_DIR}" "${THESIS_SD_MAX_WIDTH}" "${THESIS_GRAPHS_RESET}" <<'PY'
 import shutil
 import sys
 from pathlib import Path
@@ -140,61 +113,5 @@ if Image is None:
     print("Pillow non disponibile: le copie SD sono identiche agli originali HD.")
 PY
 }
-
-if [[ -n "${BSP_GRAPH_SETS:-}" ]]; then
-    read -r -a ACTIVE_BSP_GRAPH_SETS <<< "${BSP_GRAPH_SETS}"
-elif [[ -n "${BSP_GRAPH_EXCLUDES:-}" ]]; then
-    ACTIVE_BSP_GRAPH_SETS=()
-    for exclude in ${BSP_GRAPH_EXCLUDES}; do
-        if [[ "${exclude}" == "__standard__" ]]; then
-            ACTIVE_BSP_GRAPH_SETS+=("standard:")
-        else
-            ACTIVE_BSP_GRAPH_SETS+=("legacy_${exclude}:${exclude}")
-        fi
-    done
-else
-    ACTIVE_BSP_GRAPH_SETS=("${DEFAULT_BSP_GRAPH_SETS[@]}")
-fi
-
-if [ "${RESET_GRAPHS}" = "1" ]; then
-    "${PYTHON_BIN}" tools/gen_graphs.py --reset
-fi
-
-BSP_RESULTS_AVAILABLE=0
-for bsp_csv_name in bsp_results.csv bsp_main_results.csv bsp_main_micro_results.csv; do
-    if [[ -s "${SCRIPT_DIR}/results/${bsp_csv_name}" ]]; then
-        BSP_RESULTS_AVAILABLE=1
-        break
-    fi
-done
-
-if [[ "${BSP_RESULTS_AVAILABLE}" == "1" ]]; then
-    for graph_set in "${ACTIVE_BSP_GRAPH_SETS[@]}"; do
-        if [[ "${graph_set}" == *":"* ]]; then
-            set_name="${graph_set%%:*}"
-            excluded_variants="${graph_set#*:}"
-        else
-            set_name="custom"
-            excluded_variants="${graph_set}"
-        fi
-
-        if [[ -z "${excluded_variants}" || "${excluded_variants}" == "__standard__" ]]; then
-            echo "Genero grafici BSP '${set_name}' senza esclusioni."
-            "${PYTHON_BIN}" tools/gen_graphs.py --type bsp
-        else
-            echo "Genero grafici BSP '${set_name}' escludendo: ${excluded_variants}"
-            "${PYTHON_BIN}" tools/gen_graphs.py --type bsp --exclude "${excluded_variants}"
-        fi
-    done
-else
-    echo "CSV BSP completo non trovato o vuoto: salto results/graphs/bsp."
-fi
-
-if [[ -f "${SCRIPT_DIR}/results/bsp_random_results.csv" ]]; then
-    echo "Genero grafici BSP randomici da bsp_random_results.csv."
-    "${PYTHON_BIN}" tools/gen_graphs.py --type bsp_random
-else
-    echo "CSV BSP randomico non trovato: salto results/graphs/bsp_random."
-fi
 
 copy_graphs_to_thesis

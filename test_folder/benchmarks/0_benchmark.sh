@@ -1,91 +1,74 @@
 #!/usr/bin/env bash
+# ============================================================
+# Orchestratore: esegue tutti i benchmark per i backend richiesti.
+#
+# Per ogni backend selezionato lancia BSP e/o PUP riusando i wrapper:
+#   1_native_bsp.sh / 1_prolog_bsp.sh   (BSP)
+#   2_native_pup.sh / 2_prolog_pup.sh   (PUP)
+#
+# I risultati finiscono in results-<backend>/ (vedi _bench_lib.sh):
+#   results-native/1_BSP_native.csv   results-native/2_PUP_native.csv
+#   results-prolog/1_BSP_prolog.csv   results-prolog/2_PUP_prolog.csv
+#
+# Override via ambiente:
+#   BACKENDS   backend da eseguire, spazio-separati (default "native prolog")
+#   RUN_BSP    "true"/"false"  (default true)
+#   RUN_PUP    "true"/"false"  (default true)
+#   piu' tutti gli override di _bench_lib.sh (TIMEOUT, VARIANTS, SEEDS,
+#   N_START/N_END/N_STEP, PUP_GLOB, ...).
+#
+# Esempio "run veloce" di prova:
+#   N_START=10 N_END=12 PUP_GLOB='.../double-20.asp' ./0_benchmark.sh
+# ============================================================
 set -euo pipefail
-
-capture_overrides() {
-  local name target
-  for name in "$@"; do
-    if [ "${!name+x}" ]; then
-      target="__OVERRIDE_${name}"
-      printf -v "${target}" "%s" "${!name}"
-    fi
-  done
-}
-
-apply_overrides() {
-  local name source
-  for name in "$@"; do
-    source="__OVERRIDE_${name}"
-    if [ "${!source+x}" ]; then
-      printf -v "${name}" "%s" "${!source}"
-    fi
-  done
-}
-
-LAUNCHER_CONFIG_VARS=(RUN_BSP RUN_PUP ALLOW_LAZY_DEBUG)
-capture_overrides "${LAUNCHER_CONFIG_VARS[@]}"
-
-RUN_BSP=true
-RUN_PUP=false
-ALLOW_LAZY_DEBUG=0
-
-apply_overrides "${LAUNCHER_CONFIG_VARS[@]}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 TEST_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-BSP_SCRIPT="${SCRIPT_DIR}/1_benchmark_bsp.sh"
-PUP_SCRIPT="${SCRIPT_DIR}/3_benchmark_pup.sh"
 
-export RUN_BSP
-export RUN_PUP
+BACKENDS="${BACKENDS:-native prolog}"
+RUN_BSP="${RUN_BSP:-true}"
+RUN_PUP="${RUN_PUP:-true}"
 
-if [ "${ALLOW_LAZY_DEBUG}" != "1" ]; then
-  unset LAZY_HEURISTIC_DEBUG
-  unset LAZY_PROLOG_STATS
-fi
-
-if [ ! -f "${BSP_SCRIPT}" ]; then
-  echo "Errore: script BSP non trovato: ${BSP_SCRIPT}" >&2
-  exit 1
-fi
+run_wrapper() {
+    local script="$1" label="$2"
+    if [ ! -f "${script}" ]; then
+        echo "Errore: script non trovato: ${script}" >&2
+        exit 1
+    fi
+    echo "==============================================================="
+    echo " ${label}"
+    echo "==============================================================="
+    bash "${script}"
+    echo ""
+}
 
 START_TIME=$(date +%s)
 
-if [ "${RUN_BSP}" = "true" ]; then
-  echo "==============================================================="
-  echo " Avvio benchmark BSP"
-  echo "==============================================================="
-  bash "${BSP_SCRIPT}"
-else
-  echo "==============================================================="
-  echo " Benchmark BSP disabilitato (RUN_BSP!=true)"
-  echo "==============================================================="
-fi
+for backend in ${BACKENDS}; do
+    case "${backend}" in
+        native|prolog) ;;
+        *) echo "Backend non valido: '${backend}' (usa native|prolog)" >&2; exit 1 ;;
+    esac
 
-echo ""
-if [ "${RUN_PUP}" = "true" ]; then
-  if [ ! -f "${PUP_SCRIPT}" ]; then
-    echo "Errore: script PUP non trovato: ${PUP_SCRIPT}" >&2
-    exit 1
-  fi
-  echo "==============================================================="
-  echo " Avvio benchmark PUP"
-  echo "==============================================================="
-  bash "${PUP_SCRIPT}"
-else
-  echo "==============================================================="
-  echo " Benchmark PUP disabilitato (RUN_PUP!=true)"
-  echo "==============================================================="
-fi
+    if [ "${RUN_BSP}" = "true" ]; then
+        run_wrapper "${SCRIPT_DIR}/1_${backend}_bsp.sh" "BSP - backend ${backend}"
+    else
+        echo "BSP disabilitato (RUN_BSP=${RUN_BSP})."
+    fi
 
-echo ""
+    if [ "${RUN_PUP}" = "true" ]; then
+        run_wrapper "${SCRIPT_DIR}/2_${backend}_pup.sh" "PUP - backend ${backend}"
+    else
+        echo "PUP disabilitato (RUN_PUP=${RUN_PUP})."
+    fi
+done
+
 END_TIME=$(date +%s)
 TOTAL_SECONDS=$((END_TIME - START_TIME))
-HOURS=$((TOTAL_SECONDS / 3600))
-MINUTES=$(((TOTAL_SECONDS % 3600) / 60))
-SECONDS_REMAINING=$((TOTAL_SECONDS % 60))
-
-echo "==============================================================="
-echo " Benchmark completato."
-printf " Durata totale: %02d ore, %02d minuti, %02d secondi\n" "$HOURS" "$MINUTES" "$SECONDS_REMAINING"
-echo " Risultati disponibili in ${TEST_ROOT}/results"
-echo "==============================================================="
+printf "===============================================================\n"
+printf " Benchmark completato.\n"
+printf " Durata totale: %02d ore, %02d minuti, %02d secondi\n" \
+    $((TOTAL_SECONDS / 3600)) $(((TOTAL_SECONDS % 3600) / 60)) $((TOTAL_SECONDS % 60))
+printf " Backend eseguiti: %s\n" "${BACKENDS}"
+printf " Risultati in: %s/results-<backend>/\n" "${TEST_ROOT}"
+printf "===============================================================\n"
