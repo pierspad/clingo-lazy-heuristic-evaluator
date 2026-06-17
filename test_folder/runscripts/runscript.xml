@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Runscript per la suite "Lazy Heuristics / Dynamic Aggregates".
+
+  ASSI DELL'ESPERIMENTO
+    * backend  -> due SYSTEM:   clingo-native (C++), clingo-prolog (SWI in-process)
+    * variante -> SETTING:      g* = ground-and-solve, l* = lazy/dynamic-aggregates
+                                (la prima lettera) ; *c = clingo-like, *a = alpha-like
+    * famiglia -> BENCHMARK:    BSP (parametrico n), PUP (double-*.asp), HRP (house-*.asp)
+
+  COME SI COMBINANO
+    Ogni SETTING porta uno o piu' <encoding> taggati per famiglia
+    (encoding_tag = bsp|pup|hrp). Ogni <folder> di benchmark ha lo stesso
+    encoding_tag: cosi' la variante "gc" usa l'encoding BSP_gc.lp sui BSP,
+    PUP_gc.lp sui PUP, ecc. L'attributo `tag` del setting indica invece a
+    quali famiglie la variante si applica (le varianti BSP-only ga_weak/
+    la_aux/la_co hanno tag="bsp" e non vengono eseguite su PUP/HRP).
+    I runtag selezionano i setting per famiglia via `tag`.
+
+  ESECUZIONE
+    Entrambi i system vengono eseguiti automaticamente da ogni runtag
+    (il runtag non fissa il system): clingo-native usa encodings-native/,
+    clingo-prolog usa encodings-prolog/.
+
+  Riga di comando finale (vedi templates/seq-generic.sh):
+    programs/SYSTEM  [opzioni clingo]  ISTANZA  ENCODING...
+  con runlim a imporre il timeout (real-time-limit) e la memoria (space-limit).
+-->
+<runscript output="output">
+
+  <!-- ===================== MACCHINE ===================== -->
+  <machine name="local" cpu="local-dev" memory="local"/>
+  <machine name="hpc"   cpu="cluster"   memory="cluster"/>
+
+  <!-- ===================== TEMPLATE DI RUN ===================== -->
+  <config name="seq-generic" template="templates/seq-generic.sh"/>
+
+  <!-- ===================== SYSTEM: BACKEND NATIVE ===================== -->
+  <system name="clingo-native" version="1.0" measures="clasp" config="seq-generic"
+          cmdline="--stats=2 --heuristic=Domain -n 1">
+
+    <setting name="gc_noheur" tag="bsp pup hrp">
+      <encoding file="encodings-native/1_BSP/BSP_gc_noheur.lp" encoding_tag="bsp"/>
+      <encoding file="encodings-native/2_PUP/PUP_gc_noheur.lp" encoding_tag="pup"/>
+      <encoding file="encodings-native/3_HRP/HRP_gc_noheur.lp" encoding_tag="hrp"/>
+    </setting>
+    <setting name="gc" tag="bsp pup hrp">
+      <encoding file="encodings-native/1_BSP/BSP_gc.lp" encoding_tag="bsp"/>
+      <encoding file="encodings-native/2_PUP/PUP_gc.lp" encoding_tag="pup"/>
+      <encoding file="encodings-native/3_HRP/HRP_gc.lp" encoding_tag="hrp"/>
+    </setting>
+    <setting name="ga" tag="bsp pup hrp">
+      <encoding file="encodings-native/1_BSP/BSP_ga.lp" encoding_tag="bsp"/>
+      <encoding file="encodings-native/2_PUP/PUP_ga.lp" encoding_tag="pup"/>
+      <encoding file="encodings-native/3_HRP/HRP_ga.lp" encoding_tag="hrp"/>
+    </setting>
+    <setting name="la" tag="bsp pup hrp">
+      <encoding file="encodings-native/1_BSP/BSP_la.lp" encoding_tag="bsp"/>
+      <encoding file="encodings-native/2_PUP/PUP_la.lp" encoding_tag="pup"/>
+      <encoding file="encodings-native/3_HRP/HRP_la.lp" encoding_tag="hrp"/>
+    </setting>
+    <setting name="lc" tag="bsp pup hrp">
+      <encoding file="encodings-native/1_BSP/BSP_lc.lp" encoding_tag="bsp"/>
+      <encoding file="encodings-native/2_PUP/PUP_lc.lp" encoding_tag="pup"/>
+      <encoding file="encodings-native/3_HRP/HRP_lc.lp" encoding_tag="hrp"/>
+    </setting>
+    <!-- varianti SOLO BSP -->
+    <setting name="ga_weak" tag="bsp">
+      <encoding file="encodings-native/1_BSP/BSP_ga_weak.lp" encoding_tag="bsp"/>
+    </setting>
+    <setting name="la_aux" tag="bsp">
+      <encoding file="encodings-native/1_BSP/BSP_la_aux.lp" encoding_tag="bsp"/>
+    </setting>
+    <setting name="la_co" tag="bsp">
+      <encoding file="encodings-native/1_BSP/BSP_la_co.lp" encoding_tag="bsp"/>
+    </setting>
+  </system>
+
+  <!-- ===================== SYSTEM: BACKEND PROLOG ===================== -->
+  <system name="clingo-prolog" version="1.0" measures="clasp" config="seq-generic"
+          cmdline="--stats=2 --heuristic=Domain -n 1">
+
+    <setting name="gc_noheur" tag="bsp pup hrp">
+      <encoding file="encodings-prolog/1_BSP/BSP_gc_noheur.lp" encoding_tag="bsp"/>
+      <encoding file="encodings-prolog/2_PUP/PUP_gc_noheur.lp" encoding_tag="pup"/>
+      <encoding file="encodings-prolog/3_HRP/HRP_gc_noheur.lp" encoding_tag="hrp"/>
+    </setting>
+    <setting name="gc" tag="bsp pup hrp">
+      <encoding file="encodings-prolog/1_BSP/BSP_gc.lp" encoding_tag="bsp"/>
+      <encoding file="encodings-prolog/2_PUP/PUP_gc.lp" encoding_tag="pup"/>
+      <encoding file="encodings-prolog/3_HRP/HRP_gc.lp" encoding_tag="hrp"/>
+    </setting>
+    <setting name="ga" tag="bsp pup hrp">
+      <encoding file="encodings-prolog/1_BSP/BSP_ga.lp" encoding_tag="bsp"/>
+      <encoding file="encodings-prolog/2_PUP/PUP_ga.lp" encoding_tag="pup"/>
+      <encoding file="encodings-prolog/3_HRP/HRP_ga.lp" encoding_tag="hrp"/>
+    </setting>
+    <setting name="la" tag="bsp pup hrp">
+      <encoding file="encodings-prolog/1_BSP/BSP_la.lp" encoding_tag="bsp"/>
+      <encoding file="encodings-prolog/2_PUP/PUP_la.lp" encoding_tag="pup"/>
+      <encoding file="encodings-prolog/3_HRP/HRP_la.lp" encoding_tag="hrp"/>
+    </setting>
+    <setting name="lc" tag="bsp pup hrp">
+      <encoding file="encodings-prolog/1_BSP/BSP_lc.lp" encoding_tag="bsp"/>
+      <encoding file="encodings-prolog/2_PUP/PUP_lc.lp" encoding_tag="pup"/>
+      <encoding file="encodings-prolog/3_HRP/HRP_lc.lp" encoding_tag="hrp"/>
+    </setting>
+    <!-- varianti SOLO BSP -->
+    <setting name="ga_weak" tag="bsp">
+      <encoding file="encodings-prolog/1_BSP/BSP_ga_weak.lp" encoding_tag="bsp"/>
+    </setting>
+    <setting name="la_aux" tag="bsp">
+      <encoding file="encodings-prolog/1_BSP/BSP_la_aux.lp" encoding_tag="bsp"/>
+    </setting>
+    <setting name="la_co" tag="bsp">
+      <encoding file="encodings-prolog/1_BSP/BSP_la_co.lp" encoding_tag="bsp"/>
+    </setting>
+  </system>
+
+  <!-- ===================== JOB ===================== -->
+  <!-- timeout/memout in secondi / MB. parallel=1 per misure di tempo pulite. -->
+  <seqjob  name="seq-local" timeout="300s" runs="1" memout="8192" parallel="1"/>
+  <distjob name="dist-hpc"  timeout="600s" runs="1" memout="8192"
+           script_mode="timeout" walltime="23h 59m 59s" cpt="4" partition="kr"/>
+
+  <!-- ===================== BENCHMARK (una famiglia per benchmark) ===================== -->
+  <benchmark name="BSP">
+    <folder path="benchmarks/BSP" encoding_tag="bsp"/>
+  </benchmark>
+  <benchmark name="PUP">
+    <folder path="benchmarks/PUP" encoding_tag="pup"/>
+  </benchmark>
+  <benchmark name="HRP">
+    <folder path="benchmarks/HRP" encoding_tag="hrp"/>
+  </benchmark>
+
+  <!-- ===================== PROGETTI ===================== -->
+  <!-- Studio LOCALE (sequenziale). -->
+  <project name="study-local" job="seq-local">
+    <runtag machine="local" benchmark="BSP" tag="bsp"/>
+    <runtag machine="local" benchmark="PUP" tag="pup"/>
+    <runtag machine="local" benchmark="HRP" tag="hrp"/>
+  </project>
+
+  <!-- Studio su CLUSTER (SLURM, distribuito). -->
+  <project name="study-hpc" job="dist-hpc">
+    <runtag machine="hpc" benchmark="BSP" tag="bsp"/>
+    <runtag machine="hpc" benchmark="PUP" tag="pup"/>
+    <runtag machine="hpc" benchmark="HRP" tag="hrp"/>
+  </project>
+
+</runscript>

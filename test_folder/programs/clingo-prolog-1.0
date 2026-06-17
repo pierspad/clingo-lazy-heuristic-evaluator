@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# ============================================================
+# Wrapper "system" per benchmark-tool: backend PROLOG (motore SWI-Prolog
+# in-process per le euristiche query-driven).
+#
+# CRITICO: senza LAZY_HEURISTIC_BACKEND=prolog gli encoding prolog
+# ricadono in silenzio sul backend ausiliario (unknown=fail) e la ricerca
+# gira SENZA euristica, coincidendo con gc_noheur. Qui lo forziamo.
+#
+# Binario reale configurabile via env CLINGO_PROLOG_BIN (cluster-friendly).
+# ============================================================
+set -euo pipefail
+
+: "${CLINGO_PROLOG_BIN:=/home/ribben/Desktop/clingo-lazy-heuristics/clingo-prolog/build/bin/clingo}"
+
+export LAZY_HEURISTIC_BACKEND=prolog
+# Abilita l'emissione della riga "[lazy-prolog] summary ..." su stderr, da cui
+# il resultparser estrae decide_calls e i tempi del propagatore query-driven.
+export LAZY_PROLOG_STATS=1
+
+export LC_ALL=C
+export LC_NUMERIC=C
+
+exec "${CLINGO_PROLOG_BIN}" "$@"

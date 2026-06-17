@@ -1,0 +1,153 @@
+% =====================================================================
+% BOZZA — correzioni alla revisione "correttezza, fallback, confronto equo"
+% Tre lacune segnalate in revisione, distinte da quelle gia' trattate in
+% BOZZA_correzioni_memoria.tex (che resta valida; qui c'e' solo un rimando
+% dove i temi si toccano).
+% NON e' testo definitivo: e' una traccia metodologicamente corretta, da
+% adattare alla tua voce e inserire nei capitoli indicati.
+%
+% Mappa lacuna -> capitolo:
+%   Lacuna 1 (correttezza / invariante) -> "2 - Metodologia" (+ una frase in "3 - Risultati")
+%   Lacuna 2 (fallback backend prolog)  -> "2 - Metodologia"
+%   Lacuna 3 (confronto equo grounding) -> "3 - Risultati" / "4 - Discussione"
+% =====================================================================
+
+
+% ---------------------------------------------------------------------
+% LACUNA 1 -> Capitolo "2 - Metodologia" (validazione di correttezza)
+% ---------------------------------------------------------------------
+\paragraph{Validazione di correttezza: l'euristica non cambia le soluzioni.}
+Un'euristica di dominio e' per definizione un meccanismo di sola \emph{guida}:
+puo' modificare l'\emph{ordine} in cui il solver visita lo spazio di ricerca,
+ma non puo' alterare l'\emph{insieme} degli answer set del programma. Questa e'
+una proprieta' falsificabile, e va verificata empiricamente: tutta la pipeline
+misura prestazioni, ma una misura di prestazione e' priva di valore se le quattro
+varianti non stanno risolvendo lo \emph{stesso} problema. Affianchiamo percio' ai
+benchmark uno \emph{script di regressione} dedicato
+(\texttt{tools/check\_equivalence.py}, lanciato da \texttt{benchmarks/0\_sanity.sh}),
+da eseguire \emph{prima} di ogni campagna di misure e su istanze deliberatamente
+piccole.
+
+Il controllo centrale e' un'\textbf{equivalenza esaustiva} degli answer set. Su
+un'istanza BSP piccola (per default $n=6$) enumeriamo \emph{tutti} i modelli con
+\texttt{clingo -n 0} per ogni variante (\texttt{gc\_noheur}, \texttt{gc},
+\texttt{ga}, \texttt{la}, \texttt{lc}) e per entrambi i backend (native e prolog),
+e verifichiamo che la collezione di answer set sia identica:
+\emph{(i)} tra varianti dello stesso backend e \emph{(ii)} tra i due backend per
+la stessa variante. Il confronto avviene previa \emph{proiezione} sui soli
+predicati che identificano la soluzione (per BSP la partizione \texttt{b/1},
+\texttt{c/1}): e' un passaggio necessario, perche' gli encoding espongono
+\texttt{\#show} diversi --- le varianti ground mostrano anche atomi ausiliari
+come \texttt{sumB/1}, \texttt{sumC/1} --- e confrontare i witness grezzi darebbe
+falsi positivi. Una qualunque divergenza tra le collezioni proiettate indica un
+bug d'encoding (un'euristica che, scorrettamente, \emph{taglia} o \emph{aggiunge}
+soluzioni) e fa fallire lo script con codice di uscita non nullo.
+
+L'enumerazione esaustiva e' praticabile solo su istanze minuscole (lo spazio dei
+modelli cresce in fretta: gia' \texttt{double-20} del PUP ha $\sim\!9\cdot10^5$
+modelli). Per il PUP applichiamo quindi un controllo piu' leggero ma comunque
+significativo: su un'istanza piccola verifichiamo che tutte le varianti e
+entrambi i backend concordino su SAT/UNSAT, riportando le \texttt{choices} a
+conferma del fatto che la guida e' attiva. Questa regressione e' cio' che mette
+la tesi al riparo dalla critica piu' diretta che un relatore puo' muovere ---
+``e come so che la tua euristica e' corretta?'' --- sostituendo a un argomento
+testuale una verifica riproducibile.
+
+
+% ---------------------------------------------------------------------
+% LACUNA 2 -> Capitolo "2 - Metodologia" (guardia anti-fallback prolog)
+% ---------------------------------------------------------------------
+\paragraph{Guardia contro il fallback silenzioso del backend prolog.}
+Il binario \texttt{clingo-prolog} valuta le euristiche query-driven con
+l'interprete SWI-Prolog in-process \emph{soltanto} se e' settata la variabile
+d'ambiente \texttt{LAZY\_HEURISTIC\_BACKEND=prolog}. In sua assenza gli encoding
+prolog --- fatti del tipo
+\texttt{heuristic("... aggregate\_all/holds/is ...")} --- ricadono sul backend
+ausiliario, che non conosce quella sintassi: la regola fallisce \emph{in
+silenzio} (\texttt{unknown\,=\,fail}) e la ricerca prosegue \emph{senza}
+euristica. L'esito e' insidioso proprio perche' non da' errore: il run termina
+correttamente, ma le sue scelte coincidono con quelle di \texttt{gc\_noheur}.
+Senza una guardia esplicita, una singola variabile d'ambiente dimenticata
+falserebbe un'intera colonna di risultati facendoli passare per ``euristica
+lazy''.
+
+La pipeline se ne accorge in modo automatico sfruttando la colonna
+\texttt{decide\_calls}, cioe' il numero di volte in cui il propagatore custom ha
+effettivamente scelto un letterale. Il valore atteso e' netto: una variante lazy
+che usa davvero l'euristica fa \emph{molte} decisioni guidate
+($\texttt{decide\_calls} \gg 0$), mentre una variante caduta nel fallback non
+attiva mai il propagatore e \emph{non} emette nemmeno il riepilogo di runtime, per
+cui \texttt{decide\_calls} risulta nullo o assente (\texttt{NA}). Su questa
+osservazione poggiano due controlli complementari:
+\begin{itemize}
+  \item nel runner (\texttt{benchmark\_runner.py}), ogni run lazy sul backend
+        prolog conclusosi con successo ma con \texttt{decide\_calls} pari a
+        $0$/\texttt{NA} viene marcato nella nuova colonna
+        \texttt{lazy\_heuristic\_inactive} e accompagnato da un \emph{warning}
+        esplicito: il dato resta tracciato ma segnalato come non rappresentativo
+        dell'euristica;
+  \item nello script di regressione (\texttt{check\_equivalence.py}) la stessa
+        condizione e' un \emph{errore}: per ogni variante lazy prolog si
+        pretende $\texttt{decide\_calls} > 0$, e in parallelo si verifica che
+        \texttt{native-la} e \texttt{prolog-la} compiano lo \emph{stesso} numero
+        di \texttt{choices} (se il backend SWI-Prolog non fosse attivo, la
+        \texttt{prolog-la} ricadrebbe su \texttt{gc\_noheur} e divergerebbe dalla
+        \texttt{native-la}).
+\end{itemize}
+Sul backend native la metrica \texttt{decide\_calls} non e' strumentata; li' la
+prova che l'euristica e' attiva e' indiretta, data dal calo verificato delle
+\texttt{choices} rispetto a \texttt{gc\_noheur}.
+
+
+% ---------------------------------------------------------------------
+% LACUNA 3 -> Capitolo "3 - Risultati" / "4 - Discussione" (confronto equo)
+% ---------------------------------------------------------------------
+\paragraph{Confronto equo del grounding: cosa misura (e cosa non misura) il conteggio delle righe ground.}
+Il risparmio di grounding e' quantificato contando righe di testo nel programma
+ground, ma le quantita' confrontate non sono lo stesso tipo di oggetto, e va
+detto esplicitamente per non indurre in errore. Per gli encoding standard
+contiamo le direttive \texttt{\#heuristic} \emph{espanse} dal grounder
+(\texttt{ground\_heuristics}): poiche' il peso contiene l'aggregato come variabile
+--- $((n{+}1)\,S){+}X$ con $S=\#\mathtt{sum}\{Y:c(Y)\}$ --- e gli atomi
+\texttt{c(Y)} sono atomi di scelta, il grounder deve materializzare una direttiva
+distinta per ogni coppia $(X,S)$, ottenendo $\Theta(n^3)$ righe \emph{realmente
+presenti} nel programma ground. Qui il conteggio e' \emph{fedele}: una riga, un
+oggetto materializzato.
+
+Per gli encoding lazy contiamo invece i \emph{fatti-template}
+(\texttt{ground\_lazy\_heuristic\_facts} per il native,
+\texttt{ground\_query\_heuristic\_facts} per il prolog): nel native i due fatti
+\begin{verbatim}
+__heuristic(__target(b), x, __n_c, __bind(s,__sum(c)), ...) :- B = n+1.
+__heuristic(__target(c), x, __n_b, __bind(s,__sum(b)), ...) :- B = n+1.
+\end{verbatim}
+e nel prolog i due fatti-stringa
+\texttt{heuristic("heuristic(b(X),W,0,true) :- ... target\_available(b(X)),
+alpha\_not(c(X)), W is Base*S+X.")} sono \emph{due righe sole}, costanti in $n$.
+Ma --- ed e' il punto da rendere esplicito --- un singolo template non e' una
+singola unita' di lavoro: a runtime esso si espande in \emph{$N$ candidati} (uno
+per ogni target ground \texttt{b(1)},\dots,\texttt{b(n)}), che pero' \emph{non
+passano dal grounder} e quindi non compaiono in nessun conteggio di righe ground.
+In altre parole, il numero di righe ground \textbf{sottostima} il lavoro che il
+backend lazy svolge davvero durante la ricerca.
+
+La risposta corretta alla domanda del relatore --- ``il numero di righe ground
+sottostima il lavoro che il native fa a runtime?'' --- e' dunque \emph{si'}, ed e'
+esattamente cio' che la tesi sostiene: il lazy \emph{non elimina} il costo
+dell'esplosione combinatoria, lo \emph{sposta} da \emph{spazio-di-grounding} a
+\emph{tempo-di-runtime}. Per questo il confronto a una cifra
+``$2$ fatti contro $\Theta(n^3)$ direttive'' va letto per cio' che e': la prova di
+un risparmio in \emph{spazio di grounding} (la materializzazione delle euristiche
+passa da cubica a costante), \emph{non} la prova di un risparmio di lavoro
+complessivo. Il lavoro spostato a runtime e' reale e va misurato a parte: lo
+quantificano \texttt{decide\_calls} (quante decisioni guidate), i candidati
+valutati a ogni decisione (\texttt{total\_candidates\_seen},
+\texttt{avg\_candidates\_per\_decide}) e il tempo speso nel propagatore
+(\texttt{total\_decide\_time\_ms}, e per il prolog
+\texttt{total\_prolog\_query\_time\_ms}). La narrativa va quindi calibrata cosi':
+il conteggio delle righe ground \emph{spiega la causa} del risparmio di memoria e
+ne dimostra l'andamento asintotico; le metriche per-decisione \emph{mostrano il
+prezzo} che il lazy paga in cambio. Questo punto si salda con il caveat sul
+costo per-decisione gia' discusso in \texttt{BOZZA\_correzioni\_memoria.tex}
+(punti 2 e 3), che individua il \emph{crossover} oltre il quale il risparmio
+asintotico in memoria ripaga il sovraccarico runtime.

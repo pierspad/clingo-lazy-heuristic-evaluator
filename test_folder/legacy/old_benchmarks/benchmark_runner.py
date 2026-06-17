@@ -52,6 +52,7 @@ CSV_FIELDS = [
     "total_candidates_seen",
     "max_candidates_seen",
     "avg_candidates_per_decide",
+    "lazy_heuristic_inactive",
 ]
 
 LAZY_PROLOG_STAT_FIELDS = [
@@ -81,6 +82,56 @@ DEFAULT_TIMEOUT = 120
 DEFAULT_MEMORY_BYTES = 8 * 1024 * 1024 * 1024
 DEFAULT_SEMANTICS = "native"
 # ==============================================================================
+
+
+# ==============================================================================
+# SANITY DELL'EURISTICA LAZY (controllo anti-fallback silenzioso)
+# ==============================================================================
+# Nelle nostre convenzioni la PRIMA lettera della variante e' l'approccio:
+#   g* = ground-and-solve (gc, gc_noheur, ga, ga_weak)
+#   l* = lazy / dynamic-aggregates (la, lc, la_aux, la_co)
+# La metrica `decide_calls` (numero di volte in cui il propagatore custom ha
+# scelto un letterale) e' emessa SOLO dal backend prolog, e SOLO se il motore
+# SWI-Prolog query-driven e' davvero entrato in azione. Se gli encoding prolog
+# girano senza LAZY_HEURISTIC_BACKEND=prolog, ricadono in silenzio sul backend
+# ausiliario (unknown=fail): la ricerca gira SENZA euristica e coincide con
+# gc_noheur. In quel caso il backend non emette il summary e `decide_calls`
+# resta NA (oppure 0). Questo e' precisamente il risultato falsato da intercettare.
+def is_lazy_variant(variant: str) -> bool:
+    return str(variant).lower().startswith("l")
+
+
+def is_prolog_backend(clingo_path: str) -> bool:
+    # Il backend e' identificato dal binario: clingo-prolog/build/bin/clingo.
+    # E' il segnale robusto (vale anche per i run random, dove --setting NON e'
+    # il backend) e indipendente dall'ambiente.
+    return "clingo-prolog" in str(clingo_path).replace("\\", "/").lower()
+
+
+def decide_calls_count(value) -> int | None:
+    # Ritorna l'intero decide_calls, o None se la metrica e' assente/non numerica
+    # (NA = il backend prolog non ha emesso il summary => il propagatore non ha
+    # mai deciso).
+    if value in (None, "NA", ""):
+        return None
+    try:
+        return int(float(value))
+    except (TypeError, ValueError):
+        return None
+
+
+def classify_lazy_heuristic_activity(variant: str, clingo_path: str,
+                                     decide_calls) -> str:
+    # "1"  => variante lazy prolog con euristica INATTIVA (fallback sospetto)
+    # "0"  => variante lazy prolog con euristica attiva (decide_calls > 0)
+    # "NA" => non applicabile (variante ground, oppure backend native dove
+    #         decide_calls non e' instrumentato, oppure solve non riuscito)
+    if not is_lazy_variant(variant) or not is_prolog_backend(clingo_path):
+        return "NA"
+    count = decide_calls_count(decide_calls)
+    if count is None or count == 0:
+        return "1"
+    return "0"
 
 
 def find_clingo(explicit_path: str | None) -> str:
@@ -316,6 +367,18 @@ def resolve_ground_timeout(args) -> int:
 
 
 def collect_ground_counts(args, clingo: str) -> tuple[dict[str, str], str]:
+    # NOTA DI CONFRONTO EQUO (grounding) -- importante per l'interpretazione.
+    # Per gli encoding standard contiamo le direttive `#heuristic` espanse dal
+    # grounder (una riga per ciascuna istanza ground): e' una misura FEDELE del
+    # lavoro ground, perche' ogni riga e' realmente materializzata.
+    # Per gli encoding lazy/native contiamo i FATTI-template `__heuristic(...)`
+    # (uno per template): ma un singolo template genera a RUNTIME N candidati
+    # (uno per target ground) che NON passano dal grounder. Quindi
+    # `ground_lazy_heuristic_facts`/`ground_lines` SOTTOSTIMANO il lavoro che il
+    # native fa davvero durante la ricerca: il costo non sparisce, si SPOSTA da
+    # spazio-di-grounding a tempo-di-runtime. E' per questo che il vero lavoro
+    # runtime del native va letto su `decide_calls` e `total_decide_time_ms`
+    # (backend prolog), non sul solo conteggio di righe ground.
     cmd = build_clingo_command(args, clingo, json_mode=False)
     ground_timeout = resolve_ground_timeout(args)
     start = time.perf_counter()
@@ -420,6 +483,7 @@ def run_benchmark(args) -> int:
         "clingo_extra_args": shlex.join(args.clingo_option) if args.clingo_option else "",
     }
     row.update(lazy_prolog_failure_metrics())
+    row["lazy_heuristic_inactive"] = "NA"
     status = "ok"
     failure_reason = ""
     exit_code = EXIT_OK
@@ -464,6 +528,23 @@ def run_benchmark(args) -> int:
         if run_ok and data.get("Result") != "UNKNOWN":
             row.update(parse_solver_metrics(data, memory_mb))
             solver_status = "ok"
+            # Anti-fallback: una variante lazy sul backend prolog DEVE aver fatto
+            # decidere il propagatore SWI-Prolog. decide_calls=0/NA dopo un solve
+            # riuscito significa che la ricerca e' girata senza euristica (coincide
+            # con gc_noheur) -> risultato falsato da segnalare, non da nascondere.
+            inactive = classify_lazy_heuristic_activity(
+                args.variant, clingo, row.get("decide_calls", "NA")
+            )
+            row["lazy_heuristic_inactive"] = inactive
+            if inactive == "1":
+                print(
+                    f"    WARNING: variante lazy '{args.variant}' su backend prolog "
+                    f"con decide_calls={row.get('decide_calls')}: il propagatore "
+                    f"SWI-Prolog NON e' entrato in azione (fallback silenzioso al "
+                    f"backend ausiliario? manca LAZY_HEURISTIC_BACKEND=prolog?). "
+                    f"Questo run NON misura l'euristica: coincide con gc_noheur.",
+                    file=sys.stderr,
+                )
         else:
             if run_ok and data.get("Result") == "UNKNOWN":
                 status = "timeout"

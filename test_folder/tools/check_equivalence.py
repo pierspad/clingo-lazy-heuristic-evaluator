@@ -20,6 +20,11 @@ Cosa controlla
 
 2) Guida della ricerca + wiring del backend prolog.
    Conta le `choices` (a seed fisso, -n 1) di ogni variante. Verifica:
+     - che ogni variante lazy prolog abbia `decide_calls > 0`, cioe' che il
+       propagatore SWI-Prolog sia DAVVERO entrato in azione (prova diretta).
+       decide_calls assente/0 = fallback silenzioso al backend ausiliario
+       (ricerca senza euristica) -> ERRORE. Sul backend native decide_calls
+       non e' instrumentato, quindi la guida li' si verifica via choices;
      - che `la` (lazy alpha) guidi davvero, cioe' faccia MENO choices di
        gc_noheur su BSP (dove la guida e' attesa) -> ERRORE se non guida;
      - che native-`la` e prolog-`la` facciano lo STESSO numero di choices
@@ -33,6 +38,13 @@ Cosa controlla
    intrattabile: double-20 ha ~9*10^5 modelli). Verifica che tutte le
    varianti/ backend concordino su SAT/UNSAT, riporta le choices e applica
    gli stessi guard di guida/wiring del punto (2).
+
+4) HRP (House Reconfiguration Problem, Romero 1 Sez. 6.2) -> EQUIVALENZA
+   ESAUSTIVA su istanza piccola (house-sanity), proiettando su
+   cabinetTOthing/roomTOcabinet, piu' la guida misurata su un'istanza piu'
+   grande (su quella minima il baseline risolve gia' con pochissime choices).
+   HRP non ha aggregati: l'asse interessante e' il 'not' su assegnamento
+   parziale (alpha vs clingo), quindi i guard del punto (2) restano validi.
 
 Uso
 ---
@@ -83,16 +95,36 @@ def backend_env(backend: str) -> dict[str, str]:
         env["LAZY_HEURISTIC_BACKEND"] = "prolog"
     else:
         env.pop("LAZY_HEURISTIC_BACKEND", None)
+    # Abilita il summary su stderr ("[lazy-prolog] summary decide_calls=...") cosi'
+    # da poter verificare che il propagatore prolog sia DAVVERO entrato in azione.
+    env["LAZY_PROLOG_STATS"] = "1"
     return env
 
 
-class ClingoResult:
-    __slots__ = ("result", "witnesses", "choices", "ok")
+def parse_decide_calls(stderr: str) -> int | None:
+    # Estrae decide_calls dal summary del backend prolog. None se il summary non
+    # e' stato emesso (il propagatore non e' mai entrato in azione: fallback).
+    for line in stderr.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("[lazy-prolog] summary"):
+            continue
+        for part in stripped.split():
+            if part.startswith("decide_calls="):
+                try:
+                    return int(part.split("=", 1)[1])
+                except ValueError:
+                    return None
+    return None
 
-    def __init__(self, result, witnesses, choices, ok):
+
+class ClingoResult:
+    __slots__ = ("result", "witnesses", "choices", "decides", "ok")
+
+    def __init__(self, result, witnesses, choices, ok, decides=None):
         self.result = result
         self.witnesses = witnesses  # set[frozenset[str]] | None
         self.choices = choices      # int | None
+        self.decides = decides      # int | None  (decide_calls del backend prolog)
         self.ok = ok
 
 
@@ -133,7 +165,8 @@ def run_clingo(backend, files, *, consts=None, n_models=1, seed=0,
             witnesses.add(frozenset(value))
         if witnesses is None:
             break
-    return ClingoResult(result, witnesses, choices, True)
+    decides = parse_decide_calls(proc.stderr)
+    return ClingoResult(result, witnesses, choices, True, decides=decides)
 
 
 def _nested(data, path, default=None):
@@ -197,9 +230,10 @@ def check_bsp(backends, variants, n, report: Report, solution_preds):
     enc = {b: TEST_ROOT / f"encodings-{b}" / "1_BSP" for b in backends}
     rng = TEST_ROOT / "instances" / "BSP_instances" / "BSP_range.lp"
 
-    # (backend, variant) -> collezione di answer set (proiettati) ; e choices
+    # (backend, variant) -> collezione di answer set (proiettati) ; choices ; decide_calls
     witness_sets: dict[tuple[str, str], set] = {}
     choices: dict[tuple[str, str], int | None] = {}
+    decides: dict[tuple[str, str], int | None] = {}
 
     for backend in backends:
         for v in variants:
@@ -214,6 +248,7 @@ def check_bsp(backends, variants, n, report: Report, solution_preds):
             witness_sets[(backend, v)] = project(enum.witnesses, solution_preds)
             solve = run_clingo(backend, [rng, f], consts=[f"n={n}"], n_models=1)
             choices[(backend, v)] = solve.choices
+            decides[(backend, v)] = solve.decides
 
     if not witness_sets:
         report.error("BSP: nessun risultato raccolto.")
@@ -239,7 +274,7 @@ def check_bsp(backends, variants, n, report: Report, solution_preds):
     if all_equal:
         report.ok("Tutte le varianti/backend producono lo STESSO insieme di soluzioni.")
 
-    _check_guidance(backends, variants, choices, report, problem="BSP")
+    _check_guidance(backends, variants, choices, decides, report, problem="BSP")
 
 
 # --------------------------------------------------------------------------
@@ -252,6 +287,7 @@ def check_pup(backends, variants, instance: Path, report: Report):
 
     results: dict[tuple[str, str], str] = {}
     choices: dict[tuple[str, str], int | None] = {}
+    decides: dict[tuple[str, str], int | None] = {}
     for backend in backends:
         for v in variants:
             f = enc[backend] / f"PUP_{v}.lp"
@@ -261,6 +297,7 @@ def check_pup(backends, variants, instance: Path, report: Report):
             solve = run_clingo(backend, [f, instance], n_models=1)
             results[(backend, v)] = solve.result
             choices[(backend, v)] = solve.choices
+            decides[(backend, v)] = solve.decides
 
     if not results:
         report.error("PUP: nessun risultato raccolto.")
@@ -272,13 +309,75 @@ def check_pup(backends, variants, instance: Path, report: Report):
     else:
         report.error(f"Discordanza SAT/UNSAT tra varianti/backend: {results}.")
 
-    _check_guidance(backends, variants, choices, report, problem="PUP")
+    _check_guidance(backends, variants, choices, decides, report, problem="PUP")
+
+
+# --------------------------------------------------------------------------
+# HRP: equivalenza esaustiva (istanza piccola) + guida (istanza piu' grande)
+# --------------------------------------------------------------------------
+def check_hrp(backends, variants, instance: Path, guidance_instance: Path,
+              report: Report, solution_preds):
+    print(color(f"\n=== HRP ({instance.name}) — equivalenza esaustiva degli answer set ===", BOLD))
+    print(f"  Predicati-soluzione confrontati: {', '.join(sorted(solution_preds))}")
+    enc = {b: TEST_ROOT / f"encodings-{b}" / "3_HRP" for b in backends}
+
+    witness_sets: dict[tuple[str, str], set] = {}
+    for backend in backends:
+        for v in variants:
+            f = enc[backend] / f"HRP_{v}.lp"
+            if not f.is_file():
+                report.warn(f"{backend}/HRP_{v}.lp assente, salto.")
+                continue
+            enum = run_clingo(backend, [instance, f], n_models=0, project=True)
+            if not enum.ok or enum.witnesses is None:
+                report.error(f"{backend}/HRP_{v}: enumerazione fallita ({enum.result}).")
+                continue
+            witness_sets[(backend, v)] = project(enum.witnesses, solution_preds)
+
+    if not witness_sets:
+        report.error("HRP: nessun risultato raccolto.")
+        return
+
+    reference_key = next(iter(witness_sets))
+    reference = witness_sets[reference_key]
+    print(color(f"\n  Riferimento: {reference_key[0]}/{reference_key[1]} "
+                f"-> {len(reference)} answer set", BOLD))
+    all_equal = True
+    for key, wset in witness_sets.items():
+        if wset == reference:
+            report.ok(f"{key[0]}/{key[1]}: {len(wset)} answer set, identici al riferimento.")
+        else:
+            all_equal = False
+            only_ref = len(reference - wset)
+            only_here = len(wset - reference)
+            report.error(
+                f"{key[0]}/{key[1]}: collezione DIVERSA "
+                f"({len(wset)} answer set; +{only_here}/-{only_ref} vs riferimento)."
+            )
+    if all_equal:
+        report.ok("Tutte le varianti/backend producono lo STESSO insieme di soluzioni.")
+
+    # La guida si misura su un'istanza non banale (su quella minima di
+    # equivalenza il baseline risolve gia' con pochissime choices).
+    print(color(f"\n  (guida HRP misurata su istanza piu' grande: {guidance_instance.name})", YELLOW))
+    choices: dict[tuple[str, str], int | None] = {}
+    decides: dict[tuple[str, str], int | None] = {}
+    for backend in backends:
+        for v in variants:
+            f = enc[backend] / f"HRP_{v}.lp"
+            if not f.is_file():
+                continue
+            solve = run_clingo(backend, [guidance_instance, f], n_models=1, timeout=120)
+            choices[(backend, v)] = solve.choices
+            decides[(backend, v)] = solve.decides
+
+    _check_guidance(backends, variants, choices, decides, report, problem="HRP")
 
 
 # --------------------------------------------------------------------------
 # Guida della ricerca + wiring del backend prolog
 # --------------------------------------------------------------------------
-def _check_guidance(backends, variants, choices, report: Report, *, problem: str):
+def _check_guidance(backends, variants, choices, decides, report: Report, *, problem: str):
     print(color(f"\n  --- {problem}: guida della ricerca (choices, seed=0) ---", BOLD))
     for backend in backends:
         line = "  ".join(
@@ -286,6 +385,35 @@ def _check_guidance(backends, variants, choices, report: Report, *, problem: str
             for v in variants if (backend, v) in choices
         )
         print(f"    {backend:7s} | {line}")
+
+    # (0) Attivita' dell'euristica lazy sul backend prolog: decide_calls > 0.
+    # E' la prova DIRETTA che il propagatore SWI-Prolog e' entrato in azione.
+    # decide_calls assente/0 = fallback silenzioso al backend ausiliario
+    # (la ricerca gira senza euristica). Sul backend native decide_calls NON e'
+    # instrumentato (None): in quel caso la guida e' verificata indirettamente
+    # dal calo di choices (controllo 2a).
+    if "prolog" in backends:
+        print(color(f"\n  --- {problem}: attivita' euristica lazy (decide_calls, backend prolog) ---", BOLD))
+        line = "  ".join(
+            f"{v}={decides.get(('prolog', v))}"
+            for v in variants if ('prolog', v) in decides
+        )
+        print(f"    prolog  | {line}")
+        for v in variants:
+            if not v.lower().startswith("l"):
+                continue  # solo le varianti lazy attivano il propagatore
+            if ("prolog", v) not in decides:
+                continue
+            dc = decides.get(("prolog", v))
+            if dc is None or dc == 0:
+                report.error(
+                    f"prolog/{v}: decide_calls={dc} -> il propagatore SWI-Prolog "
+                    f"NON e' entrato in azione (fallback silenzioso al backend "
+                    f"ausiliario? manca LAZY_HEURISTIC_BACKEND=prolog?). "
+                    f"Il run coincide con gc_noheur e NON misura l'euristica."
+                )
+            else:
+                report.ok(f"prolog/{v}: decide_calls={dc} > 0 (propagatore attivo).")
 
     # (2a) la flagship `la` deve guidare: meno choices del baseline gc_noheur.
     for backend in backends:
@@ -327,7 +455,7 @@ def _check_guidance(backends, variants, choices, report: Report, *, problem: str
             if c is not None and c >= base:
                 report.warn(
                     f"{backend}/{v}: {c} choices >= gc_noheur {base} "
-                    f"(nessuna riduzione; atteso per la semantica clingo su BSP)."
+                    f"(nessuna riduzione; atteso per la semantica clingo)."
                 )
 
 
@@ -351,8 +479,23 @@ def parse_args():
                    default=str(TEST_ROOT / "instances" / "PUP_instances" /
                                "Double" / "double-20.asp"),
                    help="Istanza PUP per il controllo leggero.")
+    p.add_argument("--hrp-variants", nargs="+",
+                   default=["gc_noheur", "gc", "ga", "la", "lc"],
+                   help="Varianti HRP da confrontare.")
+    p.add_argument("--hrp-instance",
+                   default=str(TEST_ROOT / "instances" / "HRP_instances" /
+                               "house-sanity.asp"),
+                   help="Istanza HRP piccola per l'equivalenza esaustiva.")
+    p.add_argument("--hrp-guidance-instance",
+                   default=str(TEST_ROOT / "instances" / "HRP_instances" /
+                               "house-10.asp"),
+                   help="Istanza HRP piu' grande su cui misurare la guida.")
+    p.add_argument("--hrp-solution-preds", nargs="+",
+                   default=["cabinetTOthing", "roomTOcabinet"],
+                   help="Predicati che identificano la soluzione HRP.")
     p.add_argument("--skip-bsp", action="store_true")
     p.add_argument("--skip-pup", action="store_true")
+    p.add_argument("--skip-hrp", action="store_true")
     p.add_argument("--strict-guidance", action="store_true",
                    help="Tratta i problemi di guida come errori, non warning.")
     return p.parse_args()
@@ -376,6 +519,16 @@ def main() -> int:
             check_pup(args.backends, args.pup_variants, instance, report)
         else:
             report.warn(f"Istanza PUP non trovata, salto PUP: {instance}")
+    if not args.skip_hrp:
+        hrp_inst = Path(args.hrp_instance)
+        hrp_guid = Path(args.hrp_guidance_instance)
+        if not hrp_guid.is_file():
+            hrp_guid = hrp_inst  # fallback: usa la stessa istanza piccola
+        if hrp_inst.is_file():
+            check_hrp(args.backends, args.hrp_variants, hrp_inst, hrp_guid,
+                      report, set(args.hrp_solution_preds))
+        else:
+            report.warn(f"Istanza HRP non trovata, salto HRP: {hrp_inst}")
 
     print(color("\n=== Riepilogo ===", BOLD))
     print(f"  Errori:  {len(report.errors)}")

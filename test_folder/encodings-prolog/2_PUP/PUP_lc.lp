@@ -36,10 +36,10 @@ assignable_zone_unit(Z,U-1) :- zone2sensor(Z,S), assigned_sensor_unit(S,U), comU
 assignable_zone_unit(Z,U+1) :- zone2sensor(Z,S), assigned_sensor_unit(S,U), comUnit(U+1).
 
 zone_blocked_on_unit(Z,UZ) :- assigned_sensor_unit(S,US), zone2sensor(Z,S),
-    comUnit(UZ), (US-UZ)**2 > 1.
+    comUnit(UZ), |US-UZ| > 1.
 
 zone_blocked_on_unit(Z,UZ) :- assigned_zone_unit(Z1,UZ1), zone2sensor(Z,S),
-    zone2sensor(Z1,S), comUnit(UZ), (UZ-UZ1)**2 > 4.
+    zone2sensor(Z1,S), comUnit(UZ), |UZ-UZ1| > 2.
 
 zone_blocked_on_unit(Z,U) :- zone2sensor(Z,_), comUnit(U),
     2 <= #count{Z1: assigned_zone_unit(Z1,U), Z1 != Z}.
@@ -59,10 +59,10 @@ assignable_sensor_unit(S,U-1) :- zone2sensor(Z,S), assigned_zone_unit(Z,U), comU
 assignable_sensor_unit(S,U+1) :- zone2sensor(Z,S), assigned_zone_unit(Z,U), comUnit(U+1).
 
 sensor_blocked_on_unit(S,US) :- assigned_zone_unit(Z,UZ), zone2sensor(Z,S),
-    comUnit(US), (UZ-US)**2 > 1.
+    comUnit(US), |UZ-US| > 1.
 
 sensor_blocked_on_unit(S,US) :- assigned_sensor_unit(S1,US1), zone2sensor(Z,S),
-    zone2sensor(Z,S1), comUnit(US), (US-US1)**2 > 4.
+    zone2sensor(Z,S1), comUnit(US), |US-US1| > 2.
 
 sensor_blocked_on_unit(S,U) :- zone2sensor(_,S), comUnit(U),
     2 <= #count{S1: assigned_sensor_unit(S1,U), S1 != S}.
@@ -112,7 +112,7 @@ num_forbidden_places_of_sensors(S,N1+4) :- assignable_sensor_unit(S,_),
 :- zone2sensor(Z,_), not assigned_zone(Z).
 :- zone2sensor(_,S), not assigned_sensor(S).
 
-:- zone2sensor(Z,S), assigned_sensor_unit(S,U1), assigned_zone_unit(Z,U2), (U1-U2)**2 > 1.
+:- zone2sensor(Z,S), assigned_sensor_unit(S,U1), assigned_zone_unit(Z,U2), |U1-U2| > 1.
 
 
 %%% heuristics (stringhe Prolog, semantica clingo: clingo_not)

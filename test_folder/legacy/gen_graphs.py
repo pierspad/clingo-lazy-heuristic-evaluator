@@ -6,16 +6,18 @@ benchmark. Il layout dei dati e' uno per backend:
 
     test_folder/results-native/1_BSP_native.csv
     test_folder/results-native/2_PUP_native.csv
+    test_folder/results-native/3_HRP_native.csv
     test_folder/results-prolog/1_BSP_prolog.csv
     test_folder/results-prolog/2_PUP_prolog.csv
+    test_folder/results-prolog/3_HRP_prolog.csv
     test_folder/results-<backend>/1_BSP_<backend>_random.csv   (multi-seed)
 
 I grafici vengono scritti in tre alberi distinti:
 
-    test_folder/graphs-native/{1_BSP,2_PUP}/         tutte le varianti, backend native
-    test_folder/graphs-prolog/{1_BSP,2_PUP}/         tutte le varianti, backend prolog
-    test_folder/graphs-native-prolog/{1_BSP,2_PUP}/  confronto native vs prolog,
-                                                     solo varianti lazy
+    test_folder/graphs-native/{1_BSP,2_PUP,3_HRP}/         tutte le varianti, backend native
+    test_folder/graphs-prolog/{1_BSP,2_PUP,3_HRP}/         tutte le varianti, backend prolog
+    test_folder/graphs-native-prolog/{1_BSP,2_PUP,3_HRP}/  confronto native vs prolog,
+                                                           solo varianti lazy
 
 I CSV vengono prodotti da:
 
@@ -161,11 +163,13 @@ GRAPHS_COMPARE_DIR = os.path.join(TEST_ROOT, "graphs-native-prolog")
 # Nomi CSV per (problema, backend).
 BSP_CSV_TMPL = "1_BSP_{backend}.csv"
 PUP_CSV_TMPL = "2_PUP_{backend}.csv"
+HRP_CSV_TMPL = "3_HRP_{backend}.csv"
 BSP_RANDOM_CSV_TMPL = "1_BSP_{backend}_random.csv"
 
 # Sottocartelle per problema dentro ogni albero di grafici.
 BSP_SUBDIR = "1_BSP"
 PUP_SUBDIR = "2_PUP"
+HRP_SUBDIR = "3_HRP"
 
 # Varianti lazy (usate dal confronto native-vs-prolog).
 LAZY_VARIANTS = ("la", "lc", "la_aux", "la_co")
@@ -503,6 +507,65 @@ PUP_THEME = {
     },
     "xlabel": "Instance size (N)",
     "suptitle": "PUP Benchmark: Standard vs Lazy Heuristic Grounding",
+    "baseline": "gc_noheur",
+    "heuristic_baseline": "gc",
+    "comparison_pairs": [
+        ("gc", "lc", "gc / lc"),
+        ("ga", "la", "ga / la"),
+    ],
+    "lazy_standard_solving_time_ratio_pairs": [
+        ("gc", "lc"),
+        ("ga", "la"),
+    ],
+}
+
+
+# HRP usa lo STESSO schema di varianti di BSP/PUP (gc_noheur, gc, ga, la, lc).
+# A differenza degli altri due, l'euristica HRP NON contiene aggregati: la
+# differenza ground-vs-lazy e' sul 'not' valutato su assegnamento parziale
+# (semantica alpha vs clingo), non sull'esplosione del grounding aggregati.
+HRP_THEME = {
+    "variant_labels": {
+        "gc_noheur": "G&S + Clingo sem (no heur)",
+        "gc": "G&S + Clingo sem",
+        "ga": "G&S + Alpha sem",
+        "la": "Lazy + Alpha sem",
+        "lc": "Lazy + Clingo sem",
+    },
+    "variant_files": {
+        "gc_noheur": "encodings-native/3_HRP/HRP_gc_noheur.lp",
+        "gc": "encodings-native/3_HRP/HRP_gc.lp",
+        "ga": "encodings-native/3_HRP/HRP_ga.lp",
+        "la": "encodings-native/3_HRP/HRP_la.lp",
+        "lc": "encodings-native/3_HRP/HRP_lc.lp",
+    },
+    "variant_colors": {
+        "gc_noheur": "#34495E",
+        "gc": "#E74C3C",
+        "ga": "#F39C12",
+        "la": "#2ECC71",
+        "lc": "#9B59B6",
+    },
+    "variant_markers": {
+        "gc_noheur": "X",
+        "gc": "o",
+        "ga": "^",
+        "la": "o",
+        "lc": "s",
+    },
+    "variant_linestyles": {
+        "gc_noheur": ":",
+        "gc": "--",
+        "ga": "--",
+        "la": "-",
+        "lc": "-",
+    },
+    "variant_order": ["gc_noheur", "gc", "ga", "la", "lc"],
+    "include_zero_metric_variants": {
+        "combined_heuristics": ["gc_noheur"],
+    },
+    "xlabel": "Instance size (persons N)",
+    "suptitle": "HRP Benchmark: Standard vs Lazy Domain Heuristics (not, no aggregates)",
     "baseline": "gc_noheur",
     "heuristic_baseline": "gc",
     "comparison_pairs": [
@@ -3045,21 +3108,24 @@ def parse_args():
 {heading("CSV attesi")}
   {value("results-native/1_BSP_native.csv")}   BSP, backend native.
   {value("results-native/2_PUP_native.csv")}   PUP, backend native.
+  {value("results-native/3_HRP_native.csv")}   HRP, backend native.
   {value("results-prolog/1_BSP_prolog.csv")}   BSP, backend prolog.
   {value("results-prolog/2_PUP_prolog.csv")}   PUP, backend prolog.
+  {value("results-prolog/3_HRP_prolog.csv")}   HRP, backend prolog.
   {value("results-<b>/1_BSP_<b>_random.csv")}  BSP randomico/multi-seed.
 
 {heading("Cartelle di output")}
   {value("graphs-native/1_BSP/")}            BSP, tutte le varianti, native.
   {value("graphs-native/2_PUP/")}            PUP, tutte le varianti, native.
+  {value("graphs-native/3_HRP/")}            HRP, tutte le varianti, native.
   {value("graphs-prolog/1_BSP/")}            BSP, tutte le varianti, prolog.
   {value("graphs-prolog/2_PUP/")}            PUP, tutte le varianti, prolog.
-  {value("graphs-native-prolog/1_BSP/")}     Confronto native-vs-prolog (lazy).
-  {value("graphs-native-prolog/2_PUP/")}     Confronto native-vs-prolog (lazy).
+  {value("graphs-prolog/3_HRP/")}            HRP, tutte le varianti, prolog.
+  {value("graphs-native-prolog/{{1_BSP,2_PUP,3_HRP}}/")}  Confronto native-vs-prolog (lazy).
 
 {heading("Opzioni")}
   {opt("--backend {{native,prolog}}")}  Limita a un backend. Default: entrambi.
-  {opt("--type {{bsp,pup,bsp_random,compare}}")}  Limita a una famiglia.
+  {opt("--type {{bsp,pup,hrp,bsp_random,compare}}")}  Limita a una famiglia.
   {opt("--out-root DIR")}            Radice degli alberi grafici. Default: test_folder.
   {opt("--exclude SELECTOR")}        Esclude varianti (sottocartella no_<variante>).
   {opt("--reset")}                   Svuota gli alberi grafici ed esce.
@@ -3092,7 +3158,7 @@ def parse_args():
     )
     parser.add_argument(
         "--type",
-        choices=("bsp", "pup", "bsp_random", "compare"),
+        choices=("bsp", "pup", "hrp", "bsp_random", "compare"),
         default=None,
         help="Genera solo una famiglia. Senza --type vengono generati tutti i grafici.",
     )
@@ -3106,8 +3172,8 @@ def parse_args():
     exclude_selectors = _split_exclude_selectors(args.exclude)
     if args.reset and (args.type or exclude_selectors or args.backend):
         parser.error("--reset va usato da solo.")
-    if exclude_selectors and args.type not in ("bsp", "pup"):
-        parser.error("--exclude richiede --type bsp oppure --type pup.")
+    if exclude_selectors and args.type not in ("bsp", "pup", "hrp"):
+        parser.error("--exclude richiede --type bsp, --type pup oppure --type hrp.")
     return args
 
 
@@ -3116,19 +3182,22 @@ def build_themes():
     bsp_theme["suptitle"] = "BSP Benchmark: Standard vs Lazy Heuristic Grounding"
     pup_theme = PUP_THEME.copy()
     pup_theme["suptitle"] = "PUP Benchmark: Standard vs Lazy Heuristic Grounding"
-    return bsp_theme, pup_theme
+    hrp_theme = HRP_THEME.copy()
+    hrp_theme["suptitle"] = "HRP Benchmark: Standard vs Lazy Domain Heuristics"
+    return bsp_theme, pup_theme, hrp_theme
 
 
 # Descrittore per problema: tema, template CSV, sottocartella, etichetta.
 PROBLEM_SPECS = {
     "bsp": {"theme_index": 0, "csv": BSP_CSV_TMPL, "subdir": BSP_SUBDIR, "label": "BSP"},
     "pup": {"theme_index": 1, "csv": PUP_CSV_TMPL, "subdir": PUP_SUBDIR, "label": "PUP"},
+    "hrp": {"theme_index": 2, "csv": HRP_CSV_TMPL, "subdir": HRP_SUBDIR, "label": "HRP"},
 }
 
 
 def _theme_for(problem):
-    bsp_theme, pup_theme = build_themes()
-    return (bsp_theme, pup_theme)[PROBLEM_SPECS[problem]["theme_index"]]
+    themes = build_themes()
+    return themes[PROBLEM_SPECS[problem]["theme_index"]]
 
 
 def process_problem(backend, problem, exclude_selectors, out_root):
@@ -3176,7 +3245,7 @@ def process_compare(problem, out_root):
 
 
 def _backend_has_csv(backend):
-    for tmpl in (BSP_CSV_TMPL, PUP_CSV_TMPL, BSP_RANDOM_CSV_TMPL):
+    for tmpl in (BSP_CSV_TMPL, PUP_CSV_TMPL, HRP_CSV_TMPL, BSP_RANDOM_CSV_TMPL):
         path = os.path.join(results_dir_for(backend), tmpl.format(backend=backend))
         if os.path.isfile(path) and os.path.getsize(path) > 0:
             return True
@@ -3218,11 +3287,13 @@ def main():
             processed_any |= process_problem(backend, "bsp", exclude_selectors, out_root)
         if want in (None, "pup"):
             processed_any |= process_problem(backend, "pup", exclude_selectors, out_root)
+        if want in (None, "hrp"):
+            processed_any |= process_problem(backend, "hrp", exclude_selectors, out_root)
         if want in (None, "bsp_random"):
             processed_any |= process_bsp_random(backend, out_root)
 
     if want in (None, "compare") and not args.backend:
-        for problem in ("bsp", "pup"):
+        for problem in ("bsp", "pup", "hrp"):
             processed_any |= process_compare(problem, out_root)
 
     if not processed_any:

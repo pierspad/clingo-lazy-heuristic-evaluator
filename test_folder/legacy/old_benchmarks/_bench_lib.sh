@@ -3,17 +3,18 @@
 # Libreria condivisa dei benchmark per-backend.
 # Usata dai wrapper: 1_native_bsp.sh, 1_prolog_bsp.sh,
 #                    2_native_pup.sh, 2_prolog_pup.sh,
+#                    3_native_hrp.sh, 3_prolog_hrp.sh,
 #                    2_benchmark_bsp_random.sh
 #
 # Ogni wrapper definisce BACKEND ("native"|"prolog") e poi chiama
-# run_bsp / run_pup / run_bsp_random. La libreria individua il binario
+# run_bsp / run_pup / run_hrp / run_bsp_random. La libreria individua il binario
 # clingo del backend, la cartella di encoding corrispondente, e itera
 # (seed x variante x istanza) chiamando benchmark_runner.py, che appende
 # una riga al CSV.
 #
 # LAYOUT DEI RISULTATI (uno per backend):
-#   results-native/1_BSP_native.csv   results-native/2_PUP_native.csv
-#   results-prolog/1_BSP_prolog.csv   results-prolog/2_PUP_prolog.csv
+#   results-native/1_BSP_native.csv   results-native/2_PUP_native.csv   results-native/3_HRP_native.csv
+#   results-prolog/1_BSP_prolog.csv   results-prolog/2_PUP_prolog.csv   results-prolog/3_HRP_prolog.csv
 #   results-<backend>/1_BSP_<backend>_random.csv   (run multi-seed/randomici)
 #
 # WIRING DEL BACKEND PROLOG (correzione critica):
@@ -27,7 +28,7 @@
 #   esportano LAZY_HEURISTIC_BACKEND=prolog quando backend=prolog.
 #
 # Override via ambiente: CLINGO_BIN, TIMEOUT, MODELS, VARIANTS, SEEDS,
-#   (BSP) N_START N_END N_STEP, (PUP) PUP_GLOB,
+#   (BSP) N_START N_END N_STEP, (PUP) PUP_GLOB, (HRP) HRP_GLOB,
 #   (random) RANDOM_SETTINGS, RANDOM_CSV.
 # ============================================================
 set -euo pipefail
@@ -170,6 +171,53 @@ run_pup() {
             for seed in "${SEEDS_ARRAY[@]}"; do
                 seed_args "${seed}"
                 echo "   [n=${size} seed=${seed}] PUP_${v}  ($(basename "${inst}"))"
+                "${PYTHON_BIN}" "${RUNNER}" \
+                    --clingo "${clingo}" \
+                    --encoding "${f}" --instance "${inst}" \
+                    --variant "${v}" --semantics "$(variant_semantics "${v}")" \
+                    --setting "${backend}" --size "${size}" \
+                    "${SEED_ARGS[@]}" \
+                    --domain-heuristic --models "${models}" --timeout "${timeout}" \
+                    --ground-timeout "${GROUND_TIMEOUT:-300}" \
+                    --csv "${csv}" || echo "   ! run fallito (${v}, ${inst}, seed=${seed})"
+            done
+        done
+    done
+    echo ">> fatto. risultati in ${csv}"
+}
+
+# ---------- HRP: le istanze sono file house-*.asp ----------
+run_hrp() {
+    local backend="$1"
+    local clingo enc_dir csv results_dir
+    clingo="$(resolve_clingo "${backend}")"
+    enc_dir="${TEST_ROOT}/encodings-${backend}/3_HRP"
+    results_dir="$(results_dir_for "${backend}")"
+    csv="${results_dir}/3_HRP_${backend}.csv"
+
+    local -a variants
+    read -r -a variants <<< "${VARIANTS:-gc_noheur gc ga la lc}"
+    read_seeds
+    local glob="${HRP_GLOB:-${TEST_ROOT}/instances/HRP_instances/house-*.asp}"
+    local timeout="${TIMEOUT:-180}" models="${MODELS:-1}"
+
+    preflight "${clingo}" "${enc_dir}" "${csv}"
+    configure_backend_env "${backend}"
+    mkdir -p "${results_dir}"
+    echo ">> HRP backend=${backend} clingo=${clingo}"
+    echo ">> encodings=${enc_dir}  istanze=${glob}  seeds=${SEEDS_ARRAY[*]}"
+    echo ">> csv=${csv}  LAZY_HEURISTIC_BACKEND=${LAZY_HEURISTIC_BACKEND:-<unset>}"
+
+    local inst size v f seed
+    for inst in ${glob}; do
+        [ -f "${inst}" ] || continue
+        size="$(basename "${inst}" | sed -E 's/[^0-9]*([0-9]+).*/\1/')"
+        for v in "${variants[@]}"; do
+            f="${enc_dir}/HRP_${v}.lp"
+            [ -f "${f}" ] || { echo "   skip ${v} (manca ${f})"; continue; }
+            for seed in "${SEEDS_ARRAY[@]}"; do
+                seed_args "${seed}"
+                echo "   [n=${size} seed=${seed}] HRP_${v}  ($(basename "${inst}"))"
                 "${PYTHON_BIN}" "${RUNNER}" \
                     --clingo "${clingo}" \
                     --encoding "${f}" --instance "${inst}" \

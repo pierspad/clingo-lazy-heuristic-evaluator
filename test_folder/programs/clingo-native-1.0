@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# ============================================================
+# Wrapper "system" per benchmark-tool: backend NATIVE (C++ puro).
+# benchmark-tool invoca questo file come ./programs/clingo-native-1.0
+# passando gia' tutti gli argomenti e i file (istanza + encoding) in coda.
+#
+# Il binario reale e' configurabile via env CLINGO_NATIVE_BIN (utile sul
+# cluster, dove il path cambia). Default: build locale del repo.
+# ============================================================
+set -euo pipefail
+
+: "${CLINGO_NATIVE_BIN:=/home/ribben/Desktop/clingo-lazy-heuristics/clingo-native/build/bin/clingo}"
+
+# Il backend native NON usa il motore SWI-Prolog: assicuriamoci che la
+# variabile non sia ereditata dall'ambiente (pulizia, evita falsi positivi).
+unset LAZY_HEURISTIC_BACKEND 2>/dev/null || true
+
+# Locale numerico stabile per il parsing delle statistiche (punto decimale).
+export LC_ALL=C
+export LC_NUMERIC=C
+
+exec "${CLINGO_NATIVE_BIN}" "$@"

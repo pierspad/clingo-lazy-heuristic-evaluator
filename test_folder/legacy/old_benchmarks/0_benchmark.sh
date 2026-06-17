@@ -2,20 +2,22 @@
 # ============================================================
 # Orchestratore: esegue tutti i benchmark per i backend richiesti.
 #
-# Per ogni backend selezionato lancia BSP e/o PUP riusando i wrapper:
+# Per ogni backend selezionato lancia BSP, PUP e/o HRP riusando i wrapper:
 #   1_native_bsp.sh / 1_prolog_bsp.sh   (BSP)
 #   2_native_pup.sh / 2_prolog_pup.sh   (PUP)
+#   3_native_hrp.sh / 3_prolog_hrp.sh   (HRP)
 #
 # I risultati finiscono in results-<backend>/ (vedi _bench_lib.sh):
-#   results-native/1_BSP_native.csv   results-native/2_PUP_native.csv
-#   results-prolog/1_BSP_prolog.csv   results-prolog/2_PUP_prolog.csv
+#   results-native/1_BSP_native.csv   results-native/2_PUP_native.csv   results-native/3_HRP_native.csv
+#   results-prolog/1_BSP_prolog.csv   results-prolog/2_PUP_prolog.csv   results-prolog/3_HRP_prolog.csv
 #
 # Override via ambiente:
 #   BACKENDS   backend da eseguire, spazio-separati (default "native prolog")
 #   RUN_BSP    "true"/"false"  (default true)
 #   RUN_PUP    "true"/"false"  (default true)
+#   RUN_HRP    "true"/"false"  (default true)
 #   piu' tutti gli override di _bench_lib.sh (TIMEOUT, VARIANTS, SEEDS,
-#   N_START/N_END/N_STEP, PUP_GLOB, ...).
+#   N_START/N_END/N_STEP, PUP_GLOB, HRP_GLOB, ...).
 #
 # Esempio "run veloce" di prova:
 #   N_START=10 N_END=12 PUP_GLOB='.../double-20.asp' ./0_benchmark.sh
@@ -28,6 +30,7 @@ TEST_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 BACKENDS="${BACKENDS:-native prolog}"
 RUN_BSP="${RUN_BSP:-true}"
 RUN_PUP="${RUN_PUP:-true}"
+RUN_HRP="${RUN_HRP:-true}"
 
 run_wrapper() {
     local script="$1" label="$2"
@@ -60,6 +63,12 @@ for backend in ${BACKENDS}; do
         run_wrapper "${SCRIPT_DIR}/2_${backend}_pup.sh" "PUP - backend ${backend}"
     else
         echo "PUP disabilitato (RUN_PUP=${RUN_PUP})."
+    fi
+
+    if [ "${RUN_HRP}" = "true" ]; then
+        run_wrapper "${SCRIPT_DIR}/3_${backend}_hrp.sh" "HRP - backend ${backend}"
+    else
+        echo "HRP disabilitato (RUN_HRP=${RUN_HRP})."
     fi
 done
 

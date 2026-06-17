@@ -9,3 +9,11 @@ thesis/Tesi
 
 
 ALPHA
+# --- benchmark-tool (btool) artefatti generati ---
+test_folder/output/
+test_folder/results.xml
+test_folder/eval.log
+test_folder/graphs/*.png
+test_folder/programs/runlim
+test_folder/tools/__pycache__
+test_folder/resultparsers/__pycache__
