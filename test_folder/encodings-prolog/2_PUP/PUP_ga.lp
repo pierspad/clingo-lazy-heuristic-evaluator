@@ -25,8 +25,11 @@
 %
 % Stessi adattamenti di dominio di PUP_gc.lp (bound comUnit sugli
 % assignable, capacita' come aggregato, regola distanza-2 rimossa), piu': !=, sensorNumbers(0..2),
-% #max{0; ...} (max di insieme vuoto = 0), offset +100000 sul peso
-% delle zone per appiattire il ranking globale [W@1] > [W@0].
+% #max{0; ...} (max di insieme vuoto = 0). PESI LINEARIZZATI come in gc:
+% niente @priority (inerte tra atomi diversi in clingo), l'ordine globale
+% "zone prima dei sensori" e' appiattito nel peso dall'offset +100000
+% sulle zone (max peso_sensore = maxDeg*10000+6220 <= 46220 < 100000 sulle
+% istanze double/doubleV). Entrambe le direttive usano [W, true].
 %
 % Le istanze forniscono: comUnit/1, zone2sensor/2.
 % ============================================================
@@ -151,7 +154,7 @@ occ_value(0..2).                           % occupazione sensori di una unit
         Direct_con_zones <= #count{Z1: assigned_zone_unit(Z1,U), zone2sensor(Z1,S)},
 
         W = Deg_sensor_dyn * 10000 + Forbidden_placement_total * 1000
-            + Assigned_sensors_unit * 100 + Direct_con_zones * 10.  [W@0, true]
+            + Assigned_sensors_unit * 100 + Direct_con_zones * 10.  [W, true]
 
 
 #heuristic assigned_zone_unit(Z,U) :
@@ -170,7 +173,7 @@ occ_value(0..2).                           % occupazione sensori di una unit
 
         Available_spaces_for_sensors = 6 - (N0 + N1 + N2),
 
-        W = Assigned_zones_unit * 10 + Available_spaces_for_sensors + 100000.  [W@1, true]
+        W = Assigned_zones_unit * 10 + Available_spaces_for_sensors + 100000.  [W, true]
 
 #show assigned_zone_unit/2.
 #show assigned_sensor_unit/2.

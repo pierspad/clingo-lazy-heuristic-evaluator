@@ -25,12 +25,16 @@
 %   - clamp "<= 2" sui #count per-unit: limite di capacita'; senza
 %     clamp gringo enumererebbe valori fino al numero di elementi
 %     possibili sull'unit (~O(n)) invece che fino alla capacita'.
-%   - il peso delle zone ha offset +100000: in clasp la @priority
-%     arbitra solo modifiche sullo stesso atomo, NON il ranking
-%     globale tra atomi (cfr. commento in encoding-hclingo.asp);
-%     l'ordine globale zone-prima-dei-sensori di [W@1] vs [W@0]
-%     va quindi appiattito nel level. @0/@1 sono mantenute per
-%     tracciabilita' verso l'encoding originale.
+%   - PESI LINEARIZZATI (niente @priority): in clingo la @priority di un
+%     #heuristic arbitra solo modifiche sullo STESSO atomo, NON il ranking
+%     globale tra atomi diversi (quello lo da' il solo peso, cfr. BSP e
+%     INTENT.txt). L'ordine globale "zone prima dei sensori" e' quindi
+%     appiattito nel peso tramite l'offset +100000 sulle zone, che fa da
+%     moltiplicatore di livello: peso_zona >= 100000 > max peso_sensore.
+%     Bound: max peso_sensore = maxDeg*10000 + 6*1000 + 2*100 + 2*10
+%     = maxDeg*10000 + 6220; sulle istanze double/doubleV maxDeg<=4
+%     (=> <=46220 < 100000), quindi l'offset domina sempre. Entrambe le
+%     direttive usano [W, true] (livello @0 implicito, identico).
 %
 % Le istanze forniscono: comUnit/1, zone2sensor/2.
 % ============================================================
@@ -144,7 +148,7 @@ num_forbidden_places_of_sensors(S,N1+4) :- assignable_sensor_unit(S,_),
         Direct_con_zones <= 2,
 
         W = Deg_sensor_dyn * 10000 + Forbidden_placement_total * 1000
-            + Assigned_sensors_unit * 100 + Direct_con_zones * 10.  [W@0, true]
+            + Assigned_sensors_unit * 100 + Direct_con_zones * 10.  [W, true]
 
 
 #heuristic assigned_zone_unit(Z,U) :
@@ -164,7 +168,7 @@ num_forbidden_places_of_sensors(S,N1+4) :- assignable_sensor_unit(S,_),
 
         Available_spaces_for_sensors = 6 - (N0 + N1 + N2),
 
-        W = Assigned_zones_unit * 10 + Available_spaces_for_sensors + 100000.  [W@1, true]
+        W = Assigned_zones_unit * 10 + Available_spaces_for_sensors + 100000.  [W, true]
 
 #show assigned_zone_unit/2.
 #show assigned_sensor_unit/2.

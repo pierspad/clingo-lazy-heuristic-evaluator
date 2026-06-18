@@ -8,11 +8,18 @@
 %     di ogni peso intra-livello (LM = maxCabId+maxRoomId+10), cosi'
 %     l'ordine globale reuse(@4)>fill-cab(@3/@2)>fill-room(@1)>chiusura(@0)
 %     e' rispettato dal solo peso (la @priority di clingo non basta);
-%   - RIMOSSI i letterali che hanno senso solo su assegnamento parziale
-%     (not fullCabinet, not assignedThing, not otherPerson..., not full...):
-%     in clingo ground non sono valutabili nello spirito Alpha. Resta un
-%     ordinamento statico (reuse, poi cabinet a id minore, lunghe prima,
-%     poi stanze) senza feedback dallo stato parziale.
+%   - MANTENUTI i letterali NAF su stato parziale (not fullCabinet,
+%     not assignedThing, not otherPersonTOcabinet, not fullRoom, ...):
+%     e' la controparte ground di clingo_not(...) di HRP_lc. In clingo
+%     ground 'not p' = "p assegnato FALSO" (semantica clingo), cioe' la
+%     guardia si apre tardi (servono atomi gia' decisi falsi), come nel
+%     lazy 'lc'. La semantica Alpha ("p non ancora vero") NON e' invece
+%     esprimibile in ground clingo: e' la variante 'ga' a lasciar cadere
+%     questi 'not' (cfr. BSP_ga / PUP_ga), e solo 'la' la cattura davvero.
+%
+% Simmetria: 'gc' e 'ga' differiscono ESCLUSIVAMENTE per la presenza di
+% questi 'not' (pesi appiattiti identici), esattamente come 'lc' vs 'la'
+% differiscono solo per clingo_not vs alpha_not.
 %
 % Esegui con: --heuristic=Domain
 % ============================================================
@@ -127,9 +134,9 @@ levelMul(LM)    :- LM = MC + MR + 10, maxCabinetId(MC), maxRoomId(MR).
 #heuristic reuseCabinetThing(C,T) : legacyCabinetThing(C,T), thingShort(T), levelMul(LM), W = 3 + 4*LM. [W, true]
 #heuristic reuseRoomCabinet(R,C)  : legacyRoomCabinet(R,C), levelMul(LM), W = 2 + 4*LM. [W, true]
 #heuristic reusePersonRoom(P,R)   : legacyPersonRoom(P,R), levelMul(LM), W = 1 + 4*LM. [W, true]
-#heuristic cabinetTOthing(C,T) : cabinetDomain(C), thingLong(T),  maxCabinet(MC), levelMul(LM), W = (MC-C) + 3*LM. [W, true]
-#heuristic cabinetTOthing(C,T) : cabinetDomain(C), thingShort(T), maxCabinet(MC), levelMul(LM), W = (MC-C) + 2*LM. [W, true]
-#heuristic roomTOcabinet(R,C)  : roomDomain(R), cabinet(C), maxRoom(MR), levelMul(LM), W = (MR-R) + 1*LM. [W, true]
+#heuristic cabinetTOthing(C,T) : cabinetDomain(C), not fullCabinet(C), not assignedThing(T), personTOthing(P,T), not otherPersonTOcabinet(P,C), thingLong(T),  maxCabinet(MC), levelMul(LM), W = (MC-C) + 3*LM. [W, true]
+#heuristic cabinetTOthing(C,T) : cabinetDomain(C), not fullCabinet(C), not assignedThing(T), personTOthing(P,T), not otherPersonTOcabinet(P,C), thingShort(T), maxCabinet(MC), levelMul(LM), W = (MC-C) + 2*LM. [W, true]
+#heuristic roomTOcabinet(R,C)  : roomDomain(R), not fullRoom(R), cabinet(C), not assignedCabinet(C), personTOcabinet(P,C), not otherPersonTOroom(P,R), maxRoom(MR), levelMul(LM), W = (MR-R) + 1*LM. [W, true]
 #heuristic cabinet(C)          : cabinetDomain(C). [1, false]
 #heuristic room(R)             : roomDomain(R). [1, false]
 #heuristic cabinetTOthing(C,T) : cabinetDomain(C), thing(T). [1, false]
