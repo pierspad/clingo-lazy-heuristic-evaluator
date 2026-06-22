@@ -146,21 +146,32 @@ def parse(
                 f"for system '{runspec.system.name}-{runspec.system.version}'! ({path})\n"
             )
 
-    # --- Stati di errore / timeout / memout (logica del parser ufficiale) ----
+    # --- Stati di errore / timeout / memout ----------------------------------
+    # runlim segnala esplicitamente sia il timeout ("out of time") sia il memout
+    # ("out of memory"). Li sfruttiamo per NON confondere un timeout pulito con
+    # un errore del solver: un run ucciso al limite di tempo non stampa lo
+    # status di clingo, quindi con la logica originale (`"status" not in res`)
+    # finirebbe marcato come error=1 oltre che timeout=1, inquinando i conteggi.
     if "rstatus" in res and res["rstatus"][1] == "out of memory":
         res["error"] = ("string", "std::bad_alloc")
         res["status"] = ("string", "UNKNOWN")
 
-    result: dict[str, tuple[str, Any]] = {}
-    error = "status" not in res or ("error" in res and res["error"][1] != "std::bad_alloc")
+    rstatus = res["rstatus"][1] if "rstatus" in res else ""
+    hit_time_limit = "out of time" in rstatus or res["time"][1] >= timeout
     memout = "error" in res and res["error"][1] == "std::bad_alloc"
+    solver_error = "error" in res and res["error"][1] != "std::bad_alloc"
+
+    result: dict[str, tuple[str, Any]] = {}
+    # Errore VERO = clingo ha emesso un errore non-di-memoria, oppure il run e'
+    # morto senza status pur NON essendo un timeout/memout (crash reale).
+    error = solver_error or ("status" not in res and not hit_time_limit and not memout)
     status = res["status"][1] if "status" in res else None
     timedout = (
-        memout
+        hit_time_limit
+        or memout
         or error
         or status == "UNKNOWN"
         or (status == "SATISFIABLE" and "optimum" in res)
-        or res["time"][1] >= timeout
         or "interrupted" in res
     )
     if timedout:
