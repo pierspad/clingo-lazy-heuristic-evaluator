@@ -142,6 +142,3 @@ __heuristic(__target(cabinet),        cabinetDomain, __weight(1), __priority(0),
 __heuristic(__target(room),           roomDomain,    __weight(1), __priority(0), __semantics(alpha), __modifier(false)).
 __heuristic(__target(cabinetTOthing), cabThingDom,   __weight(1), __priority(0), __semantics(alpha), __modifier(false)).
 __heuristic(__target(roomTOcabinet),  roomCabCand,   __weight(1), __priority(0), __semantics(alpha), __modifier(false)).
-
-#show cabinetTOthing/2.
-#show roomTOcabinet/2.

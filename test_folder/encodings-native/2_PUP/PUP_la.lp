@@ -25,26 +25,24 @@
 % ============================================================
 
 % ============================================================
-% PUP (Partner Units Problem) - LAZY ALPHA (la, backend Prolog).
+% PUP (Partner Units Problem) - LAZY ALPHA (la), backend NATIVE.
 % Architettura: ALPHA/Evaluation/PUP/encoding-alpha-prologheu-double.asp
 %
 % Logica di dominio e predicati ausiliari IDENTICI a PUP_gc.lp, ma
-% nessuna direttiva #heuristic nativa: le euristiche sono iniettate
-% come stringhe Prolog tramite heuristic("...") e valutate a runtime
-% dal propagatore (LAZY_HEURISTIC_BACKEND=prolog). Il grounder non
-% vede alcun aggregato euristico: niente esplosione combinatoria.
+% nessuna direttiva #heuristic nativa: le euristiche sono fatti
+% __heuristic(...) letti dal propagatore C++ in init() e valutati a
+% runtime. Il grounder non vede alcun aggregato euristico: niente
+% esplosione combinatoria.
 %
-% Traduzione degli aggregati (runtime SWI-Prolog):
-%   #count{...}  -> aggregate_all(count, (holds(...), ...), V)
-%   #max{0; ...} -> dyn_max(holds(...), N, V)   (0 se l'insieme e' vuoto)
-% Condizioni negative con semantica CLINGO:
-%   not p(X)     -> alpha_not(p(X))   (vera solo se p(X) e' assegnato falso)
-% Sicurezza a runtime: target_available(...) garantisce che il target
-% sia ancora libero (ne' vero ne' falso).
+% Condizioni negative con semantica ALPHA (__semantics(alpha)):
+%   __n_p e' soddisfatto se p NON e' assegnato vero (basta indeciso).
+% Gli aggregati __count/__max sono mantenuti incrementalmente e letti
+% sullo stato PARZIALE corrente (nessun gating di completezza).
+% Il propagatore decide solo su target ancora liberi.
 %
-% Ranking globale del backend: (Priority, Weight) decrescenti; la
-% priorita' 1 delle zone replica nativamente [W@1] > [W@0] del file
-% originale (in gc/ga e' appiattita nel peso con offset +100000).
+% Ranking globale (semantica alpha): (Priority, Weight) decrescenti;
+% la __priority(1) delle zone replica nativamente [W@1] > [W@0] del
+% file originale (in gc/ga e' appiattita nel peso con offset +100000).
 %
 % Stessi adattamenti di dominio di PUP_gc.lp: !=, sensorNumbers(0..2).
 % Le istanze forniscono: comUnit/1, zone2sensor/2.

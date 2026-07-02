@@ -7,7 +7,7 @@ set -e
 # Override: BUILD_DIR per puntare a una build specifica.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 TARGET="${1:-all}"
 
 build_one() {

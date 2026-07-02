@@ -38,30 +38,41 @@ runtag non fissa il system): `clingo-native` usa `encodings-native/`,
 
 ## 2. Struttura della cartella
 
+Tutta la macchina `btool` vive in `test_folder/benchmark_folder_clingo/` (che è
+anche il **working dir** di `btool`). Encoding, istanze e i tre alberi di
+grafici stanno **un livello sopra**, in `test_folder/`.
+
 ```
 test_folder/
-├─ runscripts/runscript.xml     # definizione completa (locale + cluster)
-├─ programs/
-│  ├─ clingo-native-1.0         # wrapper system backend native
-│  ├─ clingo-prolog-1.0         # wrapper system backend prolog (env propagatore)
-│  ├─ runlim                    # limitatore tempo/memoria (binario, NON in git)
-│  └─ gcat.sh                   # helper di benchmark-tool
-├─ templates/
-│  ├─ seq-generic.sh            # template di run (PATCHATO: cattura anche stderr)
-│  └─ single.dist              # template SLURM (#SBATCH)
-├─ resultparsers/clasp.py       # resultparser CUSTOM (vedi §6)
-├─ benchmarks/                  # istanze pulite, una classe per famiglia
-│  ├─ BSP/  bsp-0003.lp ...     # generate (#const n=N) da tools/gen_bsp_instances.py
-│  ├─ PUP/  double-*.asp        # copiate da instances/PUP_instances/Double
-│  └─ HRP/  house-*.asp         # copiate da instances/HRP_instances (no sanity)
-├─ encodings-native/  encodings-prolog/   # invariati
-├─ tools/
-│  ├─ gen_bsp_instances.py      # rigenera le istanze BSP parametriche
-│  ├─ plot_results.py           # grafici da results.xml
-│  └─ ground_counts.py          # conteggi grounding (disaccoppiati, vedi §7)
-├─ output/                      # generato da `btool gen` (NON in git)
-└─ legacy/                      # vecchi script bash + benchmark_runner.py
+├─ encodings-native/  encodings-prolog/   # invariati (nel runscript: ../encodings-*)
+├─ instances/                              # invariati
+├─ legacy/                                 # vecchi script bash + gen_graphs.py
+├─ graphs-native/  graphs-prolog/  graphs-comparison-native-prolog/   # output full
+└─ benchmark_folder_clingo/                # <-- cwd di btool
+   ├─ runscripts/runscript.xml     # definizione completa (locale + cluster)
+   ├─ programs/
+   │  ├─ clingo-native-1.0         # wrapper system backend native
+   │  ├─ clingo-prolog-1.0         # wrapper system backend prolog (env propagatore)
+   │  ├─ runlim                    # limitatore tempo/memoria (binario, NON in git)
+   │  └─ gcat.sh                   # helper di benchmark-tool
+   ├─ templates/
+   │  ├─ seq-generic.sh            # template di run (PATCHATO: cattura anche stderr)
+   │  └─ single.dist              # template SLURM (#SBATCH)
+   ├─ resultparsers/clasp.py       # resultparser CUSTOM (vedi §6)
+   ├─ benchmarks/                  # istanze pulite, una classe per famiglia
+   │  ├─ BSP/  bsp-0003.lp ...     # generate (#const n=N) da tools/gen_bsp_instances.py
+   │  ├─ PUP/  double-*.asp        # copiate da ../instances/PUP_instances/Double
+   │  └─ HRP/  house-*.asp         # copiate da ../instances/HRP_instances
+   ├─ scripts/bench_common.sh      # libreria comune dei due script entry
+   ├─ tools/
+   │  ├─ gen_bsp_instances.py      # rigenera le istanze BSP parametriche
+   │  ├─ plot_results.py           # grafici da results.xml (3 alberi, vedi §4b)
+   │  └─ ground_counts.py          # conteggi grounding (disaccoppiati, vedi §7)
+   └─ output/                      # generato da `btool gen` (NON in git)
 ```
+
+Gli script entry `1_run_benchmark_short.sh` / `2_run_benchmark_full.sh` stanno
+nella **root del repo** e puntano qui dentro.
 
 ---
 
@@ -118,9 +129,14 @@ btool eval runscripts/runscript.xml > results.xml
 # 4a) foglio di calcolo navigabile (tutte le misure, con grafici)
 btool conv -m all -o output/results.xlsx results.xml
 
-# 4b) grafici per famiglia/misura
-python3 tools/plot_results.py --machine local --measures solving mem decide_calls
-#     -> graphs/<FAM>_<measure>_local.png
+# 4b) grafici: tre alberi (native / prolog / confronto), una sottocartella per
+#     famiglia, con verdetto native-vs-prolog per area. --out-base = dove
+#     creare i tre alberi (".." = test_folder/).
+python3 tools/plot_results.py --machine local --out-base ..
+#     -> ../graphs-native/<FAM>/<metric>.png
+#     -> ../graphs-prolog/<FAM>/<metric>.png
+#     -> ../graphs-comparison-native-prolog/<FAM>/{<area>.png,_verdict.png}
+#     (aggiungi --ground-counts output/ground_counts.csv per i grafici di grounding)
 ```
 
 > Nota: `start.py` salta i run già completati (file `.finished`). Per rieseguire

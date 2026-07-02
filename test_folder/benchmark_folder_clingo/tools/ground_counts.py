@@ -38,8 +38,9 @@ import subprocess
 import time
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-REPO = ROOT.parent
+ROOT = Path(__file__).resolve().parents[1]   # benchmark_folder_clingo (btool cwd: benchmarks/, output/)
+TEST_FOLDER = ROOT.parent                     # test_folder (encodings-*, instances/)
+REPO = ROOT.parents[1]                         # repo root (clingo-native/, clingo-prolog/)
 
 # Varianti per famiglia (coerenti col runscript).
 COMMON = ["gc_noheur", "gc", "ga", "la", "lc"]
@@ -136,7 +137,7 @@ def main() -> None:
                 print(f"!! clingo {backend} non trovato: {clingo} (skip)")
                 continue
             for family in args.families:
-                enc_dir = ROOT / f"encodings-{backend}" / ENC_SUBDIR[family]
+                enc_dir = TEST_FOLDER / f"encodings-{backend}" / ENC_SUBDIR[family]
                 for variant in VARIANTS[family]:
                     enc = enc_dir / f"{ENC_PREFIX[family]}_{variant}.lp"
                     if not enc.is_file():

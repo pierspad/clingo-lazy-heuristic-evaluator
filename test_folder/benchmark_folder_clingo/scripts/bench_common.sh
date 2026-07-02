@@ -124,9 +124,12 @@ PY
 
 # --- 5) pipeline btool: gen -> run -> eval -> conv -> plot ---
 # uso: run_btool_pipeline <runscript> <output_dir> <project> <machine> \
-#                         <results_file> <graphs_dir>
+#                         <results_file> <out_base>
+# <out_base> = cartella che conterra' i tre alberi di grafici
+#   graphs-native/, graphs-prolog/, graphs-comparison-native-prolog/.
+#   ".." per la full (-> test_folder), "." per la short (-> resta qui).
 run_btool_pipeline() {
-  local rs="$1" out_dir="$2" project="$3" machine="$4" results="$5" graphs="$6"
+  local rs="$1" out_dir="$2" project="$3" machine="$4" results="$5" out_base="$6"
 
   # 5a) genera gli script di run.
   #     FORCE=1 -> pulisce e rigenera tutto (rerun completo)
@@ -159,23 +162,29 @@ run_btool_pipeline() {
     warn "btool conv (xlsx) fallito — proseguo coi grafici"
   fi
 
-  # 5e) grafici per famiglia/misura
-  log "Grafici -> $graphs ..."
+  # 5e) grafici: tre alberi (native / prolog / confronto) sotto out_base.
+  #     ground_counts.csv (se presente) abilita i grafici di grounding.
+  log "Grafici -> $out_base/{graphs-native,graphs-prolog,graphs-comparison-native-prolog}/ ..."
+  local gc_arg=()
+  [ -f "$out_dir/ground_counts.csv" ] && gc_arg=(--ground-counts "$out_dir/ground_counts.csv")
   python3 tools/plot_results.py --results "$results" --machine "$machine" \
-    --out "$graphs" --measures solving mem decide_calls || die "plot_results.py fallito"
+    --out-base "$out_base" "${gc_arg[@]}" || die "plot_results.py fallito"
 }
 
 # --- 6) riepilogo finale -------------------------------------
 summarize() {
-  local results="$1" graphs="$2" label="$3"
+  local results="$1" out_base="$2" label="$3"
   echo
   log "RIEPILOGO ($label)"
   if [ -f "$results" ]; then ok "results: $results"; fi
-  local n=0
-  if [ -d "$graphs" ]; then
-    n=$(find "$graphs" -maxdepth 1 -name '*.png' | wc -l | tr -d ' ')
-    ok "grafici PNG generati: $n  (in $graphs/)"
-    find "$graphs" -maxdepth 1 -name '*.png' -printf '     - %f\n' 2>/dev/null | sort
-  fi
+  local n=0 tree
+  for tree in graphs-native graphs-prolog graphs-comparison-native-prolog; do
+    if [ -d "$out_base/$tree" ]; then
+      local c
+      c=$(find "$out_base/$tree" -name '*.png' | wc -l | tr -d ' ')
+      ok "$tree/: $c PNG"
+      n=$((n + c))
+    fi
+  done
   [ "$n" -gt 0 ] || warn "nessun grafico prodotto: controlla l'output sopra"
 }

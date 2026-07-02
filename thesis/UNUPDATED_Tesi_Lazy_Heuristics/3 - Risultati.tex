@@ -2,15 +2,13 @@
 
 \subsection{Functional Validation}
 
-The system was validated by keeping three levels separate. The first level concerns the ASP program itself: the relevant answer sets, the \mintinline{text}|SAT|/\mintinline{text}|UNSAT| result, and the visible solutions must remain consistent across the compared encodings. The second level concerns the heuristic transformation: targets, bodies, weights, priorities, modifiers, aggregate variables, and target variables must be preserved when a native \mintinline{text}|#heuristic| directive is rewritten as \mintinline{text}|__heuristic(...)| facts. The third level concerns the effect on search, measured through choices, conflicts, solving time, grounding estimates, and the number of ground heuristic objects.
+The system was validated by keeping three levels separate. The first level concerns the ASP program itself: the answer sets, the \mintinline{text}|SAT|/\mintinline{text}|UNSAT| result, and the visible solutions must remain consistent across the compared encodings and across the two backends. The second level concerns the heuristic translation: targets, bodies, weights, priorities, modifiers, and aggregate bindings must be preserved when a native \mintinline{text}|#heuristic| directive is rewritten as a lazy fact, including the weight--priority flattening where the clingo reading of priorities applies. The third level concerns the effect on search, measured through choices, conflicts, solving time, memory, and the size of the ground heuristic component.
 
-Heuristics do not change the semantics of the ASP program: they guide search, but they do not add or remove answer sets. For this reason, semantic validation compares models after filtering out the internal prototype symbols that start with \mintinline{text}|__|, unless a complete comparison is explicitly requested with \mintinline{text}|--keep-internal|. This behaviour is implemented in \path{test_folder/tools/validate_lazy_semantics.py}. Performance metrics are treated separately, because they measure the impact of the heuristic representation on grounding and search rather than on the set of solutions.
-
-The validation suite includes C++ tests in \path{clingo-modified/libclingo/tests/heuristic_propagator.cc}, corner-case instances in \path{test_folder/instances/corner_cases}, and the BSP benchmark. The C++ tests cover incremental aggregates, empty domains, unsatisfiable instances, \mintinline{text}|self| as the first target argument, explicit target and body bindings, target-specific aggregate filters, local priority resolution, and syntax errors such as duplicated variables or negative indices. These tests are important because they isolate the correctness of the heuristic machinery from the size and modelling details of the benchmark.
+Heuristics do not change the semantics of the ASP program: they guide search, but they do not add or remove answer sets. The equivalence harness of Section~2 verifies this property exhaustively on BSP, by enumerating all models of every variant on both backends and comparing the collections after projection on \mintinline{text}|b/1| and \mintinline{text}|c/1|, and by SAT/UNSAT agreement on PUP, where exhaustive enumeration is intractable. The same harness enforces the anti-fallback guards for the Prolog backend (\mintinline{text}|decide_calls > 0| for every lazy Prolog run, and equal choice counts between native and Prolog \mintinline{text}|la| on the control instance). On the native side, the C++ test suite isolates the correctness of the heuristic machinery from the benchmarks: it covers incremental aggregate states, empty and unsatisfiable corner cases, explicit body and target bindings, filtered aggregates, the local-versus-global interpretation of priorities under the two semantics, and the parser's rejection of malformed syntax.
 
 \subsection{Experimental Dataset}
 
-The BSP run used for the graphs contains 120 rows: 12 values of $n$, from 10 to 120, 6 variants, and 2 seeds, except where variants stop earlier because of timeouts. The main comparison includes \mintinline{text}|gc_noheur|, \mintinline{text}|gc|, \mintinline{text}|ga|, \mintinline{text}|la|, \mintinline{text}|lc|, and \mintinline{text}|la_aux|. The variants \mintinline{text}|ga_weak| and \mintinline{text}|la_co| are treated as methodologically separate experiments because they change either the activation condition or the BSP constraint formulation.
+The complete campaign covers three problem families (BSP, PUP, HRP), five shared settings (\mintinline{text}|gc_noheur|, \mintinline{text}|gc|, \mintinline{text}|ga|, \mintinline{text}|la|, \mintinline{text}|lc|) plus the three BSP-specific settings (\mintinline{text}|ga_weak|, \mintinline{text}|la_aux|, \mintinline{text}|la_co|), and the two systems (native and Prolog backend). The analysis presented in this section is based on the completed BSP campaign; the BSP encodings are shared verbatim between the two backends for the ground variants, and are semantically aligned pairs for the lazy ones. The BSP run contains twelve sizes, $n = 10$ to $120$, and the main comparison includes \mintinline{text}|gc_noheur|, \mintinline{text}|gc|, \mintinline{text}|ga|, \mintinline{text}|la|, \mintinline{text}|lc|, and \mintinline{text}|la_aux|; \mintinline{text}|ga_weak| and \mintinline{text}|la_co| are analysed separately because they change the activation condition and the constraint formulation, respectively.
 
 \begin{table}[H]
 \centering
@@ -34,7 +32,18 @@ The first timeouts occur at $n=60$ for \mintinline{text}|la_aux|, at $n=110$ for
 
 \subsection{Reduction of the Ground Heuristic Component}
 
-The clearest result concerns the size of the heuristic component in the grounded program. In the native \mintinline{text}|gc| and \mintinline{text}|ga| variants, the number of ground \mintinline{text}|#heuristic| directives grows rapidly with $n$. In the direct lazy variants \mintinline{text}|la| and \mintinline{text}|lc|, the grounded program keeps two \mintinline{text}|__heuristic| facts: one for target predicate \mintinline{text}|b| and one for target predicate \mintinline{text}|c|.
+The central claim of the thesis concerns \emph{where} memory is spent, and the direct evidence is the number of ground heuristic objects as a function of $n$. The mechanism is readable in the encoding itself. The standard directive
+
+\begin{minted}{prolog}
+#heuristic b(X) : x(X), not c(X), S = #sum{Y : c(Y)},
+    W = ((n+1)*S)+X. [W, true]
+\end{minted}
+
+carries the aggregate value $S$ \emph{as a variable inside the weight}. Since the atoms \mintinline{text}|c(Y)| are choice atoms, the grounder cannot know the sum at grounding time and must materialize one directive for every reachable pair $(X,S)$. With $X \in \{1,\ldots,n\}$ and $S$ ranging over the subset sums of $\{1,\ldots,n\}$, which is every integer from $0$ to $n(n+1)/2$ because $1$ belongs to the domain, the count is
+\[
+2 \cdot n \cdot \Big(\tfrac{n(n+1)}{2} + 1\Big) \;=\; \Theta(n^3),
+\]
+where the factor $2$ accounts for the two symmetric rules for \mintinline{text}|b| and \mintinline{text}|c|. The formula is verifiable exactly on the measured data: for $n=10$ it yields $2 \cdot 10 \cdot 56 = 1{,}120$, which coincides with the measured \mintinline{text}|ground_heuristics| value for \mintinline{text}|gc|. The lazy variants remove this enumeration at the root: the aggregate is evaluated at solving time on the current partial assignment, and the materialized heuristics remain constant, two facts, independent of $n$.
 
 \begin{figure}[H]
     \centering
@@ -59,11 +68,11 @@ The clearest result concerns the size of the heuristic component in the grounded
 \label{tab:heur-growth}
 \end{table}
 
-This is the strongest evidence that the representation itself is effective. The reduction does not mean that the whole ground program becomes constant: the BSP encoding still contains rules and constraints whose size grows with $n$. What becomes compact is the heuristic part, which is no longer expanded into a large family of ground directives and is instead evaluated by the propagator at runtime.
+This comparison must be read for what it is. For the ground variants the count is faithful: one line is one materialized object. For the lazy variants the two counted facts are \emph{templates} that expand at runtime into one candidate per ground target ($n$ candidates per rule for BSP); those candidates never pass through the grounder and therefore appear in no line count. The single-figure comparison \enquote{$2$ facts versus $\Theta(n^3)$ directives} is thus the proof of a saving in \emph{grounding space}, not of a saving in total work: the work moved to runtime is real and is measured separately in Section~\ref{sec:per-decision-cost}.
 
 \subsection{Runtime Behaviour}
 
-Figure \ref{fig:total-time} reports the total runtime. The decomposition of the measurements shows that, for larger values of $n$, the part not attributed to solving dominates the total cost. This is consistent with the BSP encoding used in the benchmark: even without native heuristic directives, the base program generates millions of ground rules.
+Figure~\ref{fig:total-time} reports the total runtime. For larger values of $n$, the part not attributed to solving dominates the total cost across all variants, which is consistent with the BSP encoding: even without heuristic directives, the base program grounds into millions of rules. The runner computes the grounding estimate as \mintinline{text}|Time.Total - Time.Solve|, so it must be read as a derived quantity, not as an independent timer of the grounder alone.
 
 \begin{figure}[H]
     \centering
@@ -75,11 +84,9 @@ Figure \ref{fig:total-time} reports the total runtime. The decomposition of the 
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{grounding_time}
-    \caption{Grounding estimate computed as total time minus solving time in clingo JSON statistics.}
+    \caption{Grounding estimate computed as total time minus solving time.}
     \label{fig:grounding-time}
 \end{figure}
-
-The runner computes \mintinline{text}|grounding_s| as \mintinline{text}|Time.Total - Time.Solve|. It should therefore be read as a derived estimate, not as an independent timer for the grounder alone.
 
 \begin{table}[H]
 \centering
@@ -98,11 +105,11 @@ The runner computes \mintinline{text}|grounding_s| as \mintinline{text}|Time.Tot
 \label{tab:n100-time}
 \end{table}
 
-At $n=100$, \mintinline{text}|la| has an almost negligible solving time compared with the other variants. This happens because the Alpha-style guidance leads to direct decisions and very few conflicts. The \mintinline{text}|lc| variant stays closer to the clingo-like treatment of negative bodies and therefore has a solving time comparable to \mintinline{text}|gc_noheur|, while still keeping the heuristic component compact.
+At $n=100$, \mintinline{text}|la| has an almost negligible solving time. This is the semantics at work: the Alpha-style guidance makes one direct decision per element and encounters no conflicts. The \mintinline{text}|lc| variant follows the clingo-like reading of negation and aggregate availability, whose guards open only once atoms are established false and aggregate sources determined; its solving profile therefore remains close to the no-heuristic baseline, while still keeping the heuristic component compact.
 
-\subsection{Choices, Conflicts, and Restarts}
+\subsection{Choices, Conflicts, and Search Guidance}
 
-Search statistics reveal a sharp distinction between Alpha-style and clingo-like semantics. The \mintinline{text}|la| variant makes exactly $n$ choices in the measured instances; at $n=100$ it makes 100 choices and no conflicts. The clingo-like variants follow a profile closer to the no-heuristic baseline, even when their ground heuristic representation is smaller.
+Search statistics separate the two semantics sharply. The \mintinline{text}|la| variant makes exactly $n$ choices: at $n=100$, it performs 100 choices and no conflicts, the signature of a heuristic that constructs the solution greedily and correctly. The clingo-like variants track the baseline profile.
 
 \begin{figure}[H]
     \centering
@@ -143,17 +150,11 @@ Search statistics reveal a sharp distinction between Alpha-style and clingo-like
 \label{tab:n100-search}
 \end{table}
 
-This result must be interpreted carefully. \mintinline{text}|la| is not simply a more efficient implementation of \mintinline{text}|gc|; it uses a different activation semantics for negative bodies and aggregate availability. The thesis therefore keeps the comparison of representations separate from the comparison of semantics.
-
-\subsection{Randomized Search Sensitivity}
-
-The reduced randomized benchmark complements the main BSP run by focusing on the stability of the solving phase. It uses three seeds and two settings: \mintinline{text}|seed_only|, where only \mintinline{text}|--seed| changes, and \mintinline{text}|rand_freq_0_01|, where clingo also receives \mintinline{text}|--rand-freq=0.01|. The relevant output is not the size of the grounded program, but the variation of \mintinline{text}|total_s|, \mintinline{text}|solving_s|, \mintinline{text}|choices|, and \mintinline{text}|conflicts| across seeds.
-
-This experiment answers a specific methodological question: whether different solver trajectories can explain part of the observed runtime behaviour. If the seed-only setting gives identical or nearly identical curves, then the default configuration is stable for the selected instances. If the mildly randomized setting separates the curves by seed, especially in choices and conflicts, then the variability is not just wall-clock noise but a genuine change in the search path. Conversely, grounding-related values such as \mintinline{text}|rules| and \mintinline{text}|ground_lines| should remain stable for the same variant, $n$, and setting; changes there would indicate a measurement problem rather than search sensitivity.
+This result must be interpreted carefully. \mintinline{text}|la| is not a more efficient implementation of \mintinline{text}|gc|: it evaluates negation and aggregates under a different semantics, and that semantics happens to be the one for which this heuristic was designed. The comparison of \emph{representations} (ground versus lazy at fixed semantics: \mintinline{text}|gc| versus \mintinline{text}|lc|, \mintinline{text}|ga| versus \mintinline{text}|la|) is therefore kept separate from the comparison of \emph{semantics} (suffix \mintinline{text}|a| versus suffix \mintinline{text}|c| at fixed approach) throughout the analysis. It is also worth noting that \mintinline{text}|ga| improves over the baseline but does not reach \mintinline{text}|la|: the static unrolling reconstructs the dynamic aggregate, but the dropped negative guards and the max-weight selection over a bounded domain are an approximation, not the exact Alpha evaluation.
 
 \subsection{Rules, Variables, and Memory}
 
-The reduction in the heuristic component is also visible in the number of variables when native and direct lazy variants are compared. At $n=100$, the native clingo-like variant is much larger because its grounded heuristic directives include the negative body and the aggregate in the ground-and-solve representation.
+The compression of the heuristic component is visible in the size of the propositional instance. At $n=100$, the ground clingo-like variant is fifty times larger in variables than every other variant, because its heuristic directives materialize the negative body and the aggregate bound for each $(X,S)$ pair.
 
 \begin{table}[H]
 \centering
@@ -174,27 +175,32 @@ The reduction in the heuristic component is also visible in the number of variab
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{memory_comparison}
-    \caption{Maximum observed memory during the runs.}
+    \caption{Peak resident set size of the solver process during the runs.}
     \label{fig:memory}
 \end{figure}
 
-Memory is still dominated by the base program for large values of $n$. At $n=100$, \mintinline{text}|gc_noheur|, \mintinline{text}|la|, and \mintinline{text}|lc| are around 3.2 GiB, whereas \mintinline{text}|gc| reaches about 3.7 GiB. The difference confirms that native heuristics add pressure, but they are not the only source of growth.
+The memory metric is the peak resident set size of the entire solver process, end to end: it covers grounding, CDCL search, and the custom propagator in a single value, and for the lazy Prolog variants it includes the in-process SWI-Prolog engine and its asserted database. Two consequences follow. First, the Prolog engine has a fixed initialization overhead independent of $n$: on small instances the lazy curves start \emph{above} the ground ones, and the lazy memory advantage is asymptotic, emerging where the $\Theta(n^3)$ explosion of ground heuristics overtakes the constant overhead. Second, at large $n$ memory is dominated by the base program for every variant: at $n=100$, \mintinline{text}|gc_noheur|, \mintinline{text}|la|, and \mintinline{text}|lc| sit around 3.2~GiB while \mintinline{text}|gc| reaches about 3.7~GiB. The RSS \emph{confirms} the saving on the real consumption; the ground-object count of Table~\ref{tab:heur-growth} \emph{explains its cause}.
+
+\subsection{The Price of Laziness: Per-Decision Cost}
+\label{sec:per-decision-cost}
+
+Intellectual honesty requires stating that the lazy approach does not \emph{eliminate} the cost of the combinatorial explosion: it \emph{moves} it. What ground-and-solve pays once, in memory, at grounding time, the lazy backend pays repeatedly, in time, at every decision, in the form of candidate evaluations (native) or queries to the in-process Prolog engine (Prolog backend). The instrumentation quantifies this trade-off directly: the Prolog backend reports the number of guided decisions (\mintinline{text}|decide_calls|), the candidates produced and examined per decision, and the cumulative time spent in state synchronization, Prolog query, candidate scan, and selection; the derived metric \mintinline{text}|prolog_ms_per_decide| normalizes the query time per decision. The correct claim supported by the data is thus strong but circumscribed: the lazy representation achieves a heuristic memory footprint that is constant in $n$, \emph{at the price of} a per-decision time cost that ground-and-solve does not pay at all. For small instances, where the ground explosion is still manageable, ground-and-solve remains competitive or preferable on both axes; the interesting regime is beyond the crossover point where the asymptotic saving repays the runtime overhead.
 
 \subsection{Direct and Auxiliary Forms}
 
-The \mintinline{text}|la_aux| variant uses auxiliary predicates to materialize the heuristic body before applying the lazy propagator. This experiment separates two effects that are otherwise easy to confuse: reducing the number of ground \mintinline{text}|#heuristic| directives, and avoiding the materialization of the heuristic body itself.
-
-\mintinline{text}|la_aux| keeps only two \mintinline{text}|__heuristic| facts, but it introduces \mintinline{text}|h_b| and \mintinline{text}|h_c|. The directive component is small, while the auxiliary body can become large. This explains why the variant times out already at $n=60$ in the considered run. The direct lazy form is therefore the most interesting one for this benchmark: if the heuristic body is first materialized into a large auxiliary predicate, part of the intended benefit is lost.
+The \mintinline{text}|la_aux| variant routes the lazy heuristic through auxiliary predicates that materialize the heuristic body, including the aggregate value, before the propagator is used. This experiment separates two effects that are otherwise easy to confuse: reducing the number of ground heuristic directives, and avoiding the materialization of the heuristic body itself. \mintinline{text}|la_aux| keeps only two \mintinline{text}|__heuristic| facts, but its auxiliaries \mintinline{text}|h_b(X,S)| and \mintinline{text}|h_c(X,S)| reintroduce the $(X,S)$ product in the base program; the variant times out already at $n=60$. The lesson is clear: if the heuristic body is first materialized into a large auxiliary relation, the intended benefit of laziness is lost. The direct lazy form is the meaningful one.
 
 \subsection{Effect of the Constraint Formulation}
 
-The \mintinline{text}|la_co| variant must be read separately from the direct comparison among heuristic representations. It changes not only the representation of the heuristic directive, but also the BSP constraint formulation by using a more propagation-friendly interval constraint. A comparison between \mintinline{text}|la_co| and \mintinline{text}|la| therefore measures the interaction between lazy heuristics and problem modelling, not the isolated effect of the lazy representation.
+The \mintinline{text}|la_co| variant changes not only the heuristic representation but also the BSP constraint itself, replacing the quadratic difference check with a propagation-friendly interval constraint over one sum. A comparison between \mintinline{text}|la_co| and \mintinline{text}|la| therefore measures the interaction between lazy heuristics and problem modelling, not the isolated effect of the representation, and it is reported as a modelling experiment only.
 
-For this reason, \mintinline{text}|la_co| is useful as an experiment on modelling choices, but it is not used as a direct baseline for claiming that a lazy heuristic is faster than an equivalent ground-and-solve heuristic.
+\subsection{Status of the PUP and HRP Campaigns}
+
+The PUP and HRP suites are fully wired into the same pipeline: all five settings exist for both backends, the correctness harness covers them at the SAT/UNSAT level, and the instance sets (the \texttt{double}/\texttt{doubleV} families for PUP, the reconfiguration instances for HRP) are in place. During the final audit of the encodings, the weight flattening of the native \mintinline{text}|lc| variants of PUP and HRP was corrected to comply with the rule of Section~2.1.2 (the earlier revision relied on priorities that the clingo semantics does not rank globally), which invalidated the lazy-clingo cells of the preliminary runs; the definitive PUP and HRP figures are produced by the re-run of the full campaign with the corrected encodings. The structural expectations are nevertheless fixed by the design: the ground heuristic explosion of PUP is the product of the unrolled value domains per ground pair, the HRP comparison isolates the negation semantics because its heuristics contain no aggregates, and the per-decision cost of the Prolog backend grows with the number of candidates that its rules generate per decision.
 
 \subsection{Summary of Results}
 
-The experimental results support five conclusions. The lazy representation reduces the ground heuristic component from hundreds of thousands or millions of directives to two descriptive facts in BSP. The total runtime does not become constant because the base program is still grounded by clingo. Alpha-style semantics can guide search very aggressively, but it does not coincide with clingo-like semantics. Auxiliary forms are useful for expressing more general mappings, yet they may reintroduce the grounding cost that direct lazy evaluation tries to avoid. Finally, variants that change the BSP constraint formulation, such as \mintinline{text}|la_co|, must be analysed as modelling experiments rather than direct comparisons among heuristic encodings.
+The experimental results support five conclusions. First, the lazy representation reduces the ground heuristic component from $\Theta(n^3)$ directives to two constant facts on BSP, and the peak-memory measurements confirm the corresponding saving on real consumption at large $n$. Second, the total runtime does not become constant, because the base program is still fully grounded; what changes is the isolation of the heuristic component from the growth of the instance. Third, the semantics axis is not a detail: the Alpha-like reading turns the BSP heuristic into a perfect greedy strategy ($n$ choices, zero conflicts), while the clingo-like reading, under either representation, stays close to the baseline; representation and semantics must never be conflated in the comparisons. Fourth, laziness is a space--time trade-off, made explicit by the per-decision metrics of the propagator. Fifth, auxiliary formulations and constraint reformulations (\mintinline{text}|la_aux|, \mintinline{text}|la_co|) are valuable methodological controls, but they answer different questions than the direct ground-versus-lazy comparison.
 
 \begin{figure}[H]
     \centering

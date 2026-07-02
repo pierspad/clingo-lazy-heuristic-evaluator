@@ -29,16 +29,19 @@ SHORT_HRP_COUNT=2
 # ============================================================
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
-TEST_DIR="$REPO_ROOT/test_folder"
+# La macchina btool vive in test_folder/benchmark_folder_clingo/ (cwd di btool).
+TEST_DIR="$REPO_ROOT/test_folder/benchmark_folder_clingo"
 # shellcheck disable=SC1091
 . "$TEST_DIR/scripts/bench_common.sh"
 
-# percorsi isolati per la short (relativi a test_folder)
+# percorsi isolati per la short (relativi a benchmark_folder_clingo)
 SHORT_BENCH="benchmarks/_short"
 SHORT_OUTPUT="output-short"
 SHORT_RS="runscripts/runscript.short.xml"
 SHORT_RESULTS="results-short.xml"
-SHORT_GRAPHS="graphs-short"
+# La short e' un sanity-check: i suoi grafici restano DENTRO la cartella btool
+# (out-base ".") per non sporcare test_folder/ con i grafici di prova.
+SHORT_GRAPHS="."
 
 # copia le N istanze piu' piccole (per taglia numerica) da src a dst
 copy_smallest() {
@@ -88,7 +91,7 @@ main() {
 
   summarize "$SHORT_RESULTS" "$SHORT_GRAPHS" "TEST RAPIDO"
   echo
-  ok "Se i grafici in $SHORT_GRAPHS/ hanno senso, la pipeline funziona."
+  ok "Se i grafici in benchmark_folder_clingo/{graphs-native,graphs-prolog,graphs-comparison-native-prolog}/ hanno senso, la pipeline funziona."
   ok "Per la suite completa:  sh 2_run_benchmark_full.sh"
 }
 

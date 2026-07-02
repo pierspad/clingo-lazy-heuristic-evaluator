@@ -1,6 +1,4 @@
 Utilities
-test_folder/__pycache__
-test_folder/.venv
 test_folder/*.prova
 STUDIO
 _minted*/
@@ -10,20 +8,24 @@ thesis/Tesi
 
 ALPHA
 # --- benchmark-tool (btool) artefatti generati ---
-test_folder/output/
-test_folder/results.xml
-test_folder/eval.log
-test_folder/graphs/*.png
-test_folder/programs/runlim
-test_folder/tools/__pycache__
-test_folder/resultparsers/__pycache__
+# La macchina btool vive in test_folder/benchmark_folder_clingo/.
+test_folder/benchmark_folder_clingo/.venv
+test_folder/benchmark_folder_clingo/output/
+test_folder/benchmark_folder_clingo/results.xml
+test_folder/benchmark_folder_clingo/results.xlsx
+test_folder/benchmark_folder_clingo/eval.log
+test_folder/benchmark_folder_clingo/programs/runlim
+test_folder/benchmark_folder_clingo/**/__pycache__/
 # runscript derivati + artefatti degli script 1_/2_run_benchmark
-test_folder/runscripts/runscript.short.xml
-test_folder/runscripts/runscript.full.xml
-test_folder/output-short/
-test_folder/results-short.xml
-test_folder/graphs-short/*.png
-test_folder/benchmarks/_short/
+test_folder/benchmark_folder_clingo/runscripts/runscript.short.xml
+test_folder/benchmark_folder_clingo/runscripts/runscript.full.xml
+test_folder/benchmark_folder_clingo/output-short/
+test_folder/benchmark_folder_clingo/results-short.xml
+# grafici della short (sanity-check, restano dentro la cartella btool)
+test_folder/benchmark_folder_clingo/graphs-native/
+test_folder/benchmark_folder_clingo/graphs-prolog/
+test_folder/benchmark_folder_clingo/graphs-comparison-native-prolog/
 # scratch/temporanei di generazione istanze
-test_folder/benchmarks/BSP_tmp/
-test_folder/benchmarks.bak/
+test_folder/benchmark_folder_clingo/benchmarks/_short/
+test_folder/benchmark_folder_clingo/benchmarks/BSP_tmp/
+test_folder/benchmark_folder_clingo/benchmarks.bak/

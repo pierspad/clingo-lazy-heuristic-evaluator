@@ -28,14 +28,18 @@ FULL_TIMEOUT=300     # <-- timeout per istanza, in SECONDI (modifica qui)
 # ============================================================
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
-TEST_DIR="$REPO_ROOT/test_folder"
+# La macchina btool (programs/, runscripts/, tools/, benchmarks/, .venv, ...)
+# vive ora in test_folder/benchmark_folder_clingo/. cwd di btool = questa.
+TEST_DIR="$REPO_ROOT/test_folder/benchmark_folder_clingo"
 # shellcheck disable=SC1091
 . "$TEST_DIR/scripts/bench_common.sh"
 
 FULL_OUTPUT="output"
 FULL_RS="runscripts/runscript.full.xml"
 FULL_RESULTS="results.xml"
-FULL_GRAPHS="graphs"
+# I grafici "veri" vanno UN LIVELLO SOPRA (test_folder): graphs-native/,
+# graphs-prolog/, graphs-comparison-native-prolog/ fuori dalla cartella btool.
+FULL_GRAPHS=".."
 
 # Ripristina il set canonico di istanze in benchmarks/.
 # Fonte primaria: benchmarks.bak/ (backup locale, utile per annullare edit
@@ -80,7 +84,8 @@ main() {
 
   summarize "$FULL_RESULTS" "$FULL_GRAPHS" "SUITE COMPLETA"
   echo
-  ok "Risultati in $FULL_RESULTS, foglio in $FULL_OUTPUT/results.xlsx, grafici in $FULL_GRAPHS/"
+  ok "Risultati in $FULL_RESULTS, foglio in $FULL_OUTPUT/results.xlsx."
+  ok "Grafici in test_folder/{graphs-native,graphs-prolog,graphs-comparison-native-prolog}/"
 }
 
 main "$@"

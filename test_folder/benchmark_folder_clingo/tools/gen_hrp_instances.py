@@ -34,7 +34,7 @@ import os
 from pathlib import Path
 
 TOOLS_DIR = Path(__file__).resolve().parent
-TEST_ROOT = TOOLS_DIR.parent
+TEST_ROOT = TOOLS_DIR.parents[1]   # test_folder (instances/ vive un livello sopra benchmark_folder_clingo)
 DEFAULT_OUT = TEST_ROOT / "instances" / "HRP_instances"
 
 

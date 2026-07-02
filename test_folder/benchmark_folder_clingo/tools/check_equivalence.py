@@ -66,7 +66,7 @@ import sys
 from pathlib import Path
 
 TOOLS_DIR = Path(__file__).resolve().parent
-TEST_ROOT = TOOLS_DIR.parent
+TEST_ROOT = TOOLS_DIR.parents[1]   # test_folder (encodings-*/instances vivono qui, sopra benchmark_folder_clingo)
 REPO_ROOT = TEST_ROOT.parent
 
 SUCCESS_RETURN_CODES = {0, 10, 20, 30}

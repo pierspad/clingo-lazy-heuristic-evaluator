@@ -4,6 +4,15 @@
 % predicato sia FALSO (non basta indeciso). I 'not' su stato parziale
 % scattano piu' tardi -> guida tipicamente piu' debole della 'la' (confronto
 % alpha vs clingo sulla negazione; HRP non ha aggregati).
+%
+% RANKING (importante): con __semantics(clingo) il backend native usa la
+% __priority solo LOCALMENTE (arbitraggio sullo stesso target); il rank
+% GLOBALE tra target diversi e' dato dal solo peso, come in clingo.
+% L'ordine globale reuse > fill-cab(long/short) > fill-room > chiusura e'
+% quindi APPIATTITO NEL PESO con W_flat = w + p*LM (LM = levelMul, come in
+% HRP_gc.lp); le __priority restano per l'arbitraggio locale sullo stesso
+% target. In HRP_la.lp (semantica alpha) le priorita' native bastano:
+% il propagatore le usa come rank globale, fedele ai livelli di Alpha.
 % Esegui con: --heuristic=Domain.
 % ============================================================
 
@@ -120,20 +129,24 @@ roomFull(R,C)        :- roomDomain(R), cabinet(C), fullRoom(R).
 cabAssignedAt(R,C)   :- roomDomain(R), cabinet(C), assignedCabinet(C).
 roomOtherPerson(R,C) :- roomDomain(R), cabinet(C), personTOcabinet(P,C), otherPersonTOroom(P,R).
 
+% ===== aux per appiattimento livelli (identico a HRP_gc.lp) =====
+maxCabinetId(M) :- M = #max{ C : cabinetDomain(C) }.
+maxRoomId(M)    :- M = #max{ R : roomDomain(R) }.
+levelMul(LM)    :- LM = MC + MR + 10, maxCabinetId(MC), maxRoomId(MR).
+
 % ===== euristiche LAZY CLINGO (lc) - DSL nativo __heuristic =====
-__heuristic(__target(reuseCabinet),      legacyCabinet,            __weight(6), __priority(4), __semantics(clingo), __modifier(true)).
-__heuristic(__target(reuseRoom),         legacyRoom,               __weight(5), __priority(4), __semantics(clingo), __modifier(true)).
-__heuristic(__target(reuseCabinetThing), legacyCabinetThingLong,   __weight(4), __priority(4), __semantics(clingo), __modifier(true)).
-__heuristic(__target(reuseCabinetThing), legacyCabinetThingShort,  __weight(3), __priority(4), __semantics(clingo), __modifier(true)).
-__heuristic(__target(reuseRoomCabinet),  legacyRoomCabinet,        __weight(2), __priority(4), __semantics(clingo), __modifier(true)).
-__heuristic(__target(reusePersonRoom),   legacyPersonRoom,         __weight(1), __priority(4), __semantics(clingo), __modifier(true)).
-__heuristic(__target(cabinetTOthing), cabLongCand,  __n_cabFull, __n_thingAssignedAt, __n_cabOtherPerson, __weight(__sub(MC, self)), __priority(3), __semantics(clingo), __modifier(true)) :- maxCabinet(MC).
-__heuristic(__target(cabinetTOthing), cabShortCand, __n_cabFull, __n_thingAssignedAt, __n_cabOtherPerson, __weight(__sub(MC, self)), __priority(2), __semantics(clingo), __modifier(true)) :- maxCabinet(MC).
-__heuristic(__target(roomTOcabinet),  roomCabCand,  __n_roomFull, __n_cabAssignedAt, __n_roomOtherPerson, __weight(__sub(MR, self)), __priority(1), __semantics(clingo), __modifier(true)) :- maxRoom(MR).
+% Pesi APPIATTITI W_flat = w + p*LM (rank globale clingo-like = solo peso);
+% le __priority restano per l'arbitraggio locale sullo stesso target.
+__heuristic(__target(reuseCabinet),      legacyCabinet,            __weight(__add(6, __mul(4, LM))), __priority(4), __semantics(clingo), __modifier(true)) :- levelMul(LM).
+__heuristic(__target(reuseRoom),         legacyRoom,               __weight(__add(5, __mul(4, LM))), __priority(4), __semantics(clingo), __modifier(true)) :- levelMul(LM).
+__heuristic(__target(reuseCabinetThing), legacyCabinetThingLong,   __weight(__add(4, __mul(4, LM))), __priority(4), __semantics(clingo), __modifier(true)) :- levelMul(LM).
+__heuristic(__target(reuseCabinetThing), legacyCabinetThingShort,  __weight(__add(3, __mul(4, LM))), __priority(4), __semantics(clingo), __modifier(true)) :- levelMul(LM).
+__heuristic(__target(reuseRoomCabinet),  legacyRoomCabinet,        __weight(__add(2, __mul(4, LM))), __priority(4), __semantics(clingo), __modifier(true)) :- levelMul(LM).
+__heuristic(__target(reusePersonRoom),   legacyPersonRoom,         __weight(__add(1, __mul(4, LM))), __priority(4), __semantics(clingo), __modifier(true)) :- levelMul(LM).
+__heuristic(__target(cabinetTOthing), cabLongCand,  __n_cabFull, __n_thingAssignedAt, __n_cabOtherPerson, __weight(__add(__sub(MC, self), __mul(3, LM))), __priority(3), __semantics(clingo), __modifier(true)) :- maxCabinet(MC), levelMul(LM).
+__heuristic(__target(cabinetTOthing), cabShortCand, __n_cabFull, __n_thingAssignedAt, __n_cabOtherPerson, __weight(__add(__sub(MC, self), __mul(2, LM))), __priority(2), __semantics(clingo), __modifier(true)) :- maxCabinet(MC), levelMul(LM).
+__heuristic(__target(roomTOcabinet),  roomCabCand,  __n_roomFull, __n_cabAssignedAt, __n_roomOtherPerson, __weight(__add(__sub(MR, self), __mul(1, LM))), __priority(1), __semantics(clingo), __modifier(true)) :- maxRoom(MR), levelMul(LM).
 __heuristic(__target(cabinet),        cabinetDomain, __weight(1), __priority(0), __semantics(clingo), __modifier(false)).
 __heuristic(__target(room),           roomDomain,    __weight(1), __priority(0), __semantics(clingo), __modifier(false)).
 __heuristic(__target(cabinetTOthing), cabThingDom,   __weight(1), __priority(0), __semantics(clingo), __modifier(false)).
 __heuristic(__target(roomTOcabinet),  roomCabCand,   __weight(1), __priority(0), __semantics(clingo), __modifier(false)).
-
-#show cabinetTOthing/2.
-#show roomTOcabinet/2.

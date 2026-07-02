@@ -107,7 +107,7 @@ personTOcabinet(P,C) :- personTOthing(P,T), cabinetTOthing(C,T).
 otherPersonTOcabinet(P,C) :- personTOcabinet(P2,C), person(P), P!=P2.
 otherPersonTOroom(P,R)    :- roomTOcabinet(R,C), personTOcabinet(P2,C), person(P), P!=P2.
 
-% ===== euristiche LAZY ALPHA (la) - stringhe SWI-Prolog (clingo_not) =====
+% ===== euristiche LAZY CLINGO (lc) - stringhe SWI-Prolog (clingo_not) =====
 % testa: heuristic(Target, Weight, Priority, Modifier)
 heuristic("heuristic(reuseCabinet(C), 6, 4, true) :- holds(legacyCabinet(C)), target_available(reuseCabinet(C)).").
 heuristic("heuristic(reuseRoom(R), 5, 4, true) :- holds(legacyRoom(R)), target_available(reuseRoom(R)).").

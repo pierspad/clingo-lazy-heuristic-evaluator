@@ -40,39 +40,39 @@
           cmdline="--stats=2 --heuristic=Domain -n 1">
 
     <setting name="gc_noheur" tag="bsp pup hrp">
-      <encoding file="encodings-native/1_BSP/BSP_gc_noheur.lp" encoding_tag="bsp"/>
-      <encoding file="encodings-native/2_PUP/PUP_gc_noheur.lp" encoding_tag="pup"/>
-      <encoding file="encodings-native/3_HRP/HRP_gc_noheur.lp" encoding_tag="hrp"/>
+      <encoding file="../encodings-native/1_BSP/BSP_gc_noheur.lp" encoding_tag="bsp"/>
+      <encoding file="../encodings-native/2_PUP/PUP_gc_noheur.lp" encoding_tag="pup"/>
+      <encoding file="../encodings-native/3_HRP/HRP_gc_noheur.lp" encoding_tag="hrp"/>
     </setting>
     <setting name="gc" tag="bsp pup hrp">
-      <encoding file="encodings-native/1_BSP/BSP_gc.lp" encoding_tag="bsp"/>
-      <encoding file="encodings-native/2_PUP/PUP_gc.lp" encoding_tag="pup"/>
-      <encoding file="encodings-native/3_HRP/HRP_gc.lp" encoding_tag="hrp"/>
+      <encoding file="../encodings-native/1_BSP/BSP_gc.lp" encoding_tag="bsp"/>
+      <encoding file="../encodings-native/2_PUP/PUP_gc.lp" encoding_tag="pup"/>
+      <encoding file="../encodings-native/3_HRP/HRP_gc.lp" encoding_tag="hrp"/>
     </setting>
     <setting name="ga" tag="bsp pup hrp">
-      <encoding file="encodings-native/1_BSP/BSP_ga.lp" encoding_tag="bsp"/>
-      <encoding file="encodings-native/2_PUP/PUP_ga.lp" encoding_tag="pup"/>
-      <encoding file="encodings-native/3_HRP/HRP_ga.lp" encoding_tag="hrp"/>
+      <encoding file="../encodings-native/1_BSP/BSP_ga.lp" encoding_tag="bsp"/>
+      <encoding file="../encodings-native/2_PUP/PUP_ga.lp" encoding_tag="pup"/>
+      <encoding file="../encodings-native/3_HRP/HRP_ga.lp" encoding_tag="hrp"/>
     </setting>
     <setting name="la" tag="bsp pup hrp">
-      <encoding file="encodings-native/1_BSP/BSP_la.lp" encoding_tag="bsp"/>
-      <encoding file="encodings-native/2_PUP/PUP_la.lp" encoding_tag="pup"/>
-      <encoding file="encodings-native/3_HRP/HRP_la.lp" encoding_tag="hrp"/>
+      <encoding file="../encodings-native/1_BSP/BSP_la.lp" encoding_tag="bsp"/>
+      <encoding file="../encodings-native/2_PUP/PUP_la.lp" encoding_tag="pup"/>
+      <encoding file="../encodings-native/3_HRP/HRP_la.lp" encoding_tag="hrp"/>
     </setting>
     <setting name="lc" tag="bsp pup hrp">
-      <encoding file="encodings-native/1_BSP/BSP_lc.lp" encoding_tag="bsp"/>
-      <encoding file="encodings-native/2_PUP/PUP_lc.lp" encoding_tag="pup"/>
-      <encoding file="encodings-native/3_HRP/HRP_lc.lp" encoding_tag="hrp"/>
+      <encoding file="../encodings-native/1_BSP/BSP_lc.lp" encoding_tag="bsp"/>
+      <encoding file="../encodings-native/2_PUP/PUP_lc.lp" encoding_tag="pup"/>
+      <encoding file="../encodings-native/3_HRP/HRP_lc.lp" encoding_tag="hrp"/>
     </setting>
     <!-- varianti SOLO BSP -->
     <setting name="ga_weak" tag="bsp">
-      <encoding file="encodings-native/1_BSP/BSP_ga_weak.lp" encoding_tag="bsp"/>
+      <encoding file="../encodings-native/1_BSP/BSP_ga_weak.lp" encoding_tag="bsp"/>
     </setting>
     <setting name="la_aux" tag="bsp">
-      <encoding file="encodings-native/1_BSP/BSP_la_aux.lp" encoding_tag="bsp"/>
+      <encoding file="../encodings-native/1_BSP/BSP_la_aux.lp" encoding_tag="bsp"/>
     </setting>
     <setting name="la_co" tag="bsp">
-      <encoding file="encodings-native/1_BSP/BSP_la_co.lp" encoding_tag="bsp"/>
+      <encoding file="../encodings-native/1_BSP/BSP_la_co.lp" encoding_tag="bsp"/>
     </setting>
   </system>
 
@@ -81,39 +81,39 @@
           cmdline="--stats=2 --heuristic=Domain -n 1">
 
     <setting name="gc_noheur" tag="bsp pup hrp">
-      <encoding file="encodings-prolog/1_BSP/BSP_gc_noheur.lp" encoding_tag="bsp"/>
-      <encoding file="encodings-prolog/2_PUP/PUP_gc_noheur.lp" encoding_tag="pup"/>
-      <encoding file="encodings-prolog/3_HRP/HRP_gc_noheur.lp" encoding_tag="hrp"/>
+      <encoding file="../encodings-prolog/1_BSP/BSP_gc_noheur.lp" encoding_tag="bsp"/>
+      <encoding file="../encodings-prolog/2_PUP/PUP_gc_noheur.lp" encoding_tag="pup"/>
+      <encoding file="../encodings-prolog/3_HRP/HRP_gc_noheur.lp" encoding_tag="hrp"/>
     </setting>
     <setting name="gc" tag="bsp pup hrp">
-      <encoding file="encodings-prolog/1_BSP/BSP_gc.lp" encoding_tag="bsp"/>
-      <encoding file="encodings-prolog/2_PUP/PUP_gc.lp" encoding_tag="pup"/>
-      <encoding file="encodings-prolog/3_HRP/HRP_gc.lp" encoding_tag="hrp"/>
+      <encoding file="../encodings-prolog/1_BSP/BSP_gc.lp" encoding_tag="bsp"/>
+      <encoding file="../encodings-prolog/2_PUP/PUP_gc.lp" encoding_tag="pup"/>
+      <encoding file="../encodings-prolog/3_HRP/HRP_gc.lp" encoding_tag="hrp"/>
     </setting>
     <setting name="ga" tag="bsp pup hrp">
-      <encoding file="encodings-prolog/1_BSP/BSP_ga.lp" encoding_tag="bsp"/>
-      <encoding file="encodings-prolog/2_PUP/PUP_ga.lp" encoding_tag="pup"/>
-      <encoding file="encodings-prolog/3_HRP/HRP_ga.lp" encoding_tag="hrp"/>
+      <encoding file="../encodings-prolog/1_BSP/BSP_ga.lp" encoding_tag="bsp"/>
+      <encoding file="../encodings-prolog/2_PUP/PUP_ga.lp" encoding_tag="pup"/>
+      <encoding file="../encodings-prolog/3_HRP/HRP_ga.lp" encoding_tag="hrp"/>
     </setting>
     <setting name="la" tag="bsp pup hrp">
-      <encoding file="encodings-prolog/1_BSP/BSP_la.lp" encoding_tag="bsp"/>
-      <encoding file="encodings-prolog/2_PUP/PUP_la.lp" encoding_tag="pup"/>
-      <encoding file="encodings-prolog/3_HRP/HRP_la.lp" encoding_tag="hrp"/>
+      <encoding file="../encodings-prolog/1_BSP/BSP_la.lp" encoding_tag="bsp"/>
+      <encoding file="../encodings-prolog/2_PUP/PUP_la.lp" encoding_tag="pup"/>
+      <encoding file="../encodings-prolog/3_HRP/HRP_la.lp" encoding_tag="hrp"/>
     </setting>
     <setting name="lc" tag="bsp pup hrp">
-      <encoding file="encodings-prolog/1_BSP/BSP_lc.lp" encoding_tag="bsp"/>
-      <encoding file="encodings-prolog/2_PUP/PUP_lc.lp" encoding_tag="pup"/>
-      <encoding file="encodings-prolog/3_HRP/HRP_lc.lp" encoding_tag="hrp"/>
+      <encoding file="../encodings-prolog/1_BSP/BSP_lc.lp" encoding_tag="bsp"/>
+      <encoding file="../encodings-prolog/2_PUP/PUP_lc.lp" encoding_tag="pup"/>
+      <encoding file="../encodings-prolog/3_HRP/HRP_lc.lp" encoding_tag="hrp"/>
     </setting>
     <!-- varianti SOLO BSP -->
     <setting name="ga_weak" tag="bsp">
-      <encoding file="encodings-prolog/1_BSP/BSP_ga_weak.lp" encoding_tag="bsp"/>
+      <encoding file="../encodings-prolog/1_BSP/BSP_ga_weak.lp" encoding_tag="bsp"/>
     </setting>
     <setting name="la_aux" tag="bsp">
-      <encoding file="encodings-prolog/1_BSP/BSP_la_aux.lp" encoding_tag="bsp"/>
+      <encoding file="../encodings-prolog/1_BSP/BSP_la_aux.lp" encoding_tag="bsp"/>
     </setting>
     <setting name="la_co" tag="bsp">
-      <encoding file="encodings-prolog/1_BSP/BSP_la_co.lp" encoding_tag="bsp"/>
+      <encoding file="../encodings-prolog/1_BSP/BSP_la_co.lp" encoding_tag="bsp"/>
     </setting>
   </system>
 

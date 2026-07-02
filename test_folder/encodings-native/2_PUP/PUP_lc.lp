@@ -25,26 +25,30 @@
 % ============================================================
 
 % ============================================================
-% PUP (Partner Units Problem) - LAZY ALPHA (la, backend Prolog).
+% PUP (Partner Units Problem) - LAZY CLINGO (lc), backend NATIVE.
 % Architettura: ALPHA/Evaluation/PUP/encoding-alpha-prologheu-double.asp
 %
 % Logica di dominio e predicati ausiliari IDENTICI a PUP_gc.lp, ma
-% nessuna direttiva #heuristic nativa: le euristiche sono iniettate
-% come stringhe Prolog tramite heuristic("...") e valutate a runtime
-% dal propagatore (LAZY_HEURISTIC_BACKEND=prolog). Il grounder non
-% vede alcun aggregato euristico: niente esplosione combinatoria.
+% nessuna direttiva #heuristic nativa: le euristiche sono fatti
+% __heuristic(...) letti dal propagatore C++ in init() e valutati a
+% runtime. Il grounder non vede alcun aggregato euristico: niente
+% esplosione combinatoria.
 %
-% Traduzione degli aggregati (runtime SWI-Prolog):
-%   #count{...}  -> aggregate_all(count, (holds(...), ...), V)
-%   #max{0; ...} -> dyn_max(holds(...), N, V)   (0 se l'insieme e' vuoto)
-% Condizioni negative con semantica CLINGO:
-%   not p(X)     -> alpha_not(p(X))   (vera solo se p(X) e' assegnato falso)
-% Sicurezza a runtime: target_available(...) garantisce che il target
-% sia ancora libero (ne' vero ne' falso).
+% Condizioni negative con semantica CLINGO (__semantics(clingo)):
+%   __n_p e' soddisfatto SOLO se p e' assegnato FALSO (indeciso non basta).
+% Gli aggregati __count/__max si attivano solo a sorgenti completamente
+% determinate (gating di completezza clingo-like).
+% Il propagatore decide solo su target ancora liberi.
 %
-% Ranking globale del backend: (Priority, Weight) decrescenti; la
-% priorita' 1 delle zone replica nativamente [W@1] > [W@0] del file
-% originale (in gc/ga e' appiattita nel peso con offset +100000).
+% RANKING (importante): con __semantics(clingo) il backend native usa la
+% __priority solo LOCALMENTE (arbitraggio sullo stesso target); il rank
+% GLOBALE tra target diversi e' dato dal solo peso, come in clingo.
+% L'ordine globale "zone prima dei sensori" e' quindi APPIATTITO NEL PESO
+% con l'offset +100000 sulle zone, esattamente come in PUP_gc.lp
+% (max peso_sensore <= 46220 < 100000 sulle istanze double/doubleV).
+% Il backend Prolog (PUP_lc.lp prolog) esprime lo stesso ordine con la
+% Priority globale del suo ranking (Priority, Weight): i due backend
+% producono cosi' lo stesso ordinamento inteso.
 %
 % Stessi adattamenti di dominio di PUP_gc.lp: !=, sensorNumbers(0..2).
 % Le istanze forniscono: comUnit/1, zone2sensor/2.
@@ -147,7 +151,7 @@ num_forbidden_places_of_sensors(S,N1+4) :- assignable_sensor_unit(S,_),
 sensor_assigned_zone(S,Z)  :- zone2sensor(Z,S), assigned_zone_unit(Z,_).
 sensor_zone_on_unit(S,U,Z) :- zone2sensor(Z,S), assigned_zone_unit(Z,U).
 
-%%% heuristics (DSL nativo, semantica alpha)
+%%% heuristics (DSL nativo, semantica clingo)
 
 % --- sensori (priorita' 0) ---
 % W = Deg*10000 + Forb*1000 + Cnt*100 + Direct*10
@@ -162,8 +166,8 @@ __heuristic(__target(assigned_sensor_unit),
                                  __mul(cnt,100)), __mul(direct,10))),
             __priority(0), __semantics(clingo), __modifier(true)).
 
-% --- zone (priorita' 1) ---
-% W = A*10 + (6 - (M0 + M1 + M2))
+% --- zone (peso appiattito: +100000 replica "zone prima dei sensori") ---
+% W = A*10 + (6 - (M0 + M1 + M2)) + 100000
 __heuristic(__target(assigned_zone_unit),
             assignable_zone_unit,
             __n_not_assigned_zone_unit,
@@ -171,8 +175,8 @@ __heuristic(__target(assigned_zone_unit),
             __bind(m0, __max(num_sensors_on_unit, 0, __filter(1,1))),
             __bind(m1, __max(num_sensors_on_unit, 0, __filter(1,1,-1))),
             __bind(m2, __max(num_sensors_on_unit, 0, __filter(1,1,1))),
-            __weight(__sub(__sub(__sub(__add(__mul(a,10), 6), m0), m1), m2)),
-            __priority(1), __semantics(clingo), __modifier(true)).
+            __weight(__add(__sub(__sub(__sub(__add(__mul(a,10), 6), m0), m1), m2), 100000)),
+            __priority(0), __semantics(clingo), __modifier(true)).
 
 #show assigned_zone_unit/2.
 #show assigned_sensor_unit/2.
