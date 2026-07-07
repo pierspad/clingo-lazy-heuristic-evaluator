@@ -6,8 +6,15 @@
 #SBATCH --partition={partition}
 {dist_options}                  # additional dist options (specified via runscript setting)
 
-# Good Idea to stop operation on first error.
-set -e
+# NIENTE `set -e` qui: ogni $i e' un run indipendente (istanza x setting x
+# sistema) il cui exit code riflette l'esito del solver (SAT/UNSAT/timeout),
+# non un errore di sistema — seq-generic.sh stesso e' scritto apposta per non
+# propagare mai un fallimento (fa sempre `touch .finished` come ultima
+# istruzione). Con `set -e` qui, il PRIMO run che ritorna non-zero abortiva
+# l'intero job SLURM, abbandonando in silenzio tutti i run successivi nella
+# lista (visto in pratica: BSP completo, PUP/HRP azzerati perche' dichiarati
+# dopo in runscript.xml). Continuiamo sempre, loggando i fallimenti in
+# err.%j invece di sparire senza traccia.
 
 # Load environment modules for your application here.
 source ~/.bashrc
@@ -21,5 +28,7 @@ echo ""
 for i in $jobs
 do
     echo "running " $i
-    $i
+    if ! $i; then
+        echo "!! job fallito (exit $?): $i" >&2
+    fi
 done

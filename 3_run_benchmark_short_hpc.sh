@@ -6,6 +6,21 @@
 if [ -z "${BASH_VERSION:-}" ]; then exec bash "$0" "$@"; fi
 set -euo pipefail
 
+# Questo script chiama ensure_runlim/ensure_clingo_bins (bench_common.sh),
+# che se il binario manca lo (ri)compilano SUL NODO DA CUI VENGONO ESEGUITE.
+# Lanciato a mano sul login node, quel binario finisce linkato con la glibc
+# del login node — la stessa causa gia' diagnosticata per lo "smoke test
+# fantasma" (runlim compilato sul login node, exec fallito sui compute node,
+# nessun errore visibile perche' seq-generic.sh non ha `set -e`). Per non
+# ripetere l'errore: se non siamo gia' dentro un'allocazione SLURM (nessun
+# $SLURM_JOB_ID), ci rilanciamo da soli su un compute node via `srun`, prima
+# di toccare qualunque compilazione. btool gen/run-dist funzionano
+# normalmente anche da dentro un job SLURM (sottomissione annidata supportata).
+if [ -z "${SLURM_JOB_ID:-}" ]; then
+  echo "==> Non sono su un compute node: mi rilancio via 'srun --partition=kr' ..."
+  exec srun --partition=kr --ntasks=1 --cpus-per-task=4 --time=00:30:00 bash "$0" "$@"
+fi
+
 # ============================================================
 #  COSTANTI MODIFICABILI
 # ============================================================

@@ -6,6 +6,17 @@
 if [ -z "${BASH_VERSION:-}" ]; then exec bash "$0" "$@"; fi
 set -euo pipefail
 
+# Stesso motivo del guard in 3_run_benchmark_short_hpc.sh: ensure_runlim/
+# ensure_clingo_bins (ri)compilano sul nodo da cui vengono chiamate. Se
+# lanciato a mano sul login node, rischia lo stesso mismatch di glibc gia'
+# diagnosticato per lo "smoke test fantasma". Ci rilanciamo su un compute
+# node via srun prima di toccare qualunque compilazione; la sottomissione
+# dei job distjob (btool run-dist) funziona normalmente anche da li'.
+if [ -z "${SLURM_JOB_ID:-}" ]; then
+  echo "==> Non sono su un compute node: mi rilancio via 'srun --partition=kr' ..."
+  exec srun --partition=kr --ntasks=1 --cpus-per-task=4 --time=00:30:00 bash "$0" "$@"
+fi
+
 # ============================================================
 #  COSTANTI MODIFICABILI
 # ============================================================
