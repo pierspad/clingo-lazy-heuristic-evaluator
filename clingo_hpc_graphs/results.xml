@@ -1,0 +1,2312 @@
+<result>
+	<machine name="hpc" cpu="cluster" memory="cluster"/>
+	<config name="seq-generic" template="templates/seq-generic.sh"/>
+	<system name="clingo-native" version="1.0" measures="clasp" config="seq-generic" cmdline="--stats=2 --heuristic=Domain -n 1">
+		<setting name="gc_noheur" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-native/1_BSP/BSP_gc_noheur.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-native/2_PUP/PUP_gc_noheur.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-native/3_HRP/HRP_gc_noheur.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="gc_noheur" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-native/1_BSP/BSP_gc_noheur.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-native/2_PUP/PUP_gc_noheur.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-native/3_HRP/HRP_gc_noheur.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="gc_noheur" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-native/1_BSP/BSP_gc_noheur.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-native/2_PUP/PUP_gc_noheur.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-native/3_HRP/HRP_gc_noheur.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="gc" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-native/1_BSP/BSP_gc.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-native/2_PUP/PUP_gc.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-native/3_HRP/HRP_gc.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="gc" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-native/1_BSP/BSP_gc.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-native/2_PUP/PUP_gc.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-native/3_HRP/HRP_gc.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="gc" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-native/1_BSP/BSP_gc.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-native/2_PUP/PUP_gc.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-native/3_HRP/HRP_gc.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="ga" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-native/1_BSP/BSP_ga.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-native/2_PUP/PUP_ga.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-native/3_HRP/HRP_ga.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="ga" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-native/1_BSP/BSP_ga.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-native/2_PUP/PUP_ga.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-native/3_HRP/HRP_ga.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="ga" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-native/1_BSP/BSP_ga.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-native/2_PUP/PUP_ga.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-native/3_HRP/HRP_ga.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="la" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-native/1_BSP/BSP_la.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-native/2_PUP/PUP_la.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-native/3_HRP/HRP_la.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="la" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-native/1_BSP/BSP_la.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-native/2_PUP/PUP_la.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-native/3_HRP/HRP_la.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="la" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-native/1_BSP/BSP_la.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-native/2_PUP/PUP_la.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-native/3_HRP/HRP_la.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="lc" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-native/1_BSP/BSP_lc.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-native/2_PUP/PUP_lc.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-native/3_HRP/HRP_lc.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="lc" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-native/1_BSP/BSP_lc.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-native/2_PUP/PUP_lc.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-native/3_HRP/HRP_lc.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="lc" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-native/1_BSP/BSP_lc.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-native/2_PUP/PUP_lc.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-native/3_HRP/HRP_lc.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="ga_weak" tag="bsp" dist_template="templates/single.dist">
+			<encoding file="../encodings-native/1_BSP/BSP_ga_weak.lp" encoding_tag="bsp"/>
+		</setting>
+		<setting name="la_aux" tag="bsp" dist_template="templates/single.dist">
+			<encoding file="../encodings-native/1_BSP/BSP_la_aux.lp" encoding_tag="bsp"/>
+		</setting>
+		<setting name="la_co" tag="bsp" dist_template="templates/single.dist">
+			<encoding file="../encodings-native/1_BSP/BSP_la_co.lp" encoding_tag="bsp"/>
+		</setting>
+	</system>
+	<system name="clingo-prolog" version="1.0" measures="clasp" config="seq-generic" cmdline="--stats=2 --heuristic=Domain -n 1">
+		<setting name="gc_noheur" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-prolog/1_BSP/BSP_gc_noheur.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-prolog/2_PUP/PUP_gc_noheur.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-prolog/3_HRP/HRP_gc_noheur.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="gc_noheur" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-prolog/1_BSP/BSP_gc_noheur.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-prolog/2_PUP/PUP_gc_noheur.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-prolog/3_HRP/HRP_gc_noheur.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="gc_noheur" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-prolog/1_BSP/BSP_gc_noheur.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-prolog/2_PUP/PUP_gc_noheur.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-prolog/3_HRP/HRP_gc_noheur.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="gc" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-prolog/1_BSP/BSP_gc.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-prolog/2_PUP/PUP_gc.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-prolog/3_HRP/HRP_gc.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="gc" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-prolog/1_BSP/BSP_gc.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-prolog/2_PUP/PUP_gc.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-prolog/3_HRP/HRP_gc.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="gc" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-prolog/1_BSP/BSP_gc.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-prolog/2_PUP/PUP_gc.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-prolog/3_HRP/HRP_gc.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="ga" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-prolog/1_BSP/BSP_ga.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-prolog/2_PUP/PUP_ga.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-prolog/3_HRP/HRP_ga.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="ga" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-prolog/1_BSP/BSP_ga.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-prolog/2_PUP/PUP_ga.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-prolog/3_HRP/HRP_ga.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="ga" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-prolog/1_BSP/BSP_ga.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-prolog/2_PUP/PUP_ga.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-prolog/3_HRP/HRP_ga.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="la" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-prolog/1_BSP/BSP_la.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-prolog/2_PUP/PUP_la.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-prolog/3_HRP/HRP_la.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="la" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-prolog/1_BSP/BSP_la.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-prolog/2_PUP/PUP_la.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-prolog/3_HRP/HRP_la.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="la" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-prolog/1_BSP/BSP_la.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-prolog/2_PUP/PUP_la.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-prolog/3_HRP/HRP_la.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="lc" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-prolog/1_BSP/BSP_lc.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-prolog/2_PUP/PUP_lc.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-prolog/3_HRP/HRP_lc.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="lc" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-prolog/1_BSP/BSP_lc.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-prolog/2_PUP/PUP_lc.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-prolog/3_HRP/HRP_lc.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="lc" tag="bsp hrp pup" dist_template="templates/single.dist">
+			<encoding file="../encodings-prolog/1_BSP/BSP_lc.lp" encoding_tag="bsp"/>
+			<encoding file="../encodings-prolog/2_PUP/PUP_lc.lp" encoding_tag="pup"/>
+			<encoding file="../encodings-prolog/3_HRP/HRP_lc.lp" encoding_tag="hrp"/>
+		</setting>
+		<setting name="ga_weak" tag="bsp" dist_template="templates/single.dist">
+			<encoding file="../encodings-prolog/1_BSP/BSP_ga_weak.lp" encoding_tag="bsp"/>
+		</setting>
+		<setting name="la_aux" tag="bsp" dist_template="templates/single.dist">
+			<encoding file="../encodings-prolog/1_BSP/BSP_la_aux.lp" encoding_tag="bsp"/>
+		</setting>
+		<setting name="la_co" tag="bsp" dist_template="templates/single.dist">
+			<encoding file="../encodings-prolog/1_BSP/BSP_la_co.lp" encoding_tag="bsp"/>
+		</setting>
+	</system>
+	<distjob name="dist-hpc" timeout="15" memout="8192" runs="1" script_mode="timeout" walltime="86399" cpt="4" partition="kr"/>
+	<benchmark name="BSP">
+		<class name="." id="0">
+			<instance name="bsp-0003" id="0" encoding_tag="bsp">
+				<file name="bsp-0003.lp"/>
+			</instance>
+			<instance name="bsp-0004" id="1" encoding_tag="bsp">
+				<file name="bsp-0004.lp"/>
+			</instance>
+			<instance name="bsp-0005" id="2" encoding_tag="bsp">
+				<file name="bsp-0005.lp"/>
+			</instance>
+		</class>
+	</benchmark>
+	<benchmark name="HRP">
+		<class name="." id="0">
+			<instance name="house-2" id="0" encoding_tag="hrp">
+				<file name="house-2.asp"/>
+			</instance>
+			<instance name="house-4" id="1" encoding_tag="hrp">
+				<file name="house-4.asp"/>
+			</instance>
+		</class>
+	</benchmark>
+	<benchmark name="PUP">
+		<class name="." id="0">
+			<instance name="double-20" id="0" encoding_tag="pup">
+				<file name="double-20.asp"/>
+			</instance>
+			<instance name="double-40" id="1" encoding_tag="pup">
+				<file name="double-40.asp"/>
+			</instance>
+		</class>
+	</benchmark>
+	<project name="study-hpc" job="dist-hpc">
+		<runspec machine="hpc" system="clingo-native" version="1.0" benchmark="BSP" setting="gc_noheur">
+			<class id="0">
+				<instance id="2">
+					<run number="1">
+						<measure name="atoms" type="float" val="135.0"/>
+						<measure name="choices" type="float" val="12.0"/>
+						<measure name="clingo_total" type="float" val="0.014"/>
+						<measure name="conflicts" type="float" val="8.0"/>
+						<measure name="constraints" type="float" val="768.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.014"/>
+						<measure name="mem" type="float" val="5.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.13"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="513.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.13"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="137.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="57.0"/>
+						<measure name="choices" type="float" val="4.0"/>
+						<measure name="clingo_total" type="float" val="0.001"/>
+						<measure name="conflicts" type="float" val="2.0"/>
+						<measure name="constraints" type="float" val="138.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.001"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="107.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="37.0"/>
+					</run>
+				</instance>
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="92.0"/>
+						<measure name="choices" type="float" val="7.0"/>
+						<measure name="clingo_total" type="float" val="0.001"/>
+						<measure name="conflicts" type="float" val="4.0"/>
+						<measure name="constraints" type="float" val="350.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.001"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="246.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="76.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-native" version="1.0" benchmark="BSP" setting="gc">
+			<class id="0">
+				<instance id="2">
+					<run number="1">
+						<measure name="atoms" type="float" val="223.0"/>
+						<measure name="choices" type="float" val="12.0"/>
+						<measure name="clingo_total" type="float" val="0.002"/>
+						<measure name="conflicts" type="float" val="8.0"/>
+						<measure name="constraints" type="float" val="1608.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.002"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.02"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="929.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.02"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="380.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="91.0"/>
+						<measure name="choices" type="float" val="4.0"/>
+						<measure name="clingo_total" type="float" val="0.001"/>
+						<measure name="conflicts" type="float" val="2.0"/>
+						<measure name="constraints" type="float" val="346.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.001"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.02"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="203.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.02"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="106.0"/>
+					</run>
+				</instance>
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="150.0"/>
+						<measure name="choices" type="float" val="7.0"/>
+						<measure name="clingo_total" type="float" val="0.002"/>
+						<measure name="conflicts" type="float" val="4.0"/>
+						<measure name="constraints" type="float" val="798.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.002"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.02"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="456.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.02"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="216.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-native" version="1.0" benchmark="BSP" setting="ga">
+			<class id="0">
+				<instance id="2">
+					<run number="1">
+						<measure name="atoms" type="float" val="181.0"/>
+						<measure name="choices" type="float" val="5.0"/>
+						<measure name="clingo_total" type="float" val="0.002"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="914.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.002"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.02"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="803.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.02"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="168.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="76.0"/>
+						<measure name="choices" type="float" val="3.0"/>
+						<measure name="clingo_total" type="float" val="0.001"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="170.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.001"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="178.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="48.0"/>
+					</run>
+				</instance>
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="123.0"/>
+						<measure name="choices" type="float" val="4.0"/>
+						<measure name="clingo_total" type="float" val="0.002"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="422.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.002"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.02"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="397.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.02"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="96.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-native" version="1.0" benchmark="BSP" setting="la">
+			<class id="0">
+				<instance id="2">
+					<run number="1">
+						<measure name="atoms" type="float" val="137.0"/>
+						<measure name="choices" type="float" val="5.0"/>
+						<measure name="clingo_total" type="float" val="0.001"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="768.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.001"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.02"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="515.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.02"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="137.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="59.0"/>
+						<measure name="choices" type="float" val="3.0"/>
+						<measure name="clingo_total" type="float" val="0.001"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="138.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.001"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.02"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="109.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.02"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="37.0"/>
+					</run>
+				</instance>
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="94.0"/>
+						<measure name="choices" type="float" val="4.0"/>
+						<measure name="clingo_total" type="float" val="0.001"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="350.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.001"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.02"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="248.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.02"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="76.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-native" version="1.0" benchmark="BSP" setting="lc">
+			<class id="0">
+				<instance id="2">
+					<run number="1">
+						<measure name="atoms" type="float" val="137.0"/>
+						<measure name="choices" type="float" val="12.0"/>
+						<measure name="clingo_total" type="float" val="0.001"/>
+						<measure name="conflicts" type="float" val="8.0"/>
+						<measure name="constraints" type="float" val="768.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.001"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.02"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="515.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.02"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="137.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="59.0"/>
+						<measure name="choices" type="float" val="4.0"/>
+						<measure name="clingo_total" type="float" val="0.001"/>
+						<measure name="conflicts" type="float" val="2.0"/>
+						<measure name="constraints" type="float" val="138.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.001"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.02"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="109.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.02"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="37.0"/>
+					</run>
+				</instance>
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="94.0"/>
+						<measure name="choices" type="float" val="7.0"/>
+						<measure name="clingo_total" type="float" val="0.001"/>
+						<measure name="conflicts" type="float" val="4.0"/>
+						<measure name="constraints" type="float" val="350.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.001"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="248.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="76.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-native" version="1.0" benchmark="BSP" setting="ga_weak">
+			<class id="0">
+				<instance id="2">
+					<run number="1">
+						<measure name="atoms" type="float" val="223.0"/>
+						<measure name="choices" type="float" val="12.0"/>
+						<measure name="clingo_total" type="float" val="0.002"/>
+						<measure name="conflicts" type="float" val="8.0"/>
+						<measure name="constraints" type="float" val="1128.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.002"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="929.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="220.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="91.0"/>
+						<measure name="choices" type="float" val="4.0"/>
+						<measure name="clingo_total" type="float" val="0.001"/>
+						<measure name="conflicts" type="float" val="2.0"/>
+						<measure name="constraints" type="float" val="220.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.001"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="203.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="64.0"/>
+					</run>
+				</instance>
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="150.0"/>
+						<measure name="choices" type="float" val="7.0"/>
+						<measure name="clingo_total" type="float" val="0.002"/>
+						<measure name="conflicts" type="float" val="4.0"/>
+						<measure name="constraints" type="float" val="534.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.002"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="456.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="128.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-native" version="1.0" benchmark="BSP" setting="la_aux">
+			<class id="0">
+				<instance id="2">
+					<run number="1">
+						<measure name="atoms" type="float" val="385.0"/>
+						<measure name="choices" type="float" val="12.0"/>
+						<measure name="clingo_total" type="float" val="0.003"/>
+						<measure name="conflicts" type="float" val="8.0"/>
+						<measure name="constraints" type="float" val="1598.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.003"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="931.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="375.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="135.0"/>
+						<measure name="choices" type="float" val="4.0"/>
+						<measure name="clingo_total" type="float" val="0.001"/>
+						<measure name="conflicts" type="float" val="2.0"/>
+						<measure name="constraints" type="float" val="340.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.001"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.02"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="205.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.02"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="103.0"/>
+					</run>
+				</instance>
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="240.0"/>
+						<measure name="choices" type="float" val="7.0"/>
+						<measure name="clingo_total" type="float" val="0.002"/>
+						<measure name="conflicts" type="float" val="4.0"/>
+						<measure name="constraints" type="float" val="790.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.002"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="458.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="212.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-native" version="1.0" benchmark="BSP" setting="la_co">
+			<class id="0">
+				<instance id="2">
+					<run number="1">
+						<measure name="atoms" type="float" val="20.0"/>
+						<measure name="choices" type="float" val="4.0"/>
+						<measure name="clingo_total" type="float" val="0.001"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="18.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.001"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.02"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="28.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.02"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="10.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="14.0"/>
+						<measure name="choices" type="float" val="1.0"/>
+						<measure name="clingo_total" type="float" val="0.001"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="6.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.001"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.02"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="17.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.02"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="5.0"/>
+					</run>
+				</instance>
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="17.0"/>
+						<measure name="choices" type="float" val="1.0"/>
+						<measure name="clingo_total" type="float" val="0.001"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="10.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.001"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.02"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="23.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.02"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="7.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-prolog" version="1.0" benchmark="BSP" setting="gc_noheur">
+			<class id="0">
+				<instance id="2">
+					<run number="1">
+						<measure name="atoms" type="float" val="135.0"/>
+						<measure name="choices" type="float" val="12.0"/>
+						<measure name="clingo_total" type="float" val="0.014"/>
+						<measure name="conflicts" type="float" val="8.0"/>
+						<measure name="constraints" type="float" val="768.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.014"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.08"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="513.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.08"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="137.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="57.0"/>
+						<measure name="choices" type="float" val="4.0"/>
+						<measure name="clingo_total" type="float" val="0.001"/>
+						<measure name="conflicts" type="float" val="2.0"/>
+						<measure name="constraints" type="float" val="138.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.001"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="107.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="37.0"/>
+					</run>
+				</instance>
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="92.0"/>
+						<measure name="choices" type="float" val="7.0"/>
+						<measure name="clingo_total" type="float" val="0.001"/>
+						<measure name="conflicts" type="float" val="4.0"/>
+						<measure name="constraints" type="float" val="350.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.001"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="246.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="76.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-prolog" version="1.0" benchmark="BSP" setting="gc">
+			<class id="0">
+				<instance id="2">
+					<run number="1">
+						<measure name="atoms" type="float" val="223.0"/>
+						<measure name="choices" type="float" val="12.0"/>
+						<measure name="clingo_total" type="float" val="0.002"/>
+						<measure name="conflicts" type="float" val="8.0"/>
+						<measure name="constraints" type="float" val="1608.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.002"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="929.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="380.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="91.0"/>
+						<measure name="choices" type="float" val="4.0"/>
+						<measure name="clingo_total" type="float" val="0.001"/>
+						<measure name="conflicts" type="float" val="2.0"/>
+						<measure name="constraints" type="float" val="346.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.001"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="203.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="106.0"/>
+					</run>
+				</instance>
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="150.0"/>
+						<measure name="choices" type="float" val="7.0"/>
+						<measure name="clingo_total" type="float" val="0.002"/>
+						<measure name="conflicts" type="float" val="4.0"/>
+						<measure name="constraints" type="float" val="798.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.002"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="456.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="216.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-prolog" version="1.0" benchmark="BSP" setting="ga">
+			<class id="0">
+				<instance id="2">
+					<run number="1">
+						<measure name="atoms" type="float" val="181.0"/>
+						<measure name="choices" type="float" val="5.0"/>
+						<measure name="clingo_total" type="float" val="0.002"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="914.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.002"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="803.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="168.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="76.0"/>
+						<measure name="choices" type="float" val="3.0"/>
+						<measure name="clingo_total" type="float" val="0.001"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="170.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.001"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.02"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="178.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.02"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="48.0"/>
+					</run>
+				</instance>
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="123.0"/>
+						<measure name="choices" type="float" val="4.0"/>
+						<measure name="clingo_total" type="float" val="0.002"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="422.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.002"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="397.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="96.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-prolog" version="1.0" benchmark="BSP" setting="la">
+			<class id="0">
+				<instance id="2">
+					<run number="1">
+						<measure name="atoms" type="float" val="0.0"/>
+						<measure name="choices" type="float" val="0.0"/>
+						<measure name="clingo_total" type="float" val="0.005"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="0.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.005"/>
+						<measure name="lazy_active" type="string" val="inactive"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="0.0"/>
+						<measure name="par2" type="float" val="30"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="0.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="UNKNOWN"/>
+						<measure name="time" type="float" val="15"/>
+						<measure name="timeout" type="float" val="1"/>
+						<measure name="variables" type="float" val="137.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="0.0"/>
+						<measure name="choices" type="float" val="0.0"/>
+						<measure name="clingo_total" type="float" val="0.001"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="0.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.001"/>
+						<measure name="lazy_active" type="string" val="inactive"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="0.0"/>
+						<measure name="par2" type="float" val="30"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="0.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="UNKNOWN"/>
+						<measure name="time" type="float" val="15"/>
+						<measure name="timeout" type="float" val="1"/>
+						<measure name="variables" type="float" val="37.0"/>
+					</run>
+				</instance>
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="0.0"/>
+						<measure name="choices" type="float" val="0.0"/>
+						<measure name="clingo_total" type="float" val="0.001"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="0.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.001"/>
+						<measure name="lazy_active" type="string" val="inactive"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="0.0"/>
+						<measure name="par2" type="float" val="30"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="0.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="UNKNOWN"/>
+						<measure name="time" type="float" val="15"/>
+						<measure name="timeout" type="float" val="1"/>
+						<measure name="variables" type="float" val="76.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-prolog" version="1.0" benchmark="BSP" setting="lc">
+			<class id="0">
+				<instance id="2">
+					<run number="1">
+						<measure name="atoms" type="float" val="0.0"/>
+						<measure name="choices" type="float" val="0.0"/>
+						<measure name="clingo_total" type="float" val="0.002"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="0.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.002"/>
+						<measure name="lazy_active" type="string" val="inactive"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="0.0"/>
+						<measure name="par2" type="float" val="30"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="0.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="UNKNOWN"/>
+						<measure name="time" type="float" val="15"/>
+						<measure name="timeout" type="float" val="1"/>
+						<measure name="variables" type="float" val="137.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="0.0"/>
+						<measure name="choices" type="float" val="0.0"/>
+						<measure name="clingo_total" type="float" val="0.001"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="0.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.001"/>
+						<measure name="lazy_active" type="string" val="inactive"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="0.0"/>
+						<measure name="par2" type="float" val="30"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="0.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="UNKNOWN"/>
+						<measure name="time" type="float" val="15"/>
+						<measure name="timeout" type="float" val="1"/>
+						<measure name="variables" type="float" val="37.0"/>
+					</run>
+				</instance>
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="0.0"/>
+						<measure name="choices" type="float" val="0.0"/>
+						<measure name="clingo_total" type="float" val="0.001"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="0.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.001"/>
+						<measure name="lazy_active" type="string" val="inactive"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="0.0"/>
+						<measure name="par2" type="float" val="30"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="0.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="UNKNOWN"/>
+						<measure name="time" type="float" val="15"/>
+						<measure name="timeout" type="float" val="1"/>
+						<measure name="variables" type="float" val="76.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-prolog" version="1.0" benchmark="BSP" setting="ga_weak">
+			<class id="0">
+				<instance id="2">
+					<run number="1">
+						<measure name="atoms" type="float" val="223.0"/>
+						<measure name="choices" type="float" val="12.0"/>
+						<measure name="clingo_total" type="float" val="0.002"/>
+						<measure name="conflicts" type="float" val="8.0"/>
+						<measure name="constraints" type="float" val="1128.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.002"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="929.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="220.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="91.0"/>
+						<measure name="choices" type="float" val="4.0"/>
+						<measure name="clingo_total" type="float" val="0.001"/>
+						<measure name="conflicts" type="float" val="2.0"/>
+						<measure name="constraints" type="float" val="220.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.001"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.02"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="203.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.02"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="64.0"/>
+					</run>
+				</instance>
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="150.0"/>
+						<measure name="choices" type="float" val="7.0"/>
+						<measure name="clingo_total" type="float" val="0.002"/>
+						<measure name="conflicts" type="float" val="4.0"/>
+						<measure name="constraints" type="float" val="534.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.002"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.02"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="456.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.02"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="128.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-prolog" version="1.0" benchmark="BSP" setting="la_aux">
+			<class id="0">
+				<instance id="2">
+					<run number="1">
+						<measure name="atoms" type="float" val="0.0"/>
+						<measure name="choices" type="float" val="0.0"/>
+						<measure name="clingo_total" type="float" val="0.004"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="0.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.004"/>
+						<measure name="lazy_active" type="string" val="inactive"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="0.0"/>
+						<measure name="par2" type="float" val="30"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="0.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="UNKNOWN"/>
+						<measure name="time" type="float" val="15"/>
+						<measure name="timeout" type="float" val="1"/>
+						<measure name="variables" type="float" val="375.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="0.0"/>
+						<measure name="choices" type="float" val="0.0"/>
+						<measure name="clingo_total" type="float" val="0.002"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="0.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.002"/>
+						<measure name="lazy_active" type="string" val="inactive"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="0.0"/>
+						<measure name="par2" type="float" val="30"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="0.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="UNKNOWN"/>
+						<measure name="time" type="float" val="15"/>
+						<measure name="timeout" type="float" val="1"/>
+						<measure name="variables" type="float" val="103.0"/>
+					</run>
+				</instance>
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="0.0"/>
+						<measure name="choices" type="float" val="0.0"/>
+						<measure name="clingo_total" type="float" val="0.002"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="0.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.002"/>
+						<measure name="lazy_active" type="string" val="inactive"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="0.0"/>
+						<measure name="par2" type="float" val="30"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="0.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="UNKNOWN"/>
+						<measure name="time" type="float" val="15"/>
+						<measure name="timeout" type="float" val="1"/>
+						<measure name="variables" type="float" val="212.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-prolog" version="1.0" benchmark="BSP" setting="la_co">
+			<class id="0">
+				<instance id="2">
+					<run number="1">
+						<measure name="atoms" type="float" val="0.0"/>
+						<measure name="choices" type="float" val="0.0"/>
+						<measure name="clingo_total" type="float" val="0.001"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="0.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.001"/>
+						<measure name="lazy_active" type="string" val="inactive"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="0.0"/>
+						<measure name="par2" type="float" val="30"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="0.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="UNKNOWN"/>
+						<measure name="time" type="float" val="15"/>
+						<measure name="timeout" type="float" val="1"/>
+						<measure name="variables" type="float" val="10.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="0.0"/>
+						<measure name="choices" type="float" val="0.0"/>
+						<measure name="clingo_total" type="float" val="0.001"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="0.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.001"/>
+						<measure name="lazy_active" type="string" val="inactive"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="0.0"/>
+						<measure name="par2" type="float" val="30"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="0.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="UNKNOWN"/>
+						<measure name="time" type="float" val="15"/>
+						<measure name="timeout" type="float" val="1"/>
+						<measure name="variables" type="float" val="5.0"/>
+					</run>
+				</instance>
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="0.0"/>
+						<measure name="choices" type="float" val="0.0"/>
+						<measure name="clingo_total" type="float" val="0.001"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="0.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.001"/>
+						<measure name="lazy_active" type="string" val="inactive"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="0.0"/>
+						<measure name="par2" type="float" val="30"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="0.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="UNKNOWN"/>
+						<measure name="time" type="float" val="15"/>
+						<measure name="timeout" type="float" val="1"/>
+						<measure name="variables" type="float" val="7.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-native" version="1.0" benchmark="PUP" setting="gc_noheur">
+			<class id="0">
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="19766.0"/>
+						<measure name="choices" type="float" val="11659.0"/>
+						<measure name="clingo_total" type="float" val="4.572"/>
+						<measure name="conflicts" type="float" val="7035.0"/>
+						<measure name="constraints" type="float" val="1160787.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="1.1520000000000001"/>
+						<measure name="mem" type="float" val="92.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="4.61"/>
+						<measure name="restarts" type="float" val="30.0"/>
+						<measure name="rules" type="float" val="1475058.0"/>
+						<measure name="solving" type="float" val="3.42"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="4.61"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="22548.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="4886.0"/>
+						<measure name="choices" type="float" val="266.0"/>
+						<measure name="clingo_total" type="float" val="0.149"/>
+						<measure name="conflicts" type="float" val="177.0"/>
+						<measure name="constraints" type="float" val="128657.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.129"/>
+						<measure name="mem" type="float" val="15.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.17"/>
+						<measure name="restarts" type="float" val="1.0"/>
+						<measure name="rules" type="float" val="161018.0"/>
+						<measure name="solving" type="float" val="0.02"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.17"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="5298.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-native" version="1.0" benchmark="PUP" setting="gc">
+			<class id="0">
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="33278.0"/>
+						<measure name="choices" type="float" val="1346.0"/>
+						<measure name="clingo_total" type="float" val="8.181"/>
+						<measure name="conflicts" type="float" val="643.0"/>
+						<measure name="constraints" type="float" val="6227547.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="6.0809999999999995"/>
+						<measure name="mem" type="float" val="529.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="8.4"/>
+						<measure name="restarts" type="float" val="5.0"/>
+						<measure name="rules" type="float" val="2267383.0"/>
+						<measure name="solving" type="float" val="2.1"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="8.4"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="778946.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="8618.0"/>
+						<measure name="choices" type="float" val="1115.0"/>
+						<measure name="clingo_total" type="float" val="2.177"/>
+						<measure name="conflicts" type="float" val="774.0"/>
+						<measure name="constraints" type="float" val="1268207.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.9570000000000001"/>
+						<measure name="mem" type="float" val="117.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="2.24"/>
+						<measure name="restarts" type="float" val="6.0"/>
+						<measure name="rules" type="float" val="343253.0"/>
+						<measure name="solving" type="float" val="1.22"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="2.24"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="175566.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-native" version="1.0" benchmark="PUP" setting="ga">
+			<class id="0">
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="25785.0"/>
+						<measure name="choices" type="float" val="65.0"/>
+						<measure name="clingo_total" type="float" val="5.454"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="5064087.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="5.354"/>
+						<measure name="mem" type="float" val="532.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="5.67"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="2256566.0"/>
+						<measure name="solving" type="float" val="0.1"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="5.67"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="776208.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="6685.0"/>
+						<measure name="choices" type="float" val="39.0"/>
+						<measure name="clingo_total" type="float" val="0.901"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="1009327.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.881"/>
+						<measure name="mem" type="float" val="117.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.97"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="341366.0"/>
+						<measure name="solving" type="float" val="0.02"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.97"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="176248.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-native" version="1.0" benchmark="PUP" setting="la">
+			<class id="0">
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="25232.0"/>
+						<measure name="choices" type="float" val="52.0"/>
+						<measure name="clingo_total" type="float" val="2.05"/>
+						<measure name="conflicts" type="float" val="6.0"/>
+						<measure name="constraints" type="float" val="2463751.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="2.01"/>
+						<measure name="mem" type="float" val="207.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="2.15"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="1713053.0"/>
+						<measure name="solving" type="float" val="0.04"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="2.15"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="236486.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="6412.0"/>
+						<measure name="choices" type="float" val="26.0"/>
+						<measure name="clingo_total" type="float" val="0.268"/>
+						<measure name="conflicts" type="float" val="4.0"/>
+						<measure name="constraints" type="float" val="410861.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.258"/>
+						<measure name="mem" type="float" val="26.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.3"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="216193.0"/>
+						<measure name="solving" type="float" val="0.01"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.3"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="51776.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-native" version="1.0" benchmark="PUP" setting="lc">
+			<class id="0">
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="25232.0"/>
+						<measure name="choices" type="float" val="6618.0"/>
+						<measure name="clingo_total" type="float" val="14.992"/>
+						<measure name="conflicts" type="float" val="4135.0"/>
+						<measure name="constraints" type="float" val="2463751.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="2.0120000000000005"/>
+						<measure name="mem" type="float" val="211.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="0.0"/>
+						<measure name="par2" type="float" val="30"/>
+						<measure name="restarts" type="float" val="23.0"/>
+						<measure name="rules" type="float" val="1713053.0"/>
+						<measure name="solving" type="float" val="12.98"/>
+						<measure name="status" type="string" val="UNKNOWN"/>
+						<measure name="time" type="float" val="15"/>
+						<measure name="timeout" type="float" val="1"/>
+						<measure name="variables" type="float" val="236486.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="6412.0"/>
+						<measure name="choices" type="float" val="233.0"/>
+						<measure name="clingo_total" type="float" val="0.358"/>
+						<measure name="conflicts" type="float" val="138.0"/>
+						<measure name="constraints" type="float" val="410861.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.268"/>
+						<measure name="mem" type="float" val="47.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.39"/>
+						<measure name="restarts" type="float" val="1.0"/>
+						<measure name="rules" type="float" val="216193.0"/>
+						<measure name="solving" type="float" val="0.09"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.39"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="51776.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-prolog" version="1.0" benchmark="PUP" setting="gc_noheur">
+			<class id="0">
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="19766.0"/>
+						<measure name="choices" type="float" val="11659.0"/>
+						<measure name="clingo_total" type="float" val="4.683"/>
+						<measure name="conflicts" type="float" val="7035.0"/>
+						<measure name="constraints" type="float" val="1160787.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="1.173"/>
+						<measure name="mem" type="float" val="95.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="4.72"/>
+						<measure name="restarts" type="float" val="30.0"/>
+						<measure name="rules" type="float" val="1475058.0"/>
+						<measure name="solving" type="float" val="3.51"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="4.72"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="22548.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="4886.0"/>
+						<measure name="choices" type="float" val="266.0"/>
+						<measure name="clingo_total" type="float" val="0.151"/>
+						<measure name="conflicts" type="float" val="177.0"/>
+						<measure name="constraints" type="float" val="128657.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.131"/>
+						<measure name="mem" type="float" val="14.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.19"/>
+						<measure name="restarts" type="float" val="1.0"/>
+						<measure name="rules" type="float" val="161018.0"/>
+						<measure name="solving" type="float" val="0.02"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.19"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="5298.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-prolog" version="1.0" benchmark="PUP" setting="gc">
+			<class id="0">
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="33278.0"/>
+						<measure name="choices" type="float" val="1346.0"/>
+						<measure name="clingo_total" type="float" val="8.375"/>
+						<measure name="conflicts" type="float" val="643.0"/>
+						<measure name="constraints" type="float" val="6227547.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="6.225"/>
+						<measure name="mem" type="float" val="529.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="8.62"/>
+						<measure name="restarts" type="float" val="5.0"/>
+						<measure name="rules" type="float" val="2267383.0"/>
+						<measure name="solving" type="float" val="2.15"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="8.62"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="778946.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="8618.0"/>
+						<measure name="choices" type="float" val="1115.0"/>
+						<measure name="clingo_total" type="float" val="2.192"/>
+						<measure name="conflicts" type="float" val="774.0"/>
+						<measure name="constraints" type="float" val="1268207.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.9620000000000002"/>
+						<measure name="mem" type="float" val="117.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="2.26"/>
+						<measure name="restarts" type="float" val="6.0"/>
+						<measure name="rules" type="float" val="343253.0"/>
+						<measure name="solving" type="float" val="1.23"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="2.26"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="175566.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-prolog" version="1.0" benchmark="PUP" setting="ga">
+			<class id="0">
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="25785.0"/>
+						<measure name="choices" type="float" val="65.0"/>
+						<measure name="clingo_total" type="float" val="5.555"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="5064087.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="5.455"/>
+						<measure name="mem" type="float" val="534.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="5.79"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="2256566.0"/>
+						<measure name="solving" type="float" val="0.1"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="5.79"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="776208.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="6685.0"/>
+						<measure name="choices" type="float" val="39.0"/>
+						<measure name="clingo_total" type="float" val="0.923"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="1009327.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.903"/>
+						<measure name="mem" type="float" val="114.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.99"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="341366.0"/>
+						<measure name="solving" type="float" val="0.02"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.99"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="176248.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-prolog" version="1.0" benchmark="PUP" setting="la">
+			<class id="0">
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="0.0"/>
+						<measure name="choices" type="float" val="0.0"/>
+						<measure name="clingo_total" type="float" val="2.159"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="0.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="2.159"/>
+						<measure name="lazy_active" type="string" val="inactive"/>
+						<measure name="mem" type="float" val="206.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="0.0"/>
+						<measure name="par2" type="float" val="30"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="0.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="UNKNOWN"/>
+						<measure name="time" type="float" val="15"/>
+						<measure name="timeout" type="float" val="1"/>
+						<measure name="variables" type="float" val="236447.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="0.0"/>
+						<measure name="choices" type="float" val="0.0"/>
+						<measure name="clingo_total" type="float" val="0.308"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="0.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.308"/>
+						<measure name="lazy_active" type="string" val="inactive"/>
+						<measure name="mem" type="float" val="45.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="0.0"/>
+						<measure name="par2" type="float" val="30"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="0.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="UNKNOWN"/>
+						<measure name="time" type="float" val="15"/>
+						<measure name="timeout" type="float" val="1"/>
+						<measure name="variables" type="float" val="51757.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-prolog" version="1.0" benchmark="PUP" setting="lc">
+			<class id="0">
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="0.0"/>
+						<measure name="choices" type="float" val="0.0"/>
+						<measure name="clingo_total" type="float" val="2.191"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="0.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="2.191"/>
+						<measure name="lazy_active" type="string" val="inactive"/>
+						<measure name="mem" type="float" val="206.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="0.0"/>
+						<measure name="par2" type="float" val="30"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="0.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="UNKNOWN"/>
+						<measure name="time" type="float" val="15"/>
+						<measure name="timeout" type="float" val="1"/>
+						<measure name="variables" type="float" val="236447.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="0.0"/>
+						<measure name="choices" type="float" val="0.0"/>
+						<measure name="clingo_total" type="float" val="0.305"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="0.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.305"/>
+						<measure name="lazy_active" type="string" val="inactive"/>
+						<measure name="mem" type="float" val="45.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="0.0"/>
+						<measure name="par2" type="float" val="30"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="0.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="UNKNOWN"/>
+						<measure name="time" type="float" val="15"/>
+						<measure name="timeout" type="float" val="1"/>
+						<measure name="variables" type="float" val="51757.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-native" version="1.0" benchmark="HRP" setting="gc_noheur">
+			<class id="0">
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="428.0"/>
+						<measure name="choices" type="float" val="44.0"/>
+						<measure name="clingo_total" type="float" val="0.005"/>
+						<measure name="conflicts" type="float" val="15.0"/>
+						<measure name="constraints" type="float" val="4242.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.005"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="2386.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="938.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="130.0"/>
+						<measure name="choices" type="float" val="7.0"/>
+						<measure name="clingo_total" type="float" val="0.003"/>
+						<measure name="conflicts" type="float" val="1.0"/>
+						<measure name="constraints" type="float" val="785.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.003"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="418.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="206.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-native" version="1.0" benchmark="HRP" setting="gc">
+			<class id="0">
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="551.0"/>
+						<measure name="choices" type="float" val="23.0"/>
+						<measure name="clingo_total" type="float" val="0.008"/>
+						<measure name="conflicts" type="float" val="1.0"/>
+						<measure name="constraints" type="float" val="6796.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.008"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="3547.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="1440.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="176.0"/>
+						<measure name="choices" type="float" val="6.0"/>
+						<measure name="clingo_total" type="float" val="0.004"/>
+						<measure name="conflicts" type="float" val="1.0"/>
+						<measure name="constraints" type="float" val="1336.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.004"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="630.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="337.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-native" version="1.0" benchmark="HRP" setting="ga">
+			<class id="0">
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="551.0"/>
+						<measure name="choices" type="float" val="28.0"/>
+						<measure name="clingo_total" type="float" val="0.007"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="5548.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.007"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="3439.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="1200.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="176.0"/>
+						<measure name="choices" type="float" val="12.0"/>
+						<measure name="clingo_total" type="float" val="0.004"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="1132.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.004"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="621.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="295.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-native" version="1.0" benchmark="HRP" setting="la">
+			<class id="0">
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="1193.0"/>
+						<measure name="choices" type="float" val="26.0"/>
+						<measure name="clingo_total" type="float" val="0.009"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="6430.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.009"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="3897.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="1422.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="342.0"/>
+						<measure name="choices" type="float" val="12.0"/>
+						<measure name="clingo_total" type="float" val="0.004"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="1267.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.004"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="724.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="334.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-native" version="1.0" benchmark="HRP" setting="lc">
+			<class id="0">
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="1196.0"/>
+						<measure name="choices" type="float" val="42.0"/>
+						<measure name="clingo_total" type="float" val="0.009"/>
+						<measure name="conflicts" type="float" val="2.0"/>
+						<measure name="constraints" type="float" val="6430.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.009"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="3900.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="1422.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="345.0"/>
+						<measure name="choices" type="float" val="15.0"/>
+						<measure name="clingo_total" type="float" val="0.005"/>
+						<measure name="conflicts" type="float" val="2.0"/>
+						<measure name="constraints" type="float" val="1267.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.005"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="727.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="334.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-prolog" version="1.0" benchmark="HRP" setting="gc_noheur">
+			<class id="0">
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="428.0"/>
+						<measure name="choices" type="float" val="44.0"/>
+						<measure name="clingo_total" type="float" val="0.006"/>
+						<measure name="conflicts" type="float" val="15.0"/>
+						<measure name="constraints" type="float" val="4242.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.006"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="2386.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="938.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="130.0"/>
+						<measure name="choices" type="float" val="7.0"/>
+						<measure name="clingo_total" type="float" val="0.003"/>
+						<measure name="conflicts" type="float" val="1.0"/>
+						<measure name="constraints" type="float" val="785.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.003"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="418.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="206.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-prolog" version="1.0" benchmark="HRP" setting="gc">
+			<class id="0">
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="551.0"/>
+						<measure name="choices" type="float" val="23.0"/>
+						<measure name="clingo_total" type="float" val="0.008"/>
+						<measure name="conflicts" type="float" val="1.0"/>
+						<measure name="constraints" type="float" val="6796.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.008"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="3547.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="1440.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="176.0"/>
+						<measure name="choices" type="float" val="6.0"/>
+						<measure name="clingo_total" type="float" val="0.005"/>
+						<measure name="conflicts" type="float" val="1.0"/>
+						<measure name="constraints" type="float" val="1336.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.005"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="630.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="337.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-prolog" version="1.0" benchmark="HRP" setting="ga">
+			<class id="0">
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="551.0"/>
+						<measure name="choices" type="float" val="28.0"/>
+						<measure name="clingo_total" type="float" val="0.008"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="5548.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.008"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="3439.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="1200.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="176.0"/>
+						<measure name="choices" type="float" val="12.0"/>
+						<measure name="clingo_total" type="float" val="0.004"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="1132.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.004"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="1.0"/>
+						<measure name="par2" type="float" val="0.03"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="621.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="SATISFIABLE"/>
+						<measure name="time" type="float" val="0.03"/>
+						<measure name="timeout" type="float" val="0"/>
+						<measure name="variables" type="float" val="295.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-prolog" version="1.0" benchmark="HRP" setting="la">
+			<class id="0">
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="0.0"/>
+						<measure name="choices" type="float" val="0.0"/>
+						<measure name="clingo_total" type="float" val="0.011"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="0.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.011"/>
+						<measure name="lazy_active" type="string" val="inactive"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="0.0"/>
+						<measure name="par2" type="float" val="30"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="0.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="UNKNOWN"/>
+						<measure name="time" type="float" val="15"/>
+						<measure name="timeout" type="float" val="1"/>
+						<measure name="variables" type="float" val="1200.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="0.0"/>
+						<measure name="choices" type="float" val="0.0"/>
+						<measure name="clingo_total" type="float" val="0.005"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="0.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.005"/>
+						<measure name="lazy_active" type="string" val="inactive"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="0.0"/>
+						<measure name="par2" type="float" val="30"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="0.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="UNKNOWN"/>
+						<measure name="time" type="float" val="15"/>
+						<measure name="timeout" type="float" val="1"/>
+						<measure name="variables" type="float" val="295.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+		<runspec machine="hpc" system="clingo-prolog" version="1.0" benchmark="HRP" setting="lc">
+			<class id="0">
+				<instance id="1">
+					<run number="1">
+						<measure name="atoms" type="float" val="0.0"/>
+						<measure name="choices" type="float" val="0.0"/>
+						<measure name="clingo_total" type="float" val="0.011"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="0.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.011"/>
+						<measure name="lazy_active" type="string" val="inactive"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="0.0"/>
+						<measure name="par2" type="float" val="30"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="0.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="UNKNOWN"/>
+						<measure name="time" type="float" val="15"/>
+						<measure name="timeout" type="float" val="1"/>
+						<measure name="variables" type="float" val="1200.0"/>
+					</run>
+				</instance>
+				<instance id="0">
+					<run number="1">
+						<measure name="atoms" type="float" val="0.0"/>
+						<measure name="choices" type="float" val="0.0"/>
+						<measure name="clingo_total" type="float" val="0.005"/>
+						<measure name="conflicts" type="float" val="0.0"/>
+						<measure name="constraints" type="float" val="0.0"/>
+						<measure name="error" type="float" val="0"/>
+						<measure name="grounding" type="float" val="0.005"/>
+						<measure name="lazy_active" type="string" val="inactive"/>
+						<measure name="mem" type="float" val="0.0"/>
+						<measure name="memout" type="float" val="0"/>
+						<measure name="models" type="float" val="0.0"/>
+						<measure name="par2" type="float" val="30"/>
+						<measure name="restarts" type="float" val="0.0"/>
+						<measure name="rules" type="float" val="0.0"/>
+						<measure name="solving" type="float" val="0.0"/>
+						<measure name="status" type="string" val="UNKNOWN"/>
+						<measure name="time" type="float" val="15"/>
+						<measure name="timeout" type="float" val="1"/>
+						<measure name="variables" type="float" val="295.0"/>
+					</run>
+				</instance>
+			</class>
+		</runspec>
+	</project>
+</result>
