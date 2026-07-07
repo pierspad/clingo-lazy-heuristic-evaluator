@@ -84,21 +84,48 @@ private:
     qid_t query_;
 };
 
+// RAII per delimitare la vita dei buffer di stringhe temporanee che SWI-Prolog
+// alloca internamente (PL_get_chars/PL_get_atom_chars con BUF_STACK o
+// BUF_DISCARDABLE, vedi parse_symbol_from_term/get_bool_atom sopra). Qui non
+// siamo dentro un predicato foreign richiamato da Prolog: e' codice host che
+// pilota la query con PL_open_query/PL_next_solution in un ciclo chiamato una
+// volta per ogni decisione del solver, quindi il rilascio automatico "a fine
+// predicato foreign" di SWI-Prolog non ci copre - senza questo marker i buffer
+// si accumulerebbero per l'intera durata del solve invece di essere rilasciati
+// a ogni soluzione.
+//
+// PL_mark_string_buffers()/PL_release_string_buffers_from_mark() (e il tipo
+// buf_mark_t) non esistono nelle versioni piu' vecchie di SWI-Prolog (es. la
+// 7.6.4 di Debian 10/buster, quella dei nodi del cluster). CLINGO_SWIPL_HAS_STRING_BUFFER_MARKS
+// e' definita da CMake solo se una compilazione di prova con l'header/lib
+// effettivi ha successo (vedi clingo-prolog/CMakeLists.txt) — niente soglie
+// su PLVERSION, che sarebbero fragili con le patch di backport delle distro.
+// Se l'API non c'e', la classe diventa un guscio RAII vuoto: i buffer restano
+// a carico del meccanismo di default di SWI-Prolog invece di essere liberati
+// esplicitamente a ogni soluzione. Non e' una perdita di memoria (i buffer
+// BUF_STACK vengono comunque riciclati al loro punto naturale), solo un
+// bound di memoria residente meno stretto durante query molto lunghe.
 class PrologStringBuffers {
 public:
     PrologStringBuffers() {
+#ifdef CLINGO_SWIPL_HAS_STRING_BUFFER_MARKS
         PL_mark_string_buffers(&mark_);
+#endif
     }
 
     PrologStringBuffers(PrologStringBuffers const &) = delete;
     PrologStringBuffers &operator=(PrologStringBuffers const &) = delete;
 
     ~PrologStringBuffers() {
+#ifdef CLINGO_SWIPL_HAS_STRING_BUFFER_MARKS
         PL_release_string_buffers_from_mark(mark_);
+#endif
     }
 
 private:
+#ifdef CLINGO_SWIPL_HAS_STRING_BUFFER_MARKS
     buf_mark_t mark_;
+#endif
 };
 
 bool debug_enabled() {

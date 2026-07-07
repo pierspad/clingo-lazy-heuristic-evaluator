@@ -13,6 +13,21 @@ set -euo pipefail
 
 : "${CLINGO_PROLOG_BIN:=/home/ribben/Desktop/clingo-lazy-heuristics/clingo-prolog/build/bin/clingo}"
 
+# Se e' stato compilato uno SWI-Prolog moderno in user-space (vedi il fix del
+# 2026-07-07 per Debian 10/buster sul cluster, privo di buf_mark_t), il suo
+# libswipl.so vive in un prefix non standard e il linker dinamico non lo
+# trova da solo: senza questo export, a runtime sui nodi di calcolo si rischia
+# di risolvere ancora la libreria di sistema vecchia (o nessuna libreria),
+# con lo stesso fallimento silenzioso gia' visto per runlim. Override via
+# env SWIPL_MODERN_PREFIX se il prefix di installazione e' diverso.
+: "${SWIPL_MODERN_PREFIX:=$HOME/swipl-10}"
+for _swipl_libdir in "$SWIPL_MODERN_PREFIX/lib" "$SWIPL_MODERN_PREFIX/lib64"; do
+    if [ -d "$_swipl_libdir" ]; then
+        export LD_LIBRARY_PATH="${_swipl_libdir}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    fi
+done
+unset _swipl_libdir
+
 export LAZY_HEURISTIC_BACKEND=prolog
 # Abilita l'emissione della riga "[lazy-prolog] summary ..." su stderr, da cui
 # il resultparser estrae decide_calls e i tempi del propagatore query-driven.

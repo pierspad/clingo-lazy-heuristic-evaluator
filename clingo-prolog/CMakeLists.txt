@@ -140,6 +140,28 @@ if (CLINGO_USE_SWIPL)
     if (NOT SWIPL_FOUND)
         message(FATAL_ERROR "CLINGO_USE_SWIPL=ON requires SWI-Prolog headers and libswipl.")
     endif()
+
+    # Le versioni di SWI-Prolog piu' vecchie della nostra baseline di sviluppo
+    # (es. la 7.6.4 di Debian 10/buster sui nodi del cluster) non offrono ancora
+    # PL_mark_string_buffers()/PL_release_string_buffers_from_mark() (e il tipo
+    # buf_mark_t). Invece di fissare una soglia su PLVERSION -- fragile, perche'
+    # le distro spesso backportano patch senza cambiare il numero di versione --
+    # verifichiamo la capacita' reale compilando un frammento minimo contro gli
+    # header/lib effettivamente trovati sopra.
+    include(CheckCXXSourceCompiles)
+    set(CMAKE_REQUIRED_INCLUDES ${SWIPL_INCLUDE_DIRS})
+    set(CMAKE_REQUIRED_LIBRARIES ${SWIPL_LIBRARIES})
+    check_cxx_source_compiles("
+        #include <SWI-Prolog.h>
+        int main() {
+            buf_mark_t mark;
+            PL_mark_string_buffers(&mark);
+            PL_release_string_buffers_from_mark(mark);
+            return 0;
+        }
+    " CLINGO_SWIPL_HAS_STRING_BUFFER_MARKS)
+    unset(CMAKE_REQUIRED_INCLUDES)
+    unset(CMAKE_REQUIRED_LIBRARIES)
 endif()
 
 # workaround to set custom ar and ranlib
