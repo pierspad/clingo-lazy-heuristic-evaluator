@@ -1,0 +1,93 @@
+\documentclass[a4paper,12pt]{report}
+
+\usepackage[a4paper, left=3.5cm, right=2.5cm, top=3cm, bottom=3cm]{geometry}
+\renewcommand{\baselinestretch}{1.0}
+
+\usepackage{titling}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{minted}
+\usepackage{csquotes}
+\usepackage[hidelinks]{hyperref}
+
+\newcommand{\ThesisGraphQuality}{SD} % change to HD for the final graph set
+\graphicspath{
+    {figures/}
+    {figures/bsp/\ThesisGraphQuality/standard/}
+    {figures/bsp/\ThesisGraphQuality/no_la_co-no_ga_dyn-no_la_aux/}
+}
+
+\renewcommand\thesection{\arabic{section}}
+\setlist[itemize]{leftmargin=*, itemsep=2pt, topsep=4pt}
+\setlist[enumerate]{leftmargin=*, itemsep=2pt, topsep=4pt}
+\setlength{\emergencystretch}{3em}
+
+\usepackage[backend=biber,style=numeric,sorting=none]{biblatex}
+\addbibresource{bibliografia.bib}
+
+\hypersetup{
+    pdftitle={Lazy Declarative Heuristics in Answer Set Programming},
+    pdfauthor={Pierpaolo Spadafora},
+    pdfsubject={Design and evaluation of a lazy heuristic propagator for clingo},
+    pdfkeywords={Answer Set Programming, clingo, lazy heuristics, domain-specific heuristics},
+    pdfcreator={LaTeX},
+    pdfproducer={pdfTeX}
+}
+
+\definecolor{codebg}{RGB}{248,248,248}
+
+\usemintedstyle{friendly}
+
+\setminted{
+    bgcolor=codebg,
+    linenos,
+    numbersep=8pt,
+    breaklines,
+    autogobble,
+    fontsize=\footnotesize,
+    frame=single,
+    framesep=2mm
+}
+
+\setmintedinline{
+    breaklines,
+    fontsize=\footnotesize
+}
+
+\title{Lazy Declarative Heuristics in Answer Set Programming}
+\author{Pierpaolo Spadafora}
+\date{Academic Year 2025/2026}
+
+\begin{document}
+
+\pagenumbering{gobble}
+\input{0.1 - frontespizio}
+\clearpage
+\pagenumbering{roman}
+\tableofcontents
+\newpage
+\input{0.2 - abstract}
+\newpage
+\pagenumbering{arabic}
+\input{1 - Introduzione}
+\newpage
+\input{2 - Metodologia}
+\newpage
+\input{3 - Risultati}
+\newpage
+\input{4 - Discussione-e-Conclusione}
+\newpage
+\printbibliography
+\newpage
+\input{5 - Ringraziamenti}
+
+\end{document}

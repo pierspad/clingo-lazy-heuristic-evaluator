@@ -1,0 +1,210 @@
+\section{Results}
+
+\subsection{Functional Validation}
+
+The system was validated by keeping three levels separate. The first level concerns the ASP program itself: the answer sets, the \mintinline{text}|SAT|/\mintinline{text}|UNSAT| result, and the visible solutions must remain consistent across the compared encodings and across the two backends. The second level concerns the heuristic translation: targets, bodies, weights, priorities, modifiers, and aggregate bindings must be preserved when a native \mintinline{text}|#heuristic| directive is rewritten as a lazy fact, including the weight--priority flattening where the clingo reading of priorities applies. The third level concerns the effect on search, measured through choices, conflicts, solving time, memory, and the size of the ground heuristic component.
+
+Heuristics do not change the semantics of the ASP program: they guide search, but they do not add or remove answer sets. The equivalence harness of Section~2 verifies this property exhaustively on BSP, by enumerating all models of every variant on both backends and comparing the collections after projection on \mintinline{text}|b/1| and \mintinline{text}|c/1|, and by SAT/UNSAT agreement on PUP, where exhaustive enumeration is intractable. The same harness enforces the anti-fallback guards for the Prolog backend (\mintinline{text}|decide_calls > 0| for every lazy Prolog run, and equal choice counts between native and Prolog \mintinline{text}|la| on the control instance). On the native side, the C++ test suite isolates the correctness of the heuristic machinery from the benchmarks: it covers incremental aggregate states, empty and unsatisfiable corner cases, explicit body and target bindings, filtered aggregates, the local-versus-global interpretation of priorities under the two semantics, and the parser's rejection of malformed syntax.
+
+\subsection{Experimental Dataset}
+
+The complete campaign covers three problem families (BSP, PUP, HRP), five shared settings (\mintinline{text}|gc_noheur|, \mintinline{text}|gc|, \mintinline{text}|ga|, \mintinline{text}|la|, \mintinline{text}|lc|) plus the three BSP-specific settings (\mintinline{text}|ga_weak|, \mintinline{text}|la_aux|, \mintinline{text}|la_co|), and the two systems (native and Prolog backend). The analysis presented in this section is based on the completed BSP campaign; the BSP encodings are shared verbatim between the two backends for the ground variants, and are semantically aligned pairs for the lazy ones. The BSP run contains twelve sizes, $n = 10$ to $120$, and the main comparison includes \mintinline{text}|gc_noheur|, \mintinline{text}|gc|, \mintinline{text}|ga|, \mintinline{text}|la|, \mintinline{text}|lc|, and \mintinline{text}|la_aux|; \mintinline{text}|ga_weak| and \mintinline{text}|la_co| are analysed separately because they change the activation condition and the constraint formulation, respectively.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lc}
+\toprule
+\textbf{Variant} & \textbf{Maximum $n$ solved with status ok}\\
+\midrule
+\mintinline{text}|gc_noheur| & 110\\
+\mintinline{text}|gc|        & 100\\
+\mintinline{text}|ga|        & 100\\
+\mintinline{text}|la|        & 110\\
+\mintinline{text}|lc|        & 100\\
+\mintinline{text}|la_aux|    & 50\\
+\bottomrule
+\end{tabular}
+\caption{Largest BSP instance solved correctly in the considered run.}
+\label{tab:max-ok}
+\end{table}
+
+The first timeouts occur at $n=60$ for \mintinline{text}|la_aux|, at $n=110$ for \mintinline{text}|gc|, \mintinline{text}|ga|, and \mintinline{text}|lc|, and at $n=120$ for \mintinline{text}|gc_noheur| and \mintinline{text}|la|.
+
+\subsection{Reduction of the Ground Heuristic Component}
+
+The central claim of the thesis concerns \emph{where} memory is spent, and the direct evidence is the number of ground heuristic objects as a function of $n$. The mechanism is readable in the encoding itself. The standard directive
+
+\begin{minted}{prolog}
+#heuristic b(X) : x(X), not c(X), S = #sum{Y : c(Y)},
+    W = ((n+1)*S)+X. [W, true]
+\end{minted}
+
+carries the aggregate value $S$ \emph{as a variable inside the weight}. Since the atoms \mintinline{text}|c(Y)| are choice atoms, the grounder cannot know the sum at grounding time and must materialize one directive for every reachable pair $(X,S)$. With $X \in \{1,\ldots,n\}$ and $S$ ranging over the subset sums of $\{1,\ldots,n\}$, which is every integer from $0$ to $n(n+1)/2$ because $1$ belongs to the domain, the count is
+\[
+2 \cdot n \cdot \Big(\tfrac{n(n+1)}{2} + 1\Big) \;=\; \Theta(n^3),
+\]
+where the factor $2$ accounts for the two symmetric rules for \mintinline{text}|b| and \mintinline{text}|c|. The formula is verifiable exactly on the measured data: for $n=10$ it yields $2 \cdot 10 \cdot 56 = 1{,}120$, which coincides with the measured \mintinline{text}|ground_heuristics| value for \mintinline{text}|gc|. The lazy variants remove this enumeration at the root: the aggregate is evaluated at solving time on the current partial assignment, and the materialized heuristics remain constant, two facts, independent of $n$.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{combined_heuristics}
+    \caption{Comparison between native ground heuristic objects and lazy heuristic facts.}
+    \label{fig:combined-heuristics}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{rrrr}
+\toprule
+\textbf{$n$} & \textbf{Native heuristic objects} & \textbf{Lazy facts} & \textbf{Ratio}\\
+\midrule
+10  & $1{,}120$       & 2 & $560\times$\\
+50  & $127{,}600$     & 2 & $63{,}800\times$\\
+100 & $1{,}010{,}200$ & 2 & $505{,}100\times$\\
+110 & $1{,}343{,}320$ & 2 & $671{,}660\times$\\
+\bottomrule
+\end{tabular}
+\caption{Growth of the native heuristic component compared with the lazy representation.}
+\label{tab:heur-growth}
+\end{table}
+
+This comparison must be read for what it is. For the ground variants the count is faithful: one line is one materialized object. For the lazy variants the two counted facts are \emph{templates} that expand at runtime into one candidate per ground target ($n$ candidates per rule for BSP); those candidates never pass through the grounder and therefore appear in no line count. The single-figure comparison \enquote{$2$ facts versus $\Theta(n^3)$ directives} is thus the proof of a saving in \emph{grounding space}, not of a saving in total work: the work moved to runtime is real and is measured separately in Section~\ref{sec:per-decision-cost}.
+
+\subsection{Runtime Behaviour}
+
+Figure~\ref{fig:total-time} reports the total runtime. For larger values of $n$, the part not attributed to solving dominates the total cost across all variants, which is consistent with the BSP encoding: even without heuristic directives, the base program grounds into millions of rules. The runner computes the grounding estimate as \mintinline{text}|Time.Total - Time.Solve|, so it must be read as a derived quantity, not as an independent timer of the grounder alone.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{total_time}
+    \caption{Total runtime for the BSP variants.}
+    \label{fig:total-time}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{grounding_time}
+    \caption{Grounding estimate computed as total time minus solving time.}
+    \label{fig:grounding-time}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Variant} & \textbf{Total (s)} & \textbf{Grounding estimate (s)} & \textbf{Solving (s)}\\
+\midrule
+\mintinline{text}|gc_noheur| & 69.40 & 54.49 & 14.91\\
+\mintinline{text}|gc|        & 78.84 & 57.29 & 21.55\\
+\mintinline{text}|ga|        & 67.79 & 55.15 & 12.64\\
+\mintinline{text}|la|        & 54.85 & 54.83 & 0.02\\
+\mintinline{text}|lc|        & 71.23 & 54.58 & 16.65\\
+\bottomrule
+\end{tabular}
+\caption{Average runtime at $n=100$. The auxiliary lazy variant is excluded because it times out earlier.}
+\label{tab:n100-time}
+\end{table}
+
+At $n=100$, \mintinline{text}|la| has an almost negligible solving time. This is the semantics at work: the Alpha-style guidance makes one direct decision per element and encounters no conflicts. The \mintinline{text}|lc| variant follows the clingo-like reading of negation and aggregate availability, whose guards open only once atoms are established false and aggregate sources determined; its solving profile therefore remains close to the no-heuristic baseline, while still keeping the heuristic component compact.
+
+\subsection{Choices, Conflicts, and Search Guidance}
+
+Search statistics separate the two semantics sharply. The \mintinline{text}|la| variant makes exactly $n$ choices: at $n=100$, it performs 100 choices and no conflicts, the signature of a heuristic that constructs the solution greedily and correctly. The clingo-like variants track the baseline profile.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{choices_comparison}
+    \caption{Number of solver choices.}
+    \label{fig:choices}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{conflicts_comparison}
+    \caption{Number of conflicts.}
+    \label{fig:conflicts}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.49\textwidth]{restarts_comparison}
+    \hfill
+    \includegraphics[width=0.49\textwidth]{solving_cost_per_choice}
+    \caption{Restarts and solving cost per choice. The second plot reports $1000 \cdot \texttt{solving\_s}/\texttt{choices}$, so lower values mean cheaper solver decisions.}
+    \label{fig:restarts-cost-per-choice}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lrr}
+\toprule
+\textbf{Variant} & \textbf{Choices at $n=100$} & \textbf{Conflicts at $n=100$}\\
+\midrule
+\mintinline{text}|gc_noheur| and \mintinline{text}|lc| & 63,255 & 42,903\\
+\mintinline{text}|gc|                          & 32,514 & 20,888\\
+\mintinline{text}|ga|                          & 54,147 & 36,573\\
+\mintinline{text}|la|                          & 100    & 0\\
+\bottomrule
+\end{tabular}
+\caption{Average search statistics at $n=100$.}
+\label{tab:n100-search}
+\end{table}
+
+This result must be interpreted carefully. \mintinline{text}|la| is not a more efficient implementation of \mintinline{text}|gc|: it evaluates negation and aggregates under a different semantics, and that semantics happens to be the one for which this heuristic was designed. The comparison of \emph{representations} (ground versus lazy at fixed semantics: \mintinline{text}|gc| versus \mintinline{text}|lc|, \mintinline{text}|ga| versus \mintinline{text}|la|) is therefore kept separate from the comparison of \emph{semantics} (suffix \mintinline{text}|a| versus suffix \mintinline{text}|c| at fixed approach) throughout the analysis. It is also worth noting that \mintinline{text}|ga| improves over the baseline but does not reach \mintinline{text}|la|: the static unrolling reconstructs the dynamic aggregate, but the dropped negative guards and the max-weight selection over a bounded domain are an approximation, not the exact Alpha evaluation.
+
+\subsection{Rules, Variables, and Memory}
+
+The compression of the heuristic component is visible in the size of the propositional instance. At $n=100$, the ground clingo-like variant is fifty times larger in variables than every other variant, because its heuristic directives materialize the negative body and the aggregate bound for each $(X,S)$ pair.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lr}
+\toprule
+\textbf{Variant} & \textbf{Variables at $n=100$}\\
+\midrule
+\mintinline{text}|gc| & $1{,}030{,}606$\\
+\mintinline{text}|lc| & $20{,}300$\\
+\mintinline{text}|ga| & $20{,}406$\\
+\mintinline{text}|la| & $20{,}300$\\
+\bottomrule
+\end{tabular}
+\caption{Number of ground variables at $n=100$.}
+\label{tab:n100-vars}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{memory_comparison}
+    \caption{Peak resident set size of the solver process during the runs.}
+    \label{fig:memory}
+\end{figure}
+
+The memory metric is the peak resident set size of the entire solver process, end to end: it covers grounding, CDCL search, and the custom propagator in a single value, and for the lazy Prolog variants it includes the in-process SWI-Prolog engine and its asserted database. Two consequences follow. First, the Prolog engine has a fixed initialization overhead independent of $n$: on small instances the lazy curves start \emph{above} the ground ones, and the lazy memory advantage is asymptotic, emerging where the $\Theta(n^3)$ explosion of ground heuristics overtakes the constant overhead. Second, at large $n$ memory is dominated by the base program for every variant: at $n=100$, \mintinline{text}|gc_noheur|, \mintinline{text}|la|, and \mintinline{text}|lc| sit around 3.2~GiB while \mintinline{text}|gc| reaches about 3.7~GiB. The RSS \emph{confirms} the saving on the real consumption; the ground-object count of Table~\ref{tab:heur-growth} \emph{explains its cause}.
+
+\subsection{The Price of Laziness: Per-Decision Cost}
+\label{sec:per-decision-cost}
+
+Intellectual honesty requires stating that the lazy approach does not \emph{eliminate} the cost of the combinatorial explosion: it \emph{moves} it. What ground-and-solve pays once, in memory, at grounding time, the lazy backend pays repeatedly, in time, at every decision, in the form of candidate evaluations (native) or queries to the in-process Prolog engine (Prolog backend). The instrumentation quantifies this trade-off directly: the Prolog backend reports the number of guided decisions (\mintinline{text}|decide_calls|), the candidates produced and examined per decision, and the cumulative time spent in state synchronization, Prolog query, candidate scan, and selection; the derived metric \mintinline{text}|prolog_ms_per_decide| normalizes the query time per decision. The correct claim supported by the data is thus strong but circumscribed: the lazy representation achieves a heuristic memory footprint that is constant in $n$, \emph{at the price of} a per-decision time cost that ground-and-solve does not pay at all. For small instances, where the ground explosion is still manageable, ground-and-solve remains competitive or preferable on both axes; the interesting regime is beyond the crossover point where the asymptotic saving repays the runtime overhead.
+
+\subsection{Direct and Auxiliary Forms}
+
+The \mintinline{text}|la_aux| variant routes the lazy heuristic through auxiliary predicates that materialize the heuristic body, including the aggregate value, before the propagator is used. This experiment separates two effects that are otherwise easy to confuse: reducing the number of ground heuristic directives, and avoiding the materialization of the heuristic body itself. \mintinline{text}|la_aux| keeps only two \mintinline{text}|__heuristic| facts, but its auxiliaries \mintinline{text}|h_b(X,S)| and \mintinline{text}|h_c(X,S)| reintroduce the $(X,S)$ product in the base program; the variant times out already at $n=60$. The lesson is clear: if the heuristic body is first materialized into a large auxiliary relation, the intended benefit of laziness is lost. The direct lazy form is the meaningful one.
+
+\subsection{Effect of the Constraint Formulation}
+
+The \mintinline{text}|la_co| variant changes not only the heuristic representation but also the BSP constraint itself, replacing the quadratic difference check with a propagation-friendly interval constraint over one sum. A comparison between \mintinline{text}|la_co| and \mintinline{text}|la| therefore measures the interaction between lazy heuristics and problem modelling, not the isolated effect of the representation, and it is reported as a modelling experiment only.
+
+\subsection{Status of the PUP and HRP Campaigns}
+
+The PUP and HRP suites are fully wired into the same pipeline: all five settings exist for both backends, the correctness harness covers them at the SAT/UNSAT level, and the instance sets (the \texttt{double}/\texttt{doubleV} families for PUP, the reconfiguration instances for HRP) are in place. During the final audit of the encodings, the weight flattening of the native \mintinline{text}|lc| variants of PUP and HRP was corrected to comply with the rule of Section~2.1.2 (the earlier revision relied on priorities that the clingo semantics does not rank globally), which invalidated the lazy-clingo cells of the preliminary runs; the definitive PUP and HRP figures are produced by the re-run of the full campaign with the corrected encodings. The structural expectations are nevertheless fixed by the design: the ground heuristic explosion of PUP is the product of the unrolled value domains per ground pair, the HRP comparison isolates the negation semantics because its heuristics contain no aggregates, and the per-decision cost of the Prolog backend grows with the number of candidates that its rules generate per decision.
+
+\subsection{Summary of Results}
+
+The experimental results support five conclusions. First, the lazy representation reduces the ground heuristic component from $\Theta(n^3)$ directives to two constant facts on BSP, and the peak-memory measurements confirm the corresponding saving on real consumption at large $n$. Second, the total runtime does not become constant, because the base program is still fully grounded; what changes is the isolation of the heuristic component from the growth of the instance. Third, the semantics axis is not a detail: the Alpha-like reading turns the BSP heuristic into a perfect greedy strategy ($n$ choices, zero conflicts), while the clingo-like reading, under either representation, stays close to the baseline; representation and semantics must never be conflated in the comparisons. Fourth, laziness is a space--time trade-off, made explicit by the per-decision metrics of the propagator. Fifth, auxiliary formulations and constraint reformulations (\mintinline{text}|la_aux|, \mintinline{text}|la_co|) are valuable methodological controls, but they answer different questions than the direct ground-versus-lazy comparison.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth,height=0.82\textheight,keepaspectratio]{benchmark_results}
+    \caption{Overview of the BSP benchmark results.}
+    \label{fig:benchmark-results}
+\end{figure}

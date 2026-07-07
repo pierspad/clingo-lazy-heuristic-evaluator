@@ -1,0 +1,74 @@
+\section{Introduction}
+
+\subsection{Context}
+
+Answer Set Programming (ASP) is a declarative paradigm for knowledge representation and combinatorial problem solving. Instead of prescribing an algorithm step by step, the modeller describes the properties that admissible solutions must satisfy. The ASP system then computes the answer sets, that is, the stable models of the program, which correspond to the solutions of the encoded problem \cite{gebser2012asp,clingoGuide}.
+
+Most modern ASP systems follow a \textit{ground-and-solve} architecture. A grounder first rewrites the non-ground program, which may contain variables, into a propositional program. A solver based on CDCL-style techniques then explores assignments and computes stable models \cite{clingoGuide,moskewicz2001chaff}. clingo embodies this architecture by combining gringo, the grounder, and clasp, the solver. The separation is effective in many domains, but it also exposes a well-known limitation: grounding may become the bottleneck whenever the propositional instance grows much faster than the original declarative specification.
+
+Domain-specific heuristics are one of the main tools for guiding search. In clingo they can be written as directives of the form:
+
+\begin{minted}{prolog}
+#heuristic A : Body. [W@P, M]
+\end{minted}
+
+Here $A$ is the target atom, $Body$ is the applicability condition, $W$ is the heuristic weight, $P$ is a priority, and $M$ is the modifier. The literature shows that domain-specific heuristics can be decisive on difficult industrial instances \cite{gebser2013heuristics,dodaro2016combining}. At the same time, if a heuristic directive contains aggregates or a rich body, grounding the directive may produce a very large number of ground heuristic objects.
+
+This thesis focuses precisely on that tension. The goal is to preserve a declarative form for heuristics, while moving part of their evaluation from grounding time to search time. The result is not a general lazy grounder for ASP. It is a specialized lazy mechanism for heuristics, implemented as a heuristic propagator inside clingo and instantiated in two interchangeable evaluation backends.
+
+\subsection{Grounding Bottleneck and Dynamic Heuristics}
+
+The grounding bottleneck appears when the propositional representation required by the solver becomes too large in time or memory. The phenomenon is especially visible in programs that combine numeric domains, aggregates, and conditions whose relevance depends on the evolving search state. Lazy-grounding research addresses this issue by interleaving grounding and solving, instantiating only the parts of the program that are needed during search \cite{comploi2023domain}.
+
+Dynamic heuristics add a second layer of complexity. A useful heuristic choice may depend not only on the input instance, but also on the partial assignment currently built by the solver. A decision may become preferable because some atoms are already true, because other atoms are still undecided, or because an aggregate computed over true atoms has reached a favourable value. This idea is studied in Alpha, a lazy-grounding system in which declarative heuristics can reason about partial states and dynamic aggregates \cite{comploi2023domain,comploi2023dynamicAggregates}.
+
+The reference papers make the source of the problem concrete. Consider the heuristic used throughout this thesis for Balanced Set Partitioning:
+
+\begin{minted}{prolog}
+#heuristic b(X) : x(X), not c(X), S = #sum{Y : c(Y)}, W = ((n+1)*S)+X. [W, true]
+\end{minted}
+
+The aggregate value $S$ appears \emph{inside the weight}. Since the atoms \mintinline{text}|c(Y)| are choice atoms rather than facts, the grounder cannot know the value of the sum at grounding time: it must enumerate every reachable value of $S$ and materialize a distinct ground directive for every pair $(X,S)$. In a lazy-grounding system such as Alpha the same heuristic stays symbolic and the aggregate is simply re-evaluated over the atoms currently true. Reproducing this behaviour inside clingo, whose grounder is eager by design, is the engineering challenge addressed here.
+
+clingo already offers a mature language for \mintinline{text}|#heuristic| directives and a Domain heuristic in the solver, but its ground-and-solve pipeline materializes the ground instances of such directives before search. When the heuristic component grows significantly, it becomes attractive to keep the heuristic in a compact representation and evaluate it at runtime.
+
+\subsection{Objective and Experimental Design}
+
+The objective of this thesis is to design and evaluate an extension of clingo that evaluates domain-specific heuristics lazily, and to compare it systematically against the ground-and-solve alternative. The comparison is organized along two orthogonal axes.
+
+The first axis is the \emph{approach}. In the \emph{ground} approach (prefix \mintinline{text}|g|), the heuristic is expressed with native \mintinline{text}|#heuristic| directives and fully expanded by gringo. In the \emph{lazy} approach (prefix \mintinline{text}|l|), the heuristic is kept as a small number of ground facts, read by a custom propagator during initialization and evaluated during search.
+
+The second axis is the \emph{semantics of partial information}, that is, the question of how a heuristic condition reads the current partial assignment. Under the \emph{clingo-like} semantics (suffix \mintinline{text}|c|), negation and aggregates are evaluated as clingo would: \mintinline{text}|not a| is satisfied only when $a$ is assigned false, and an aggregate refers to a completely determined set of source atoms. Under the \emph{Alpha-like} semantics (suffix \mintinline{text}|a|), \mintinline{text}|not a| is satisfied as soon as $a$ is not assigned true, and the aggregate is computed over the atoms currently true in the partial assignment, so its value evolves during search. Crossing the axes yields four variants per problem: \mintinline{text}|ga|, \mintinline{text}|gc|, \mintinline{text}|la|, and \mintinline{text}|lc|, evaluated against the heuristic-free baseline \mintinline{text}|gc_noheur|.
+
+Two remarks are necessary to read this matrix correctly. First, everything runs on clingo: the variants labelled \enquote{Alpha} are \emph{simulations} of Alpha's semantics inside clingo, not runs of the Alpha system. In the ground variants, the simulation is necessarily approximate, because ground clingo cannot express a sum over the atoms currently true; the \mintinline{text}|ga| encodings therefore reconstruct the dynamic aggregate through a static unrolling combined with bound conditions, as explained in Section~2. Only the lazy \mintinline{text}|la| variant captures the dynamic aggregate exactly. Second, Alpha and clingo disagree on the meaning of weights and priorities: in Alpha the pair $(W,P)$ ranks heuristics globally, with priority acting as a strict level discriminator between different atoms, whereas in clingo the priority \mintinline{text}|@P| only arbitrates modifications of the same atom and the global ranking is induced by the weight alone. Faithful translation therefore requires \emph{flattening} the levels into the weight, $W_{\mathit{flat}} = W + P \cdot M$ for a sufficiently large level multiplier $M$, whenever the evaluation follows clingo's reading of priorities.
+
+The lazy approach is instantiated in two backends that share the same propagator interface. The \emph{native} backend reads compact facts such as:
+
+\begin{minted}{prolog}
+__heuristic(__target(b), x, __n_c, __bind(s, __sum(c)),
+            __weight(__add(__mul(s, B), self)), __priority(0),
+            __semantics(alpha), __modifier(true)) :- B = n + 1.
+\end{minted}
+
+and evaluates them through C++ runtime templates with incremental aggregate states. The \emph{Prolog} backend reads rule strings such as:
+
+\begin{minted}{prolog}
+heuristic("heuristic(b(X), W, 0, true) :-
+    aggregate_all(sum(Y), holds(c(Y)), S), holds(heuristic_base(Base)),
+    holds(x(X)), target_available(b(X)), alpha_not(c(X)),
+    W is Base*S+X.").
+\end{minted}
+
+and evaluates them with an in-process SWI-Prolog engine \cite{wielemaker2012swipl} kept synchronized with the solver trail. The two backends embody two different engineering trade-offs, compiled incremental evaluation versus a general logic-programming runtime, over the same declarative content.
+
+The thesis addresses three questions. First, it asks how a dynamic heuristic can be represented in a compact ground form that a propagator can interpret, and how the Alpha-like and clingo-like readings of partial information can coexist in a single mechanism. Second, it studies how far the clingo semantics of weights, priorities, and modifiers can be reproduced through the \mintinline{text}|Clingo::Heuristic| interface, and what the weight--priority flattening costs in terms of encoding effort. Third, it evaluates the impact of the lazy representation on grounding size, memory, and search behaviour on three benchmark problems: Balanced Set Partitioning (BSP), the Partner Units Problem (PUP) \cite{comploi2023dynamicAggregates}, and the House Reconfiguration Problem (HRP) \cite{comploi2023domain}.
+
+\subsection{Contributions}
+
+The implemented system consists of two modified clingo builds sharing the same source layout. The build in \path{clingo-native} contains the native backend: shared types, a parser for \mintinline{text}|__heuristic| facts, incremental aggregate states, and the heuristic propagator, all under \path{libclingo}. The build in \path{clingo-prolog} contains the Prolog backend: the same propagator skeleton, a rule-string normalizer, an in-process SWI-Prolog evaluation backend, and an auxiliary clingo-based fallback evaluator. In both builds the propagator is registered automatically in \path{clingo_app.cc}, so the modified binaries use the mechanism without any external controller.
+
+On the experimental side, the project provides encodings of BSP, PUP, and HRP in all four variants for both backends, under \path{test_folder/encodings-native} and \path{test_folder/encodings-prolog}; an equivalence harness, \path{tools/check_equivalence.py}, which verifies that heuristics preserve the answer sets and that the Prolog backend is actually active; and a benchmark pipeline built on \texttt{benchmark-tool} and \texttt{runlim}, with wrapper systems for the two binaries, a result parser that extracts solver and propagator statistics, and automatic graph generation.
+
+\subsection{Structure of the Thesis}
+
+Section 2 describes the methodology: the conceptual two-axis framework, the weight--priority flattening, the architecture of the two backends, the benchmark encodings with their adaptations, the correctness harness, and the measurement infrastructure. Section 3 presents the experimental results, with a complete analysis on BSP and the current status of the PUP and HRP campaigns. Section 4 discusses the findings, states the limitations explicitly, and outlines future work.
