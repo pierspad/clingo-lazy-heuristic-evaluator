@@ -142,10 +142,25 @@
     <runtag machine="local" benchmark="HRP" tag="hrp"/>
   </project>
 
-  <!-- Studio su CLUSTER (SLURM, distribuito). -->
-  <project name="study-hpc" job="dist-hpc">
+  <!-- Studio su CLUSTER (SLURM, distribuito).
+       Split in 3 project (uno per famiglia) invece di un unico project
+       "study-hpc" monolitico: prima "btool gen" produceva un solo *.dist
+       che eseguiva BSP+PUP+HRP in sequenza dentro UNA sola allocazione
+       SLURM (visto nello smoke test: "Found 1 jobs to dispatch"). Con 3
+       project separati, "btool gen" produce 3 *.dist indipendenti e
+       "btool run-dist" (default -j 100, quindi ben oltre i 3 di cui
+       abbiamo bisogno) li sottomette come 3 job SLURM concorrenti su nodi
+       diversi. I 3/4_run_benchmark_*.sh ciclano su questi 3 nomi per
+       dispacciarli tutti. "parallel=1" nel <seqjob>/<distjob> resta
+       invariato: il parallelismo e' TRA i job (nodi diversi), non dentro
+       lo stesso job, cosi' le misure di tempo restano pulite. -->
+  <project name="study-hpc-bsp" job="dist-hpc">
     <runtag machine="hpc" benchmark="BSP" tag="bsp"/>
+  </project>
+  <project name="study-hpc-pup" job="dist-hpc">
     <runtag machine="hpc" benchmark="PUP" tag="pup"/>
+  </project>
+  <project name="study-hpc-hrp" job="dist-hpc">
     <runtag machine="hpc" benchmark="HRP" tag="hrp"/>
   </project>
 

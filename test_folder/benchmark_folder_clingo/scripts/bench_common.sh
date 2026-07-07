@@ -114,8 +114,11 @@ for b in r.findall("benchmark"):
         for fol in b.findall("folder"):
             fol.set("path", f)
 if os.environ.get("RS_DROP_HPC") == "1":
+    # prefix match: dopo lo split di study-hpc in study-hpc-{bsp,pup,hrp}
+    # (vedi runscript.xml) un confronto per uguaglianza esatta lascerebbe
+    # questi project orfani con job="dist-hpc" gia' rimosso sotto.
     for p in list(r.findall("project")):
-        if p.get("name") == "study-hpc":
+        if p.get("name", "").startswith("study-hpc"):
             r.remove(p)
     for dj in list(r.findall("distjob")):
         r.remove(dj)

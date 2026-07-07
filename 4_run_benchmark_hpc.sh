@@ -66,11 +66,22 @@ main() {
   log "Generazione dei job distribuiti tramite btool gen ..."
   btool gen -c "$FULL_RS_OUT"
 
-  log "Sottomissione dei job alla coda SLURM (partizione 'kr') ..."
-  btool run-dist "$FULL_OUTPUT/study-hpc/hpc"
+  log "Sottomissione dei job alla coda SLURM (3 project paralleli: bsp/pup/hrp, partizione 'kr') ..."
+  local proj dispatched=0
+  for proj in study-hpc-bsp study-hpc-pup study-hpc-hrp; do
+    local d="$FULL_OUTPUT/$proj/hpc"
+    if [ -d "$d" ]; then
+      log "  -> dispatch $proj ($d)"
+      btool run-dist "$d"
+      dispatched=$((dispatched + 1))
+    else
+      warn "cartella non trovata, salto: $d"
+    fi
+  done
+  [ "$dispatched" -gt 0 ] || die "nessun project dispacciato: controlla l'output di 'btool gen -c' sopra"
 
   echo
-  ok "I job sono stati sottomessi a SLURM con successo! Monitora con 'squeue -u \$USER'."
+  ok "I job sono stati sottomessi a SLURM con successo ($dispatched project concorrenti)! Monitora con 'squeue -u \$USER' o 'sh wait_hpc.sh'."
 }
 
 main "$@"

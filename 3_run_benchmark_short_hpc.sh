@@ -86,11 +86,22 @@ main() {
   log "btool gen -c per cluster ..."
   btool gen -c "$SHORT_RS_OUT"
 
-  log "Invio dei mini-job a SLURM ..."
-  btool run-dist "$SHORT_OUTPUT/study-hpc/hpc"
-  
+  log "Invio dei mini-job a SLURM (3 project paralleli: bsp/pup/hrp) ..."
+  local proj dispatched=0
+  for proj in study-hpc-bsp study-hpc-pup study-hpc-hrp; do
+    local d="$SHORT_OUTPUT/$proj/hpc"
+    if [ -d "$d" ]; then
+      log "  -> dispatch $proj ($d)"
+      btool run-dist "$d"
+      dispatched=$((dispatched + 1))
+    else
+      warn "cartella non trovata, salto: $d"
+    fi
+  done
+  [ "$dispatched" -gt 0 ] || die "nessun project dispacciato: controlla l'output di 'btool gen -c' sopra"
+
   echo
-  ok "Smoke test sottomesso! Controlla con 'squeue -u \$USER'."
+  ok "Smoke test sottomesso ($dispatched project)! Controlla con 'squeue -u \$USER' o 'sh wait_hpc.sh'."
 }
 
 main "$@"
