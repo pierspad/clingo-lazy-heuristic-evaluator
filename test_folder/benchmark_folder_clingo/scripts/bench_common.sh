@@ -21,31 +21,31 @@ die()  { printf "${_c_red}XX ${_c_off} %s\n" "$*" >&2; exit 1; }
 
 # --- 1) ambiente python: venv + btool + deps grafici ---------
 bootstrap_env() {
-  cd "$TEST_DIR" || die "cartella test_folder non trovata: $TEST_DIR"
-
-  if [ ! -d .venv ]; then
-    log "Creo il virtualenv .venv ..."
-    python3 -m venv .venv || die "creazione venv fallita"
+  # Carica i moduli completi di Spack identificati sull'HPC
+  if command -v module &> /dev/null; then
+    log "Caricamento moduli Spack (Python 3.14 + venv)..."
+    module load python/3.14.3-gcc-12.5.0-4aiz4ye
+    module load python-venv/1.0-none-none-drp2mlh
   fi
+
+  log "Installo le dipendenze (btool + pandas/matplotlib/openpyxl) ..."
+  
+  # Identifichiamo il binario corretto di Spack caricato dal modulo
+  local SPACK_PYTHON
+  SPACK_PYTHON=$(command -v python3)
+
+  if [ ! -d ".venv" ]; then
+    log "Creazione di un venv pulito usando: $SPACK_PYTHON"
+    "$SPACK_PYTHON" -m venv .venv || die "Impossibile creare il venv con Python 3.14"
+  fi
+
+  # Attiviamo il venv forzando il PATH pulito
   # shellcheck disable=SC1091
-  . .venv/bin/activate || die "attivazione venv fallita"
+  source .venv/bin/activate
 
-  local need_pip=0
-  command -v btool >/dev/null 2>&1 || need_pip=1
-  python3 - <<'PY' >/dev/null 2>&1 || need_pip=1
-import importlib
-for m in ("pandas", "matplotlib", "openpyxl"):
-    importlib.import_module(m)
-PY
-
-  if [ "$need_pip" = 1 ]; then
-    log "Installo le dipendenze (btool + pandas/matplotlib/openpyxl) ..."
-    pip install -q --upgrade pip >/dev/null 2>&1 || true
-    pip install -q potassco-benchmark-tool pandas matplotlib openpyxl \
-      || die "pip install fallito (controlla la connessione)"
-  fi
-  command -v btool >/dev/null 2>&1 || die "btool non disponibile dopo l'installazione"
-  ok "ambiente python pronto (btool: $(command -v btool))"
+  # Usiamo i binari interni al venv in modo rigido ed esplicito per evitare leak di Python 2.7
+  ./.venv/bin/pip install --upgrade pip
+  ./.venv/bin/pip install potassco-benchmark-tool pandas matplotlib openpyxl || die "pip install fallito (controlla la connessione)"
 }
 
 # --- 2) runlim (limitatore tempo/memoria, binario platform-specific) ---
@@ -105,6 +105,8 @@ t = ET.parse(os.environ["RS_IN"]); r = t.getroot()
 r.set("output", os.environ["RS_OUTPUT"])
 for sj in r.findall("seqjob"):
     sj.set("timeout", os.environ["RS_TIMEOUT"])
+for dj in r.findall("distjob"):
+    dj.set("timeout", os.environ["RS_TIMEOUT"])
 folders = {"BSP": os.environ["RS_BSP"], "PUP": os.environ["RS_PUP"], "HRP": os.environ["RS_HRP"]}
 for b in r.findall("benchmark"):
     f = folders.get(b.get("name"))

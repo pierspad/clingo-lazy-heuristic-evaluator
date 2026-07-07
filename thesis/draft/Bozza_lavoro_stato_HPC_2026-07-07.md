@@ -138,3 +138,56 @@ Tempi in millisecondi (3-9 ms), memoria piatta a zero con lo stesso bug di tick 
 - Script full run cluster: `4_run_benchmark_hpc.sh` (ancora da lanciare, a quanto risulta)
 - Grafici analizzati in questo documento: `test_folder/clingo_hpc_graphs/{graphs-native,graphs-prolog,graphs-comparison-native-prolog}/{1_BSP,2_PUP,3_HRP}/*.png`
 - Runscript btool: `test_folder/benchmark_folder_clingo/runscripts/runscript.xml`
+
+---
+
+## 8. Analisi degli script di lancio (`1_..sh` .. `5_evaluate_hpc.sh`) e `bench_common.sh`
+
+Aggiornamento dell'8 luglio: ho riletto per intero i cinque script numerati in root e `test_folder/benchmark_folder_clingo/scripts/bench_common.sh` (nel frattempo è comparso anche un quinto script, `5_evaluate_hpc.sh`, che raccoglie ed elabora i risultati del cluster — non esisteva quando ho scritto la Sezione 4). Ho trovato due bug concreti, uno dei quali spiega meglio le anomalie della Sezione 4, e correggo un'ipotesi che avevo fatto lì.
+
+### 8.1 BUG — il timeout dichiarato per l'HPC (script 3 e 4) non ha alcun effetto reale
+
+`bench_common.sh::derive_runscript` (righe 99-123) patcha il timeout **solo sugli elementi `<seqjob>`**:
+
+```python
+for sj in r.findall("seqjob"):
+    sj.set("timeout", os.environ["RS_TIMEOUT"])
+```
+
+Non tocca mai `<distjob>`. Ora, `runscript.xml` definisce due job distinti: `seqjob name="seq-local" timeout="300s"` (usato dal progetto `study-local`, cioè gli script 1 e 2) e `distjob name="dist-hpc" timeout="600s" ... partition="kr"` (usato dal progetto `study-hpc`, cioè gli script 3 e 4). Il template SLURM (`templates/single.dist`) usa `{walltime}` solo per il budget di coda (`#SBATCH --time=`), mentre il timeout per-istanza passato a `runlim --real-time-limit={timeout}` (`templates/seq-generic.sh`, riga 12) viene sempre risolto dall'attributo `timeout` del job che genera quella run — per `study-hpc` è sempre `dist-hpc`, mai `seq-local`.
+
+**Conseguenza**: `TIMEOUT=15` in `3_run_benchmark_short_hpc.sh` e `FULL_TIMEOUT=300` in `4_run_benchmark_hpc.sh` sono **variabili morte per il cluster**: qualunque cosa lanci con questi due script gira sempre con il timeout hardcoded di `runscript.xml`, cioè **600 secondi per istanza**, non 15 né 300. Lo smoke test non ha mai davvero avuto un timeout da 15s; se una run si fosse impallata per un problema di ambiente (vedi 8.2), avrebbe comunque consumato fino a 10 minuti di coda invece di essere abbattuta in 15s. E la "suite completa" HPC (script 4), quando la lancerai, girerà con timeout reale doppio (600s) rispetto alla sua gemella locale (script 2, che invece patcha correttamente `seq-local` a 300s) — le due campagne non sarebbero direttamente confrontabili sul piano del timeout.
+
+**Fix**: in `derive_runscript`, aggiungere anche `for dj in r.findall("distjob"): dj.set("timeout", os.environ["RS_TIMEOUT"])`. Va fatto prima di rilanciare qualsiasi cosa sull'HPC, altrimenti si spreca budget di coda SLURM inutilmente.
+
+### 8.2 Rettifica alla Sezione 4: perché mancano i dati lazy-Prolog (`la`/`lc`) nello smoke test
+
+Nella Sezione 4.3 avevo ipotizzato che il timeout di 15s potesse essere la causa della mancanza delle varianti lazy-Prolog nelle dashboard `graphs-prolog/*`. Alla luce dell'8.1, questa ipotesi **va scartata**: il timeout reale era 600s, ampiamente sufficiente per istanze di quella taglia. La causa è quindi più probabilmente un fallimento a runtime (crash, non un timeout), e l'audit del 2 luglio (`docs/AUDIT-2026-07-02.md`, punto 5 delle osservazioni sul repo) segnala un rischio già noto e coerente con questo sintomo: **i binari in `clingo-*/build/bin` sono linkati a glibc 2.38**, e qualunque verifica in un ambiente con libc diversa (es. i nodi di calcolo del cluster, se hanno un'immagine diversa dal nodo dove hai compilato/sottomesso) richiede una ricompilazione. Un mismatch di questo tipo sul motore SWI-Prolog in-process (linkato staticamente nel backend Prolog) fallirebbe silenziosamente all'avvio, senza produrre un `.finished` utile e senza comparire nei grafici — esattamente il sintomo osservato (nessuna riga per `la`/`lc` in nessuna delle tre famiglie sul backend Prolog).
+
+**Da fare prima di rilanciare**: i dati grezzi dello smoke test esistono già e non costano nulla da controllare. Vai in `output-short-hpc/study-hpc/hpc/.../clingo-prolog/la/...` (o l'equivalente cartella per una qualunque istanza BSP/PUP/HRP, setting `la` o `lc`, sistema `clingo-prolog`) e guarda `runsolver.solver` (stderr+stdout catturati) e gli `err.%j`/`out.%j` di sbatch nella cartella del job SLURM corrispondente. Se vedi un errore di linking (`error while loading shared libraries`, o simili) è confermato il sospetto dell'audit, e la soluzione è ricompilare `clingo-prolog` (`REBUILD_CLINGO=1`) *sul/per il nodo di calcolo*, non solo sul nodo di submission.
+
+### 8.3 Regressione dati — il set BSP "canonico" attuale non copre il range della tesi
+
+`restore_canonical_instances` (in `bench_common.sh` per gli script 1/2, e duplicata inline in script 3/4) cerca prima `benchmarks.bak/`, e ripiega su `benchmarks/` se assente. **`benchmarks.bak/` non esiste** in questo checkout (verificato: `[ -d benchmarks.bak ]` → falso). Quindi ogni run "canonico" (script 2 e 4) userà semplicemente quello che c'è oggi in `test_folder/benchmark_folder_clingo/benchmarks/`:
+
+- BSP: 28 istanze, `bsp-0003.lp` .. `bsp-0030.lp` (n = 3..30)
+- PUP: 10 istanze, `double-20.asp` .. `double-200.asp` (N = 20..200, passo 20)
+- HRP: 10 istanze, `house-2.asp` .. `house-20.asp` (N = 2..20, passo 2)
+
+Il problema è **BSP**: la tesi (§3.2, Tabella "Experimental Dataset") riporta la campagna completa su **n = 10..120**, con i primi timeout proprio intorno a n=110-120 — cioè esattamente la parte più interessante della curva (dove Θ(n³) supera l'overhead fisso del motore Prolog, il crossover di cui parla la Discussione). Il set attuale si ferma a **n=30**: se lanci `2_run_benchmark_full.sh` o `4_run_benchmark_hpc.sh` così come sono, **non riproduci il dataset della tesi per BSP, lo restringi drasticamente**, perdendo proprio la parte della curva dove si vede il crossover.
+
+**Fix prima di rilanciare la full (locale o HPC)**: rigenerare le istanze BSP canoniche con `tools/gen_bsp_instances.py --out benchmarks/BSP --start 10 --end 120 --step 10 --clean` (o il passo che preferisci), oppure recuperare/ricostruire un `benchmarks.bak/BSP` con il range giusto, così che sia lo script 2 (locale, per verificare prima in economia) sia lo script 4 (HPC) partano dal range corretto. PUP e HRP invece sembrano già coerenti con quanto la tesi dà per "cablato e pronto" (10 istanze ciascuno, range ragionevole) — nessuna azione necessaria lì.
+
+### 8.4 Osservazioni minori
+
+- `5_evaluate_hpc.sh` (Fase 4) chiama `tools/plot_results.py --machine hpc --out-base ..` **senza** `--ground-counts`, a differenza di `run_btool_pipeline` in `bench_common.sh` (usata dagli script 1/2) che lo passa automaticamente se `ground_counts.csv` esiste. Inoltre **nessuno script lancia mai `tools/ground_counts.py`**: è uno strumento disaccoppiato, va invocato a mano. Risultato pratico: i grafici prodotti dalla pipeline HPC non includeranno mai il conteggio esatto delle direttive ground (quello dietro al grafico `combined_heuristics`/Θ(n³) della tesi) a meno di generare il CSV a mano e modificare lo script 5 per passarlo.
+- `5_evaluate_hpc.sh` sceglie il runscript da valutare così: se esiste `runscript.full.xml` usa quello, altrimenti ripiega su `runscript.short_hpc.xml`. È il motivo esatto per cui i grafici analizzati in Sezione 4 sono quelli dello smoke test: al momento in cui hai lanciato lo script 5, `runscript.full.xml` non esisteva ancora (lo crea solo lo script 4, mai eseguito). Nessuna azione richiesta, solo conferma della diagnosi della Sezione 4.2 — comportamento corretto ma da tenere a mente: una volta lanciato lo script 4, lo script 5 preferirà sempre "full" anche se in futuro rivuoi rivalutare un nuovo smoke test.
+- `benchmarks/_short/` è una cartella residua dentro `benchmarks/` lasciata da un run locale con lo script 1: innocua (nome isolato, non tocca BSP/PUP/HRP canonici) ma da ripulire per igiene, sulla falsariga di quanto l'audit del 2 luglio già segnalava per altri residui simili (`prova.lp`, `GC`, `BSP_tmp`).
+
+### 8.5 Ordine consigliato delle prossime azioni
+
+1. **Non rilanciare ancora `4_run_benchmark_hpc.sh`.** Prima applica il fix di 8.1 (`derive_runscript` deve patchare anche `<distjob>`), altrimenti si spreca coda SLURM con un timeout diverso da quello dichiarato.
+2. Controlla i log grezzi dello smoke test già fatto (8.2) per confermare/escludere il mismatch glibc/SWI sul backend Prolog **prima** di rilanciare — costa zero, i dati esistono già.
+3. Rigenera il set canonico BSP fino a n≈120 (8.3) così che la prossima full (locale o HPC) sia comparabile con la tesi.
+4. Solo a quel punto: eventualmente un nuovo smoke test breve (`3_run_benchmark_short_hpc.sh`) per validare i tre fix a costo quasi nullo, poi `4_run_benchmark_hpc.sh` per la campagna vera, poi `5_evaluate_hpc.sh` per raccogliere/plottare.
+5. Se vuoi anche il grafico di conteggio ground-heuristics stile tesi per PUP/HRP, lancia manualmente `tools/ground_counts.py` e passa il CSV risultante a `plot_results.py` (valuta di aggiungere `--ground-counts` anche dentro `5_evaluate_hpc.sh`, così diventa automatico).
