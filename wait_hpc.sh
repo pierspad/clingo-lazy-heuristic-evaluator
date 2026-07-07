@@ -12,6 +12,7 @@
 #       (default 30s tra un controllo e l'altro; Ctrl-C per interrompere
 #        senza toccare i job, che continuano a girare su SLURM)
 # ============================================================
+if [ -z "${BASH_VERSION:-}" ]; then exec bash "$0" "$@"; fi
 set -uo pipefail
 
 INTERVAL="${1:-10}"

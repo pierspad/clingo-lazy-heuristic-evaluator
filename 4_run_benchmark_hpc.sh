@@ -48,7 +48,8 @@ restore_canonical_instances() {
 
 main() {
   log "SUITE COMPLETA CLUSTER — timeout ${FULL_TIMEOUT}s, partizione SLURM"
-  
+
+  ensure_no_pending_dist_jobs
   bootstrap_env
   ensure_runlim
   ensure_clingo_bins

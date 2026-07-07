@@ -19,6 +19,26 @@ ok()   { printf "${_c_grn} ok${_c_off} %s\n" "$*"; }
 warn() { printf "${_c_yel}!! ${_c_off} %s\n" "$*" >&2; }
 die()  { printf "${_c_red}XX ${_c_off} %s\n" "$*" >&2; exit 1; }
 
+# --- 0) guard: non ripulire l'output se ci sono ancora job dist attivi ---
+# I job generati da "btool gen" hanno nome dello script (start0000.dist,
+# troncato da squeue in "start000..."): un run precedente ancora R/PD su
+# SLURM puo' avere ancora file aperti in output*/study-hpc*/hpc/results/...
+# via NFS. "btool gen -c" fa shutil.rmtree sull'intero output: se ci
+# inciampa (silly-rename NFS su un file ancora aperto altrove) muore con
+# "Directory not empty" a meta' pulizia, lasciando l'output in uno stato
+# ne' vecchio ne' nuovo. Meglio bloccare PRIMA con un messaggio chiaro.
+ensure_no_pending_dist_jobs() {
+  local running
+  running=$(squeue -u "$USER" -h -o "%j" 2>/dev/null | grep -c '^start' || true)
+  if [ "${running:-0}" -gt 0 ]; then
+    die "Ci sono ancora $running job SLURM (nome 'start*') in coda/esecuzione per \$USER.
+  'btool gen -c' ripulisce la cartella di output e puo' scontrarsi con job che ci
+  stanno ancora scrivendo dentro (visto in pratica: 'Directory not empty' su un
+  run1/ ancora aperto via NFS mentre un job precedente era R su squeue).
+  Aspetta la fine con 'sh wait_hpc.sh' (o controlla 'squeue -u \$USER'), poi rilancia."
+  fi
+}
+
 # --- 1) ambiente python: venv + btool + deps grafici ---------
 bootstrap_env() {
   # Carica i moduli completi di Spack identificati sull'HPC

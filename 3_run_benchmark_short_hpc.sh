@@ -69,6 +69,7 @@ build_short_subset() {
 
 main() {
   log "SMOKE TEST CLUSTER — timeout ${TIMEOUT}s, subset isolato"
+  ensure_no_pending_dist_jobs
   bootstrap_env
   ensure_runlim
   ensure_clingo_bins
