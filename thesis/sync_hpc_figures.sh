@@ -48,6 +48,17 @@ FIGURES=(
   "graphs-native/2_PUP|solving.png|pup|native_solving.png"
   "graphs-comparison-native-prolog/2_PUP|solving.png|pup|comparison_solving.png"
   "graphs-prolog/2_PUP|total_state_sync_time_ms.png|pup|prolog_state_sync.png"
+  # BSP — studi esplorativi (la_co / la_aux / ga_weak, solo BSP)
+  "graphs-native/exploratory/la_co_grounding/1_BSP|grounding.png|bsp|expl_laco_grounding.png"
+  "graphs-native/exploratory/la_co_grounding/1_BSP|rules.png|bsp|expl_laco_rules.png"
+  "graphs-native/exploratory/la_co_grounding/1_BSP|clingo_total.png|bsp|expl_laco_clingo_total.png"
+  "graphs-native/exploratory/la_co_grounding/1_BSP|mem.png|bsp|expl_laco_mem.png"
+  "graphs-native/exploratory/la_aux_vs_gs/1_BSP|solving.png|bsp|expl_laaux_solving.png"
+  "graphs-native/exploratory/la_aux_vs_gs/1_BSP|mem.png|bsp|expl_laaux_mem.png"
+  "graphs-prolog/exploratory/la_aux_vs_gs/1_BSP|decide_calls.png|bsp|expl_laaux_decide_calls.png"
+  "graphs-native/exploratory/ga_vs_ga_weak/1_BSP|solving.png|bsp|expl_gaweak_solving.png"
+  "graphs-native/exploratory/ga_vs_ga_weak/1_BSP|choices.png|bsp|expl_gaweak_choices.png"
+  "graphs-native/exploratory/ga_vs_ga_weak/1_BSP|conflicts.png|bsp|expl_gaweak_conflicts.png"
   # HRP
   "graphs-native/3_HRP|solving.png|hrp|native_solving.png"
   "graphs-native/3_HRP|choices.png|hrp|native_choices.png"
