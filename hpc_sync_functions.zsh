@@ -5,7 +5,7 @@
 # modificalo qui direttamente (non serve più tenerne una copia fuori).
 # In ~/.zshrc basta una riga:
 #
-#   source ~/Desktop/clingo-lazy-heuristics/hpc_sync_functions.zsh
+#   source ~/Desktop/Thesis/clingo-lazy-heuristics/hpc_sync_functions.zsh
 #
 # NON viene mai sincronizzato verso l'HPC: pushhpccode esclude se stesso
 # esplicitamente (non avrebbe senso lì, e sourcearlo per errore da un altro
@@ -33,28 +33,35 @@ function copyhpcgraphs() {
   # Assicura che la directory di destinazione esista localmente
   mkdir -p "$local_target"
 
-  # Elementi da sincronizzare (Cartelle dei grafici + File di log/risultati)
+  # Elementi da sincronizzare, formato "sorgente_remota|nome_locale".
+  # I due results.xlsx remoti (full run e smoke test) hanno lo stesso
+  # basename: senza destinazione esplicita l'ultimo scaricato SOVRASCRIVEVA
+  # l'altro in clingo_hpc_graphs/results.xlsx (successo il 2026-07-07:
+  # l'xlsx della full run clobberato da quello dello smoke test). Con il
+  # nome locale esplicito non c'è più ambiguità su quale campagna si guarda.
   local targets=(
-    "graphs-native"
-    "graphs-prolog"
-    "graphs-comparison-native-prolog"
-    "benchmark_folder_clingo/output/results.xlsx"
-    "benchmark_folder_clingo/output-short-hpc/results.xlsx"
-    "benchmark_folder_clingo/eval.log"
-    "benchmark_folder_clingo/results.xml"
-    "benchmark_folder_clingo/results-short.xml"
+    "graphs-native|"
+    "graphs-prolog|"
+    "graphs-comparison-native-prolog|"
+    "benchmark_folder_clingo/output/results.xlsx|results-full.xlsx"
+    "benchmark_folder_clingo/output-short-hpc/results.xlsx|results-short-hpc.xlsx"
+    "benchmark_folder_clingo/eval.log|eval.log"
+    "benchmark_folder_clingo/results.xml|results.xml"
+    "benchmark_folder_clingo/results-short.xml|results-short.xml"
   )
 
   echo "🔄 Avvio sincronizzazione grafici e log analitici da HPC..."
 
-  # Ciclo esplicito per gestire in modo robusto sia file singoli che intere cartelle
-  local item
+  # Ciclo esplicito: file singoli con nome locale esplicito, cartelle (dst
+  # vuota) dentro local_target mantenendo la struttura.
+  local item src dst
   for item in $targets; do
-    # Se l'item remoto esiste, rsync lo tira giù mantenendo la struttura o salvandolo nel target
+    src="${item%%|*}"
+    dst="${item##*|}"
     rsync -avz --progress \
       --include='*/' \
-      "${remote_host}:${base_remote_dir}/${item}" \
-      "$local_target" 2>/dev/null || echo "⚠️  Nota: ${item} non ancora presente sull'HPC (normale se il benchmark non è finito)."
+      "${remote_host}:${base_remote_dir}/${src}" \
+      "${local_target}${dst}" 2>/dev/null || echo "⚠️  Nota: ${src} non ancora presente sull'HPC (normale se il benchmark non è finito)."
   done
 
   echo "✅ Sincronizzazione completata. Controlla la cartella: $local_target"

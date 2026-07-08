@@ -11,10 +11,23 @@ varianti lazy sul backend prolog — decide_calls e i tempi del propagatore
 
 Produce TRE alberi di grafici, una sottocartella per famiglia (1_BSP/2_PUP/3_HRP):
 
-    <out-base>/graphs-native/                tutte le varianti, backend native
-    <out-base>/graphs-prolog/                tutte le varianti, backend prolog
+    <out-base>/graphs-native/                varianti MAIN, backend native
+    <out-base>/graphs-prolog/                varianti MAIN, backend prolog
     <out-base>/graphs-comparison-native-prolog/   native vs prolog (varianti lazy),
                                              con "verdetto" del migliore per area
+
+I grafici comparativi principali mostrano SOLO l'encoding di riferimento e le
+4 varianti oggetto della tesi (MAIN_VARIANTS): gc_noheur, gc, ga, la, lc.
+Le varianti esplorative (la_co, la_aux, ga_weak) NON vi compaiono: vivono in
+    <out-base>/graphs-<backend>/exploratory/<studio>/<famiglia>/
+con tre studi dedicati (v. EXPLORATORY_STUDIES):
+    la_co_grounding   effetto della linearizzazione del vincolo sul grounding
+                      (drastica riduzione delle regole groundate, spec. BSP)
+    la_aux_vs_gs      la_aux forza un comportamento ground-and-solve-like:
+                      atteso ~gc; confronto con gc_noheur/gc/ga/la
+    ga_vs_ga_weak     ga (negazione rimossa + unrolling aggregati con somma e
+                      vincolo <) vs ga_weak (solo negazione-as-alpha,
+                      aggregato invariato)
 
 Opzionale: --ground-counts output/ground_counts.csv abilita i grafici di
 conteggio del grounding (ground_heuristics, __heuristic facts, combined,
@@ -79,6 +92,44 @@ VARIANT_LINESTYLES = {
 }
 VARIANT_ORDER = ["gc_noheur", "gc", "ga", "ga_weak", "la", "lc", "la_aux", "la_co"]
 LAZY_VARIANTS = ["la", "lc", "la_aux", "la_co"]
+
+# Varianti del confronto principale della tesi: 1 riferimento + 4 varianti.
+# Tutto il resto (la_co, la_aux, ga_weak) e' esplorativo e compare solo
+# nell'albero exploratory/.
+MAIN_VARIANTS = ["gc_noheur", "gc", "ga", "la", "lc"]
+MAIN_LAZY_VARIANTS = ["la", "lc"]
+
+# ---------------------------------------------------------------------------
+# Studi esplorativi: ogni studio disegna i singoli PNG delle metriche indicate
+# + un _dashboard.png, ristretti alle sole varianti dello studio.
+#   ground=True aggiunge anche i grafici di conteggio grounding (richiede
+#   --ground-counts), che per la_co sono il cuore dell'analisi.
+# ---------------------------------------------------------------------------
+EXPLORATORY_STUDIES = [
+    {
+        "slug": "la_co_grounding",
+        "title": "la_co: linearizzazione del vincolo e impatto sul grounding",
+        "variants": ["gc", "la", "lc", "la_co"],
+        "metrics": ["grounding", "solving", "clingo_total", "mem", "rules", "constraints"],
+        "ground": True,
+    },
+    {
+        "slug": "la_aux_vs_gs",
+        "title": "la_aux: comportamento ground-and-solve forzato (atteso ~gc)",
+        "variants": ["gc_noheur", "gc", "ga", "la", "la_aux"],
+        "metrics": ["grounding", "solving", "clingo_total", "mem",
+                    "choices", "conflicts", "decide_calls"],
+        "ground": False,
+    },
+    {
+        "slug": "ga_vs_ga_weak",
+        "title": "ga vs ga_weak: unrolling degli aggregati vs sola negazione-as-alpha",
+        "variants": ["gc_noheur", "gc", "ga", "ga_weak", "la", "lc"],
+        "metrics": ["grounding", "solving", "clingo_total", "mem",
+                    "choices", "conflicts", "rules", "constraints"],
+        "ground": False,
+    },
+]
 
 XLABEL = {"BSP": "Problem size (N)", "PUP": "Instance size (N)", "HRP": "Instance size (persons N)"}
 
@@ -279,9 +330,12 @@ def _apply_fmt(ax, metric: Metric):
 # ===========================================================================
 # Disegno di una singola metrica (una curva per variante)
 # ===========================================================================
-def _variants_present(agg_fb: pd.DataFrame) -> list[str]:
+def _variants_present(agg_fb: pd.DataFrame, allowed: list[str] | None = None) -> list[str]:
+    """Varianti presenti nei dati, nell'ordine canonico. Di default filtra
+    alle sole MAIN_VARIANTS: le esplorative si ottengono passando `allowed`."""
     present = set(agg_fb["setting"].unique())
-    return [v for v in VARIANT_ORDER if v in present]
+    order = allowed if allowed is not None else MAIN_VARIANTS
+    return [v for v in order if v in present]
 
 
 def _plot_metric_axis(ax, agg_fb: pd.DataFrame, metric: Metric, family: str, *, variants=None) -> bool:
@@ -334,7 +388,7 @@ def render_backend_tree(agg: pd.DataFrame, backend: str, base: Path, ground: pd.
             if metric.key not in agg_fb.columns or agg_fb[metric.key].dropna().empty:
                 continue
             fig, ax = plt.subplots(figsize=(8, 5.2))
-            variants = LAZY_VARIANTS if metric.lazy_only else None
+            variants = MAIN_LAZY_VARIANTS if metric.lazy_only else None
             if _plot_metric_axis(ax, agg_fb, metric, family, variants=variants):
                 fig.suptitle(f"{family} — {metric.title} ({backend})", fontsize=12, fontweight="bold")
                 _save(fig, fam_dir / f"{metric.key}.png")
@@ -372,7 +426,7 @@ def _render_dashboard(agg_fb: pd.DataFrame, family: str, backend: str, fam_dir: 
             continue
         metric = METRIC_BY_KEY[k]
         _plot_metric_axis(ax, agg_fb, metric, family,
-                          variants=LAZY_VARIANTS if metric.lazy_only else None)
+                          variants=MAIN_LAZY_VARIANTS if metric.lazy_only else None)
     for ax in flat[len(panels):]:
         ax.axis("off")
     # separatore visivo tra blocco CORE e blocco EXTRA accodato
@@ -417,7 +471,9 @@ def _render_ratio(agg_fb: pd.DataFrame, family: str, backend: str, fam_dir: Path
     return 1
 
 
-def _render_ground(ground: pd.DataFrame, family: str, backend: str, fam_dir: Path, agg_fb: pd.DataFrame) -> int:
+def _render_ground(ground: pd.DataFrame, family: str, backend: str, fam_dir: Path,
+                   agg_fb: pd.DataFrame, *, variants: list[str] | None = None) -> int:
+    variants = variants if variants is not None else MAIN_VARIANTS
     g = ground[(ground["backend"] == backend) & (ground["family"] == family)].copy()
     if g.empty:
         return 0
@@ -435,7 +491,7 @@ def _render_ground(ground: pd.DataFrame, family: str, backend: str, fam_dir: Pat
             continue
         fig, ax = plt.subplots(figsize=(8, 5.2))
         drew = False
-        for v in VARIANT_ORDER:
+        for v in variants:
             d = gm[gm["variant"] == v].dropna(subset=[metric.key]).sort_values("size")
             if d.empty or (d[metric.key] == 0).all():
                 continue
@@ -463,7 +519,7 @@ def _render_ground(ground: pd.DataFrame, family: str, backend: str, fam_dir: Pat
         merged = merged.dropna(subset=["grounding", "combined_heuristics"])
         if not merged.empty:
             fig, ax = plt.subplots(figsize=(8, 5.2))
-            for v in VARIANT_ORDER:
+            for v in variants:
                 d = merged[merged["variant"] == v]
                 if d.empty:
                     continue
@@ -480,6 +536,64 @@ def _render_ground(ground: pd.DataFrame, family: str, backend: str, fam_dir: Pat
             _save(fig, fam_dir / "grounding_time_vs_heuristic_size.png")
             n += 1
     return n
+
+
+# ===========================================================================
+# Albero esplorativo: studi mirati sulle varianti fuori dal confronto MAIN
+# (la_co, la_aux, ga_weak). Layout:
+#     graphs-<backend>/exploratory/<slug>/<famiglia>/{<metrica>.png, _dashboard.png}
+# ===========================================================================
+def render_exploratory_tree(agg: pd.DataFrame, backend: str, base: Path,
+                            ground: pd.DataFrame | None) -> int:
+    tree = base / f"graphs-{backend}" / "exploratory"
+    n = 0
+    agg_b = agg[agg["backend"] == backend]
+    for study in EXPLORATORY_STUDIES:
+        for family in ("BSP", "PUP", "HRP"):
+            agg_fb = agg_b[agg_b["family"] == family]
+            # senza almeno una variante esplorativa dello studio non c'e' nulla
+            # di nuovo da dire: evita di duplicare i grafici principali.
+            present = set(agg_fb["setting"].unique())
+            expl = [v for v in study["variants"] if v not in MAIN_VARIANTS]
+            if agg_fb.empty or not (present & set(expl)):
+                continue
+            fam_dir = tree / study["slug"] / FAM_SUBDIR[family]
+
+            keys = [k for k in study["metrics"] if _has_data(agg_fb, k)]
+            for k in keys:
+                metric = METRIC_BY_KEY[k]
+                fig, ax = plt.subplots(figsize=(8, 5.2))
+                if _plot_metric_axis(ax, agg_fb, metric, family, variants=study["variants"]):
+                    fig.suptitle(f"{family} — {metric.title} ({backend})\n{study['title']}",
+                                 fontsize=11, fontweight="bold")
+                    _save(fig, fam_dir / f"{metric.key}.png")
+                    n += 1
+                else:
+                    plt.close(fig)
+
+            n += _render_study_dashboard(agg_fb, family, backend, fam_dir, study, keys)
+            if study.get("ground") and ground is not None:
+                n += _render_ground(ground, family, backend, fam_dir, agg_fb,
+                                    variants=study["variants"])
+    return n
+
+
+def _render_study_dashboard(agg_fb: pd.DataFrame, family: str, backend: str,
+                            fam_dir: Path, study: dict, keys: list[str]) -> int:
+    if not keys:
+        return 0
+    ncol = min(3, len(keys))
+    nrow = math.ceil(len(keys) / ncol)
+    fig, axes = plt.subplots(nrow, ncol, figsize=(4.6 * ncol, 3.4 * nrow), squeeze=False)
+    flat = axes.flatten()
+    for ax, k in zip(flat, keys):
+        _plot_metric_axis(ax, agg_fb, METRIC_BY_KEY[k], family, variants=study["variants"])
+    for ax in flat[len(keys):]:
+        ax.axis("off")
+    fig.suptitle(f"{family} — {study['title']} ({backend})", fontsize=13, fontweight="bold")
+    fig.tight_layout(rect=[0, 0, 1, 0.95])
+    _save(fig, fam_dir / "_dashboard.png")
+    return 1
 
 
 # ===========================================================================
@@ -506,7 +620,7 @@ def _plot_comparison_metric(agg_f: pd.DataFrame, area: str, family: str, fam_dir
         return 0
     metric = METRIC_BY_KEY[area]
     if metric.lazy_only:
-        variants = LAZY_VARIANTS          # propagatore: solo prolog ha dati
+        variants = MAIN_LAZY_VARIANTS     # propagatore: solo prolog ha dati
     else:
         variants = ["gc", "la", "lc"]     # baseline + le lazy (dove i backend divergono)
     fig, ax = plt.subplots(figsize=(8.4, 5.4))
@@ -635,8 +749,12 @@ def main() -> None:
     for backend in BACKENDS:
         if backend in set(agg["backend"].unique()):
             c = render_backend_tree(agg, backend, base, ground)
-            print(f"  graphs-{backend}/: {c} PNG")
+            print(f"  graphs-{backend}/: {c} PNG (varianti main: {', '.join(MAIN_VARIANTS)})")
             total += c
+            e = render_exploratory_tree(agg, backend, base, ground)
+            print(f"  graphs-{backend}/exploratory/: {e} PNG "
+                  f"({', '.join(s['slug'] for s in EXPLORATORY_STUDIES)})")
+            total += e
     c, verdicts = render_comparison_tree(agg, base)
     print(f"  graphs-comparison-native-prolog/: {c} PNG")
     total += c
