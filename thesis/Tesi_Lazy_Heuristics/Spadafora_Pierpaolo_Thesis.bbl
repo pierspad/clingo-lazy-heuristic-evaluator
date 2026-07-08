@@ -192,16 +192,16 @@
            familyi={K\bibinitperiod},
            given={Benjamin},
            giveni={B\bibinitperiod}}}%
-        {{hash=23c3928eb0f162f9ae06ea781fb5b668}{%
-           family={Otero},
-           familyi={O\bibinitperiod},
-           given={Roman},
-           giveni={R\bibinitperiod}}}%
         {{hash=586007140096e6d78832f56de1edf859}{%
            family={Romero},
            familyi={R\bibinitperiod},
            given={Javier},
            giveni={J\bibinitperiod}}}%
+        {{hash=a06fa7e54b5ae36f7350415476629615}{%
+           family={Otero},
+           familyi={O\bibinitperiod},
+           given={Ramón},
+           giveni={R\bibinitperiod}}}%
         {{hash=3c55d70c19bd5f5a654a6ad7ae64450c}{%
            family={Schaub},
            familyi={S\bibinitperiod},
@@ -214,13 +214,13 @@
            giveni={P\bibinitperiod}}}%
       }
       \strng{namehash}{980252df49c9c725a120aee1519288fc}
-      \strng{fullhash}{ed8df5b3452a37d27e2b9506f5434d81}
-      \strng{fullhashraw}{ed8df5b3452a37d27e2b9506f5434d81}
+      \strng{fullhash}{86b6e58d40d23b3f9ca908dc39b6b336}
+      \strng{fullhashraw}{86b6e58d40d23b3f9ca908dc39b6b336}
       \strng{bibnamehash}{980252df49c9c725a120aee1519288fc}
       \strng{authorbibnamehash}{980252df49c9c725a120aee1519288fc}
       \strng{authornamehash}{980252df49c9c725a120aee1519288fc}
-      \strng{authorfullhash}{ed8df5b3452a37d27e2b9506f5434d81}
-      \strng{authorfullhashraw}{ed8df5b3452a37d27e2b9506f5434d81}
+      \strng{authorfullhash}{86b6e58d40d23b3f9ca908dc39b6b336}
+      \strng{authorfullhashraw}{86b6e58d40d23b3f9ca908dc39b6b336}
       \field{extraname}{3}
       \field{sortinit}{3}
       \field{sortinithash}{ad6fe7482ffbd7b9f99c9e8b5dccd3d7}
@@ -341,6 +341,9 @@
            given={Tilman},
            giveni={T\bibinitperiod}}}%
       }
+      \list{publisher}{1}{%
+        {CEUR-WS.org}%
+      }
       \strng{namehash}{0f4402eeffe859cd950e6fb59afa3205}
       \strng{fullhash}{0f4402eeffe859cd950e6fb59afa3205}
       \strng{fullhashraw}{0f4402eeffe859cd950e6fb59afa3205}
@@ -353,8 +356,10 @@
       \field{sortinithash}{20e9b4b0b173788c5dace24730f47d8c}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{booktitle}{Proceedings of the 25th International Workshop on Configuration}
+      \field{booktitle}{Proceedings of the 25th International Workshop on Configuration (ConfWS 2023)}
+      \field{series}{CEUR Workshop Proceedings}
       \field{title}{Dynamic Aggregates in Expressive ASP Heuristics for Configuration Problems}
+      \field{volume}{3509}
       \field{year}{2023}
     \endentry
     \entry{wielemaker2012swipl}{article}{}{}
