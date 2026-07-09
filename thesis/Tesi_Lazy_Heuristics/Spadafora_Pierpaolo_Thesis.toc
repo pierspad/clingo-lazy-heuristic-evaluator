@@ -1,0 +1,55 @@
+\babel@toc {english}{}\relax 
+\contentsline {section}{Abstract}{iii}{section*.2}%
+\contentsline {section}{\numberline {1}Introduction}{1}{section.0.1}%
+\contentsline {subsection}{\numberline {1.1}Context}{1}{subsection.0.1.1}%
+\contentsline {subsection}{\numberline {1.2}Grounding Bottleneck and Dynamic Heuristics}{1}{subsection.0.1.2}%
+\contentsline {subsection}{\numberline {1.3}Objective and Experimental Design}{2}{subsection.0.1.3}%
+\contentsline {subsection}{\numberline {1.4}Contributions}{3}{subsection.0.1.4}%
+\contentsline {subsection}{\numberline {1.5}Structure of the Thesis}{4}{subsection.0.1.5}%
+\contentsline {section}{\numberline {2}Background}{5}{section.0.2}%
+\contentsline {subsection}{\numberline {2.1}Answer Set Programming}{5}{subsection.0.2.1}%
+\contentsline {subsection}{\numberline {2.2}Ground-and-Solve: gringo, clasp, and Conflict-Driven Search}{5}{subsection.0.2.2}%
+\contentsline {subsection}{\numberline {2.3}Domain-Specific Heuristics in clingo}{6}{subsection.0.2.3}%
+\contentsline {subsection}{\numberline {2.4}Lazy Grounding, Alpha, and Heuristics over Partial Assignments}{7}{subsection.0.2.4}%
+\contentsline {subsection}{\numberline {2.5}Extending clingo: the Propagator and Heuristic Interfaces}{7}{subsection.0.2.5}%
+\contentsline {section}{\numberline {3}Methodology}{9}{section.0.3}%
+\contentsline {subsection}{\numberline {3.1}Conceptual Framework: Two Axes, Four Variants}{9}{subsection.0.3.1}%
+\contentsline {subsubsection}{Simulating Alpha in Ground clingo}{9}{section*.3}%
+\contentsline {subsubsection}{Weights, Priorities, and Flattening}{10}{section*.4}%
+\contentsline {subsection}{\numberline {3.2}System Architecture}{11}{subsection.0.3.2}%
+\contentsline {subsection}{\numberline {3.3}The Native Backend}{11}{subsection.0.3.3}%
+\contentsline {subsubsection}{Declarative Syntax}{11}{section*.5}%
+\contentsline {subsubsection}{Parser and Runtime Representation}{12}{section*.6}%
+\contentsline {subsubsection}{Incremental Aggregates}{13}{section*.7}%
+\contentsline {subsubsection}{Evaluation and Decision}{13}{section*.8}%
+\contentsline {subsection}{\numberline {3.4}The Prolog Backend}{14}{subsection.0.3.4}%
+\contentsline {subsubsection}{Rule Strings and Normalization}{14}{section*.9}%
+\contentsline {subsubsection}{The Runtime Program}{14}{section*.10}%
+\contentsline {subsubsection}{Synchronization and Decision}{14}{section*.11}%
+\contentsline {subsection}{\numberline {3.5}Benchmark Problems and Encodings}{15}{subsection.0.3.5}%
+\contentsline {subsubsection}{Balanced Set Partitioning (BSP)}{15}{section*.12}%
+\contentsline {subsubsection}{Partner Units Problem (PUP)}{15}{section*.13}%
+\contentsline {subsubsection}{House Reconfiguration Problem (HRP)}{16}{section*.14}%
+\contentsline {subsection}{\numberline {3.6}Correctness Validation}{16}{subsection.0.3.6}%
+\contentsline {subsection}{\numberline {3.7}Benchmark Infrastructure and Metrics}{17}{subsection.0.3.7}%
+\contentsline {section}{\numberline {4}Results}{18}{section.0.4}%
+\contentsline {subsection}{\numberline {4.1}Functional Validation}{18}{subsection.0.4.1}%
+\contentsline {subsection}{\numberline {4.2}Experimental Setup and Dataset}{18}{subsection.0.4.2}%
+\contentsline {subsection}{\numberline {4.3}Reduction of the Ground Heuristic Component}{20}{subsection.0.4.3}%
+\contentsline {subsection}{\numberline {4.4}BSP: Runtime Behaviour}{21}{subsection.0.4.4}%
+\contentsline {subsection}{\numberline {4.5}BSP: the Two Semantics Under the Microscope}{24}{subsection.0.4.5}%
+\contentsline {subsection}{\numberline {4.6}BSP: Rules, Variables, and Memory}{25}{subsection.0.4.6}%
+\contentsline {subsection}{\numberline {4.7}The Price of Laziness: Per-Decision Cost}{26}{subsection.0.4.7}%
+\contentsline {subsection}{\numberline {4.8}Two Ground Simulations of Alpha: \texttt {ga} versus \texttt {ga\_weak}}{28}{subsection.0.4.8}%
+\contentsline {subsection}{\numberline {4.9}Direct and Auxiliary Forms}{29}{subsection.0.4.9}%
+\contentsline {subsection}{\numberline {4.10}Effect of the Constraint Formulation}{30}{subsection.0.4.10}%
+\contentsline {subsection}{\numberline {4.11}PUP: the Grounding Bottleneck at Scale}{31}{subsection.0.4.11}%
+\contentsline {subsection}{\numberline {4.12}HRP: Semantics Without Aggregates}{34}{subsection.0.4.12}%
+\contentsline {subsection}{\numberline {4.13}Native versus Prolog: Summary}{35}{subsection.0.4.13}%
+\contentsline {subsection}{\numberline {4.14}Summary of Results}{35}{subsection.0.4.14}%
+\contentsline {section}{\numberline {5}Discussion and Conclusions}{37}{section.0.5}%
+\contentsline {subsection}{\numberline {5.1}Discussion of the Results}{37}{subsection.0.5.1}%
+\contentsline {subsection}{\numberline {5.2}Limitations}{38}{subsection.0.5.2}%
+\contentsline {subsection}{\numberline {5.3}Implications}{39}{subsection.0.5.3}%
+\contentsline {subsection}{\numberline {5.4}Future Work}{39}{subsection.0.5.4}%
+\contentsline {subsection}{\numberline {5.5}Conclusions}{40}{subsection.0.5.5}%
