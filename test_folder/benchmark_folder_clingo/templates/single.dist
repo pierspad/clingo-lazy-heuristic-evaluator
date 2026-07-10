@@ -4,6 +4,7 @@
 #SBATCH --time={walltime}        # walltime
 #SBATCH --cpus-per-task={cpt}    # number of processor cores (i.e. tasks)
 #SBATCH --partition={partition}
+#SBATCH --exclusive              # nodo intero riservato: nessun altro job condivide la RAM durante la misura
 {dist_options}                  # additional dist options (specified via runscript setting)
 
 # NIENTE `set -e` qui: ogni $i e' un run indipendente (istanza x setting x

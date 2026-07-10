@@ -119,8 +119,8 @@
 
   <!-- ===================== JOB ===================== -->
   <!-- timeout/memout in secondi / MB. parallel=1 per misure di tempo pulite. -->
-  <seqjob  name="seq-local" timeout="300s" runs="1" memout="8192" parallel="1"/>
-  <distjob name="dist-hpc"  timeout="600s" runs="1" memout="8192"
+  <seqjob  name="seq-local" timeout="300s" runs="1" memout="30000" parallel="1"/>
+  <distjob name="dist-hpc"  timeout="600s" runs="1" memout="30000"
            script_mode="timeout" walltime="23h 59m 59s" cpt="4" partition="kr"/>
 
   <!-- ===================== BENCHMARK (una famiglia per benchmark) ===================== -->

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Arch Linux) (preloaded format=pdflatex 2026.6.1)  10 JUL 2026 09:52
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Arch Linux) (preloaded format=pdflatex 2026.6.1)  10 JUL 2026 10:19
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -667,24 +667,24 @@ Package csquotes Info: Redefining alias 'default' -> 'english'.
  (./Spadafora_Pierpaolo_Thesis.aux)
 \openout1 = `Spadafora_Pierpaolo_Thesis.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 70.
-LaTeX Font Info:    ... okay on input line 70.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 70.
-LaTeX Font Info:    ... okay on input line 70.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 70.
-LaTeX Font Info:    ... okay on input line 70.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 70.
-LaTeX Font Info:    ... okay on input line 70.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 70.
-LaTeX Font Info:    ... okay on input line 70.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 70.
-LaTeX Font Info:    ... okay on input line 70.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 70.
-LaTeX Font Info:    ... okay on input line 70.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 70.
-LaTeX Font Info:    ... okay on input line 70.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 70.
-LaTeX Font Info:    ... okay on input line 70.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 71.
+LaTeX Font Info:    ... okay on input line 71.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 71.
+LaTeX Font Info:    ... okay on input line 71.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 71.
+LaTeX Font Info:    ... okay on input line 71.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 71.
+LaTeX Font Info:    ... okay on input line 71.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 71.
+LaTeX Font Info:    ... okay on input line 71.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 71.
+LaTeX Font Info:    ... okay on input line 71.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 71.
+LaTeX Font Info:    ... okay on input line 71.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 71.
+LaTeX Font Info:    ... okay on input line 71.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 71.
+LaTeX Font Info:    ... okay on input line 71.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
@@ -739,7 +739,8 @@ Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 48
  (/usr/share/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Live
 ))
-Package hyperref Info: Link coloring OFF on input line 70.
+Package hyperref Info: Link coloring OFF on input line 71.
+ (./Spadafora_Pierpaolo_Thesis.out) (./Spadafora_Pierpaolo_Thesis.out)
 \@outlinefile=\write5
 \openout5 = `Spadafora_Pierpaolo_Thesis.out'.
 
@@ -756,10 +757,10 @@ Package biblatex Info: Automatic encoding selection.
 Package biblatex Info: Trying to load bibliographic data...
 Package biblatex Info: ... file 'Spadafora_Pierpaolo_Thesis.bbl' found.
  (./Spadafora_Pierpaolo_Thesis.bbl)
-Package biblatex Info: Reference section=0 on input line 70.
-Package biblatex Info: Reference segment=0 on input line 70.
+Package biblatex Info: Reference section=0 on input line 71.
+Package biblatex Info: Reference segment=0 on input line 71.
  (./0.1 - frontespizio.tex
-<figures/logo.png, id=4, 69.25874pt x 44.165pt>
+<figures/logo.png, id=172, 69.25874pt x 44.165pt>
 File: figures/logo.png Graphic file (type png)
 <use figures/logo.png>
 Package pdftex.def Info: figures/logo.png  used on input line 8.
@@ -773,127 +774,31 @@ LaTeX Font Info:    Trying to load font information for U+msb on input line 19.
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 ) [1
 
-{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}{/usr/share/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc} <./figures/logo.png>])
-No file Spadafora_Pierpaolo_Thesis.toc.
+{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}{/usr/share/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc} <./figures/logo.png>]) (./Spadafora_Pierpaolo_Thesis.toc [1
+
+
+])
 \tf@toc=\write6
 \openout6 = `Spadafora_Pierpaolo_Thesis.toc'.
 
-[1
-
-
-] (./0.2 - abstract.tex
+ [2] (./0.2 - abstract.tex
 \pydata@fh@0=\write7
 \openout7 = `_2AE2944559263F6456DC6AA53993E271.data.minted'.
 
-runsystem(latexminted config  --timestamp 20260710095207 2AE2944559263F6456DC6AA53993E271)...executed safely (allowed).
+runsystem(latexminted config  --timestamp 20260710101938 2AE2944559263F6456DC6AA53993E271)...executed safely (allowed).
 
  (./_2AE2944559263F6456DC6AA53993E271.config.minted)
-runsystem(latexminted cleanconfig  --timestamp 20260710095207 2AE2944559263F6456DC6AA53993E271)...executed safely (allowed).
+runsystem(latexminted cleanconfig  --timestamp 20260710101938 2AE2944559263F6456DC6AA53993E271)...executed safely (allowed).
 
- (./_minted/friendly.style.minted) (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/FAEF8EDF2E48A2A65DF7943EB6B9C9F4.highlight.minted) (./_minted/B9AAB00C6787A8AF8A433BA4FF1D93B3.highlight.minted) (./_minted/DCA53EA453A86F0F3B5CF3166A3012B4.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted)) [2] [3] (./1 - Introduzione.tex
-Underfull \hbox (badness 10000) in paragraph at lines 6--7
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 8--9
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 10--11
-
- []
-
-\openout7 = `_2AE2944559263F6456DC6AA53993E271.data.minted'.
-
-runsystem(latexminted highlight  --timestamp 20260710095207 2AE2944559263F6456DC6AA53993E271)...executed safely (allowed).
-
-(./_2AE2944559263F6456DC6AA53993E271.message.minted)
-
-./1 - Introduzione.tex:14: Package minted Error: 
- => ./1 - Introduzione.tex:12: Pygments lexer "clingo" is unknown.
-
-See the minted package documentation for explanation.
-Type  H <return>  for immediate help.
- ...                                              
-                                                  
-l.14 \end{minted}
-                 
-This error message was generated by an \errmessage
-command, so I can't give any explicit help.
-Pretend that you're Hercule Poirot: Examine all clues,
-and deduce the truth by order and method.
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 16--17
-
- []
-
-[1] (./_minted/E1D5B53048E1E5BC0486921A57CBCDE1.highlight.minted) (./_minted/9DB9EAD10EB9116F05F8B3A01F42ACE3.highlight.minted) (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/08AF1E79478BF316E9FC9D7E5768384C.highlight.minted) (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/19A83AEBB099FB5E355ADB5A7921D537.highlight.minted) (./_minted/1BE62CFAED29ABC0260608A9865025B5.highlight.minted) (./_minted/DCA53EA453A86F0F3B5CF3166A3012B4.highlight.minted) (./_minted/5475BB02EADCBEBE4360D099FBE8C46A.highlight.minted) (./_minted/DCA53EA453A86F0F3B5CF3166A3012B4.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-
-LaTeX Warning: Reference `sec:ga-simulation' on page 2 undefined on input line 44.
-
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/5A70ED68CBD7232810B54C01B297DDB9.highlight.minted) [2] (./_minted/5FB5F95B2163F453C9A08BB576B15A8C.highlight.minted
+ (./_minted/friendly.style.minted) (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/FAEF8EDF2E48A2A65DF7943EB6B9C9F4.highlight.minted) (./_minted/B9AAB00C6787A8AF8A433BA4FF1D93B3.highlight.minted) (./_minted/DCA53EA453A86F0F3B5CF3166A3012B4.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted)) [3] [4] (./1 - Introduzione.tex (./_minted/5DC66B8353F73A33D34A73C2623CED6D.highlight.minted) [1] (./_minted/E1D5B53048E1E5BC0486921A57CBCDE1.highlight.minted) (./_minted/9DB9EAD10EB9116F05F8B3A01F42ACE3.highlight.minted) (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/08AF1E79478BF316E9FC9D7E5768384C.highlight.minted) (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/19A83AEBB099FB5E355ADB5A7921D537.highlight.minted) (./_minted/1BE62CFAED29ABC0260608A9865025B5.highlight.minted) (./_minted/DCA53EA453A86F0F3B5CF3166A3012B4.highlight.minted) (./_minted/5475BB02EADCBEBE4360D099FBE8C46A.highlight.minted) (./_minted/DCA53EA453A86F0F3B5CF3166A3012B4.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/5A70ED68CBD7232810B54C01B297DDB9.highlight.minted) [2] (./_minted/5FB5F95B2163F453C9A08BB576B15A8C.highlight.minted
 LaTeX Font Info:    Font shape `T1/cmtt/bx/n' in size <10> not available
 (Font)              Font shape `T1/cmtt/m/n' tried instead on input line 2.
-) (./_minted/FE762A2D2A03C235899964B790C087BE.highlight.minted) (./_minted/8C0C6AE80ABF9EE0A07BF4E27B2C99C7.highlight.minted) (./_minted/F379BE75050488FD4CA7092ADE6F4A36.highlight.minted) [3] (./_minted/9FFB83F95A9C3F9A947C3CBF8634250D.highlight.minted) (./_minted/57F7C4DB071ABD3C9FF3721021D150E7.highlight.minted)
+) (./_minted/FE762A2D2A03C235899964B790C087BE.highlight.minted) (./_minted/8C0C6AE80ABF9EE0A07BF4E27B2C99C7.highlight.minted) (./_minted/F379BE75050488FD4CA7092ADE6F4A36.highlight.minted) (./_minted/9FFB83F95A9C3F9A947C3CBF8634250D.highlight.minted) (./_minted/57F7C4DB071ABD3C9FF3721021D150E7.highlight.minted)
 Underfull \hbox (badness 1210) in paragraph at lines 71--72
 \T1/cmr/m/n/12 and $\T1/cmtt/m/n/12 test _ folder / encodings-[]prolog$\T1/cmr/m/n/12 ; an equiv-a-lence har-ness, $\T1/cmtt/m/n/12 tools / check _
  []
 
-
-LaTeX Warning: Reference `sec:background' on page 4 undefined on input line 75.
-
-(./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted)
-
-LaTeX Warning: Reference `sec:methodology' on page 4 undefined on input line 75.
-
-
-LaTeX Warning: Reference `sec:results' on page 4 undefined on input line 75.
-
-
-LaTeX Warning: Reference `sec:discussion' on page 4 undefined on input line 75.
-
-) [4] (./2 - Background.tex (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted)
-
-LaTeX Warning: Reference `sec:bg-heuristics' on page 5 undefined on input line 4.
-
-
-LaTeX Warning: Reference `sec:bg-alpha' on page 5 undefined on input line 4.
-
-(./_minted/E5BBF534195CAADF067719C12EAAAE13.highlight.minted) (./_minted/2BD74DF5C42844FBAD2DD4298CB7FBE9.highlight.minted) (./_minted/3AB459A27959C843F5DF2D368536F469.highlight.minted) (./_minted/E7D943591C412407B62A0B8A7383E18C.highlight.minted) (./_minted/3F1BF3DD5DB18C05411C89173036C967.highlight.minted) [5]
-
-LaTeX Warning: Reference `sec:results' on page 6 undefined on input line 22.
-
-(./_minted/174973ED21C2960A253D6003B868AB1E.highlight.minted) (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/5DC66B8353F73A33D34A73C2623CED6D.highlight.minted) (./_minted/E57A565D848CFF916C9608AC888E1EED.highlight.minted) (./_minted/07AF35E2B47CFAD4B5F2DC7E28908A14.highlight.minted) (./_minted/D1D4E1B37195441A63C1012BD4A19126.highlight.minted) (./_minted/89C44729B7479D48DA1320CFE57B842C.highlight.minted) (./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted) (./_minted/3A07AD292FC145EF328B038BB3F77238.highlight.minted) (./_minted/C4519D22343BE1BA67904D904833F13F.highlight.minted) (./_minted/5A70ED68CBD7232810B54C01B297DDB9.highlight.minted) (./_minted/DCA53EA453A86F0F3B5CF3166A3012B4.highlight.minted)
-
-LaTeX Warning: Reference `sec:methodology' on page 6 undefined on input line 35.
-
-[6]
-
-LaTeX Warning: Reference `sec:methodology' on page 7 undefined on input line 44.
-
-
-LaTeX Warning: Reference `sec:results' on page 7 undefined on input line 44.
-
-(./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted) (./_minted/3630033852197DCEBB46382510B8DB64.highlight.minted) (./_minted/A4DC9657ECB27A08E0AACED5BA0D3B7C.highlight.minted) (./_minted/B533FC7EA96679D1DDB3B29F543067FE.highlight.minted) [7] (./_minted/8C0C6AE80ABF9EE0A07BF4E27B2C99C7.highlight.minted) (./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted)
-
-LaTeX Warning: Reference `sec:methodology' on page 8 undefined on input line 51.
-
-(./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted)) [8] (./3 - Metodologia.tex (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/DCA53EA453A86F0F3B5CF3166A3012B4.highlight.minted) (./_minted/DCA53EA453A86F0F3B5CF3166A3012B4.highlight.minted)
-
-LaTeX Warning: Reference `tab:variant-matrix' on page 9 undefined on input line 12.
-
-(./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-
-LaTeX Warning: Reference `sec:ga-simulation' on page 9 undefined on input line 20.
-
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/796DE5BF0DC65FACFFF5B4150D9A0456.highlight.minted) (./_minted/8CDB439CAA8F5F2538C82CFA7A5181BD.highlight.minted) (./_minted/19E1AC35860BA5B2DF21C22F6C81B9EA.highlight.minted) (./_minted/5897657D5068492A64BFF2A08FD1E05C.highlight.minted) [9] (./_minted/52CEC1A831089BB009114D25A931146F.highlight.minted) (./_minted/5410156B9D3E766F33B33328A06364C6.highlight.minted)
-
-LaTeX Warning: Reference `sec:results' on page 10 undefined on input line 43.
-
-(./_minted/5A70ED68CBD7232810B54C01B297DDB9.highlight.minted) (./_minted/244C3493D7D3E2BD1596C352EC8B6183.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/7C6DF664132E4E9E736044E9871D70E7.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/CEF609D18F7E303A94A86B0D5C1B8FE7.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) [10] (./_minted/3F1BF3DD5DB18C05411C89173036C967.highlight.minted) (./_minted/5D5C8B2261515407F1913D87CBB56743.highlight.minted) (./_minted/1C01BEDEC4154B517903332A506C0605.highlight.minted) (./_minted/0CF7B4347A78D03140D3273C80C05279.highlight.minted) (./_minted/E1F499432EAB2C79FC72D0C44DE604B7.highlight.minted)
+[3] (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted)) [4] (./2 - Background.tex (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/E5BBF534195CAADF067719C12EAAAE13.highlight.minted) (./_minted/2BD74DF5C42844FBAD2DD4298CB7FBE9.highlight.minted) (./_minted/3AB459A27959C843F5DF2D368536F469.highlight.minted) (./_minted/E7D943591C412407B62A0B8A7383E18C.highlight.minted) (./_minted/3F1BF3DD5DB18C05411C89173036C967.highlight.minted) [5] (./_minted/174973ED21C2960A253D6003B868AB1E.highlight.minted) (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/5DC66B8353F73A33D34A73C2623CED6D.highlight.minted) (./_minted/E57A565D848CFF916C9608AC888E1EED.highlight.minted) (./_minted/07AF35E2B47CFAD4B5F2DC7E28908A14.highlight.minted) (./_minted/D1D4E1B37195441A63C1012BD4A19126.highlight.minted) (./_minted/89C44729B7479D48DA1320CFE57B842C.highlight.minted) (./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted) (./_minted/3A07AD292FC145EF328B038BB3F77238.highlight.minted) (./_minted/C4519D22343BE1BA67904D904833F13F.highlight.minted) (./_minted/5A70ED68CBD7232810B54C01B297DDB9.highlight.minted) (./_minted/DCA53EA453A86F0F3B5CF3166A3012B4.highlight.minted) [6] (./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted) (./_minted/3630033852197DCEBB46382510B8DB64.highlight.minted) (./_minted/A4DC9657ECB27A08E0AACED5BA0D3B7C.highlight.minted) (./_minted/B533FC7EA96679D1DDB3B29F543067FE.highlight.minted) [7] (./_minted/8C0C6AE80ABF9EE0A07BF4E27B2C99C7.highlight.minted) (./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted) (./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted)) [8] (./3 - Metodologia.tex (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/DCA53EA453A86F0F3B5CF3166A3012B4.highlight.minted) (./_minted/DCA53EA453A86F0F3B5CF3166A3012B4.highlight.minted) (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/796DE5BF0DC65FACFFF5B4150D9A0456.highlight.minted) (./_minted/8CDB439CAA8F5F2538C82CFA7A5181BD.highlight.minted) (./_minted/19E1AC35860BA5B2DF21C22F6C81B9EA.highlight.minted) (./_minted/5897657D5068492A64BFF2A08FD1E05C.highlight.minted) [9] (./_minted/52CEC1A831089BB009114D25A931146F.highlight.minted) (./_minted/5410156B9D3E766F33B33328A06364C6.highlight.minted) (./_minted/5A70ED68CBD7232810B54C01B297DDB9.highlight.minted) (./_minted/244C3493D7D3E2BD1596C352EC8B6183.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/7C6DF664132E4E9E736044E9871D70E7.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/CEF609D18F7E303A94A86B0D5C1B8FE7.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) [10] (./_minted/3F1BF3DD5DB18C05411C89173036C967.highlight.minted) (./_minted/5D5C8B2261515407F1913D87CBB56743.highlight.minted) (./_minted/1C01BEDEC4154B517903332A506C0605.highlight.minted) (./_minted/0CF7B4347A78D03140D3273C80C05279.highlight.minted) (./_minted/E1F499432EAB2C79FC72D0C44DE604B7.highlight.minted)
 Underfull \hbox (badness 1107) in paragraph at lines 63--64
 \T1/cmr/m/n/12 The project main-tains two mod-i-fied copies of clingo with the same source
  []
@@ -903,133 +808,52 @@ Underfull \hbox (badness 1178) in paragraph at lines 63--64
 \T1/cmr/m/n/12 lay-out. The build in $\T1/cmtt/m/n/12 clingo-[]native$ \T1/cmr/m/n/12 im-ple-ments the na-tive back-end; the
  []
 
-(./_minted/A2D513347769D5B93E99CAB1E88AB60B.highlight.minted) (./_minted/8C0C6AE80ABF9EE0A07BF4E27B2C99C7.highlight.minted) (./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted) (./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted) (./_minted/FAEF8EDF2E48A2A65DF7943EB6B9C9F4.highlight.minted) (./_minted/B9AAB00C6787A8AF8A433BA4FF1D93B3.highlight.minted) (./_minted/3630033852197DCEBB46382510B8DB64.highlight.minted) (./_minted/A4DC9657ECB27A08E0AACED5BA0D3B7C.highlight.minted) (./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted) (./_minted/C4519D22343BE1BA67904D904833F13F.highlight.minted) (./_minted/5FB5F95B2163F453C9A08BB576B15A8C.highlight.minted [11]) (./_minted/C96EE0A8FE0923EF439FF922A9698299.highlight.minted) (./_minted/BA891DC8E141E0B0812D557D514576B1.highlight.minted) (./_minted/796DE5BF0DC65FACFFF5B4150D9A0456.highlight.minted) (./_minted/948C7CDD2A34D8067E883B681D2E01BC.highlight.minted) (./_minted/1BE62CFAED29ABC0260608A9865025B5.highlight.minted) (./_minted/5979E21D731E1D60D4E3777C41A40EE7.highlight.minted) (./_minted/B23E0D2D36B9EFEF39FB316A80E672A8.highlight.minted) (./_minted/185A7CCFE3EF8C63A971CFF7EF128CAC.highlight.minted) (./_minted/EA3A7780B3B47D117C347C1FB96592E4.highlight.minted) (./_minted/083F7A2379C706036FC453FFEB56C15A.highlight.minted) (./_minted/3F2F29653B8EE4249C0EA47F94BFF391.highlight.minted) (./_minted/2A21C20B4EAB1198D8CA3102B2A85C27.highlight.minted) (./_minted/AAF323F99766DE6448285A25AD1BC33D.highlight.minted) (./_minted/33A2CF0B629A6A0B93F04F91BAFEF50B.highlight.minted) (./_minted/EA71117A4B76B2F1E4D30573B080F092.highlight.minted) (./_minted/EDA58797B1958D61DD06DCBC1CFE09DA.highlight.minted) (./_minted/B0FF61674523AAC7F54710CD9F099D01.highlight.minted) (./_minted/F379BE75050488FD4CA7092ADE6F4A36.highlight.minted) (./_minted/04BBE9B1260A8D3B00C1B032D10BB3FC.highlight.minted) (./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted) (./_minted/50B969CEE44403E11B6DC44C91FD597B.highlight.minted) [12{/usr/share/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}] (./_minted/E3F7E9206BAF39D58F1BB36AFB0BD342.highlight.minted) (./_minted/D250CE9047C42E5EA58C068446C1C145.highlight.minted) (./_minted/4FE63E5009FD0D0EEAAEC2FF021C9C3F.highlight.minted) (./_minted/2500C6D0A8FBEDFB147CB8C9F898E95F.highlight.minted) (./_minted/3630033852197DCEBB46382510B8DB64.highlight.minted) (./_minted/A4DC9657ECB27A08E0AACED5BA0D3B7C.highlight.minted) (./_minted/B9CB3E6D919149B020B896A584BC9182.highlight.minted) (./_minted/7586FB7195809AF8BD62FC6F6EC62127.highlight.minted) (./_minted/07AF35E2B47CFAD4B5F2DC7E28908A14.highlight.minted) (./_minted/E57A565D848CFF916C9608AC888E1EED.highlight.minted) (./_minted/D1D4E1B37195441A63C1012BD4A19126.highlight.minted) (./_minted/89C44729B7479D48DA1320CFE57B842C.highlight.minted) (./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted) (./_minted/3A07AD292FC145EF328B038BB3F77238.highlight.minted) (./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted) (./_minted/07AF35E2B47CFAD4B5F2DC7E28908A14.highlight.minted)
-
-LaTeX Warning: Reference `sec:flattening' on page 13 undefined on input line 117.
-
-(./_minted/28D766099570CA483739284393578E06.highlight.minted) (./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted) (./_minted/A4DC9657ECB27A08E0AACED5BA0D3B7C.highlight.minted) (./_minted/CCD03C2CEE7BFBA4E0B4625F1AEA198D.highlight.minted) (./_minted/08A2EA52740AD58C3904D139957C71E5.highlight.minted)
+(./_minted/A2D513347769D5B93E99CAB1E88AB60B.highlight.minted) (./_minted/8C0C6AE80ABF9EE0A07BF4E27B2C99C7.highlight.minted) (./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted) (./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted) (./_minted/FAEF8EDF2E48A2A65DF7943EB6B9C9F4.highlight.minted) (./_minted/B9AAB00C6787A8AF8A433BA4FF1D93B3.highlight.minted) (./_minted/3630033852197DCEBB46382510B8DB64.highlight.minted) (./_minted/A4DC9657ECB27A08E0AACED5BA0D3B7C.highlight.minted) (./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted) (./_minted/C4519D22343BE1BA67904D904833F13F.highlight.minted) (./_minted/5FB5F95B2163F453C9A08BB576B15A8C.highlight.minted [11]) (./_minted/C96EE0A8FE0923EF439FF922A9698299.highlight.minted) (./_minted/BA891DC8E141E0B0812D557D514576B1.highlight.minted) (./_minted/796DE5BF0DC65FACFFF5B4150D9A0456.highlight.minted) (./_minted/948C7CDD2A34D8067E883B681D2E01BC.highlight.minted) (./_minted/1BE62CFAED29ABC0260608A9865025B5.highlight.minted) (./_minted/5979E21D731E1D60D4E3777C41A40EE7.highlight.minted) (./_minted/B23E0D2D36B9EFEF39FB316A80E672A8.highlight.minted) (./_minted/185A7CCFE3EF8C63A971CFF7EF128CAC.highlight.minted) (./_minted/EA3A7780B3B47D117C347C1FB96592E4.highlight.minted) (./_minted/083F7A2379C706036FC453FFEB56C15A.highlight.minted) (./_minted/3F2F29653B8EE4249C0EA47F94BFF391.highlight.minted) (./_minted/2A21C20B4EAB1198D8CA3102B2A85C27.highlight.minted) (./_minted/AAF323F99766DE6448285A25AD1BC33D.highlight.minted) (./_minted/33A2CF0B629A6A0B93F04F91BAFEF50B.highlight.minted) (./_minted/EA71117A4B76B2F1E4D30573B080F092.highlight.minted) (./_minted/EDA58797B1958D61DD06DCBC1CFE09DA.highlight.minted) (./_minted/B0FF61674523AAC7F54710CD9F099D01.highlight.minted) (./_minted/F379BE75050488FD4CA7092ADE6F4A36.highlight.minted) (./_minted/04BBE9B1260A8D3B00C1B032D10BB3FC.highlight.minted) (./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted) (./_minted/50B969CEE44403E11B6DC44C91FD597B.highlight.minted) [12{/usr/share/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}] (./_minted/E3F7E9206BAF39D58F1BB36AFB0BD342.highlight.minted) (./_minted/D250CE9047C42E5EA58C068446C1C145.highlight.minted) (./_minted/4FE63E5009FD0D0EEAAEC2FF021C9C3F.highlight.minted) (./_minted/2500C6D0A8FBEDFB147CB8C9F898E95F.highlight.minted) (./_minted/3630033852197DCEBB46382510B8DB64.highlight.minted) (./_minted/A4DC9657ECB27A08E0AACED5BA0D3B7C.highlight.minted) (./_minted/B9CB3E6D919149B020B896A584BC9182.highlight.minted) (./_minted/7586FB7195809AF8BD62FC6F6EC62127.highlight.minted) (./_minted/07AF35E2B47CFAD4B5F2DC7E28908A14.highlight.minted) (./_minted/E57A565D848CFF916C9608AC888E1EED.highlight.minted) (./_minted/D1D4E1B37195441A63C1012BD4A19126.highlight.minted) (./_minted/89C44729B7479D48DA1320CFE57B842C.highlight.minted) (./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted) (./_minted/3A07AD292FC145EF328B038BB3F77238.highlight.minted) (./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted) (./_minted/07AF35E2B47CFAD4B5F2DC7E28908A14.highlight.minted) (./_minted/28D766099570CA483739284393578E06.highlight.minted) (./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted) (./_minted/A4DC9657ECB27A08E0AACED5BA0D3B7C.highlight.minted) (./_minted/CCD03C2CEE7BFBA4E0B4625F1AEA198D.highlight.minted) (./_minted/08A2EA52740AD58C3904D139957C71E5.highlight.minted)
 Overfull \hbox (127.3178pt too wide) in paragraph at lines 129--130
 \T1/cmr/m/n/12 In the Pro-log back-end, a heuris-tic is a rule string whose head is [][][][][][]: 
  []
 
-(./_minted/FE762A2D2A03C235899964B790C087BE.highlight.minted [13]) (./_minted/84FF1B774D9BC44D18F3B2EEE911E337.highlight.minted) (./_minted/A41104E3A88EB638A68F0395ED13BC34.highlight.minted) (./_minted/976628591801A4DF31FBE24E4BAC7CAF.highlight.minted) (./_minted/96F49EF2C09405C15EE32319605F6CFA.highlight.minted) (./_minted/FCF75B959469E11F7EACBD63AA36BFF6.highlight.minted) (./_minted/94A9C6F050F6019A1D27151C522CB376.highlight.minted) (./_minted/972EAE722AACDB599BCB49507C7D872B.highlight.minted) (./_minted/7A18A8BCFFB9F822260A1AA1B9ECCA00.highlight.minted) (./_minted/9B8FAC57E57B3E2611AB19567406964F.highlight.minted) (./_minted/0B346F31776ADCA09E78C0BE97E51603.highlight.minted) (./_minted/FCF75B959469E11F7EACBD63AA36BFF6.highlight.minted) (./_minted/94A9C6F050F6019A1D27151C522CB376.highlight.minted)
-
-LaTeX Warning: Reference `sec:ga-simulation' on page 14 undefined on input line 154.
-
-(./_minted/1AEE91B85F76C7D54846913521F111FE.highlight.minted) (./_minted/96F49EF2C09405C15EE32319605F6CFA.highlight.minted) (./_minted/0CF7B4347A78D03140D3273C80C05279.highlight.minted) (./_minted/98B73847CD92E0B234E36AE71F85A434.highlight.minted) (./_minted/972EAE722AACDB599BCB49507C7D872B.highlight.minted) (./_minted/3630033852197DCEBB46382510B8DB64.highlight.minted) (./_minted/A4DC9657ECB27A08E0AACED5BA0D3B7C.highlight.minted) (./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted) (./_minted/E499274346FF1C02CD8DEEB9A82E07F3.highlight.minted) (./_minted/CDDC1F42525D1D3D9632D7223624B8B7.highlight.minted) (./_minted/4F74D5849AF5180E5D52B6667F70F2AC.highlight.minted) [14] (./_minted/DBDF443260719DF8879E7A876E09215C.highlight.minted)
-
-LaTeX Warning: Reference `sec:validation' on page 15 undefined on input line 160.
-
-(./_minted/3271E6AF8665D3DABD7B2BFDA9AAF86A.highlight.minted) (./_minted/6757C5633C44EDA9A5DDB3612961F753.highlight.minted) (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted) (./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted) (./_minted/1E2803973C564A4B71FB0EC597B76CA1.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) (./_minted/3D93D1C6C98BEC9A64374DD08BF5ED96.highlight.minted) (./_minted/55F7D8148DAC15495AE6A3D98A43697D.highlight.minted) (./_minted/89E6D410B5A38A082AE94A8526856EA7.highlight.minted) (./_minted/12A60EDEE5650E1D9FAED7CFC13AFFFC.highlight.minted) (./_minted/1E5671ECC6E460228870482EAA027B9F.highlight.minted) (./_minted/D9CA3BDA80774D333946BF943CC642D7.highlight.minted) (./_minted/980407A232D1315C2A5A23C19EB24BDD.highlight.minted) (./_minted/462ED36B6F183BADA47BF9B4A3148656.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-
-LaTeX Warning: Reference `sec:flattening' on page 15 undefined on input line 172.
-
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/43CFEAC778525AC3757705FEB01139F4.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/4C2EF1AD8632CF430D1937247043E4EE.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) [15] (./_minted/1CD8D36F99A606B83CEE5FC5CCCBD409.highlight.minted) (./_minted/3271E6AF8665D3DABD7B2BFDA9AAF86A.highlight.minted) (./_minted/6757C5633C44EDA9A5DDB3612961F753.highlight.minted) (./_minted/EB37D88494F9497F7F9F0B2B7D5DF241.highlight.minted) (./_minted/8CAA4AFCDA5BE94D1144DB5D41F3F3A9.highlight.minted) (./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/CDDC1F42525D1D3D9632D7223624B8B7.highlight.minted) (./_minted/9FFB83F95A9C3F9A947C3CBF8634250D.highlight.minted) (./_minted/57F7C4DB071ABD3C9FF3721021D150E7.highlight.minted) (./_minted/D6EEA65E2310F96C5D75DB940B9446A0.highlight.minted) (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) [16]) [17] (./4 - Risultati.tex (./_minted/A8D991B99F0DD18A6450F4DC730AFC66.highlight.minted) (./_minted/EC17EA3566BEBB155AED4C5A8EA2E95B.highlight.minted) (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted)
-
-LaTeX Warning: Reference `sec:validation' on page 18 undefined on input line 8.
-
-(./_minted/3271E6AF8665D3DABD7B2BFDA9AAF86A.highlight.minted) (./_minted/6757C5633C44EDA9A5DDB3612961F753.highlight.minted) (./_minted/8CAA4AFCDA5BE94D1144DB5D41F3F3A9.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/9FFB83F95A9C3F9A947C3CBF8634250D.highlight.minted) (./_minted/57F7C4DB071ABD3C9FF3721021D150E7.highlight.minted) (./_minted/A5EA68436EB85F5A48B27CD4543EFC68.highlight.minted) (./_minted/E1C8C04BC32B4C70FFA159EDFAFD3A06.highlight.minted) (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted) (./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-
-LaTeX Warning: Reference `sec:ga-weak' on page 18 undefined on input line 15.
-
-
-LaTeX Warning: Reference `sec:aux-form' on page 18 undefined on input line 15.
-
-
-LaTeX Warning: Reference `sec:constr-form' on page 18 undefined on input line 15.
-
-(./_minted/0AB59E0AEDB62480A378B90B3C0E1653.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/8CAA4AFCDA5BE94D1144DB5D41F3F3A9.highlight.minted) [18]
-
-LaTeX Warning: Reference `tab:overview-bsp' on page 19 undefined on input line 19.
-
-
-LaTeX Warning: Reference `tab:overview-hrp' on page 19 undefined on input line 19.
-
-(./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
+(./_minted/FE762A2D2A03C235899964B790C087BE.highlight.minted [13]) (./_minted/84FF1B774D9BC44D18F3B2EEE911E337.highlight.minted) (./_minted/A41104E3A88EB638A68F0395ED13BC34.highlight.minted) (./_minted/976628591801A4DF31FBE24E4BAC7CAF.highlight.minted) (./_minted/96F49EF2C09405C15EE32319605F6CFA.highlight.minted) (./_minted/FCF75B959469E11F7EACBD63AA36BFF6.highlight.minted) (./_minted/94A9C6F050F6019A1D27151C522CB376.highlight.minted) (./_minted/972EAE722AACDB599BCB49507C7D872B.highlight.minted) (./_minted/7A18A8BCFFB9F822260A1AA1B9ECCA00.highlight.minted) (./_minted/9B8FAC57E57B3E2611AB19567406964F.highlight.minted) (./_minted/0B346F31776ADCA09E78C0BE97E51603.highlight.minted) (./_minted/FCF75B959469E11F7EACBD63AA36BFF6.highlight.minted) (./_minted/94A9C6F050F6019A1D27151C522CB376.highlight.minted) (./_minted/1AEE91B85F76C7D54846913521F111FE.highlight.minted) (./_minted/96F49EF2C09405C15EE32319605F6CFA.highlight.minted) (./_minted/0CF7B4347A78D03140D3273C80C05279.highlight.minted) (./_minted/98B73847CD92E0B234E36AE71F85A434.highlight.minted) (./_minted/972EAE722AACDB599BCB49507C7D872B.highlight.minted) (./_minted/3630033852197DCEBB46382510B8DB64.highlight.minted) (./_minted/A4DC9657ECB27A08E0AACED5BA0D3B7C.highlight.minted) (./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted) (./_minted/E499274346FF1C02CD8DEEB9A82E07F3.highlight.minted) (./_minted/CDDC1F42525D1D3D9632D7223624B8B7.highlight.minted) (./_minted/4F74D5849AF5180E5D52B6667F70F2AC.highlight.minted) [14] (./_minted/DBDF443260719DF8879E7A876E09215C.highlight.minted) (./_minted/3271E6AF8665D3DABD7B2BFDA9AAF86A.highlight.minted) (./_minted/6757C5633C44EDA9A5DDB3612961F753.highlight.minted) (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted) (./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted) (./_minted/1E2803973C564A4B71FB0EC597B76CA1.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) (./_minted/3D93D1C6C98BEC9A64374DD08BF5ED96.highlight.minted) (./_minted/55F7D8148DAC15495AE6A3D98A43697D.highlight.minted) (./_minted/89E6D410B5A38A082AE94A8526856EA7.highlight.minted) (./_minted/12A60EDEE5650E1D9FAED7CFC13AFFFC.highlight.minted) (./_minted/1E5671ECC6E460228870482EAA027B9F.highlight.minted) (./_minted/D9CA3BDA80774D333946BF943CC642D7.highlight.minted) (./_minted/980407A232D1315C2A5A23C19EB24BDD.highlight.minted) (./_minted/462ED36B6F183BADA47BF9B4A3148656.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/43CFEAC778525AC3757705FEB01139F4.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/4C2EF1AD8632CF430D1937247043E4EE.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) [15] (./_minted/1CD8D36F99A606B83CEE5FC5CCCBD409.highlight.minted) (./_minted/3271E6AF8665D3DABD7B2BFDA9AAF86A.highlight.minted) (./_minted/6757C5633C44EDA9A5DDB3612961F753.highlight.minted) (./_minted/EB37D88494F9497F7F9F0B2B7D5DF241.highlight.minted) (./_minted/8CAA4AFCDA5BE94D1144DB5D41F3F3A9.highlight.minted) (./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/CDDC1F42525D1D3D9632D7223624B8B7.highlight.minted) (./_minted/9FFB83F95A9C3F9A947C3CBF8634250D.highlight.minted) (./_minted/57F7C4DB071ABD3C9FF3721021D150E7.highlight.minted) (./_minted/D6EEA65E2310F96C5D75DB940B9446A0.highlight.minted) (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) [16]) [17] (./4 - Risultati.tex (./_minted/A8D991B99F0DD18A6450F4DC730AFC66.highlight.minted) (./_minted/EC17EA3566BEBB155AED4C5A8EA2E95B.highlight.minted) (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/3271E6AF8665D3DABD7B2BFDA9AAF86A.highlight.minted) (./_minted/6757C5633C44EDA9A5DDB3612961F753.highlight.minted) (./_minted/8CAA4AFCDA5BE94D1144DB5D41F3F3A9.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/9FFB83F95A9C3F9A947C3CBF8634250D.highlight.minted) (./_minted/57F7C4DB071ABD3C9FF3721021D150E7.highlight.minted) (./_minted/A5EA68436EB85F5A48B27CD4543EFC68.highlight.minted) (./_minted/E1C8C04BC32B4C70FFA159EDFAFD3A06.highlight.minted) (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted) (./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/0AB59E0AEDB62480A378B90B3C0E1653.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/8CAA4AFCDA5BE94D1144DB5D41F3F3A9.highlight.minted) [18] (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
 Overfull \hbox (4.39362pt too wide) in paragraph at lines 47--60
  [][] 
  []
 
 (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) [19] (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/B1D5340E61EE6B696B1348969C512CD4.highlight.minted) (./_minted/9DB9EAD10EB9116F05F8B3A01F42ACE3.highlight.minted) (./_minted/8A3191B8D37FAACF0B2C4632FFC62078.highlight.minted) (./_minted/1BE62CFAED29ABC0260608A9865025B5.highlight.minted) (./_minted/51BC9B2B0AB9927683B8FBEFF0005881.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-<figures/bsp/SD/standard/combined_heuristics.png, id=217, 325.215pt x 183.5658pt>
+<figures/bsp/SD/standard/combined_heuristics.png, id=434, 325.215pt x 183.5658pt>
 File: figures/bsp/SD/standard/combined_heuristics.png Graphic file (type png)
 <use figures/bsp/SD/standard/combined_heuristics.png>
 Package pdftex.def Info: figures/bsp/SD/standard/combined_heuristics.png  used on input line 103.
 (pdftex.def)             Requested size: 426.79135pt x 240.91829pt.
- [20]
-
-LaTeX Warning: Reference `sec:per-decision-cost' on page 21 undefined on input line 125.
-
-
-LaTeX Warning: Reference `fig:bsp-total' on page 21 undefined on input line 130.
-
-
-LaTeX Warning: Reference `fig:bsp-solving' on page 21 undefined on input line 130.
-
-(./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-<figures/hpc/SD/bsp/native_clingo_total.png, id=225, 464.59285pt x 344.31493pt>
+ [20] (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
+<figures/hpc/SD/bsp/native_clingo_total.png, id=445, 464.59285pt x 344.31493pt>
 File: figures/hpc/SD/bsp/native_clingo_total.png Graphic file (type png)
 <use figures/hpc/SD/bsp/native_clingo_total.png>
 Package pdftex.def Info: figures/hpc/SD/bsp/native_clingo_total.png  used on input line 134.
 (pdftex.def)             Requested size: 426.79135pt x 316.31648pt.
  [21 <./figures/bsp/SD/standard/combined_heuristics.png>]
-<figures/hpc/SD/bsp/native_solving.png, id=237, 464.59285pt x 344.31493pt>
+<figures/hpc/SD/bsp/native_solving.png, id=457, 464.59285pt x 344.31493pt>
 File: figures/hpc/SD/bsp/native_solving.png Graphic file (type png)
 <use figures/hpc/SD/bsp/native_solving.png>
 Package pdftex.def Info: figures/hpc/SD/bsp/native_solving.png  used on input line 141.
 (pdftex.def)             Requested size: 426.79135pt x 316.31648pt.
- [22 <./figures/hpc/SD/bsp/native_clingo_total.png>] (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted)
-
-LaTeX Warning: Reference `sec:aux-form' on page 23 undefined on input line 162.
-
-
-LaTeX Warning: Reference `sec:aux-form' on page 23 undefined on input line 162.
-
-
-LaTeX Warning: Reference `tab:bsp-n120' on page 23 undefined on input line 166.
-
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-
-LaTeX Warning: Reference `tab:heur-growth' on page 23 undefined on input line 168.
-
-(./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) [23 <./figures/hpc/SD/bsp/native_solving.png>]
-
-LaTeX Warning: Reference `tab:bsp-n120' on page 24 undefined on input line 170.
-
-(./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-
-LaTeX Warning: Reference `sec:ga-weak' on page 24 undefined on input line 170.
-
-(./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted)
-
-LaTeX Warning: Reference `sec:constr-form' on page 24 undefined on input line 170.
-
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted)
-<figures/hpc/SD/bsp/native_choices.png, id=252, 464.59285pt x 340.18521pt>
+ [22 <./figures/hpc/SD/bsp/native_clingo_total.png>] (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) [23 <./figures/hpc/SD/bsp/native_solving.png>] (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted)
+<figures/hpc/SD/bsp/native_choices.png, id=477, 464.59285pt x 340.18521pt>
 File: figures/hpc/SD/bsp/native_choices.png Graphic file (type png)
 <use figures/hpc/SD/bsp/native_choices.png>
 Package pdftex.def Info: figures/hpc/SD/bsp/native_choices.png  used on input line 179.
 (pdftex.def)             Requested size: 209.1301pt x 153.13383pt.
-<figures/hpc/SD/bsp/native_conflicts.png, id=253, 464.59285pt x 340.18521pt>
+<figures/hpc/SD/bsp/native_conflicts.png, id=478, 464.59285pt x 340.18521pt>
 File: figures/hpc/SD/bsp/native_conflicts.png Graphic file (type png)
 <use figures/hpc/SD/bsp/native_conflicts.png>
 Package pdftex.def Info: figures/hpc/SD/bsp/native_conflicts.png  used on input line 181.
 (pdftex.def)             Requested size: 209.1301pt x 153.13383pt.
  (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/6757C5633C44EDA9A5DDB3612961F753.highlight.minted) (./_minted/1BE62CFAED29ABC0260608A9865025B5.highlight.minted) (./_minted/32DDA7EBEB001C84E3E0C3BC83E58528.highlight.minted) (./_minted/059D9D3A4D88BAE52B736CC7F8920C40.highlight.minted) [24 <./figures/hpc/SD/bsp/native_choices.png> <./figures/hpc/SD/bsp/native_conflicts.png>] (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted)
-<figures/hpc/SD/bsp/native_mem.png, id=262, 464.59285pt x 342.25008pt>
+<figures/hpc/SD/bsp/native_mem.png, id=486, 464.59285pt x 342.25008pt>
 File: figures/hpc/SD/bsp/native_mem.png Graphic file (type png)
 <use figures/hpc/SD/bsp/native_mem.png>
 Package pdftex.def Info: figures/hpc/SD/bsp/native_mem.png  used on input line 213.
 (pdftex.def)             Requested size: 426.79135pt x 314.41953pt.
- [25] (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted)
-
-LaTeX Warning: Reference `sec:constr-form' on page 26 undefined on input line 218.
-
-(./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted)
-
-LaTeX Warning: Reference `tab:heur-growth' on page 26 undefined on input line 218.
-
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
+ [25] (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
 Overfull \hbox (17.3217pt too wide) in paragraph at lines 228--239
  [][] 
  []
@@ -1039,22 +863,18 @@ Underfull \hbox (badness 3735) in paragraph at lines 239--239
 []\T1/cmr/m/n/12 Table 8: []Prolog back-end in-stru-men-ta-tion on rep-re-sen-ta-tive solved runs.
  []
 
-[26 <./figures/hpc/SD/bsp/native_mem.png>]
-
-LaTeX Warning: Reference `tab:per-decision' on page 27 undefined on input line 243.
-
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-<figures/hpc/SD/bsp/prolog_decide_calls.png, id=277, 464.59285pt x 340.18521pt>
+[26 <./figures/hpc/SD/bsp/native_mem.png>] (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
+<figures/hpc/SD/bsp/prolog_decide_calls.png, id=503, 464.59285pt x 340.18521pt>
 File: figures/hpc/SD/bsp/prolog_decide_calls.png Graphic file (type png)
 <use figures/hpc/SD/bsp/prolog_decide_calls.png>
 Package pdftex.def Info: figures/hpc/SD/bsp/prolog_decide_calls.png  used on input line 247.
 (pdftex.def)             Requested size: 209.1301pt x 153.13383pt.
-<figures/hpc/SD/bsp/prolog_ms_per_decide.png, id=278, 464.59285pt x 346.896pt>
+<figures/hpc/SD/bsp/prolog_ms_per_decide.png, id=504, 464.59285pt x 346.896pt>
 File: figures/hpc/SD/bsp/prolog_ms_per_decide.png Graphic file (type png)
 <use figures/hpc/SD/bsp/prolog_ms_per_decide.png>
 Package pdftex.def Info: figures/hpc/SD/bsp/prolog_ms_per_decide.png  used on input line 249.
 (pdftex.def)             Requested size: 209.1301pt x 156.15468pt.
-<figures/hpc/SD/bsp/comparison_solving.png, id=279, 464.59285pt x 319.53664pt>
+<figures/hpc/SD/bsp/comparison_solving.png, id=505, 464.59285pt x 319.53664pt>
 File: figures/hpc/SD/bsp/comparison_solving.png Graphic file (type png)
 <use figures/hpc/SD/bsp/comparison_solving.png>
 Package pdftex.def Info: figures/hpc/SD/bsp/comparison_solving.png  used on input line 256.
@@ -1062,176 +882,109 @@ Package pdftex.def Info: figures/hpc/SD/bsp/comparison_solving.png  used on inpu
  [27 <./figures/hpc/SD/bsp/prolog_decide_calls.png> <./figures/hpc/SD/bsp/prolog_ms_per_decide.png>]
 LaTeX Font Info:    Font shape `T1/cmtt/bx/n' in size <14.4> not available
 (Font)              Font shape `T1/cmtt/m/n' tried instead on input line 263.
- (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-
-LaTeX Warning: Reference `sec:ga-simulation' on page 28 undefined on input line 268.
-
-(./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted)
-<figures/hpc/SD/bsp/expl_gaweak_solving.png, id=291, 464.59285pt x 344.31493pt>
+ (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted)
+<figures/hpc/SD/bsp/expl_gaweak_solving.png, id=517, 464.59285pt x 344.31493pt>
 File: figures/hpc/SD/bsp/expl_gaweak_solving.png Graphic file (type png)
 <use figures/hpc/SD/bsp/expl_gaweak_solving.png>
 Package pdftex.def Info: figures/hpc/SD/bsp/expl_gaweak_solving.png  used on input line 272.
 (pdftex.def)             Requested size: 209.1301pt x 154.99281pt.
-<figures/hpc/SD/bsp/expl_gaweak_choices.png, id=292, 464.59285pt x 340.18521pt>
+<figures/hpc/SD/bsp/expl_gaweak_choices.png, id=518, 464.59285pt x 340.18521pt>
 File: figures/hpc/SD/bsp/expl_gaweak_choices.png Graphic file (type png)
 <use figures/hpc/SD/bsp/expl_gaweak_choices.png>
 Package pdftex.def Info: figures/hpc/SD/bsp/expl_gaweak_choices.png  used on input line 274.
 (pdftex.def)             Requested size: 209.1301pt x 153.13383pt.
- [28 <./figures/hpc/SD/bsp/comparison_solving.png>]
-
-LaTeX Warning: Reference `fig:gaweak' on page 29 undefined on input line 279.
-
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-
-LaTeX Warning: Reference `sec:bsp-runtime' on page 29 undefined on input line 279.
-
-(./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted) (./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted) (./_minted/F379BE75050488FD4CA7092ADE6F4A36.highlight.minted) (./_minted/1E2803973C564A4B71FB0EC597B76CA1.highlight.minted) (./_minted/CB0B4559CA9B64134246525C5178F160.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) [29 <./figures/hpc/SD/bsp/expl_gaweak_solving.png> <./figures/hpc/SD/bsp/expl_gaweak_choices.png>]
-<figures/hpc/SD/bsp/expl_laaux_solving.png, id=309, 464.59285pt x 344.31493pt>
+ [28 <./figures/hpc/SD/bsp/comparison_solving.png>] (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted) (./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted) (./_minted/F379BE75050488FD4CA7092ADE6F4A36.highlight.minted) (./_minted/1E2803973C564A4B71FB0EC597B76CA1.highlight.minted) (./_minted/CB0B4559CA9B64134246525C5178F160.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) [29 <./figures/hpc/SD/bsp/expl_gaweak_solving.png> <./figures/hpc/SD/bsp/expl_gaweak_choices.png>]
+<figures/hpc/SD/bsp/expl_laaux_solving.png, id=535, 464.59285pt x 344.31493pt>
 File: figures/hpc/SD/bsp/expl_laaux_solving.png Graphic file (type png)
 <use figures/hpc/SD/bsp/expl_laaux_solving.png>
 Package pdftex.def Info: figures/hpc/SD/bsp/expl_laaux_solving.png  used on input line 290.
 (pdftex.def)             Requested size: 209.1301pt x 154.99281pt.
-<figures/hpc/SD/bsp/expl_laaux_decide_calls.png, id=310, 464.59285pt x 344.31493pt>
+<figures/hpc/SD/bsp/expl_laaux_decide_calls.png, id=536, 464.59285pt x 344.31493pt>
 File: figures/hpc/SD/bsp/expl_laaux_decide_calls.png Graphic file (type png)
 <use figures/hpc/SD/bsp/expl_laaux_decide_calls.png>
 Package pdftex.def Info: figures/hpc/SD/bsp/expl_laaux_decide_calls.png  used on input line 292.
 (pdftex.def)             Requested size: 209.1301pt x 154.99281pt.
- (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) (./_minted/E5269852EDC744B6384C67E623E5A239.highlight.minted) (./_minted/1456F2B2132563CA680A69A5C5A0FF90.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-
-LaTeX Warning: Reference `sec:bsp-runtime' on page 30 undefined on input line 300.
-
-(./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-<figures/hpc/SD/bsp/expl_laco_grounding.png, id=311, 464.59285pt x 344.31493pt>
+ (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) (./_minted/E5269852EDC744B6384C67E623E5A239.highlight.minted) (./_minted/1456F2B2132563CA680A69A5C5A0FF90.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
+<figures/hpc/SD/bsp/expl_laco_grounding.png, id=538, 464.59285pt x 344.31493pt>
 File: figures/hpc/SD/bsp/expl_laco_grounding.png Graphic file (type png)
 <use figures/hpc/SD/bsp/expl_laco_grounding.png>
 Package pdftex.def Info: figures/hpc/SD/bsp/expl_laco_grounding.png  used on input line 304.
 (pdftex.def)             Requested size: 209.1301pt x 154.99281pt.
-<figures/hpc/SD/bsp/expl_laco_rules.png, id=312, 464.59285pt x 343.2825pt>
+<figures/hpc/SD/bsp/expl_laco_rules.png, id=539, 464.59285pt x 343.2825pt>
 File: figures/hpc/SD/bsp/expl_laco_rules.png Graphic file (type png)
 <use figures/hpc/SD/bsp/expl_laco_rules.png>
 Package pdftex.def Info: figures/hpc/SD/bsp/expl_laco_rules.png  used on input line 306.
 (pdftex.def)             Requested size: 209.1301pt x 154.52806pt.
  [30 <./figures/hpc/SD/bsp/expl_laaux_solving.png> <./figures/hpc/SD/bsp/expl_laaux_decide_calls.png>]
-
-LaTeX Warning: Reference `fig:pup-total' on page 31 undefined on input line 314.
-
-
-LaTeX Warning: Reference `tab:pup-frontier' on page 31 undefined on input line 314.
-
-<figures/hpc/SD/pup/native_clingo_total.png, id=322, 464.59285pt x 344.31493pt>
+<figures/hpc/SD/pup/native_clingo_total.png, id=549, 464.59285pt x 344.31493pt>
 File: figures/hpc/SD/pup/native_clingo_total.png Graphic file (type png)
 <use figures/hpc/SD/pup/native_clingo_total.png>
 Package pdftex.def Info: figures/hpc/SD/pup/native_clingo_total.png  used on input line 318.
 (pdftex.def)             Requested size: 426.79135pt x 316.31648pt.
-[31 <./figures/hpc/SD/bsp/expl_laco_grounding.png> <./figures/hpc/SD/bsp/expl_laco_rules.png>] (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
+ [31 <./figures/hpc/SD/bsp/expl_laco_grounding.png> <./figures/hpc/SD/bsp/expl_laco_rules.png>] (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
 Overfull \hbox (2.9333pt too wide) in paragraph at lines 326--337
  [][] 
  []
 
 (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) [32 <./figures/hpc/SD/pup/native_clingo_total.png>]
-<figures/hpc/SD/pup/native_grounding.png, id=338, 464.59285pt x 344.31493pt>
+<figures/hpc/SD/pup/native_grounding.png, id=565, 464.59285pt x 344.31493pt>
 File: figures/hpc/SD/pup/native_grounding.png Graphic file (type png)
 <use figures/hpc/SD/pup/native_grounding.png>
 Package pdftex.def Info: figures/hpc/SD/pup/native_grounding.png  used on input line 345.
 (pdftex.def)             Requested size: 209.1301pt x 154.99281pt.
-<figures/hpc/SD/pup/native_mem.png, id=339, 464.59285pt x 342.25008pt>
+<figures/hpc/SD/pup/native_mem.png, id=566, 464.59285pt x 342.25008pt>
 File: figures/hpc/SD/pup/native_mem.png Graphic file (type png)
 <use figures/hpc/SD/pup/native_mem.png>
 Package pdftex.def Info: figures/hpc/SD/pup/native_mem.png  used on input line 347.
 (pdftex.def)             Requested size: 209.1301pt x 154.06332pt.
- (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-
-LaTeX Warning: Reference `tab:overview-pup' on page 33 undefined on input line 352.
-
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-
-LaTeX Warning: Reference `sec:per-decision-cost' on page 33 undefined on input line 352.
-
-<figures/hpc/SD/pup/comparison_solving.png, id=340, 464.59285pt x 319.53664pt>
+ (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
+<figures/hpc/SD/pup/comparison_solving.png, id=569, 464.59285pt x 319.53664pt>
 File: figures/hpc/SD/pup/comparison_solving.png Graphic file (type png)
 <use figures/hpc/SD/pup/comparison_solving.png>
 Package pdftex.def Info: figures/hpc/SD/pup/comparison_solving.png  used on input line 356.
 (pdftex.def)             Requested size: 209.1301pt x 143.8389pt.
-<figures/hpc/SD/pup/prolog_state_sync.png, id=341, 464.59285pt x 344.31493pt>
+<figures/hpc/SD/pup/prolog_state_sync.png, id=570, 464.59285pt x 344.31493pt>
 File: figures/hpc/SD/pup/prolog_state_sync.png Graphic file (type png)
 <use figures/hpc/SD/pup/prolog_state_sync.png>
 Package pdftex.def Info: figures/hpc/SD/pup/prolog_state_sync.png  used on input line 358.
 (pdftex.def)             Requested size: 209.1301pt x 154.99281pt.
-[33 <./figures/hpc/SD/pup/native_grounding.png> <./figures/hpc/SD/pup/native_mem.png>] (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-<figures/hpc/SD/hrp/native_choices.png, id=351, 464.59285pt x 344.31493pt>
+ [33 <./figures/hpc/SD/pup/native_grounding.png> <./figures/hpc/SD/pup/native_mem.png>] (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
+<figures/hpc/SD/hrp/native_choices.png, id=579, 464.59285pt x 344.31493pt>
 File: figures/hpc/SD/hrp/native_choices.png Graphic file (type png)
 <use figures/hpc/SD/hrp/native_choices.png>
 Package pdftex.def Info: figures/hpc/SD/hrp/native_choices.png  used on input line 372.
 (pdftex.def)             Requested size: 209.1301pt x 154.99281pt.
-<figures/hpc/SD/hrp/comparison_solving.png, id=352, 464.59285pt x 319.53664pt>
+<figures/hpc/SD/hrp/comparison_solving.png, id=580, 464.59285pt x 319.53664pt>
 File: figures/hpc/SD/hrp/comparison_solving.png Graphic file (type png)
 <use figures/hpc/SD/hrp/comparison_solving.png>
 Package pdftex.def Info: figures/hpc/SD/hrp/comparison_solving.png  used on input line 374.
 (pdftex.def)             Requested size: 209.1301pt x 143.8389pt.
- (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/5897657D5068492A64BFF2A08FD1E05C.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) [34 <./figures/hpc/SD/pup/comparison_solving.png> <./figures/hpc/SD/pup/prolog_state_sync.png> <./figures/hpc/SD/hrp/native_choices.png> <./figures/hpc/SD/hrp/comparison_solving.png>] (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1AEE91B85F76C7D54846913521F111FE.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
+ (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/5897657D5068492A64BFF2A08FD1E05C.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) [34 <./figures/hpc/SD/pup/comparison_solving.png> <./figures/hpc/SD/pup/prolog_state_sync.png> <./figures/hpc/SD/hrp/native_choices.png> <./figures/hpc/SD/hrp/comparison_solving.png>] (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1AEE91B85F76C7D54846913521F111FE.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted) (./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted)) [35] [36] (./5 - Discussione-e-Conclusione.tex (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/E97C9E866E0ADD02E77C6867058DA3D1.highlight.minted) (./_minted/47B4EC9876396BE458FF716560FD6143.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) [37] (./_minted/8CAA4AFCDA5BE94D1144DB5D41F3F3A9.highlight.minted) (./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted) (./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted) (./_minted/3A07AD292FC145EF328B038BB3F77238.highlight.minted) (./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted) (./_minted/07AF35E2B47CFAD4B5F2DC7E28908A14.highlight.minted) (./_minted/3D93D1C6C98BEC9A64374DD08BF5ED96.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) [38] (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/8C0C6AE80ABF9EE0A07BF4E27B2C99C7.highlight.minted) (./_minted/47B4EC9876396BE458FF716560FD6143.highlight.minted) (./_minted/55F7D8148DAC15495AE6A3D98A43697D.highlight.minted) (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) [39] (./_minted/F379BE75050488FD4CA7092ADE6F4A36.highlight.minted)) [40] [41
 
-LaTeX Warning: Reference `sec:per-decision-cost' on page 35 undefined on input line 386.
-
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted) (./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted)) [35] [36] (./5 - Discussione-e-Conclusione.tex (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/E97C9E866E0ADD02E77C6867058DA3D1.highlight.minted) (./_minted/47B4EC9876396BE458FF716560FD6143.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) [37] (./_minted/8CAA4AFCDA5BE94D1144DB5D41F3F3A9.highlight.minted) (./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted) (./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted) (./_minted/3A07AD292FC145EF328B038BB3F77238.highlight.minted) (./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted) (./_minted/07AF35E2B47CFAD4B5F2DC7E28908A14.highlight.minted) (./_minted/3D93D1C6C98BEC9A64374DD08BF5ED96.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-
-LaTeX Warning: Reference `sec:methodology' on page 38 undefined on input line 22.
-
-
-LaTeX Warning: Reference `sec:results' on page 38 undefined on input line 22.
-
-[38] (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/8C0C6AE80ABF9EE0A07BF4E27B2C99C7.highlight.minted) (./_minted/47B4EC9876396BE458FF716560FD6143.highlight.minted) (./_minted/55F7D8148DAC15495AE6A3D98A43697D.highlight.minted) (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted)
-
-LaTeX Warning: Reference `sec:flattening' on page 39 undefined on input line 34.
-
-[39] (./_minted/F379BE75050488FD4CA7092ADE6F4A36.highlight.minted)) [40] [41
-
-] [42] (./6 - Ringraziamenti.tex) [43]
-\openout7 = `_2AE2944559263F6456DC6AA53993E271.data.minted'.
-
-runsystem(latexminted clean  --timestamp 20260710095207 2AE2944559263F6456DC6AA53993E271)...executed safely (allowed).
-
- (./Spadafora_Pierpaolo_Thesis.aux)
+] [42] (./6 - Ringraziamenti.tex) [43] (./Spadafora_Pierpaolo_Thesis.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
  ***********
-
-
-LaTeX Warning: There were undefined references.
-
-
-LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
-
-
-Package rerunfilecheck Warning: File `Spadafora_Pierpaolo_Thesis.out' has changed.
-(rerunfilecheck)                Rerun to get outlines right
-(rerunfilecheck)                or use package `bookmark'.
-
-Package rerunfilecheck Info: Checksums for `Spadafora_Pierpaolo_Thesis.out':
-(rerunfilecheck)             Before: <no file>
-(rerunfilecheck)             After:  52BF1042D09FC6549F850E728279BAD8;8588.
-
-Package biblatex Warning: Please (re)run Biber on the file:
-(biblatex)                Spadafora_Pierpaolo_Thesis
-(biblatex)                and rerun LaTeX afterwards.
-
+Package rerunfilecheck Info: File `Spadafora_Pierpaolo_Thesis.out' has not changed.
+(rerunfilecheck)             Checksum: 52BF1042D09FC6549F850E728279BAD8;8588.
 Package logreq Info: Writing requests to 'Spadafora_Pierpaolo_Thesis.run.xml'.
 \openout1 = `Spadafora_Pierpaolo_Thesis.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 27444 strings out of 469515
- 581711 string characters out of 5470808
- 1460549 words of memory out of 5000000
- 54702 multiletter control sequences out of 15000+600000
+ 27493 strings out of 469515
+ 582531 string characters out of 5470808
+ 1467798 words of memory out of 5000000
+ 54745 multiletter control sequences out of 15000+600000
  655771 words of font info for 111 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 86i,10n,93p,2724b,1823s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 86i,10n,93p,2724b,2319s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmti8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1000.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx2074.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx2488.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfcc1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm0600.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfti1095.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sftt1000.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sftt1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sftt1440.pfb>
-Output written on Spadafora_Pierpaolo_Thesis.pdf (47 pages, 2511710 bytes).
+Output written on Spadafora_Pierpaolo_Thesis.pdf (48 pages, 2519743 bytes).
 PDF statistics:
- 579 PDF objects out of 1000 (max. 8388607)
- 416 compressed objects within 5 object streams
- 143 named destinations out of 1000 (max. 500000)
- 116 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 804 PDF objects out of 1000 (max. 8388607)
+ 637 compressed objects within 7 object streams
+ 144 named destinations out of 1000 (max. 500000)
+ 452 words of extra memory for PDF output out of 10000 (max. 10000000)
 

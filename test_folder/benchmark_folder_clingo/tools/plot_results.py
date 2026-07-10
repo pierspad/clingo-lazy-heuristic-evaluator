@@ -45,6 +45,7 @@ from __future__ import annotations
 import argparse
 import math
 import re
+import shutil
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -713,6 +714,46 @@ def _verdict(agg_f: pd.DataFrame, family: str, fam_dir: Path) -> dict:
 
 
 # ===========================================================================
+# Cartella riassuntiva "colpo d'occhio": copia (rinominata) dei 6 dashboard
+# per-backend/famiglia + 3 verdetti native-vs-prolog gia' generati sopra, in
+# un'unica cartella piatta, cosi' non serve navigare i tre alberi per farsi
+# un'idea complessiva. Sono COPIE (shutil.copy2): gli originali restano al
+# loro posto nei rispettivi alberi graphs-*/.
+# ===========================================================================
+SUMMARY_DIR_NAME = "riassunto_grafici"
+
+SUMMARY_SOURCES = [
+    ("1_native_bsp", "graphs-native/1_BSP/_dashboard.png"),
+    ("2_native_pup", "graphs-native/2_PUP/_dashboard.png"),
+    ("3_native_hrp", "graphs-native/3_HRP/_dashboard.png"),
+    ("4_prolog_bsp", "graphs-prolog/1_BSP/_dashboard.png"),
+    ("5_prolog_pup", "graphs-prolog/2_PUP/_dashboard.png"),
+    ("6_prolog_hrp", "graphs-prolog/3_HRP/_dashboard.png"),
+    ("7_verdict_bsp", "graphs-comparison-native-prolog/1_BSP/_verdict.png"),
+    ("8_verdict_pup", "graphs-comparison-native-prolog/2_PUP/_verdict.png"),
+    ("9_verdict_hrp", "graphs-comparison-native-prolog/3_HRP/_verdict.png"),
+]
+
+
+def render_summary(base: Path) -> int:
+    """Raccoglie i 6 dashboard per-backend/famiglia e i 3 verdetti
+    native-vs-prolog gia' prodotti da render_backend_tree/render_comparison_tree
+    in <base>/riassunto_grafici/, rinominati con un prefisso numerico cosi' da
+    essere ordinabili e riconoscibili a colpo d'occhio dal solo nome file."""
+    out_dir = base / SUMMARY_DIR_NAME
+    out_dir.mkdir(parents=True, exist_ok=True)
+    n = 0
+    for dst_name, rel_src in SUMMARY_SOURCES:
+        src = base / rel_src
+        if not src.exists():
+            print(f"  !! manca {src}, salto {dst_name}.png")
+            continue
+        shutil.copy2(src, out_dir / f"{dst_name}.png")
+        n += 1
+    return n
+
+
+# ===========================================================================
 def main() -> None:
     here = Path(__file__).resolve().parents[1]          # benchmark_folder_clingo
     ap = argparse.ArgumentParser(description="Grafici dai risultati benchmark-tool.")
@@ -758,6 +799,9 @@ def main() -> None:
     c, verdicts = render_comparison_tree(agg, base)
     print(f"  graphs-comparison-native-prolog/: {c} PNG")
     total += c
+
+    s = render_summary(base)
+    print(f"  {SUMMARY_DIR_NAME}/: {s}/{len(SUMMARY_SOURCES)} file (copie rinominate dei dashboard/verdetti sopra)")
 
     if verdicts:
         print("\nVERDETTO native vs prolog (per area):")

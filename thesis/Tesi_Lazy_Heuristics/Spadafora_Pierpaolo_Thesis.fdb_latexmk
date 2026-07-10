@@ -1,13 +1,13 @@
 # Fdb version 4
-["biber Spadafora_Pierpaolo_Thesis"] 0 "Spadafora_Pierpaolo_Thesis.bcf" "Spadafora_Pierpaolo_Thesis.bbl" "Spadafora_Pierpaolo_Thesis" 0 -1
-  "Spadafora_Pierpaolo_Thesis.bcf" 1783669934.02747 110407 9c671da9f91ed844f3912b2be78ca4f3 "pdflatex"
+["biber Spadafora_Pierpaolo_Thesis"] 1783671572.89909 "Spadafora_Pierpaolo_Thesis.bcf" "Spadafora_Pierpaolo_Thesis.bbl" "Spadafora_Pierpaolo_Thesis" 1783671583.38363 0
+  "Spadafora_Pierpaolo_Thesis.bcf" 1783671583.2535 110407 9c671da9f91ed844f3912b2be78ca4f3 "pdflatex"
   "bibliografia.bib" 1783543008.92041 5438 89c0653bdc4b4faac59186716b1edb38 ""
   (generated)
   "Spadafora_Pierpaolo_Thesis.bbl"
   "Spadafora_Pierpaolo_Thesis.blg"
   (rewritten before read)
-["pdflatex"] 1783669927.90481 "/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/thesis/Tesi_Lazy_Heuristics/Spadafora_Pierpaolo_Thesis.tex" "Spadafora_Pierpaolo_Thesis.pdf" "Spadafora_Pierpaolo_Thesis" 1783669934.17125 2
-  "/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/thesis/Tesi_Lazy_Heuristics/Spadafora_Pierpaolo_Thesis.tex" 1783543135.84842 2212 19175402002f2bf125b763d1ce033ad9 ""
+["pdflatex"] 1783671578.39532 "/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/thesis/Tesi_Lazy_Heuristics/Spadafora_Pierpaolo_Thesis.tex" "Spadafora_Pierpaolo_Thesis.pdf" "Spadafora_Pierpaolo_Thesis" 1783671583.38395 0
+  "/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/thesis/Tesi_Lazy_Heuristics/Spadafora_Pierpaolo_Thesis.tex" 1783671332.9154 2213 cff573918b9174fbf8b1a6b16a8a0900 ""
   "/usr/share/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc" 1775415801 2971 def0b6c1f0b107b3b936def894055589 ""
   "/usr/share/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc" 1775415801 2900 1537cc8184ad1792082cd229ecc269f4 ""
   "/usr/share/texmf-dist/fonts/map/fontname/texfonts.map" 1775415801 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -193,17 +193,18 @@
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1780292623 3084554 70f482fd0d07ea0470b6da4c63108332 ""
   "0.1 - frontespizio.tex" 1783592480.68087 798 beb21a4311dffbbfc9d148d7757223d9 ""
   "0.2 - abstract.tex" 1783500308.01562 4018 2c709dd3d012a565d47bfa63410075ea ""
-  "1 - Introduzione.tex" 1783669931.90481 11663 b98040c0f756de778b7c9b3cca0f3c49 ""
+  "1 - Introduzione.tex" 1783671567.62038 11655 1acf3ded97426b076f383ac9e0406507 ""
   "2 - Background.tex" 1783543126.5829 11808 c0a50672f5e0d2a63af56a278aed0f0a ""
   "3 - Metodologia.tex" 1783543202.68177 29383 9ef945de991717228febc85102bc236b ""
   "4 - Risultati.tex" 1783543167.13365 44566 f66043d058299f2ae8bb238374c5c21a ""
   "5 - Discussione-e-Conclusione.tex" 1783543167.1341 13363 2bb07569823cf725fb4cd9ed3f7e61ef ""
   "6 - Ringraziamenti.tex" 1783536303.03723 740 9ce8d512e4cf9e1465dce22c78818b36 ""
-  "Spadafora_Pierpaolo_Thesis.aux" 1783669934.02193 26693 a930a048c63627ddbcbedcea88aff928 "pdflatex"
-  "Spadafora_Pierpaolo_Thesis.bbl" 1783669857.64184 28830 0a1d6f727464fb2ff86973f88e4fcc33 "biber Spadafora_Pierpaolo_Thesis"
-  "Spadafora_Pierpaolo_Thesis.out" 1783669934.02593 8588 52bf1042d09fc6549f850e728279bad8 "pdflatex"
-  "Spadafora_Pierpaolo_Thesis.tex" 1783543135.84842 2212 19175402002f2bf125b763d1ce033ad9 ""
-  "Spadafora_Pierpaolo_Thesis.toc" 1783669934.02909 4946 95562f94ffa0fcb69295fcad39759c4f "pdflatex"
+  "Spadafora_Pierpaolo_Thesis.aux" 1783671583.24849 26716 b3339b080307d20fce3de0d7fcdde1e5 "pdflatex"
+  "Spadafora_Pierpaolo_Thesis.bbl" 1783671573.57062 28830 0a1d6f727464fb2ff86973f88e4fcc33 "biber Spadafora_Pierpaolo_Thesis"
+  "Spadafora_Pierpaolo_Thesis.out" 1783671583.25249 8588 52bf1042d09fc6549f850e728279bad8 "pdflatex"
+  "Spadafora_Pierpaolo_Thesis.run.xml" 1783671583.25505 2461 d3149545ef71a0d19a62aae169c0b30a "pdflatex"
+  "Spadafora_Pierpaolo_Thesis.tex" 1783671332.9154 2213 cff573918b9174fbf8b1a6b16a8a0900 ""
+  "Spadafora_Pierpaolo_Thesis.toc" 1783671583.25505 4947 781dc724067b36f5894844044b9c5f00 "pdflatex"
   "_minted/04BBE9B1260A8D3B00C1B032D10BB3FC.highlight.minted" 1783669589.66856 87 7d44f954c61e3c7b9c0e73b86a1a9f8f ""
   "_minted/059D9D3A4D88BAE52B736CC7F8920C40.highlight.minted" 1783669589.69541 115 0f8358241b8409b6c60d3d01d62c8ee0 ""
   "_minted/07AF35E2B47CFAD4B5F2DC7E28908A14.highlight.minted" 1783669589.63741 71 b94b91a8e67b4073b707731fc4d86c54 ""

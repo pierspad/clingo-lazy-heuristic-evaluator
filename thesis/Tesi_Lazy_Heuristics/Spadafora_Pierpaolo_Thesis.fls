@@ -212,8 +212,14 @@ INPUT /usr/share/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
 INPUT /usr/share/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
 INPUT /usr/share/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
 INPUT /usr/share/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
-OUTPUT Spadafora_Pierpaolo_Thesis.out
+INPUT ./Spadafora_Pierpaolo_Thesis.out
+INPUT ./Spadafora_Pierpaolo_Thesis.out
+INPUT Spadafora_Pierpaolo_Thesis.out
+INPUT Spadafora_Pierpaolo_Thesis.out
 OUTPUT Spadafora_Pierpaolo_Thesis.pdf
+INPUT ./Spadafora_Pierpaolo_Thesis.out
+INPUT ./Spadafora_Pierpaolo_Thesis.out
+OUTPUT Spadafora_Pierpaolo_Thesis.out
 INPUT /usr/share/texmf-dist/tex/latex/biblatex/lbx/english.lbx
 INPUT /usr/share/texmf-dist/tex/latex/biblatex/lbx/english.lbx
 INPUT /usr/share/texmf-dist/tex/latex/biblatex/lbx/english.lbx
@@ -259,6 +265,10 @@ INPUT /usr/share/texmf-dist/fonts/tfm/public/amsfonts/symbols/msbm10.tfm
 INPUT /usr/share/texmf-dist/fonts/tfm/public/amsfonts/symbols/msbm7.tfm
 INPUT /var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map
 INPUT /usr/share/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc
+INPUT ./Spadafora_Pierpaolo_Thesis.toc
+INPUT ./Spadafora_Pierpaolo_Thesis.toc
+INPUT Spadafora_Pierpaolo_Thesis.toc
+INPUT /usr/share/texmf-dist/fonts/tfm/jknappen/ec/ectt1200.tfm
 OUTPUT Spadafora_Pierpaolo_Thesis.toc
 INPUT ./0.2 - abstract.tex
 INPUT ./0.2 - abstract.tex
@@ -311,10 +321,9 @@ INPUT ./1 - Introduzione.tex
 INPUT 1 - Introduzione.tex
 INPUT /usr/share/texmf-dist/fonts/tfm/jknappen/ec/ecrm1440.tfm
 INPUT /usr/share/texmf-dist/fonts/tfm/jknappen/ec/ecbx1440.tfm
-OUTPUT _2AE2944559263F6456DC6AA53993E271.data.minted
-INPUT ./_2AE2944559263F6456DC6AA53993E271.message.minted
-INPUT ./_2AE2944559263F6456DC6AA53993E271.message.minted
-INPUT _2AE2944559263F6456DC6AA53993E271.message.minted
+INPUT ./_minted/5DC66B8353F73A33D34A73C2623CED6D.highlight.minted
+INPUT ./_minted/5DC66B8353F73A33D34A73C2623CED6D.highlight.minted
+INPUT _minted/5DC66B8353F73A33D34A73C2623CED6D.highlight.minted
 INPUT /usr/share/texmf-dist/fonts/tfm/jknappen/ec/ecrm0600.tfm
 INPUT ./_minted/E1D5B53048E1E5BC0486921A57CBCDE1.highlight.minted
 INPUT ./_minted/E1D5B53048E1E5BC0486921A57CBCDE1.highlight.minted
@@ -386,7 +395,6 @@ INPUT _minted/FE762A2D2A03C235899964B790C087BE.highlight.minted
 INPUT ./_minted/8C0C6AE80ABF9EE0A07BF4E27B2C99C7.highlight.minted
 INPUT ./_minted/8C0C6AE80ABF9EE0A07BF4E27B2C99C7.highlight.minted
 INPUT _minted/8C0C6AE80ABF9EE0A07BF4E27B2C99C7.highlight.minted
-INPUT /usr/share/texmf-dist/fonts/tfm/jknappen/ec/ectt1200.tfm
 INPUT ./_minted/F379BE75050488FD4CA7092ADE6F4A36.highlight.minted
 INPUT ./_minted/F379BE75050488FD4CA7092ADE6F4A36.highlight.minted
 INPUT _minted/F379BE75050488FD4CA7092ADE6F4A36.highlight.minted
@@ -1616,10 +1624,10 @@ INPUT ./6 - Ringraziamenti.tex
 INPUT ./6 - Ringraziamenti.tex
 INPUT ./6 - Ringraziamenti.tex
 INPUT 6 - Ringraziamenti.tex
-OUTPUT _2AE2944559263F6456DC6AA53993E271.data.minted
 INPUT Spadafora_Pierpaolo_Thesis.aux
 INPUT ./Spadafora_Pierpaolo_Thesis.out
 INPUT ./Spadafora_Pierpaolo_Thesis.out
+INPUT Spadafora_Pierpaolo_Thesis.run.xml
 OUTPUT Spadafora_Pierpaolo_Thesis.run.xml
 INPUT /usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb
 INPUT /usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb
