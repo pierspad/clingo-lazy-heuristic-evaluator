@@ -3,19 +3,19 @@
 
 \subsection{Context}
 
-Answer Set Programming (ASP) is a declarative paradigm for knowledge representation and combinatorial problem solving. Instead of prescribing an algorithm step by step, the modeller describes the properties that admissible solutions must satisfy. The ASP system then computes the answer sets, that is, the stable models of the program, which correspond to the solutions of the encoded problem \cite{gebser2012asp,clingoGuide}.
+Answer Set Programming (ASP) is a declarative problem-solving paradigm for combinatorial problem solving. Instead of prescribing an algorithm step by step, the modeller describes the properties that admissible solutions must satisfy. The ASP solver then computes the answer sets, that is, the stable models of the program, which correspond to the solutions of the encoded problem \cite{gebser2012asp,clingoGuide}.\\
 
-Most modern ASP systems follow a \textit{ground-and-solve} architecture. A grounder first rewrites the non-ground program, which may contain variables, into a propositional program. A solver based on CDCL-style techniques then explores assignments and computes stable models \cite{clingoGuide,moskewicz2001chaff}. clingo embodies this architecture by combining gringo, the grounder, and clasp, the solver. The separation is effective in many domains, but it also exposes a well-known limitation: grounding may become the bottleneck whenever the propositional instance grows much faster than the original declarative specification.
+Most modern ASP systems, such clingo, follow a \textit{ground-and-solve} architecture. A grounder first rewrites the non-ground program, which may contain variables, into an equivalent propositional program. A solver based on CDCL then explores assignments and computes stable models \cite{clingoGuide,moskewicz2001chaff}. In clingo these two phases are handle by gringo, the grounder, and clasp, the solver. The separation is effective in many domains, but it also exposes a well-known limitation: grounding may become the bottleneck whenever the propositional instance grows much faster than the original declarative specification.\\
 
-Domain-specific heuristics are one of the main tools for guiding search. In clingo they can be written as directives of the form:
+Domain-specific heuristics are one of the main tools for guiding search. In clingo they can be written as directives of the form:\\
 
 \begin{minted}{prolog}
 #heuristic A : Body. [W@P, M]
 \end{minted}
 
-Here $A$ is the target atom, $Body$ is the applicability condition, $W$ is the heuristic weight, $P$ is a priority, and $M$ is the modifier. The literature shows that domain-specific heuristics can be decisive on difficult industrial instances \cite{gebser2013heuristics,dodaro2016combining}. At the same time, if a heuristic directive contains aggregates or a rich body, grounding the directive may produce a very large number of ground heuristic objects.
+Here $A$ is the target atom, $Body$ is the applicability condition, $W$ is the heuristic weight, $P$ is the priority level among directives on the same target atom, and $M$ is the modifier. The literature shows that domain-specific heuristics can be decisive on difficult industrial instances \cite{gebser2013heuristics,dodaro2016combining}. At the same time, if a heuristic directive contains aggregates or a rich body, grounding the directive may result in a combinatorial explosion that would fill the system memory. Hence, a measure used to speed up the solving process ends up to making it unreachable.\\
 
-This thesis focuses precisely on that tension. The goal is to preserve a declarative form for heuristics, while moving part of their evaluation from grounding time to search time. The result is not a general lazy grounder for ASP. It is a specialized lazy mechanism for heuristics, implemented as a heuristic propagator inside clingo and instantiated in two interchangeable evaluation backends.
+The goal of this thesis is to preserve a declarative form for heuristics, while moving part of their evaluation from grounding time to search time. The result is not a general lazy grounder for ASP. It is a specialized propagator inside clingo and instantiated in two interchangeable evaluation backends.
 
 \subsection{Grounding Bottleneck and Dynamic Heuristics}
 
