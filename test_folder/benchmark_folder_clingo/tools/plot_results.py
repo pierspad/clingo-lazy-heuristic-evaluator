@@ -375,7 +375,26 @@ def _save(fig, path: Path):
 # ===========================================================================
 # Alberi per-backend (graphs-native / graphs-prolog)
 # ===========================================================================
-def render_backend_tree(agg: pd.DataFrame, backend: str, base: Path, ground: pd.DataFrame | None) -> int:
+# Esclusione varianti: per ogni entry qui sotto, in AGGIUNTA all'albero
+# normale (tutte le MAIN_VARIANTS), viene generato un secondo albero completo
+# (stessi metrics + dashboard + ratio + ground) con la variante indicata
+# tolta dai grafici — utile quando una variante ha una scala/andamento cosi'
+# diverso dalle altre da schiacciarle nel plot (es. "ga": G&S Alpha).
+# Cartella gemella: "<FAM_SUBDIR>-<slug>" (es. "1_BSP-no_ga"), stesso livello
+# di "1_BSP" dentro graphs-native/ e graphs-prolog/.
+# Estendibile in futuro: basta aggiungere altre entry a questa lista, il
+# resto della pipeline (render_backend_tree e le funzioni _render_*) legge
+# gia' `variants`/`dir_suffix`/`label_suffix` in modo generico.
+VARIANT_EXCLUSIONS = [
+    {"slug": "no_ga", "exclude": "ga", "label": "senza G&S Alpha (ga)"},
+]
+
+
+# ===========================================================================
+def render_backend_tree(agg: pd.DataFrame, backend: str, base: Path, ground: pd.DataFrame | None,
+                        *, variants: list[str] | None = None,
+                        dir_suffix: str = "", label_suffix: str = "") -> int:
+    variants = variants if variants is not None else MAIN_VARIANTS
     tree = base / f"graphs-{backend}"
     n = 0
     agg_b = agg[agg["backend"] == backend]
@@ -383,24 +402,25 @@ def render_backend_tree(agg: pd.DataFrame, backend: str, base: Path, ground: pd.
         agg_fb = agg_b[agg_b["family"] == family]
         if agg_fb.empty:
             continue
-        fam_dir = tree / FAM_SUBDIR[family]
+        fam_dir = tree / f"{FAM_SUBDIR[family]}{dir_suffix}"
 
         for metric in METRICS:
             if metric.key not in agg_fb.columns or agg_fb[metric.key].dropna().empty:
                 continue
             fig, ax = plt.subplots(figsize=(8, 5.2))
-            variants = MAIN_LAZY_VARIANTS if metric.lazy_only else None
-            if _plot_metric_axis(ax, agg_fb, metric, family, variants=variants):
-                fig.suptitle(f"{family} — {metric.title} ({backend})", fontsize=12, fontweight="bold")
+            metric_variants = MAIN_LAZY_VARIANTS if metric.lazy_only else variants
+            if _plot_metric_axis(ax, agg_fb, metric, family, variants=metric_variants):
+                fig.suptitle(f"{family} — {metric.title} ({backend}){label_suffix}",
+                            fontsize=12, fontweight="bold")
                 _save(fig, fam_dir / f"{metric.key}.png")
                 n += 1
             else:
                 plt.close(fig)
 
-        n += _render_dashboard(agg_fb, family, backend, fam_dir)
-        n += _render_ratio(agg_fb, family, backend, fam_dir)
+        n += _render_dashboard(agg_fb, family, backend, fam_dir, variants=variants, label_suffix=label_suffix)
+        n += _render_ratio(agg_fb, family, backend, fam_dir, variants=variants, label_suffix=label_suffix)
         if ground is not None:
-            n += _render_ground(ground, family, backend, fam_dir, agg_fb)
+            n += _render_ground(ground, family, backend, fam_dir, agg_fb, variants=variants)
     return n
 
 
@@ -408,7 +428,9 @@ def _has_data(agg_fb: pd.DataFrame, key: str) -> bool:
     return key in agg_fb.columns and not agg_fb[key].dropna().empty
 
 
-def _render_dashboard(agg_fb: pd.DataFrame, family: str, backend: str, fam_dir: Path) -> int:
+def _render_dashboard(agg_fb: pd.DataFrame, family: str, backend: str, fam_dir: Path,
+                      *, variants: list[str] | None = None, label_suffix: str = "") -> int:
+    variants = variants if variants is not None else MAIN_VARIANTS
     core = [k for k in DASHBOARD_CORE if _has_data(agg_fb, k)]
     extra = [k for k in DASHBOARD_EXTRA if _has_data(agg_fb, k)]
     keys = core + extra
@@ -427,31 +449,36 @@ def _render_dashboard(agg_fb: pd.DataFrame, family: str, backend: str, fam_dir: 
             continue
         metric = METRIC_BY_KEY[k]
         _plot_metric_axis(ax, agg_fb, metric, family,
-                          variants=MAIN_LAZY_VARIANTS if metric.lazy_only else None)
+                          variants=MAIN_LAZY_VARIANTS if metric.lazy_only else variants)
     for ax in flat[len(panels):]:
         ax.axis("off")
-    # separatore visivo tra blocco CORE e blocco EXTRA accodato
+    # separatore visivo tra blocco CORE e blocco EXTRA accodato (solo la riga,
+    # senza etichetta testuale al centro)
     if extra and pad >= 0:
         sep_y = 1.0 - (len(core) + pad) / ncol / nrow
         fig.add_artist(plt.Line2D([0.02, 0.98], [sep_y, sep_y], transform=fig.transFigure,
                                   color="#BBB", linewidth=1.2, linestyle="--"))
-        fig.text(0.5, sep_y + 0.004, "metriche aggiuntive (da results.xml)",
-                 ha="center", va="bottom", fontsize=10, color="#666", style="italic")
-    fig.suptitle(f"{family} Dashboard — {backend}", fontsize=15, fontweight="bold")
+    fig.suptitle(f"{family} Dashboard — {backend}{label_suffix}", fontsize=15, fontweight="bold")
     fig.tight_layout(rect=[0, 0, 1, 0.97])
     _save(fig, fam_dir / "_dashboard.png")
     return 1
 
 
-def _render_ratio(agg_fb: pd.DataFrame, family: str, backend: str, fam_dir: Path) -> int:
+def _render_ratio(agg_fb: pd.DataFrame, family: str, backend: str, fam_dir: Path,
+                  *, variants: list[str] | None = None, label_suffix: str = "") -> int:
     """Rapporto del solving lazy/standard per le coppie (gc,lc) e (ga,la).
-    Valori > 1 => la variante lazy ha risolto piu' lentamente."""
+    Valori > 1 => la variante lazy ha risolto piu' lentamente. Una coppia
+    viene disegnata solo se ENTRAMBE le sue varianti sono ammesse (rispetta
+    le esclusioni, es. niente (ga,la) nell'albero "no_ga")."""
     if "solving" not in agg_fb.columns:
         return 0
+    allowed = set(variants) if variants is not None else set(MAIN_VARIANTS)
     piv = agg_fb.pivot_table(index="size", columns="setting", values="solving")
     fig, ax = plt.subplots(figsize=(8, 5))
     drew = False
     for std, lazy in (("gc", "lc"), ("ga", "la")):
+        if std not in allowed or lazy not in allowed:
+            continue
         if std in piv.columns and lazy in piv.columns:
             ratio = (piv[lazy] / piv[std]).dropna()
             if ratio.empty:
@@ -463,7 +490,7 @@ def _render_ratio(agg_fb: pd.DataFrame, family: str, backend: str, fam_dir: Path
         plt.close(fig)
         return 0
     ax.axhline(1.0, color="#888", linestyle="--", linewidth=1)
-    ax.set_title(f"{family} — Lazy/Standard Solving-Time Ratio ({backend})", fontsize=12, fontweight="bold")
+    ax.set_title(f"{family} — Lazy/Standard Solving-Time Ratio ({backend}){label_suffix}", fontsize=12, fontweight="bold")
     ax.set_xlabel(XLABEL.get(family, "size (N)"))
     ax.set_ylabel("lazy / standard solving time (x)")
     ax.grid(True, alpha=0.3, linestyle="--")
@@ -796,6 +823,15 @@ def main() -> None:
             print(f"  graphs-{backend}/exploratory/: {e} PNG "
                   f"({', '.join(s['slug'] for s in EXPLORATORY_STUDIES)})")
             total += e
+            for excl in VARIANT_EXCLUSIONS:
+                variants = [v for v in MAIN_VARIANTS if v != excl["exclude"]]
+                ce = render_backend_tree(agg, backend, base, ground,
+                                         variants=variants,
+                                         dir_suffix=f"-{excl['slug']}",
+                                         label_suffix=f" — {excl['label']}")
+                print(f"  graphs-{backend}/*-{excl['slug']}/: {ce} PNG "
+                      f"(varianti: {', '.join(variants)})")
+                total += ce
     c, verdicts = render_comparison_tree(agg, base)
     print(f"  graphs-comparison-native-prolog/: {c} PNG")
     total += c
