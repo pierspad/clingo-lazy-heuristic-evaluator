@@ -120,8 +120,19 @@
   <!-- ===================== JOB ===================== -->
   <!-- timeout/memout in secondi / MB. parallel=1 per misure di tempo pulite. -->
   <seqjob  name="seq-local" timeout="300s" runs="1" memout="30000" parallel="1"/>
+  <!-- walltime ridotta da 23h59m59s a 2h (2026-07-10): con script_mode="timeout"
+       btool impacchetta i run in sequenza finche' non riempie la walltime, poi
+       ne apre uno nuovo (vedi commento sotto il <project>). Walltime piu' corta
+       = piu' *.dist per project = piu' allocazioni SLURM esclusive concorrenti,
+       usando meglio i nodi liberi di kr/kr-big invece di tenerne 3 impegnati
+       per ~24h a testa. memout invariato: e' un limite di runlim via software,
+       non della RAM fisica del nodo, quindi aggiungere kr-big (più RAM) non
+       altera il risultato "ground muore di memout su PUP grande" - gli da solo
+       margine contro un OOM-killer di sistema prima del memout pulito.
+       partition="kr,kr-big": kr-slv escluso, nessuna association per l'utente
+       (vedi sacctmgr show associations) - fallirebbe in sottomissione. -->
   <distjob name="dist-hpc"  timeout="600s" runs="1" memout="30000"
-           script_mode="timeout" walltime="23h 59m 59s" cpt="4" partition="kr"/>
+           script_mode="timeout" walltime="2h" cpt="4" partition="kr,kr-big"/>
 
   <!-- ===================== BENCHMARK (una famiglia per benchmark) ===================== -->
   <benchmark name="BSP">
@@ -146,14 +157,23 @@
        Split in 3 project (uno per famiglia) invece di un unico project
        "study-hpc" monolitico: prima "btool gen" produceva un solo *.dist
        che eseguiva BSP+PUP+HRP in sequenza dentro UNA sola allocazione
-       SLURM (visto nello smoke test: "Found 1 jobs to dispatch"). Con 3
-       project separati, "btool gen" produce 3 *.dist indipendenti e
-       "btool run-dist" (default -j 100, quindi ben oltre i 3 di cui
-       abbiamo bisogno) li sottomette come 3 job SLURM concorrenti su nodi
-       diversi. I 3/4_run_benchmark_*.sh ciclano su questi 3 nomi per
-       dispacciarli tutti. "parallel=1" nel <seqjob>/<distjob> resta
-       invariato: il parallelismo e' TRA i job (nodi diversi), non dentro
-       lo stesso job, cosi' le misure di tempo restano pulite. -->
+       SLURM (visto nello smoke test: "Found 1 jobs to dispatch").
+       Dentro ciascun project, con walltime="2h" (vedi <distjob> sopra)
+       "btool gen" produce PIU' *.dist per project, non piu' uno solo:
+       BSP (192 run: 12 istanze x 8 setting x 2 backend) -> ~16 *.dist,
+       PUP e HRP (100 run ciascuno: 10 istanze x 5 setting x 2 backend)
+       -> ~9 *.dist ciascuno, per un totale di ~34 job SLURM invece di 3-4.
+       "btool run-dist" (default -j 100) li sottomette tutti; restano ben
+       sotto il MaxSubmit=100 per utente su kr/kr-big (sacctmgr, verificato
+       2026-07-10), quindi SLURM li accoda e li fa partire via via che i
+       nodi di kr (10) e kr-big (2) si liberano, invece di tenerne solo 3
+       impegnati per l'intera durata. I 3/4_run_benchmark_*.sh ciclano
+       comunque sui 3 nomi di project (uno per famiglia): e' "btool
+       run-dist" che, per ciascun project, dispaccia tutti i suoi *.dist.
+       "parallel=1" nel <seqjob>/<distjob> resta invariato: il
+       parallelismo e' TRA i job (nodi/allocazioni diverse), non dentro lo
+       stesso job (che resta sequenziale, ~12 run a testa), cosi' le
+       misure di tempo restano pulite. -->
   <project name="study-hpc-bsp" job="dist-hpc">
     <runtag machine="hpc" benchmark="BSP" tag="bsp"/>
   </project>
