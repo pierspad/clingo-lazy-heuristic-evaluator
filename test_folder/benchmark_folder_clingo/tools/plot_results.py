@@ -47,6 +47,7 @@ import math
 import re
 import shutil
 import xml.etree.ElementTree as ET
+from collections.abc import Callable
 from pathlib import Path
 
 import matplotlib
@@ -377,9 +378,12 @@ def _save(fig, path: Path):
 # ===========================================================================
 # Esclusione varianti: per ogni entry qui sotto, in AGGIUNTA all'albero
 # normale (tutte le MAIN_VARIANTS), viene generato un secondo albero completo
-# (stessi metrics + dashboard + ratio + ground) con la variante indicata
-# tolta dai grafici — utile quando una variante ha una scala/andamento cosi'
-# diverso dalle altre da schiacciarle nel plot (es. "ga": G&S Alpha).
+# (stessi metrics + dashboard + ratio + ground) con la/le variante/i indicata/e
+# tolta/e dai grafici — utile quando una variante ha una scala/andamento cosi'
+# diverso dalle altre da schiacciarle nel plot (es. "ga": G&S Alpha, "lc":
+# Lazy Clingo, entrambe soggette a timeout precoci che comprimono le altre
+# curve). "exclude" accetta una stringa (una variante) o una lista (piu'
+# varianti tolte assieme dallo stesso albero).
 # Cartella gemella: "<FAM_SUBDIR>-<slug>" (es. "1_BSP-no_ga"), stesso livello
 # di "1_BSP" dentro graphs-native/ e graphs-prolog/.
 # Estendibile in futuro: basta aggiungere altre entry a questa lista, il
@@ -387,7 +391,14 @@ def _save(fig, path: Path):
 # gia' `variants`/`dir_suffix`/`label_suffix` in modo generico.
 VARIANT_EXCLUSIONS = [
     {"slug": "no_ga", "exclude": "ga", "label": "senza G&S Alpha (ga)"},
+    {"slug": "no_ga_lc", "exclude": ["ga", "lc"],
+     "label": "senza G&S Alpha (ga) e Lazy Clingo (lc)"},
 ]
+
+
+def _exclude_set(excl: dict) -> set[str]:
+    v = excl["exclude"]
+    return {v} if isinstance(v, str) else set(v)
 
 
 # ===========================================================================
@@ -741,43 +752,113 @@ def _verdict(agg_f: pd.DataFrame, family: str, fam_dir: Path) -> dict:
 
 
 # ===========================================================================
-# Cartella riassuntiva "colpo d'occhio": copia (rinominata) dei 6 dashboard
-# per-backend/famiglia + 3 verdetti native-vs-prolog gia' generati sopra, in
-# un'unica cartella piatta, cosi' non serve navigare i tre alberi per farsi
-# un'idea complessiva. Sono COPIE (shutil.copy2): gli originali restano al
-# loro posto nei rispettivi alberi graphs-*/.
+# Cartella riassuntiva "colpo d'occhio": copia (rinominata) di OGNI dashboard
+# gia' generata altrove — albero main, ogni albero di esclusione varianti
+# (VARIANT_EXCLUSIONS: no_ga, no_ga_lc, ...), ogni studio esplorativo
+# (EXPLORATORY_STUDIES), per ciascun backend/famiglia — piu' i 3 verdetti
+# native-vs-prolog, in un'unica cartella piatta: <base>/riassunto_grafici/.
+# Sono COPIE (shutil.copy2): gli originali restano al loro posto nei
+# rispettivi alberi graphs-*/. L'elenco e' costruito DINAMICAMENTE da
+# BACKENDS/VARIANT_EXCLUSIONS/EXPLORATORY_STUDIES invece che da una lista
+# statica: aggiungendo una nuova esclusione o uno studio esplorativo (come
+# gia' successo con "no_ga_lc") il riassunto li include da solo, senza
+# toccare questa funzione. Combinazioni senza dati (es. uno studio
+# esplorativo disponibile solo per BSP) vengono saltate in silenzio.
 # ===========================================================================
 SUMMARY_DIR_NAME = "riassunto_grafici"
 
-SUMMARY_SOURCES = [
-    ("1_native_bsp", "graphs-native/1_BSP/_dashboard.png"),
-    ("2_native_pup", "graphs-native/2_PUP/_dashboard.png"),
-    ("3_native_hrp", "graphs-native/3_HRP/_dashboard.png"),
-    ("4_prolog_bsp", "graphs-prolog/1_BSP/_dashboard.png"),
-    ("5_prolog_pup", "graphs-prolog/2_PUP/_dashboard.png"),
-    ("6_prolog_hrp", "graphs-prolog/3_HRP/_dashboard.png"),
-    ("7_verdict_bsp", "graphs-comparison-native-prolog/1_BSP/_verdict.png"),
-    ("8_verdict_pup", "graphs-comparison-native-prolog/2_PUP/_verdict.png"),
-    ("9_verdict_hrp", "graphs-comparison-native-prolog/3_HRP/_verdict.png"),
-]
+
+def _summary_sources(base: Path) -> list[tuple[str, Path]]:
+    sources: list[tuple[str, Path]] = []
+    for backend in BACKENDS:
+        for family in ("BSP", "PUP", "HRP"):
+            fam_dir = FAM_SUBDIR[family]
+            tag = f"{backend}_{family.lower()}"
+            sources.append((f"{tag}_main",
+                            base / f"graphs-{backend}" / fam_dir / "_dashboard.png"))
+            for excl in VARIANT_EXCLUSIONS:
+                sources.append((f"{tag}_{excl['slug']}",
+                                base / f"graphs-{backend}" / f"{fam_dir}-{excl['slug']}" / "_dashboard.png"))
+            for study in EXPLORATORY_STUDIES:
+                sources.append((f"{tag}_expl_{study['slug']}",
+                                base / f"graphs-{backend}" / "exploratory" / study["slug"]
+                                / fam_dir / "_dashboard.png"))
+    for family in ("BSP", "PUP", "HRP"):
+        sources.append((f"verdict_{family.lower()}",
+                        base / "graphs-comparison-native-prolog" / FAM_SUBDIR[family] / "_verdict.png"))
+    return sources
 
 
 def render_summary(base: Path) -> int:
-    """Raccoglie i 6 dashboard per-backend/famiglia e i 3 verdetti
-    native-vs-prolog gia' prodotti da render_backend_tree/render_comparison_tree
-    in <base>/riassunto_grafici/, rinominati con un prefisso numerico cosi' da
-    essere ordinabili e riconoscibili a colpo d'occhio dal solo nome file."""
+    """Raccoglie in <base>/riassunto_grafici/ tutte le dashboard/verdetti gia'
+    prodotti da render_backend_tree/render_exploratory_tree/render_comparison_tree
+    (v. _summary_sources), rinominati in modo descrittivo
+    (<backend>_<famiglia>_<variante|expl_<studio>>.png / verdict_<famiglia>.png)."""
     out_dir = base / SUMMARY_DIR_NAME
     out_dir.mkdir(parents=True, exist_ok=True)
     n = 0
-    for dst_name, rel_src in SUMMARY_SOURCES:
-        src = base / rel_src
+    for dst_name, src in _summary_sources(base):
         if not src.exists():
-            print(f"  !! manca {src}, salto {dst_name}.png")
             continue
         shutil.copy2(src, out_dir / f"{dst_name}.png")
         n += 1
     return n
+
+
+# ===========================================================================
+# Registro dei job indipendenti: ogni entry scrive in una sua sottocartella
+# (nessuna sovrascrittura incrociata tra job diversi), cosi' da poter essere
+# lanciata da un processo/nodo SLURM separato via `--only <job_id>` — vedi
+# 6_plot_graphs_hpc.sh nella root del repo, che sottomette un array di job
+# (uno per id qui sotto) e fa watch fino al completamento.
+# "summary" fa eccezione: DIPENDE dall'aver gia' completato tutti i "*:main"
+# + "comparison" (copia le loro PNG), va eseguito per ultimo.
+# ===========================================================================
+def build_jobs(agg: pd.DataFrame, base: Path, ground: pd.DataFrame | None
+               ) -> tuple[dict[str, Callable[[], int]], list[str], dict]:
+    jobs: dict[str, Callable[[], int]] = {}
+    order: list[str] = []
+    state: dict = {"verdicts": {}}
+
+    for backend in BACKENDS:
+        if backend not in set(agg["backend"].unique()):
+            continue
+
+        jobs[f"{backend}:main"] = lambda b=backend: render_backend_tree(agg, b, base, ground)
+        order.append(f"{backend}:main")
+
+        jobs[f"{backend}:exploratory"] = lambda b=backend: render_exploratory_tree(agg, b, base, ground)
+        order.append(f"{backend}:exploratory")
+
+        for excl in VARIANT_EXCLUSIONS:
+            exset = _exclude_set(excl)
+
+            def _run_excl(b=backend, exset=exset, excl=excl) -> int:
+                variants = [v for v in MAIN_VARIANTS if v not in exset]
+                return render_backend_tree(agg, b, base, ground, variants=variants,
+                                           dir_suffix=f"-{excl['slug']}",
+                                           label_suffix=f" — {excl['label']}")
+
+            jid = f"{backend}:excl:{excl['slug']}"
+            jobs[jid] = _run_excl
+            order.append(jid)
+
+    def _run_comparison() -> int:
+        n, verdicts = render_comparison_tree(agg, base)
+        state["verdicts"] = verdicts
+        return n
+
+    jobs["comparison"] = _run_comparison
+    order.append("comparison")
+
+    jobs["summary"] = lambda: render_summary(base)
+    order.append("summary")
+
+    return jobs, order, state
+
+
+def _print_job_result(jid: str, n: int) -> None:
+    print(f"  [{jid}] {n} PNG/file")
 
 
 # ===========================================================================
@@ -790,6 +871,13 @@ def main() -> None:
                     help="cartella che conterra' i tre alberi di grafici")
     ap.add_argument("--ground-counts", type=Path, default=None,
                     help="output/ground_counts.csv per i grafici di grounding")
+    ap.add_argument("--list-jobs", action="store_true",
+                    help="stampa gli id dei job indipendenti (uno per riga) ed esce, "
+                         "senza disegnare nulla — usato da 6_plot_graphs_hpc.sh per "
+                         "sapere quanti job SLURM sottomettere")
+    ap.add_argument("--only", default=None, metavar="JOB_ID",
+                    help="esegue SOLO il job indicato (v. --list-jobs) invece della "
+                         "pipeline completa; utile per parallelizzare su piu' nodi")
     args = ap.parse_args()
 
     if not args.results.exists():
@@ -810,38 +898,43 @@ def main() -> None:
 
     base = args.out_base
     base.mkdir(parents=True, exist_ok=True)
+
+    jobs, order, state = build_jobs(agg, base, ground)
+
+    if args.list_jobs:
+        for jid in order:
+            print(jid)
+        return
+
     print(f"Aggregato: {len(agg)} righe  backend={sorted(agg['backend'].unique())}  "
           f"famiglie={sorted(agg['family'].unique())}  machine={args.machine}")
 
+    if args.only:
+        if args.only not in jobs:
+            raise SystemExit(
+                f"job sconosciuto: {args.only!r}. Job disponibili (--list-jobs):\n  "
+                + "\n  ".join(order))
+        n = jobs[args.only]()
+        _print_job_result(args.only, n)
+        if args.only == "comparison" and state["verdicts"]:
+            print("\nVERDETTO native vs prolog (per area):")
+            for fam, summ in state["verdicts"].items():
+                print(f"  {fam}: " + "  ".join(f"{a}={w}" for a, w in summ.items()))
+        return
+
+    # Nessun --only: pipeline completa e sequenziale (comportamento storico).
+    # Per l'esecuzione parallela su HPC vedi 6_plot_graphs_hpc.sh, che
+    # sottomette un job SLURM per ciascun id di `order` (tranne "summary",
+    # lanciato per ultimo perche' dipende dagli altri).
     total = 0
-    for backend in BACKENDS:
-        if backend in set(agg["backend"].unique()):
-            c = render_backend_tree(agg, backend, base, ground)
-            print(f"  graphs-{backend}/: {c} PNG (varianti main: {', '.join(MAIN_VARIANTS)})")
-            total += c
-            e = render_exploratory_tree(agg, backend, base, ground)
-            print(f"  graphs-{backend}/exploratory/: {e} PNG "
-                  f"({', '.join(s['slug'] for s in EXPLORATORY_STUDIES)})")
-            total += e
-            for excl in VARIANT_EXCLUSIONS:
-                variants = [v for v in MAIN_VARIANTS if v != excl["exclude"]]
-                ce = render_backend_tree(agg, backend, base, ground,
-                                         variants=variants,
-                                         dir_suffix=f"-{excl['slug']}",
-                                         label_suffix=f" — {excl['label']}")
-                print(f"  graphs-{backend}/*-{excl['slug']}/: {ce} PNG "
-                      f"(varianti: {', '.join(variants)})")
-                total += ce
-    c, verdicts = render_comparison_tree(agg, base)
-    print(f"  graphs-comparison-native-prolog/: {c} PNG")
-    total += c
+    for jid in order:
+        n = jobs[jid]()
+        total += n
+        _print_job_result(jid, n)
 
-    s = render_summary(base)
-    print(f"  {SUMMARY_DIR_NAME}/: {s}/{len(SUMMARY_SOURCES)} file (copie rinominate dei dashboard/verdetti sopra)")
-
-    if verdicts:
+    if state["verdicts"]:
         print("\nVERDETTO native vs prolog (per area):")
-        for fam, summ in verdicts.items():
+        for fam, summ in state["verdicts"].items():
             print(f"  {fam}: " + "  ".join(f"{a}={w}" for a, w in summ.items()))
     print(f"\nTotale PNG: {total}  (in {base}/)")
 

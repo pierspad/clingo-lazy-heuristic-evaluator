@@ -79,10 +79,16 @@ EOF
   log "Verifica e installazione pacchetti grafici nel venv..."
   "$VENV_PIP" install --quiet matplotlib pandas openpyxl
 
-  # 8. Generazione grafici comparativi pulendo l'ambiente da interferenze
-  log "Fase 4: Generazione grafici comparativi (Native vs Prolog) ..."
-  PYTHONPATH="" "$VENV_PYTHON" tools/plot_results.py --machine hpc --out-base ..
-  
+  # 8. Generazione grafici: delegata a 6_plot_graphs_hpc.sh, che sottomette
+  #    ogni job indipendente di plot_results.py (--list-jobs/--only, v. quel
+  #    file) come job SLURM separato sui nodi kr/kr-big invece di girare in
+  #    sequenza su un solo core (~5 minuti), poi fa da solo watch (poll su
+  #    squeue) finche' non sono finiti e infine rilancia "summary" in locale.
+  #    Stessi default che passavamo prima a plot_results.py (results.xml qui,
+  #    --out-base ..).
+  log "Fase 4: Generazione grafici comparativi (Native vs Prolog), in parallelo su cluster ..."
+  "$REPO_ROOT/6_plot_graphs_hpc.sh" --results "$TEST_DIR/results.xml" --machine hpc --out-base ..
+
   echo
   ok "ELABORAZIONE COMPLETATA!"
   ok "I dati e l'Excel si trovano in $OUTPUT_DIR/"

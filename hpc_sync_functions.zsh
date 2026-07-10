@@ -43,6 +43,7 @@ function copyhpcgraphs() {
     "graphs-native|"
     "graphs-prolog|"
     "graphs-comparison-native-prolog|"
+    "riassunto_grafici|"
     "benchmark_folder_clingo/output/results.xlsx|results-full.xlsx"
     "benchmark_folder_clingo/output-short-hpc/results.xlsx|results-short-hpc.xlsx"
     "benchmark_folder_clingo/eval.log|eval.log"
@@ -96,6 +97,7 @@ function pushhpccode() {
     --exclude='**/graphs-native/' \
     --exclude='**/graphs-prolog/' \
     --exclude='**/graphs-comparison-native-prolog/' \
+    --exclude='**/riassunto_grafici/' \
     --exclude='**/clingo_hpc_graphs/' \
     --exclude='/hpc_sync_functions.zsh' \
     --exclude='/compile_all_local.sh' \
