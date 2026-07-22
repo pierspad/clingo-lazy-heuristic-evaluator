@@ -160,20 +160,24 @@
        SLURM (visto nello smoke test: "Found 1 jobs to dispatch").
        Dentro ciascun project, con walltime="2h" (vedi <distjob> sopra)
        "btool gen" produce PIU' *.dist per project, non piu' uno solo:
-       BSP (192 run: 12 istanze x 8 setting x 2 backend) -> ~16 *.dist,
-       PUP e HRP (100 run ciascuno: 10 istanze x 5 setting x 2 backend)
-       -> ~9 *.dist ciascuno, per un totale di ~34 job SLURM invece di 3-4.
-       "btool run-dist" (default -j 100) li sottomette tutti; restano ben
-       sotto il MaxSubmit=100 per utente su kr/kr-big (sacctmgr, verificato
-       2026-07-10), quindi SLURM li accoda e li fa partire via via che i
-       nodi di kr (10) e kr-big (2) si liberano, invece di tenerne solo 3
-       impegnati per l'intera durata. I 3/4_run_benchmark_*.sh ciclano
-       comunque sui 3 nomi di project (uno per famiglia): e' "btool
-       run-dist" che, per ciascun project, dispaccia tutti i suoi *.dist.
+       BSP (320 run: 20 istanze [10..200 step 10, esteso 2026-07-22] x 8
+       setting x 2 backend) -> ~27 *.dist stimati, PUP e HRP (100 run
+       ciascuno: 10 istanze x 5 setting x 2 backend) -> ~9 *.dist ciascuno,
+       per un totale di ~45 job SLURM invece di 3-4 (stima approssimata:
+       "run per *.dist" dipende dal tempo reale di ciascun run, che ora va
+       fino a 600s/run col timeout alzato, non solo dal conteggio). Restano
+       comunque ben sotto il MaxSubmit=100 per utente su kr/kr-big (sacctmgr,
+       verificato 2026-07-10).
+       "btool run-dist" (default -j 100) li sottomette tutti; SLURM li
+       accoda e li fa partire via via che i nodi di kr (10) e kr-big (2) si
+       liberano, invece di tenerne solo 3 impegnati per l'intera durata.
+       I 3/4_run_benchmark_*.sh ciclano comunque sui 3 nomi di project (uno
+       per famiglia): e' "btool run-dist" che, per ciascun project,
+       dispaccia tutti i suoi *.dist.
        "parallel=1" nel <seqjob>/<distjob> resta invariato: il
        parallelismo e' TRA i job (nodi/allocazioni diverse), non dentro lo
-       stesso job (che resta sequenziale, ~12 run a testa), cosi' le
-       misure di tempo restano pulite. -->
+       stesso job (che resta sequenziale), cosi' le misure di tempo restano
+       pulite. -->
   <project name="study-hpc-bsp" job="dist-hpc">
     <runtag machine="hpc" benchmark="BSP" tag="bsp"/>
   </project>

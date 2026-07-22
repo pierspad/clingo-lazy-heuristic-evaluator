@@ -6,7 +6,7 @@
 #      sh 2_run_benchmark_full.sh
 #
 #  Cosa fa: prepara l'ambiente (venv/btool/runlim/clingo), ripristina il set
-#  canonico di istanze da benchmarks.bak/ (BSP n=3..30, PUP 20..200,
+#  canonico di istanze da benchmarks.bak/ (BSP 10..200, PUP 20..200,
 #  HRP 2..20), esegue tutto in locale e produce results.xml + graphs/.
 #
 #  Idempotente: i run gia' completati (.finished) vengono saltati, quindi
@@ -24,7 +24,8 @@ set -euo pipefail
 # ============================================================
 #  COSTANTI MODIFICABILI
 # ============================================================
-FULL_TIMEOUT=300     # <-- timeout per istanza, in SECONDI (modifica qui)
+FULL_TIMEOUT=600     # <-- timeout per istanza, in SECONDI (modifica qui)
+                     # 2026-07-22: alzato da 300 a 600, v. 2_run_benchmark_full.sh in root.
 # ============================================================
 
 # NB: questa copia vive in bench-runs-local/, un livello sotto la root del

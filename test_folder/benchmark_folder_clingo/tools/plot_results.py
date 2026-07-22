@@ -412,9 +412,32 @@ def _exclude_set(excl: dict) -> set[str]:
 
 
 # ===========================================================================
+# Zoom a posteriori sulla scala (size/N): quando UNA variante isolata scala
+# molto oltre le altre (es. su BSP tutte si fermano a N=100 tranne "la" che
+# arriva a 200), l'asse x/y del grafico si auto-scala sul suo punto piu'
+# estremo e le differenze fra le altre varianti (che si fermano molto prima)
+# restano schiacciate a sinistra. Ogni entry qui sotto genera un ALBERO
+# GEMELLO aggiuntivo (stessi metrics/dashboard/ratio/ground della family, non
+# serve rieseguire i benchmark: opera solo in fase di plot sugli STESSI dati
+# aggregati) con i punti a size > max_size scartati PRIMA di disegnare, cosi'
+# l'asse si auto-scala sul sottoinsieme leggibile.
+# Cartella gemella: "<FAM_SUBDIR>-<slug>" (stesso schema di VARIANT_EXCLUSIONS,
+# namespace condiviso: usa slug distinti dalle esclusioni). Se per una data
+# family il cap non taglia nulla (la taglia massima reale e' gia' <= cap), lo
+# zoom e' un no-op e viene saltato in silenzio per quella family (non
+# duplica l'albero main).
+# Esempio per aggiungerne uno nuovo:
+#   {"slug": "zoom150", "max_size": 150, "label": "zoom fino a N=150"},
+SIZE_ZOOMS = [
+    {"slug": "zoom100", "max_size": 100, "label": "zoom fino a N=100"},
+]
+
+
+# ===========================================================================
 def render_backend_tree(agg: pd.DataFrame, backend: str, base: Path, ground: pd.DataFrame | None,
                         *, variants: list[str] | None = None,
-                        dir_suffix: str = "", label_suffix: str = "") -> int:
+                        dir_suffix: str = "", label_suffix: str = "",
+                        size_cap: int | None = None) -> int:
     variants = variants if variants is not None else MAIN_VARIANTS
     tree = base / f"graphs-{backend}"
     n = 0
@@ -423,6 +446,10 @@ def render_backend_tree(agg: pd.DataFrame, backend: str, base: Path, ground: pd.
         agg_fb = agg_b[agg_b["family"] == family]
         if agg_fb.empty:
             continue
+        if size_cap is not None:
+            if agg_fb["size"].max() <= size_cap:
+                continue  # nessun dato oltre il cap: identico all'albero main, non duplicarlo
+            agg_fb = agg_fb[agg_fb["size"] <= size_cap]
         fam_dir = tree / f"{FAM_SUBDIR[family]}{dir_suffix}"
         # Overwrite pulito: se la cartella esiste gia' (run precedente, o slug
         # ridefinito con altre varianti escluse) la si butta e si riparte da
@@ -770,16 +797,18 @@ def _verdict(agg_f: pd.DataFrame, family: str, fam_dir: Path) -> dict:
 # ===========================================================================
 # Cartella riassuntiva "colpo d'occhio": copia (rinominata) di OGNI dashboard
 # gia' generata altrove — albero main, ogni albero di esclusione varianti
-# (VARIANT_EXCLUSIONS: no_ga, no_ga_lc, ...), ogni studio esplorativo
-# (EXPLORATORY_STUDIES), per ciascun backend/famiglia — piu' i 3 verdetti
-# native-vs-prolog, in un'unica cartella piatta: <base>/riassunto_grafici/.
+# (VARIANT_EXCLUSIONS: no_ga, no_ga_lc, ...), ogni zoom di scala (SIZE_ZOOMS:
+# zoom100, ...), ogni studio esplorativo (EXPLORATORY_STUDIES), per ciascun
+# backend/famiglia — piu' i 3 verdetti native-vs-prolog, in un'unica cartella
+# piatta: <base>/riassunto_grafici/.
 # Sono COPIE (shutil.copy2): gli originali restano al loro posto nei
 # rispettivi alberi graphs-*/. L'elenco e' costruito DINAMICAMENTE da
-# BACKENDS/VARIANT_EXCLUSIONS/EXPLORATORY_STUDIES invece che da una lista
-# statica: aggiungendo una nuova esclusione o uno studio esplorativo (come
-# gia' successo con "no_ga_lc") il riassunto li include da solo, senza
+# BACKENDS/VARIANT_EXCLUSIONS/SIZE_ZOOMS/EXPLORATORY_STUDIES invece che da una
+# lista statica: aggiungendo una nuova esclusione, zoom o studio esplorativo
+# (come gia' successo con "no_ga_lc") il riassunto li include da solo, senza
 # toccare questa funzione. Combinazioni senza dati (es. uno studio
-# esplorativo disponibile solo per BSP) vengono saltate in silenzio.
+# esplorativo disponibile solo per BSP, o uno zoom che per una family e' un
+# no-op) vengono saltate in silenzio.
 # ===========================================================================
 SUMMARY_DIR_NAME = "riassunto_grafici"
 
@@ -795,6 +824,9 @@ def _summary_sources(base: Path) -> list[tuple[str, Path]]:
             for excl in VARIANT_EXCLUSIONS:
                 sources.append((f"{tag}_{excl['slug']}",
                                 base / f"graphs-{backend}" / f"{fam_dir}-{excl['slug']}" / "_dashboard.png"))
+            for zoom in SIZE_ZOOMS:
+                sources.append((f"{tag}_{zoom['slug']}",
+                                base / f"graphs-{backend}" / f"{fam_dir}-{zoom['slug']}" / "_dashboard.png"))
             for study in EXPLORATORY_STUDIES:
                 sources.append((f"{tag}_expl_{study['slug']}",
                                 base / f"graphs-{backend}" / "exploratory" / study["slug"]
@@ -832,6 +864,13 @@ def render_summary(base: Path) -> int:
 # (uno per id qui sotto) e fa watch fino al completamento.
 # "summary" fa eccezione: DIPENDE dall'aver gia' completato tutti i "*:main"
 # + "comparison" (copia le loro PNG), va eseguito per ultimo.
+# Oltre a "<backend>:main"/"<backend>:exploratory"/"<backend>:excl:<slug>" ci
+# sono anche "<backend>:zoom:<slug>" (uno per ogni SIZE_ZOOMS): stesso albero
+# main ma con la scala (size) limitata, per leggere meglio i casi in cui una
+# sola variante scala molto oltre le altre. Sono job "di plotting puro": non
+# serve rieseguire i benchmark per aggiungerne uno nuovo, basta rilanciare
+# 6_plot_graphs_hpc.sh (funziona anche in locale, v. quel file) sugli stessi
+# results.xml/xlsx gia' scaricati.
 # ===========================================================================
 def build_jobs(agg: pd.DataFrame, base: Path, ground: pd.DataFrame | None
                ) -> tuple[dict[str, Callable[[], int]], list[str], dict]:
@@ -860,6 +899,18 @@ def build_jobs(agg: pd.DataFrame, base: Path, ground: pd.DataFrame | None
 
             jid = f"{backend}:excl:{excl['slug']}"
             jobs[jid] = _run_excl
+            order.append(jid)
+
+        for zoom in SIZE_ZOOMS:
+
+            def _run_zoom(b=backend, zoom=zoom) -> int:
+                return render_backend_tree(agg, b, base, ground,
+                                           dir_suffix=f"-{zoom['slug']}",
+                                           label_suffix=f" — {zoom['label']}",
+                                           size_cap=zoom["max_size"])
+
+            jid = f"{backend}:zoom:{zoom['slug']}"
+            jobs[jid] = _run_zoom
             order.append(jid)
 
     def _run_comparison() -> int:

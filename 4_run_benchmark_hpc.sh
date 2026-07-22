@@ -20,7 +20,14 @@ fi
 # ============================================================
 #  COSTANTI MODIFICABILI
 # ============================================================
-FULL_TIMEOUT=300     
+FULL_TIMEOUT=600
+# 2026-07-22: alzato da 300 a 600. A 300s 'gc' su BSP timeoutava GIA' a
+# N=120 (227s = 76% budget) e gc_noheur/ga_weak erano al 71-77%; col range
+# BSP esteso a 200 (v. benchmarks/BSP/) sarebbe stato ancora piu' stretto,
+# senza dare nuova informazione (solo altri timeout, non nuove separazioni
+# tra le varianti). 600s combacia anche con quanto il <distjob> di
+# runscript.xml dichiarava gia' (ma che FULL_TIMEOUT=300 sovrascriveva).
+# v. [[project_graphs_analysis_2026-07-22]].
 # ============================================================
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"

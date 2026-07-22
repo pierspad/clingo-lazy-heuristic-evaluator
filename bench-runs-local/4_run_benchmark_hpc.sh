@@ -2,7 +2,7 @@
 # ============================================================
 #  MIRROR LOCALE della suite completa HPC (4_run_benchmark_hpc.sh in root).
 #
-#  Stessi parametri della full HPC (timeout 300s, set canonico di istanze),
+#  Stessi parametri della full HPC (timeout 600s, set canonico di istanze),
 #  ma eseguita via run_btool_pipeline (run-seq) invece che via SLURM/btool
 #  run-dist. In pratica coincide con 2_run_benchmark_full.sh: la teniamo come
 #  file separato solo per rispecchiare 1:1 i nomi degli script HPC e per non
@@ -16,7 +16,7 @@
 if [ -z "${BASH_VERSION:-}" ]; then exec bash "$0" "$@"; fi
 set -euo pipefail
 
-FULL_TIMEOUT=300
+FULL_TIMEOUT=600  # 2026-07-22: allineato a 4_run_benchmark_hpc.sh in root
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)"
 TEST_DIR="$REPO_ROOT/test_folder/benchmark_folder_clingo"
