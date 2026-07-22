@@ -386,11 +386,21 @@ def _save(fig, path: Path):
 # varianti tolte assieme dallo stesso albero).
 # Cartella gemella: "<FAM_SUBDIR>-<slug>" (es. "1_BSP-no_ga"), stesso livello
 # di "1_BSP" dentro graphs-native/ e graphs-prolog/.
-# Estendibile in futuro: basta aggiungere altre entry a questa lista, il
-# resto della pipeline (render_backend_tree e le funzioni _render_*) legge
-# gia' `variants`/`dir_suffix`/`label_suffix` in modo generico.
+# Estendibile in futuro: per aggiungere una nuova combinazione basta
+# accodare un'altra entry a questa lista — non serve toccare nient'altro:
+# il resto della pipeline (render_backend_tree, _summary_sources, build_jobs)
+# legge gia' `slug`/`exclude`/`label` in modo generico e (ri)scrive la
+# cartella gemella "<FAM_SUBDIR>-<slug>" da zero ad ogni run (v. cleanup in
+# render_backend_tree). Se il run successivo cambia la definizione di uno
+# slug esistente (es. si aggiunge una variante all'exclude), la cartella
+# viene interamente rigenerata: nessun PNG "vecchio" rimane in giro.
+#   "exclude": una variante singola (stringa) o piu' varianti (lista) da
+#              togliere dalle MAIN_VARIANTS per QUESTO albero gemello.
+# Esempio per aggiungerne una nuova ("solo senza gc"):
+#   {"slug": "no_gc", "exclude": "gc", "label": "senza G&S Clingo (gc)"},
 VARIANT_EXCLUSIONS = [
     {"slug": "no_ga", "exclude": "ga", "label": "senza G&S Alpha (ga)"},
+    {"slug": "no_lc", "exclude": "lc", "label": "senza Lazy Clingo (lc)"},
     {"slug": "no_ga_lc", "exclude": ["ga", "lc"],
      "label": "senza G&S Alpha (ga) e Lazy Clingo (lc)"},
 ]
@@ -414,6 +424,10 @@ def render_backend_tree(agg: pd.DataFrame, backend: str, base: Path, ground: pd.
         if agg_fb.empty:
             continue
         fam_dir = tree / f"{FAM_SUBDIR[family]}{dir_suffix}"
+        # Overwrite pulito: se la cartella esiste gia' (run precedente, o slug
+        # ridefinito con altre varianti escluse) la si butta e si riparte da
+        # zero, cosi' non restano PNG orfani di una combinazione precedente.
+        shutil.rmtree(fam_dir, ignore_errors=True)
 
         for metric in METRICS:
             if metric.key not in agg_fb.columns or agg_fb[metric.key].dropna().empty:
@@ -597,6 +611,7 @@ def render_exploratory_tree(agg: pd.DataFrame, backend: str, base: Path,
             if agg_fb.empty or not (present & set(expl)):
                 continue
             fam_dir = tree / study["slug"] / FAM_SUBDIR[family]
+            shutil.rmtree(fam_dir, ignore_errors=True)  # v. nota overwrite in render_backend_tree
 
             keys = [k for k in study["metrics"] if _has_data(agg_fb, k)]
             for k in keys:
@@ -647,6 +662,7 @@ def render_comparison_tree(agg: pd.DataFrame, base: Path) -> tuple[int, dict]:
         if agg_f.empty:
             continue
         fam_dir = tree / FAM_SUBDIR[family]
+        shutil.rmtree(fam_dir, ignore_errors=True)  # v. nota overwrite in render_backend_tree
         for area in COMPARISON_AREAS:
             n += _plot_comparison_metric(agg_f, area, family, fam_dir)
         verdicts[family] = _verdict(agg_f, family, fam_dir)
@@ -795,6 +811,9 @@ def render_summary(base: Path) -> int:
     (v. _summary_sources), rinominati in modo descrittivo
     (<backend>_<famiglia>_<variante|expl_<studio>>.png / verdict_<famiglia>.png)."""
     out_dir = base / SUMMARY_DIR_NAME
+    # overwrite pulito: se uno slug/studio e' stato rinominato o rimosso da
+    # VARIANT_EXCLUSIONS/EXPLORATORY_STUDIES, la copia vecchia non deve restare.
+    shutil.rmtree(out_dir, ignore_errors=True)
     out_dir.mkdir(parents=True, exist_ok=True)
     n = 0
     for dst_name, src in _summary_sources(base):

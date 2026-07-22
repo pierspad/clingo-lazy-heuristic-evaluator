@@ -49,6 +49,12 @@ function copyhpcgraphs() {
     "benchmark_folder_clingo/eval.log|eval.log"
     "benchmark_folder_clingo/results.xml|results.xml"
     "benchmark_folder_clingo/results-short.xml|results-short.xml"
+    # Dati grezzi, non solo i PNG gia' disegnati: con questi + 6_plot_graphs_hpc.sh
+    # (funziona anche in locale, senza SLURM) puoi rigenerare/ricombinare i grafici
+    # sul portatile senza dover ripassare dall'HPC (es. dopo aver aggiunto una nuova
+    # combinazione a VARIANT_EXCLUSIONS in tools/plot_results.py).
+    "benchmark_folder_clingo/output/ground_counts.csv|ground_counts-full.csv"
+    "benchmark_folder_clingo/output-short-hpc/ground_counts.csv|ground_counts-short-hpc.csv"
   )
 
   echo "🔄 Avvio sincronizzazione grafici e log analitici da HPC..."

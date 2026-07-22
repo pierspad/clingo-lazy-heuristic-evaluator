@@ -1,30 +1,42 @@
 #!/usr/bin/env bash
 # ============================================================
-#  GENERAZIONE GRAFICI IN PARALLELO SU CLUSTER (SLURM) - Nome file: 6_plot_graphs_hpc.sh
+#  GENERAZIONE GRAFICI (SLURM se disponibile, altrimenti in locale)
+#  Nome file: 6_plot_graphs_hpc.sh
 #
 #  tools/plot_results.py espone un registro di job indipendenti
 #  (--list-jobs / --only <job_id>): ognuno scrive in una sua sottocartella
-#  (nessuna sovrascrittura incrociata), quindi invece di girare in sequenza
-#  su un solo core (~5 minuti) si sottomettono come job SLURM separati e
-#  si lasciano spalmare sui nodi liberi di kr/kr-big (v. [[project-hpc-job-
-#  granularity]]: erano per lo piu' idle). L'ultimo job, "summary", DIPENDE
-#  dagli altri (copia le PNG gia' prodotte da *:main e comparison): resta
-#  fuori dal parallelo e viene rilanciato per ultimo, in locale (e' solo
-#  I/O, istantaneo).
+#  (nessuna sovrascrittura incrociata). QUESTO stesso script funziona su
+#  DUE macchine diverse, senza flag da ricordare:
+#    - sull'HPC (sbatch/squeue/sacct in PATH): i job vengono sottomessi come
+#      job SLURM separati e spalmati sui nodi liberi di kr/kr-big (v.
+#      [[project-hpc-job-granularity]]: erano per lo piu' idle) invece di
+#      girare in sequenza su un solo core (~5 minuti);
+#    - in locale (nessun sbatch: laptop/desktop, dopo un copyhpcgraphs) i
+#      job vengono semplicemente eseguiti uno dopo l'altro nello stesso
+#      processo bash, senza SLURM: e' la stessa identita' di job/cartelle,
+#      solo senza parallelismo (comunque <1 minuto in pratica).
+#  In entrambi i casi l'ultimo job, "summary", DIPENDE dagli altri (copia le
+#  PNG gia' prodotte da *:main e comparison): resta fuori dal parallelo e
+#  viene eseguito per ultimo, in locale (e' solo I/O, istantaneo).
 #
-#  Uso:
+#  Uso (identico sulle due macchine):
 #    sh 6_plot_graphs_hpc.sh [--results FILE] [--out-base DIR]
 #                             [--ground-counts FILE] [--machine NAME]
 #  Senza argomenti usa gli stessi default che 5_evaluate_hpc.sh passava
 #  finora a plot_results.py (results.xml in test_folder/benchmark_folder_clingo/,
 #  out-base=".." -> test_folder/); infatti 5_evaluate_hpc.sh delega qui la
-#  Fase 4 invece di chiamare plot_results.py direttamente.
+#  Fase 4 invece di chiamare plot_results.py direttamente. --machine resta
+#  "hpc" di default ANCHE quando lo script gira in locale: seleziona quali
+#  run dentro results.xml guardare (il tag scritto da chi ha ESEGUITO i
+#  benchmark), non la macchina su cui si disegnano i grafici — se copi un
+#  results.xml prodotto sul cluster (copyhpcgraphs) e lo ripassi qui in
+#  locale, --machine hpc resta corretto.
 #
-#  Lo script sottomette i job e POI FA DA SOLO watch (polling squeue sui
-#  soli job che ha appena creato, non su tutta la coda dell'utente) finche'
-#  non sono tutti finiti: il prompt torna libero solo a grafici pronti, non
-#  serve lanciare wait_hpc.sh a mano ne' rilanciare lo script una seconda
-#  volta per il riepilogo.
+#  Ramo SLURM: lo script sottomette i job e POI FA DA SOLO watch (polling
+#  squeue sui soli job che ha appena creato, non su tutta la coda
+#  dell'utente) finche' non sono tutti finiti: il prompt torna libero solo
+#  a grafici pronti, non serve lanciare wait_hpc.sh a mano ne' rilanciare lo
+#  script una seconda volta per il riepilogo.
 # ============================================================
 
 if [ -z "${BASH_VERSION:-}" ]; then exec bash "$0" "$@"; fi
@@ -64,7 +76,7 @@ while [ $# -gt 0 ]; do
 done
 
 main() {
-  log "GRAFICI IN PARALLELO SU CLUSTER — partizione '$PARTITION'"
+  log "GENERAZIONE GRAFICI — SLURM se disponibile (partizione '$PARTITION'), altrimenti in locale"
 
   [ -d "$TEST_DIR" ] || die "cartella non trovata: $TEST_DIR
   Il repo su questa macchina sembra incompleto (push parziale/interrotto?). Verifica con:
@@ -101,11 +113,36 @@ main() {
   done
   log "${#PARALLEL_JOBS[@]} job paralleli da sottomettere (+ 'summary' in locale a fine watch)."
 
+  local MODE
+  if command -v sbatch >/dev/null 2>&1 && command -v squeue >/dev/null 2>&1; then
+    MODE="HPC parallelo"
+    run_jobs_slurm "$VENV_PYTHON" "${PARALLEL_JOBS[@]}"
+  else
+    MODE="locale sequenziale"
+    log "sbatch/squeue non trovati in PATH: niente SLURM qui, eseguo i ${#PARALLEL_JOBS[@]} job in sequenza nel processo corrente."
+    run_jobs_local "$VENV_PYTHON" "${PARALLEL_JOBS[@]}"
+  fi
+
+  log "Eseguo il job 'summary' in locale (copia le PNG gia' prodotte in riassunto_grafici/) ..."
+  "$VENV_PYTHON" tools/plot_results.py --results "$RESULTS" --machine "$MACHINE" \
+    --out-base "$OUT_BASE" "${gc_arg[@]}" --only summary
+
+  summarize "$RESULTS" "$OUT_BASE" "$MODE"
+}
+
+# ------------------------------------------------------------
+#  Ramo HPC: un job SLURM per ogni id, poi watch (poll squeue) + verifica
+#  sacct. Identico al comportamento storico dello script.
+# ------------------------------------------------------------
+run_jobs_slurm() {
+  local venv_python="$1"; shift
+  local -a parallel_jobs=("$@")
+
   local LOG_DIR="$TEST_DIR/output/plotlogs"
   mkdir -p "$LOG_DIR"
 
-  local SLURM_IDS=() safe out sid
-  for jid in "${PARALLEL_JOBS[@]}"; do
+  local SLURM_IDS=() safe out sid jid
+  for jid in "${parallel_jobs[@]}"; do
     safe="$(echo "$jid" | tr ':' '_')"
     out="$(sbatch --job-name="plot-$safe" \
                   --partition="$PARTITION" \
@@ -113,7 +150,7 @@ main() {
                   --mem="$MEM_PER_JOB" \
                   --time="$TIME_PER_JOB" \
                   --output="$LOG_DIR/${safe}-%j.out" \
-                  --wrap="cd '$TEST_DIR' && '$VENV_PYTHON' tools/plot_results.py --results '$RESULTS' --machine '$MACHINE' --out-base '$OUT_BASE' ${gc_arg[*]:-} --only '$jid'")" \
+                  --wrap="cd '$TEST_DIR' && '$venv_python' tools/plot_results.py --results '$RESULTS' --machine '$MACHINE' --out-base '$OUT_BASE' ${gc_arg[*]:-} --only '$jid'")" \
       || die "sbatch fallito per il job '$jid' (output sopra)"
     sid="$(echo "$out" | grep -oE '[0-9]+$')"
     [ -n "$sid" ] || die "non riesco a leggere lo SLURM job id dall'output di sbatch: $out"
@@ -154,12 +191,33 @@ main() {
   else
     ok "Tutti i ${#SLURM_IDS[@]} job sono COMPLETED."
   fi
+}
 
-  log "Eseguo il job 'summary' in locale (copia le PNG gia' prodotte in riassunto_grafici/) ..."
-  "$VENV_PYTHON" tools/plot_results.py --results "$RESULTS" --machine "$MACHINE" \
-    --out-base "$OUT_BASE" "${gc_arg[@]}" --only summary
+# ------------------------------------------------------------
+#  Ramo locale (nessun SLURM in PATH): stessi job, stesso --only, ma
+#  eseguiti uno dopo l'altro nel processo corrente. Nessun poll necessario:
+#  ogni chiamata a plot_results.py e' gia' sincrona.
+# ------------------------------------------------------------
+run_jobs_local() {
+  local venv_python="$1"; shift
+  local -a parallel_jobs=("$@")
 
-  summarize "$RESULTS" "$OUT_BASE" "HPC parallelo"
+  local jid failed=0
+  for jid in "${parallel_jobs[@]}"; do
+    log "  -> $jid ..."
+    if "$venv_python" tools/plot_results.py --results "$RESULTS" --machine "$MACHINE" \
+        --out-base "$OUT_BASE" "${gc_arg[@]}" --only "$jid"; then
+      :
+    else
+      warn "job '$jid' terminato con errore (output sopra)"
+      failed=$((failed + 1))
+    fi
+  done
+  if [ "$failed" -gt 0 ]; then
+    warn "$failed/${#parallel_jobs[@]} job falliti: eseguo comunque 'summary', ma alcune PNG potrebbero mancare o essere quelle di un run precedente."
+  else
+    ok "Tutti i ${#parallel_jobs[@]} job locali completati."
+  fi
 }
 
 main
