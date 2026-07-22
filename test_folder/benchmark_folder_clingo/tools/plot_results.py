@@ -504,12 +504,6 @@ def _render_dashboard(agg_fb: pd.DataFrame, family: str, backend: str, fam_dir: 
                           variants=MAIN_LAZY_VARIANTS if metric.lazy_only else variants)
     for ax in flat[len(panels):]:
         ax.axis("off")
-    # separatore visivo tra blocco CORE e blocco EXTRA accodato (solo la riga,
-    # senza etichetta testuale al centro)
-    if extra and pad >= 0:
-        sep_y = 1.0 - (len(core) + pad) / ncol / nrow
-        fig.add_artist(plt.Line2D([0.02, 0.98], [sep_y, sep_y], transform=fig.transFigure,
-                                  color="#BBB", linewidth=1.2, linestyle="--"))
     fig.suptitle(f"{family} Dashboard — {backend}{label_suffix}", fontsize=15, fontweight="bold")
     fig.tight_layout(rect=[0, 0, 1, 0.97])
     _save(fig, fam_dir / "_dashboard.png")

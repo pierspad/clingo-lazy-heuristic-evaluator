@@ -68,7 +68,7 @@ function copyhpcgraphs() {
     rsync -avz --progress \
       --include='*/' \
       "${remote_host}:${base_remote_dir}/${src}" \
-      "${local_target}${dst}" 2>/dev/null || echo "⚠️  Nota: ${src} non ancora presente sull'HPC (normale se il benchmark non è finito)."
+      "${local_target}${dst}" 2>/dev/null || echo "⚠️  Nota: ${src} non presente sull'HPC (normale se non hai lanciato questo scenario, es. short-hpc durante una full run, o se ground_counts.csv non è mai stato generato a mano con tools/ground_counts.py — NON implica che la run in corso sia incompleta)."
   done
 
   echo "✅ Sincronizzazione completata. Controlla la cartella: $local_target"
