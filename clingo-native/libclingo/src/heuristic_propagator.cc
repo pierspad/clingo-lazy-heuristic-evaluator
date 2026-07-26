@@ -15,8 +15,71 @@
 
 namespace {
 
+// ---------------------------------------------------------------------------
+// Strumentazione del propagatore (simmetrica a quella del backend prolog, v.
+// clingo-prolog/libclingo/src/heuristic_propagator.cc): stessi nomi di campo,
+// stesso formato di riga, cosi' il resultparser e i grafici confrontano i due
+// backend senza casi speciali. L'unica differenza semantica e' che qui non
+// esiste una fase di query (nessun motore esterno da interrogare): il costo
+// del decidere e' tutto in memoria.
+// ---------------------------------------------------------------------------
+using LazyStatsClock = std::chrono::steady_clock;
+
+double elapsed_ms(LazyStatsClock::time_point start) {
+    return std::chrono::duration<double, std::milli>(LazyStatsClock::now() - start).count();
+}
+
+// RAII: accumula in `target` i ms trascorsi nello scope. Con active=false non
+// legge nemmeno l'orologio, cosi' a statistiche disabilitate il costo e' un
+// solo branch prevedibile anche nei percorsi caldi (propagate/undo/decide).
+class ScopedLazyStatsTimer {
+public:
+    ScopedLazyStatsTimer(bool active, double &target)
+        : active_(active)
+        , target_(target)
+        , start_(active ? LazyStatsClock::now() : LazyStatsClock::time_point{}) {}
+
+    ScopedLazyStatsTimer(ScopedLazyStatsTimer const &) = delete;
+    ScopedLazyStatsTimer &operator=(ScopedLazyStatsTimer const &) = delete;
+
+    ~ScopedLazyStatsTimer() {
+        if (active_) {
+            target_ += elapsed_ms(start_);
+        }
+    }
+
+private:
+    bool active_;
+    double &target_;
+    LazyStatsClock::time_point start_;
+};
 
 } // namespace
+
+// I flag d'ambiente sono letti una sola volta: non cambiano a processo
+// avviato e queste funzioni stanno nei percorsi caldi.
+static bool env_flag_enabled(char const *name) {
+    char const *value = std::getenv(name);
+    if (value == nullptr) return false;
+
+    std::string const text(value);
+    return text == "1" ||
+           text == "true" ||
+           text == "TRUE" ||
+           text == "on" ||
+           text == "ON" ||
+           text == "yes" ||
+           text == "YES";
+}
+
+// LAZY_HEURISTIC_STATS e' il nome canonico (vale per entrambi i backend);
+// LAZY_PROLOG_STATS resta accettato perche' e' quello gia' esportato dagli
+// script di benchmark esistenti.
+static bool lazy_native_stats_enabled() {
+    static bool const enabled = env_flag_enabled("LAZY_HEURISTIC_STATS") ||
+                                env_flag_enabled("LAZY_PROLOG_STATS");
+    return enabled;
+}
 
 static int normalize_sign(int value) {
     if (value > 0) return +1;
@@ -350,7 +413,34 @@ void HeuristicPropagator::init(Clingo::PropagateInit &init) {
 
 
 
-HeuristicPropagator::~HeuristicPropagator() = default;
+HeuristicPropagator::~HeuristicPropagator() {
+    print_propagator_stats();
+}
+
+// Riga di riepilogo su stderr, stesso formato del backend prolog
+// ("[lazy-prolog] summary key=value ..."): il resultparser riconosce entrambi
+// i prefissi e mappa le chiavi sulle stesse misure.
+void HeuristicPropagator::print_propagator_stats() const {
+    if (!lazy_native_stats_enabled() || !stats_.used) return;
+
+    double const avg_candidates = stats_.decide_calls == 0
+        ? 0.0
+        : static_cast<double>(stats_.total_candidates_seen) /
+              static_cast<double>(stats_.decide_calls);
+
+    std::cerr << "[lazy-native] summary"
+              << " decide_calls=" << stats_.decide_calls
+              << " decide_hits=" << stats_.decide_hits
+              << " total_decide_time_ms=" << stats_.total_decide_time_ms
+              << " total_state_sync_time_ms=" << stats_.total_state_sync_time_ms
+              << " total_candidate_scan_time_ms=" << stats_.total_candidate_scan_time_ms
+              << " total_candidates_seen=" << stats_.total_candidates_seen
+              << " max_candidates_seen=" << stats_.max_candidates_seen
+              << " avg_candidates_per_decide=" << avg_candidates
+              << " propagate_calls=" << stats_.propagate_calls
+              << " undo_calls=" << stats_.undo_calls
+              << "\n";
+}
 
 
 std::unordered_set<Clingo::Symbol> HeuristicPropagator::collect_predicates_used_by_lazy_templates() const {
@@ -1060,6 +1150,11 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init,
     heuristic_rule_templates_ = std::move(rule_templates);
     if (heuristic_rule_templates_.empty()) return;
 
+    // Da qui in poi il propagatore lazy e' davvero attivo: e' la condizione
+    // che rende sensato stampare il summary (e che il flag lazy_active del
+    // resultparser usa per intercettare i fallback silenziosi).
+    stats_.used = true;
+
     GroundLiteralIndex ground_literal_index = build_ground_literal_index_for_predicates(init, atoms);
 
     materialize_lazy_candidates_and_register_watches(init, ground_literal_index);
@@ -1071,6 +1166,10 @@ void HeuristicPropagator::init_lazy_mode(Clingo::PropagateInit &init,
 
 void HeuristicPropagator::propagate(Clingo::PropagateControl &control, Clingo::LiteralSpan changes) {
     auto assignment = control.assignment();
+
+    bool const stats = lazy_native_stats_enabled();
+    ScopedLazyStatsTimer sync_timer(stats, stats_.total_state_sync_time_ms);
+    if (stats) ++stats_.propagate_calls;
 
     for (auto lit : changes) {
         auto contribution_it = aggregate_contributions_by_lit_.find(lit);
@@ -1091,6 +1190,10 @@ void HeuristicPropagator::propagate(Clingo::PropagateControl &control, Clingo::L
 
 void HeuristicPropagator::undo(Clingo::PropagateControl const &control, Clingo::LiteralSpan changes) noexcept {
     auto assignment = control.assignment();
+
+    bool const stats = lazy_native_stats_enabled();
+    ScopedLazyStatsTimer sync_timer(stats, stats_.total_state_sync_time_ms);
+    if (stats) ++stats_.undo_calls;
 
     for (auto lit : changes) {
         auto contribution_it = aggregate_contributions_by_lit_.find(lit);
@@ -1114,8 +1217,34 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
                                                Clingo::literal_t fallback) noexcept {
     static_cast<void>(thread_id);
 
+    bool const stats = lazy_native_stats_enabled();
+    ScopedLazyStatsTimer decide_timer(stats, stats_.total_decide_time_ms);
+    if (stats) ++stats_.decide_calls;
+    // Candidati "visti": entry della coda di rank esaminate in questa
+    // chiamata, incluse quelle scartate perche' gia' assegnate o stantie.
+    // E' l'analogo dei candidati che il backend prolog riceve dalla query.
+    size_t candidates_seen = 0;
+    // Registra i contatori per-chiamata anche sui return anticipati dentro il
+    // loop (sono la strada normale, non l'eccezione).
+    struct DecideStatsGuard {
+        bool active;
+        LazyPropagatorStats &s;
+        size_t &seen;
+        Clingo::literal_t const &result;
+        ~DecideStatsGuard() {
+            if (!active) return;
+            s.total_candidates_seen += seen;
+            s.max_candidates_seen = std::max(s.max_candidates_seen, seen);
+            if (result != 0) ++s.decide_hits;
+        }
+    };
+    Clingo::literal_t decided = 0;
+    DecideStatsGuard guard{stats, stats_, candidates_seen, decided};
+
     try {
+        ScopedLazyStatsTimer scan_timer(stats, stats_.total_candidate_scan_time_ms);
         while (!active_decision_ranks_.empty()) {
+            ++candidates_seen;
             DecisionRankKey const rank_key = *active_decision_ranks_.begin();
             auto state_it = target_states_.find(rank_key.target_lit);
             if (state_it == target_states_.end()) {
@@ -1138,7 +1267,8 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
                 continue;
             }
 
-            return apply_resolved_sign(state.sign, rank_key.target_lit, fallback);
+            decided = apply_resolved_sign(state.sign, rank_key.target_lit, fallback);
+            return decided;
         }
 
         Clingo::literal_t const fallback_target = fallback > 0 ? fallback : -fallback;
@@ -1146,7 +1276,8 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
             assignment.truth_value(fallback_target) == Clingo::TruthValue::Free) {
             auto state_it = target_states_.find(fallback_target);
             if (state_it != target_states_.end() && state_it->second.sign.active) {
-                return apply_resolved_sign(state_it->second.sign, fallback_target, fallback);
+                decided = apply_resolved_sign(state_it->second.sign, fallback_target, fallback);
+                return decided;
             }
         }
     }

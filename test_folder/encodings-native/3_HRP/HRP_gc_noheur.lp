@@ -1,23 +1,3 @@
-% ============================================================
-% HRP (House Reconfiguration Problem) - baseline SENZA euristiche.
-% Refactoring fedele dell'encoding ufficiale Alpha
-%   ALPHA/src/test/resources/DomainHeuristics/House/house_alpha_2021-02-04.asp
-% (Romero 1, Sez. 6.2). Verificato answer-set-equivalente all'originale
-% (stessa proiezione su cabinetTOthing/2, roomTOcabinet/2) sia a legacy
-% vuoto sia in riconfigurazione.
-%
-% Adattamenti (motivati dalla pipeline a 2 backend):
-%   - legacyConfig(p(..)) e reuse/delete(p(..)) APPIATTITI in predicati a
-%     tupla NUMERICA (legacyCabinetThing/2, reuseCabinetThing/2, ...): il DSL
-%     nativo (__heuristic) lavora solo su tuple numeriche, niente termini
-%     funzionali annidati come reuse(cabinetTOthing(C,T));
-%   - fatti diretti person/1, thing/1, personTOthing/2 al posto della
-%     versione legacyConfig(person/thing/personTOthing) dell'originale.
-%
-% Le istanze forniscono: person/1, thing/1, personTOthing/2, thingLong/1,
-%   cabinetDomainNew/1, roomDomainNew/1 e (opz., riconfigurazione)
-%   legacyCabinet/1, legacyRoom/1, legacyCabinetThing/2, legacyRoomCabinet/2.
-% ============================================================
 
 % --- domini di cabinet e stanze ---
 cabinetDomain(C) :- cabinetDomainNew(C).

@@ -86,6 +86,32 @@ private:
     using LitByTuple = std::unordered_map<NumericTupleKey, Clingo::literal_t, NumericTupleKeyHash>;
     using GroundLiteralIndex = std::unordered_map<Clingo::Symbol, LitByTuple>;
 
+    // Contatori del propagatore, gemelli di QueryBackendStats del backend
+    // prolog: stessi nomi, cosi' il resultparser e i grafici confrontano i due
+    // backend sulla stessa metrica invece di avere misure "solo prolog".
+    // Attivi solo con LAZY_HEURISTIC_STATS/LAZY_PROLOG_STATS.
+    //   decide_calls / total_decide_time_ms   -> costo del decidere (ms/decide)
+    //   total_state_sync_time_ms              -> refresh incrementale in
+    //                                            propagate()+undo(): qui e' il
+    //                                            mantenimento in memoria degli
+    //                                            aggregati, la' la sync verso SWI
+    //   total_candidate_scan_time_ms          -> scansione della coda di rank
+    //   *_candidates_seen                     -> entry esaminate per decisione
+    // Non esiste un analogo di total_prolog_query_time_ms: nel backend native
+    // non c'e' motore esterno da interrogare (differenza reale, non lacuna).
+    struct LazyPropagatorStats {
+        bool used = false;
+        size_t decide_calls = 0;
+        size_t decide_hits = 0;
+        double total_decide_time_ms = 0.0;
+        double total_state_sync_time_ms = 0.0;
+        double total_candidate_scan_time_ms = 0.0;
+        size_t total_candidates_seen = 0;
+        size_t max_candidates_seen = 0;
+        size_t propagate_calls = 0;
+        size_t undo_calls = 0;
+    };
+
     std::vector<HeuristicRuleTemplate> heuristic_rule_templates_;
     std::vector<RuntimeHeuristicCandidate> heuristic_candidates_;
     std::vector<CandidateHeuristicEffect> candidate_effects_;
@@ -100,6 +126,7 @@ private:
     std::unordered_map<RuntimeAggregateKey, std::unique_ptr<AggregateState>, RuntimeAggregateKeyHash> runtime_aggregate_states_;
     std::unordered_map<RuntimeAggregateKey, std::vector<Clingo::literal_t>, RuntimeAggregateKeyHash> aggregate_source_lits_;
     std::unordered_set<Clingo::literal_t> registered_watch_lits_;
+    LazyPropagatorStats stats_;
 
     void init_lazy_mode(Clingo::PropagateInit &init,
                         Clingo::SymbolicAtoms const &atoms,
@@ -180,6 +207,7 @@ private:
     void refresh_candidates_for_aggregate_noexcept(RuntimeAggregateKey const &runtime_key,
                                                    Clingo::Assignment const &assignment) noexcept;
     void refresh_all_candidates(Clingo::Assignment const &assignment);
+    void print_propagator_stats() const;
 
 public:
     ~HeuristicPropagator() override;

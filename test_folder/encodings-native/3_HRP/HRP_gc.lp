@@ -1,28 +1,3 @@
-% ============================================================
-% HRP - GROUND CLINGO (gc): encoding clingo FEDELE al paper (Romero 1,
-% Sez. 6.2.3, adattamento per clingo).
-%
-% Adattamenti per clingo (come nel paper):
-%   - sign modifier ([w,true]/[w,false]) al posto dei segni T/F in testa;
-%   - livelli APPIATTITI nel peso: W_flat = w + p*LM con LM piu' grande
-%     di ogni peso intra-livello (LM = maxCabId+maxRoomId+10), cosi'
-%     l'ordine globale reuse(@4)>fill-cab(@3/@2)>fill-room(@1)>chiusura(@0)
-%     e' rispettato dal solo peso (la @priority di clingo non basta);
-%   - MANTENUTI i letterali NAF su stato parziale (not fullCabinet,
-%     not assignedThing, not otherPersonTOcabinet, not fullRoom, ...):
-%     e' la controparte ground di clingo_not(...) di HRP_lc. In clingo
-%     ground 'not p' = "p assegnato FALSO" (semantica clingo), cioe' la
-%     guardia si apre tardi (servono atomi gia' decisi falsi), come nel
-%     lazy 'lc'. La semantica Alpha ("p non ancora vero") NON e' invece
-%     esprimibile in ground clingo: e' la variante 'ga' a lasciar cadere
-%     questi 'not' (cfr. BSP_ga / PUP_ga), e solo 'la' la cattura davvero.
-%
-% Simmetria: 'gc' e 'ga' differiscono ESCLUSIVAMENTE per la presenza di
-% questi 'not' (pesi appiattiti identici), esattamente come 'lc' vs 'la'
-% differiscono solo per clingo_not vs alpha_not.
-%
-% Esegui con: --heuristic=Domain
-% ============================================================
 
 % --- domini di cabinet e stanze ---
 cabinetDomain(C) :- cabinetDomainNew(C).
@@ -121,13 +96,12 @@ personTOcabinet(P,C) :- personTOthing(P,T), cabinetTOthing(C,T).
 otherPersonTOcabinet(P,C) :- personTOcabinet(P2,C), person(P), P!=P2.
 otherPersonTOroom(P,R)    :- roomTOcabinet(R,C), personTOcabinet(P2,C), person(P), P!=P2.
 
-% ===== aux per appiattimento livelli (gc clingo-fedele) =====
+% ===== aux per appiattimento livelli =====
 maxCabinetId(M) :- M = #max{ C : cabinetDomain(C) }.
 maxRoomId(M)    :- M = #max{ R : roomDomain(R) }.
 levelMul(LM)    :- LM = MC + MR + 10, maxCabinetId(MC), maxRoomId(MR).
 
-% ===== euristiche GC (clingo-fedele: pesi appiattiti W+P*(W+1)-stile,
-%        sign modifier, condizioni 'solo-parziale' rimosse) =====
+% ===== euristiche GC =====
 #heuristic reuseCabinet(C)        : legacyCabinet(C), levelMul(LM), W = 6 + 4*LM. [W, true]
 #heuristic reuseRoom(R)           : legacyRoom(R), levelMul(LM), W = 5 + 4*LM. [W, true]
 #heuristic reuseCabinetThing(C,T) : legacyCabinetThing(C,T), thingLong(T),  levelMul(LM), W = 4 + 4*LM. [W, true]

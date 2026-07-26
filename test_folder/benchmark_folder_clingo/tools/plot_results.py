@@ -66,32 +66,97 @@ FAM_SUBDIR = {"BSP": "1_BSP", "PUP": "2_PUP", "HRP": "3_HRP"}
 BACKENDS = ("native", "prolog")
 
 # ---------------------------------------------------------------------------
-# Theming per variante (riusa lo schema della vecchia suite). La prima lettera
-# del nome = approccio (g* ground-and-solve, l* lazy); l'ultima = semantica
-# (*c clingo-like, *a alpha-like).
+# IDENTITA' VISIVA DELLE VARIANTI — convenzione unica per TUTTE le macroaree.
+#
+# Il problema: la stessa variante compare in piu' macroaree, e nell'albero di
+# confronto compare DUE volte (una per backend). Se il tratto identificasse la
+# variante, nel confronto servirebbe un secondo tratto per il backend e la
+# variante cambierebbe aspetto da un grafico all'altro. Peggio: quando una
+# variante viene omessa da un grafico (esclusioni, metriche non definite,
+# timeout precoci) i colori "scalerebbero" e la lettura incrociata salterebbe.
+#
+# La soluzione e' separare due canali ortogonali:
+#
+#   IDENTITA' DELLA VARIANTE = colore + marker.
+#       Fissi, unici (nessun colore e nessun marker condiviso da due varianti)
+#       e MAI riusati per altro, in ogni albero e in ogni macroarea. Sono
+#       assegnati per NOME della variante, non per posizione: se una variante
+#       manca dal grafico le altre non cambiano aspetto.
+#
+#   DIMENSIONE LIBERA = tratto (linestyle).
+#       Il suo significato dipende dalla macroarea ed e' sempre dichiarato in
+#       legenda:
+#         - alberi mono-backend (graphs-native/, graphs-prolog/, exploratory/):
+#           tratto = tratto canonico della variante (ridondante col colore,
+#           serve alla leggibilita' in stampa b/n);
+#         - albero di confronto (graphs-comparison-native-prolog/):
+#           tratto = BACKEND (native pieno/continuo, prolog vuoto/tratteggiato),
+#           mentre colore e marker continuano a dire QUALE variante e'.
+#
+# La prima lettera del nome = approccio (g* ground-and-solve, l* lazy);
+# l'ultima = semantica (*c clingo-like, *a alpha-like). Colori e marker
+# rispettano la parentela: le varianti derivate da X hanno il colore di X in
+# tonalita' vicina e un marker della stessa famiglia geometrica.
 # ---------------------------------------------------------------------------
-VARIANT_LABELS = {
-    "gc_noheur": "G&S Clingo (no heur)",
-    "gc": "G&S Clingo",
-    "ga": "G&S Alpha",
-    "ga_weak": "G&S Alpha (weak)",
-    "la": "Lazy Alpha",
-    "lc": "Lazy Clingo",
-    "la_aux": "Lazy Alpha + Aux",
-    "la_co": "Lazy Alpha + ConstrOpt",
+class VariantStyle:
+    """Aspetto di UNA variante. `color`/`marker` sono l'identita' (invarianti);
+    `dash` e' il tratto canonico, usato solo dove il tratto e' libero."""
+
+    __slots__ = ("label", "color", "marker", "dash")
+
+    def __init__(self, label: str, color: str, marker: str, dash):
+        self.label = label
+        self.color = color
+        self.marker = marker
+        self.dash = dash
+
+
+VARIANT_STYLES: dict[str, VariantStyle] = {
+    # riferimento: nessuna euristica
+    "gc_noheur": VariantStyle("G&S Clingo (no heur)", "#34495E", "X", (0, (1, 1.8))),
+    # ground-and-solve
+    "gc":        VariantStyle("G&S Clingo",           "#E74C3C", "o", (0, (6, 2))),
+    "ga":        VariantStyle("G&S Alpha",            "#F39C12", "^", (0, (3, 1.4))),
+    "ga_weak":   VariantStyle("G&S Alpha (weak)",     "#B9770E", "v", (0, (3, 1.4, 1, 1.4))),
+    # lazy
+    "la":        VariantStyle("Lazy Alpha",           "#27AE60", "s", "solid"),
+    "lc":        VariantStyle("Lazy Clingo",          "#8E44AD", "D", (0, (7, 1.6, 1, 1.6))),
+    "la_aux":    VariantStyle("Lazy Alpha + Aux",     "#16A085", "P", (0, (5, 1.2, 1, 1.2, 1, 1.2))),
+    "la_co":     VariantStyle("Lazy Alpha + ConstrOpt", "#2E86C1", "d", (0, (4, 1.2, 4, 1.2, 1, 1.2))),
 }
-VARIANT_COLORS = {
-    "gc_noheur": "#34495E", "gc": "#E74C3C", "ga": "#F39C12", "ga_weak": "#D68910",
-    "la": "#2ECC71", "lc": "#9B59B6", "la_aux": "#16A085", "la_co": "#3498DB",
-}
-VARIANT_MARKERS = {
-    "gc_noheur": "X", "gc": "o", "ga": "^", "ga_weak": "v",
-    "la": "o", "lc": "s", "la_aux": "^", "la_co": "D",
-}
-VARIANT_LINESTYLES = {
-    "gc_noheur": ":", "gc": "--", "ga": "--", "ga_weak": "--",
-    "la": "-", "lc": "-", "la_aux": "-", "la_co": "-.",
-}
+
+# Fallback per una variante non ancora censita (non deve succedere: meglio
+# accorgersene da un grigio anonimo che da un colore rubato a un'altra).
+_FALLBACK_STYLE = VariantStyle("?", "#7F8C8D", "8", (0, (2, 2)))
+
+
+def style_of(variant: str) -> VariantStyle:
+    return VARIANT_STYLES.get(variant, _FALLBACK_STYLE)
+
+
+def label_of(variant: str) -> str:
+    return VARIANT_STYLES[variant].label if variant in VARIANT_STYLES else variant
+
+
+def variant_kwargs(variant: str, *, dash=None, **overrides) -> dict:
+    """kwargs di ax.plot per una variante. Colore e marker sono sempre quelli
+    dell'identita'; `dash=None` usa il tratto canonico, altrimenti il chiamante
+    impone il proprio (es. il backend nell'albero di confronto)."""
+    st = style_of(variant)
+    kwargs = {
+        "color": st.color,
+        "marker": st.marker,
+        "linestyle": st.dash if dash is None else dash,
+        "linewidth": 1.8,
+        "markersize": 4.5,
+        "markeredgecolor": "white",
+        "markeredgewidth": 0.6,
+        "label": st.label,
+    }
+    kwargs.update(overrides)
+    return kwargs
+
+
 VARIANT_ORDER = ["gc_noheur", "gc", "ga", "ga_weak", "la", "lc", "la_aux", "la_co"]
 LAZY_VARIANTS = ["la", "lc", "la_aux", "la_co"]
 
@@ -137,16 +202,62 @@ XLABEL = {"BSP": "Problem size (N)", "PUP": "Instance size (N)", "HRP": "Instanc
 
 
 # ---------------------------------------------------------------------------
-# Metriche da results.xml. Tutte "lower is better". lazy_only=True: definite
-# solo per le varianti lazy sul backend prolog (propagatore query-driven).
+# Metriche da results.xml. Tutte "lower is better".
+#
+# `scope` dice CHI puo' avere quel dato, ed e' l'unico posto in cui la
+# distinzione fra backend e' codificata:
+#   "all"        -> ogni variante, ogni backend (tempi, memoria, conteggi clasp)
+#   "propagator" -> solo varianti lazy (l*), ma su ENTRAMBI i backend: sono le
+#                   statistiche emesse dalla riga "[lazy-<backend>] summary"
+#                   (decide_calls, tempi di decide/sync/scan, candidati). Da
+#                   quando anche il propagatore C++ e' strumentato queste
+#                   metriche sono CONFRONTABILI fra native e prolog e quindi
+#                   hanno senso nell'albero di confronto.
+#   "prolog"     -> solo varianti lazy sul backend prolog: misurano la query
+#                   verso il motore esterno, che nel backend native non esiste
+#                   per costruzione (non e' un dato mancante, e' una fase che
+#                   non c'e'). Restano fuori dal confronto native-vs-prolog.
+#   "native"     -> solo varianti lazy sul backend native: contatori interni
+#                   del propagatore in-memory senza analogo lato prolog.
 # ---------------------------------------------------------------------------
+SCOPE_ALL = "all"
+SCOPE_PROPAGATOR = "propagator"
+SCOPE_PROLOG = "prolog"
+SCOPE_NATIVE = "native"
+
+# Nota in calce ai grafici delle metriche a scope ristretto: senza, un grafico
+# con una sola curva sembra un grafico rotto invece che una misura che per
+# l'altro backend non e' definita.
+SCOPE_NOTES = {
+    SCOPE_PROPAGATOR: "metrica del propagatore: definita solo per le varianti lazy (l*)",
+    SCOPE_PROLOG: "metrica specifica del backend prolog: nel backend native non esiste "
+                  "una fase di query verso un motore esterno",
+    SCOPE_NATIVE: "metrica specifica del backend native (propagatore C++ in-memory)",
+}
+
+
 class Metric:
-    def __init__(self, key, title, ylabel, *, lazy_only=False, fmt="auto"):
+    def __init__(self, key, title, ylabel, *, scope=SCOPE_ALL, fmt="auto"):
         self.key = key
         self.title = title
         self.ylabel = ylabel
-        self.lazy_only = lazy_only
+        self.scope = scope
         self.fmt = fmt
+
+    @property
+    def lazy_only(self) -> bool:
+        """Vera per tutte le metriche del propagatore, qualunque il backend."""
+        return self.scope != SCOPE_ALL
+
+    def backends(self) -> tuple[str, ...]:
+        if self.scope == SCOPE_PROLOG:
+            return ("prolog",)
+        if self.scope == SCOPE_NATIVE:
+            return ("native",)
+        return BACKENDS
+
+    def applies_to(self, backend: str) -> bool:
+        return backend in self.backends()
 
 
 METRICS = [
@@ -160,9 +271,20 @@ METRICS = [
     Metric("rules", "Solver Rules", "Rules", fmt="compact"),
     Metric("variables", "Solver Variables", "Variables", fmt="compact"),
     Metric("solving_ms_per_choice", "Solving Cost per Choice", "ms / choice"),
-    Metric("decide_calls", "Propagator Decide Calls", "decide_calls", lazy_only=True, fmt="compact"),
-    Metric("total_prolog_query_time_ms", "Total Prolog Query Time", "Time (ms)", lazy_only=True, fmt="compact"),
-    Metric("prolog_ms_per_decide", "Prolog Query Cost per Decision", "ms / decide", lazy_only=True),
+    # --- propagatore, confrontabili fra backend ---
+    Metric("decide_calls", "Propagator Decide Calls", "decide_calls",
+           scope=SCOPE_PROPAGATOR, fmt="compact"),
+    Metric("ms_per_decide", "Propagator Cost per Decision", "ms / decide",
+           scope=SCOPE_PROPAGATOR),
+    Metric("total_decide_time_ms", "Total Decide Time", "Time (ms)",
+           scope=SCOPE_PROPAGATOR, fmt="compact"),
+    Metric("total_propagator_time_ms", "Total Propagator Overhead (decide + sync)", "Time (ms)",
+           scope=SCOPE_PROPAGATOR, fmt="compact"),
+    # --- propagatore, specifiche del backend prolog ---
+    Metric("total_prolog_query_time_ms", "Total Prolog Query Time", "Time (ms)",
+           scope=SCOPE_PROLOG, fmt="compact"),
+    Metric("prolog_ms_per_decide", "Prolog Query Cost per Decision", "ms / decide",
+           scope=SCOPE_PROLOG),
 ]
 
 # Metriche EXTRA, anch'esse gia' in results.xml ma non nel set "core". Vengono
@@ -176,30 +298,58 @@ EXTRA_METRICS = [
     Metric("atoms", "Solver Atoms", "atoms", fmt="compact"),
     Metric("constraints", "Solver Constraints", "constraints", fmt="compact"),
     Metric("time", "Wall Time (runlim)", "Time (s)"),
-    Metric("total_decide_time_ms", "Total Decide Time", "Time (ms)", lazy_only=True, fmt="compact"),
-    Metric("total_state_sync_time_ms", "State Sync Time", "Time (ms)", lazy_only=True, fmt="compact"),
-    Metric("total_candidate_scan_time_ms", "Candidate Scan Time", "Time (ms)", lazy_only=True, fmt="compact"),
-    Metric("total_literal_lookup_time_ms", "Literal Lookup Time", "Time (ms)", lazy_only=True, fmt="compact"),
-    Metric("total_candidate_selection_time_ms", "Candidate Selection Time", "Time (ms)", lazy_only=True, fmt="compact"),
-    Metric("total_candidates_seen", "Total Candidates Seen", "candidates", lazy_only=True, fmt="compact"),
-    Metric("avg_candidates_per_decide", "Avg Candidates per Decide", "candidates / decide", lazy_only=True),
+    # scomposizione del costo del propagatore: comune ai due backend
+    Metric("total_state_sync_time_ms", "State Sync Time", "Time (ms)",
+           scope=SCOPE_PROPAGATOR, fmt="compact"),
+    Metric("total_candidate_scan_time_ms", "Candidate Scan Time", "Time (ms)",
+           scope=SCOPE_PROPAGATOR, fmt="compact"),
+    Metric("total_candidates_seen", "Total Candidates Seen", "candidates",
+           scope=SCOPE_PROPAGATOR, fmt="compact"),
+    Metric("avg_candidates_per_decide", "Avg Candidates per Decide", "candidates / decide",
+           scope=SCOPE_PROPAGATOR),
+    Metric("max_candidates_seen", "Max Candidates in a Decide", "candidates",
+           scope=SCOPE_PROPAGATOR, fmt="compact"),
+    # fasi che esistono solo nel backend prolog (query verso SWI)
+    Metric("total_literal_lookup_time_ms", "Literal Lookup Time", "Time (ms)",
+           scope=SCOPE_PROLOG, fmt="compact"),
+    Metric("total_candidate_selection_time_ms", "Candidate Selection Time", "Time (ms)",
+           scope=SCOPE_PROLOG, fmt="compact"),
+    # contatori interni del solo propagatore C++
+    Metric("decide_hits", "Decide Calls with a Decision", "decide_hits",
+           scope=SCOPE_NATIVE, fmt="compact"),
+    Metric("decide_hit_ratio", "Decide Hit Ratio", "decisioni / chiamate",
+           scope=SCOPE_NATIVE),
+    Metric("propagate_calls", "Propagate Calls", "propagate_calls",
+           scope=SCOPE_NATIVE, fmt="compact"),
+    Metric("undo_calls", "Undo Calls", "undo_calls",
+           scope=SCOPE_NATIVE, fmt="compact"),
 ]
 METRICS = METRICS + EXTRA_METRICS
 METRIC_BY_KEY = {m.key: m for m in METRICS}
 
 # Aree del confronto native-vs-prolog ("le varie aree").
-COMPARISON_AREAS = ["solving", "grounding", "clingo_total", "mem", "decide_calls", "prolog_ms_per_decide"]
+# REGOLA: qui entrano SOLO metriche misurabili su entrambi i backend (scope
+# "all" o "propagator"). Una metrica che per costruzione esiste su un backend
+# solo (prolog_ms_per_decide, total_prolog_query_time_ms, i contatori native)
+# in un grafico "native vs prolog" produrrebbe un confronto con se stessa: vive
+# negli alberi mono-backend, dove ha senso. Il controllo e' anche automatico,
+# v. _comparison_areas().
+COMPARISON_AREAS = ["solving", "grounding", "clingo_total", "mem",
+                    "decide_calls", "ms_per_decide", "total_decide_time_ms",
+                    "total_propagator_time_ms", "total_state_sync_time_ms"]
 
 # Dashboard per-backend: una "immagine generale" con tutto. I pannelli CORE
 # stanno in alto; gli EXTRA vengono ACCODATI sotto (righe finali), nell'ordine.
 DASHBOARD_CORE = ["grounding", "solving", "clingo_total", "mem",
                   "choices", "conflicts", "restarts", "solving_ms_per_choice"]
 DASHBOARD_EXTRA = ["rules", "variables", "atoms", "constraints", "time",
-                   "decide_calls", "total_prolog_query_time_ms", "prolog_ms_per_decide",
-                   "total_decide_time_ms", "total_state_sync_time_ms",
-                   "total_candidate_scan_time_ms", "total_literal_lookup_time_ms",
-                   "total_candidate_selection_time_ms", "total_candidates_seen",
-                   "avg_candidates_per_decide"]
+                   "decide_calls", "ms_per_decide", "total_decide_time_ms",
+                   "total_propagator_time_ms", "total_state_sync_time_ms",
+                   "total_candidate_scan_time_ms", "total_candidates_seen",
+                   "avg_candidates_per_decide", "max_candidates_seen",
+                   "total_prolog_query_time_ms", "prolog_ms_per_decide",
+                   "total_literal_lookup_time_ms", "total_candidate_selection_time_ms",
+                   "decide_hits", "decide_hit_ratio", "propagate_calls", "undo_calls"]
 
 # Conteggi di grounding (solo con --ground-counts).
 GROUND_METRICS = [
@@ -285,12 +435,29 @@ def aggregate(tidy: pd.DataFrame, machine: str) -> pd.DataFrame:
     if wide.empty:
         return pd.DataFrame()
 
-    # derivate per-run
+    # derivate per-run. Sono ricalcolate qui (non solo nel resultparser) cosi'
+    # che valgano anche sui results.xml gia' prodotti prima che il parser le
+    # emettesse: nessun bisogno di rieseguire l'eval per ottenerle.
     if {"solving", "choices"}.issubset(wide.columns):
         wide["solving_ms_per_choice"] = 1000.0 * wide["solving"] / wide["choices"].where(wide["choices"] > 0)
-    if {"total_prolog_query_time_ms", "decide_calls"}.issubset(wide.columns):
-        wide["prolog_ms_per_decide"] = (
-            wide["total_prolog_query_time_ms"] / wide["decide_calls"].where(wide["decide_calls"] > 0))
+
+    decide = wide["decide_calls"].where(wide["decide_calls"] > 0) if "decide_calls" in wide.columns else None
+    # costo medio di UNA decisione del propagatore: la metrica confrontabile
+    # fra i due backend (in-memory vs query esterna).
+    if decide is not None and "total_decide_time_ms" in wide.columns:
+        wide["ms_per_decide"] = wide["total_decide_time_ms"] / decide
+    # quota della sola query prolog dentro la decisione (backend prolog).
+    if decide is not None and "total_prolog_query_time_ms" in wide.columns:
+        wide["prolog_ms_per_decide"] = wide["total_prolog_query_time_ms"] / decide
+    # overhead totale dell'euristica = decidere + tenere sincronizzato lo stato
+    # (in propagate/undo). E' il "prezzo" complessivo del propagatore.
+    if {"total_decide_time_ms", "total_state_sync_time_ms"}.issubset(wide.columns):
+        wide["total_propagator_time_ms"] = (wide["total_decide_time_ms"].fillna(0)
+                                            + wide["total_state_sync_time_ms"].fillna(0))
+    # frazione di chiamate a decide() in cui il propagatore ha davvero deciso
+    # (backend native): il resto sono chiamate a vuoto, costo puro.
+    if decide is not None and "decide_hits" in wide.columns:
+        wide["decide_hit_ratio"] = wide["decide_hits"] / decide
 
     value_cols = [c for c in wide.columns
                   if c not in ("backend", "setting", "family", "size", "instance", "run")]
@@ -340,6 +507,15 @@ def _variants_present(agg_fb: pd.DataFrame, allowed: list[str] | None = None) ->
     return [v for v in order if v in present]
 
 
+def _scope_note(ax, metric: Metric) -> None:
+    """Nota in calce per le metriche a scope ristretto: dichiara PERCHE' certe
+    varianti/backend non compaiono, invece di lasciare il grafico monco."""
+    note = SCOPE_NOTES.get(metric.scope)
+    if note:
+        ax.text(0.0, -0.20, note, transform=ax.transAxes, fontsize=6.5,
+                color="#7F8C8D", ha="left", va="top", style="italic")
+
+
 def _plot_metric_axis(ax, agg_fb: pd.DataFrame, metric: Metric, family: str, *, variants=None) -> bool:
     if metric.key not in agg_fb.columns:
         ax.text(0.5, 0.5, "metrica assente", transform=ax.transAxes, ha="center", va="center", color="#AAA")
@@ -351,11 +527,8 @@ def _plot_metric_axis(ax, agg_fb: pd.DataFrame, metric: Metric, family: str, *, 
         d = agg_fb[agg_fb["setting"] == v].dropna(subset=[metric.key]).sort_values("size")
         if d.empty:
             continue
-        ax.plot(d["size"], d[metric.key],
-                color=VARIANT_COLORS.get(v, "#555"), marker=VARIANT_MARKERS.get(v, "o"),
-                linestyle=VARIANT_LINESTYLES.get(v, "-"), linewidth=1.8, markersize=4,
-                markeredgecolor="white", markeredgewidth=0.6,
-                label=VARIANT_LABELS.get(v, v))
+        # Tratto libero => tratto canonico della variante (v. VARIANT_STYLES).
+        ax.plot(d["size"], d[metric.key], **variant_kwargs(v))
         drew = True
     ax.set_title(metric.title, fontsize=11, fontweight="bold")
     ax.set_xlabel(XLABEL.get(family, "size (N)"), fontsize=9)
@@ -364,6 +537,7 @@ def _plot_metric_axis(ax, agg_fb: pd.DataFrame, metric: Metric, family: str, *, 
     _apply_fmt(ax, metric)
     if drew:
         ax.legend(fontsize=7, ncol=2)
+        _scope_note(ax, metric)
     return drew
 
 
@@ -457,6 +631,8 @@ def render_backend_tree(agg: pd.DataFrame, backend: str, base: Path, ground: pd.
         shutil.rmtree(fam_dir, ignore_errors=True)
 
         for metric in METRICS:
+            if not metric.applies_to(backend):
+                continue  # metrica di un altro backend: qui non e' un dato mancante
             if metric.key not in agg_fb.columns or agg_fb[metric.key].dropna().empty:
                 continue
             fig, ax = plt.subplots(figsize=(8, 5.2))
@@ -483,8 +659,10 @@ def _has_data(agg_fb: pd.DataFrame, key: str) -> bool:
 def _render_dashboard(agg_fb: pd.DataFrame, family: str, backend: str, fam_dir: Path,
                       *, variants: list[str] | None = None, label_suffix: str = "") -> int:
     variants = variants if variants is not None else MAIN_VARIANTS
-    core = [k for k in DASHBOARD_CORE if _has_data(agg_fb, k)]
-    extra = [k for k in DASHBOARD_EXTRA if _has_data(agg_fb, k)]
+    core = [k for k in DASHBOARD_CORE
+            if _has_data(agg_fb, k) and METRIC_BY_KEY[k].applies_to(backend)]
+    extra = [k for k in DASHBOARD_EXTRA
+             if _has_data(agg_fb, k) and METRIC_BY_KEY[k].applies_to(backend)]
     keys = core + extra
     if not keys:
         return 0
@@ -529,8 +707,10 @@ def _render_ratio(agg_fb: pd.DataFrame, family: str, backend: str, fam_dir: Path
             ratio = (piv[lazy] / piv[std]).dropna()
             if ratio.empty:
                 continue
-            ax.plot(ratio.index, ratio.values, marker="o", markersize=4,
-                    color=VARIANT_COLORS.get(lazy, "#555"), label=f"{lazy} / {std}")
+            # il rapporto "appartiene" alla variante lazy: ne eredita colore e
+            # marker, cosi' resta riconoscibile accanto agli altri grafici.
+            ax.plot(ratio.index, ratio.values,
+                    **variant_kwargs(lazy, label=f"{label_of(lazy)} / {label_of(std)}"))
             drew = True
     if not drew:
         plt.close(fig)
@@ -569,9 +749,7 @@ def _render_ground(ground: pd.DataFrame, family: str, backend: str, fam_dir: Pat
             d = gm[gm["variant"] == v].dropna(subset=[metric.key]).sort_values("size")
             if d.empty or (d[metric.key] == 0).all():
                 continue
-            ax.plot(d["size"], d[metric.key], color=VARIANT_COLORS.get(v, "#555"),
-                    marker=VARIANT_MARKERS.get(v, "o"), linestyle=VARIANT_LINESTYLES.get(v, "-"),
-                    linewidth=1.8, markersize=4, label=VARIANT_LABELS.get(v, v))
+            ax.plot(d["size"], d[metric.key], **variant_kwargs(v))
             drew = True
         if not drew:
             plt.close(fig)
@@ -597,9 +775,10 @@ def _render_ground(ground: pd.DataFrame, family: str, backend: str, fam_dir: Pat
                 d = merged[merged["variant"] == v]
                 if d.empty:
                     continue
-                ax.scatter(d["combined_heuristics"], d["grounding"], s=36,
-                           color=VARIANT_COLORS.get(v, "#555"), marker=VARIANT_MARKERS.get(v, "o"),
-                           edgecolor="white", linewidth=0.6, label=VARIANT_LABELS.get(v, v))
+                st = style_of(v)
+                ax.scatter(d["combined_heuristics"], d["grounding"], s=40,
+                           color=st.color, marker=st.marker,
+                           edgecolor="white", linewidth=0.6, label=st.label)
             ax.set_title(f"{family} — Grounding Time vs Heuristic Objects ({backend})",
                          fontsize=12, fontweight="bold")
             ax.set_xlabel("combined ground heuristic objects")
@@ -674,73 +853,292 @@ def _render_study_dashboard(agg_fb: pd.DataFrame, family: str, backend: str,
 # ===========================================================================
 # Albero di confronto native-vs-prolog (+ verdetto del migliore per area)
 # ===========================================================================
+def _comparison_areas() -> list[str]:
+    """Aree ammesse nell'albero di confronto: solo metriche definite su
+    ENTRAMBI i backend. Il filtro e' automatico (sullo `scope` della metrica)
+    invece che affidato alla disciplina di chi edita COMPARISON_AREAS: se in
+    futuro qualcuno ci mette una metrica mono-backend, viene scartata qui con
+    un avviso invece di finire in un grafico che confronta una curva con se
+    stessa."""
+    ok = []
+    for area in COMPARISON_AREAS:
+        metric = METRIC_BY_KEY.get(area)
+        if metric is None:
+            print(f"  [warn] area di confronto sconosciuta, ignorata: {area}")
+            continue
+        if len(metric.backends()) < 2:
+            print(f"  [warn] '{area}' e' definita solo per il backend "
+                  f"{metric.backends()[0]}: esclusa dal confronto native-vs-prolog")
+            continue
+        ok.append(area)
+    return ok
+
+
+# Stile del BACKEND nell'albero di confronto. Qui il tratto NON identifica piu'
+# la variante (ci pensano colore e marker, invarianti): identifica il backend.
+# native = linea piena e spessa con marker pieni; prolog = linea sottile
+# tratteggiata con marker VUOTI, disegnata sopra. Cosi' quando le due curve
+# coincidono al pixel — succede spesso, i due binari eseguono la stessa ricerca
+# quando l'euristica decide le stesse cose — non si vede "solo native": si vede
+# il tratteggio bianco sopra la linea piena e i marker a ciambella.
+BACKEND_STYLE = {
+    "native": {"dash": "solid", "linewidth": 2.6, "markersize": 6.5, "zorder": 2},
+    "prolog": {"dash": (0, (4, 2.6)), "linewidth": 1.5, "markersize": 4.2, "zorder": 3},
+}
+# Soglia sotto la quale due curve sono dichiarate coincidenti (scarto relativo
+# massimo sulle taglie in comune).
+COINCIDENCE_TOL = 0.01
+
+
 def render_comparison_tree(agg: pd.DataFrame, base: Path) -> tuple[int, dict]:
     tree = base / "graphs-comparison-native-prolog"
     n = 0
     verdicts: dict = {}
+    areas = _comparison_areas()
     for family in ("BSP", "PUP", "HRP"):
         agg_f = agg[agg["family"] == family]
         if agg_f.empty:
             continue
         fam_dir = tree / FAM_SUBDIR[family]
         shutil.rmtree(fam_dir, ignore_errors=True)  # v. nota overwrite in render_backend_tree
-        for area in COMPARISON_AREAS:
+        for area in areas:
             n += _plot_comparison_metric(agg_f, area, family, fam_dir)
-        verdicts[family] = _verdict(agg_f, family, fam_dir)
+        verdicts[family] = _verdict(agg_f, family, fam_dir, areas)
         n += 1  # verdict card
     return n, verdicts
+
+
+def _series_by_backend(agg_f: pd.DataFrame, variant: str, area: str) -> dict[str, pd.Series]:
+    """{backend: serie indicizzata per size} per una variante, senza NaN."""
+    out = {}
+    for backend in BACKENDS:
+        d = agg_f[(agg_f["backend"] == backend) & (agg_f["setting"] == variant)]
+        d = d.dropna(subset=[area]).sort_values("size")
+        if not d.empty:
+            out[backend] = pd.Series(d[area].to_numpy(), index=d["size"].to_numpy())
+    return out
+
+
+def _max_rel_gap(series: dict[str, pd.Series]) -> float | None:
+    """Scarto relativo massimo fra native e prolog sulle taglie in comune.
+    None se non c'e' niente da confrontare."""
+    if not {"native", "prolog"}.issubset(series):
+        return None
+    nat, pro = series["native"], series["prolog"]
+    common = nat.index.intersection(pro.index)
+    if len(common) == 0:
+        return None
+    denom = nat[common].abs().clip(lower=1e-12)
+    return float(((pro[common] - nat[common]).abs() / denom).max())
 
 
 def _plot_comparison_metric(agg_f: pd.DataFrame, area: str, family: str, fam_dir: Path) -> int:
     if area not in agg_f.columns or agg_f[area].dropna().empty:
         return 0
     metric = METRIC_BY_KEY[area]
-    if metric.lazy_only:
-        variants = MAIN_LAZY_VARIANTS     # propagatore: solo prolog ha dati
+    # propagatore: ha senso solo sulle lazy; le altre metriche mostrano anche la
+    # baseline gc, che e' il riferimento rispetto a cui i backend divergono.
+    variants = MAIN_LAZY_VARIANTS if metric.lazy_only else ["gc", "la", "lc"]
+
+    data = {v: _series_by_backend(agg_f, v, area) for v in variants}
+    if not any(data.values()):
+        return 0
+
+    # Due pannelli: sopra le curve, sotto il rapporto prolog/native. Il pannello
+    # inferiore risolve il caso peggiore — curve identiche e sovrapposte: una
+    # riga piatta a 1.00 dice "i backend coincidono" senza doverlo dedurre da
+    # due tracciati indistinguibili.
+    has_ratio = any(_max_rel_gap(s) is not None for s in data.values())
+    if has_ratio:
+        fig, (ax, ax_r) = plt.subplots(
+            2, 1, figsize=(8.8, 6.6), sharex=True,
+            gridspec_kw={"height_ratios": [3.2, 1.0], "hspace": 0.08})
     else:
-        variants = ["gc", "la", "lc"]     # baseline + le lazy (dove i backend divergono)
-    fig, ax = plt.subplots(figsize=(8.4, 5.4))
+        fig, ax = plt.subplots(figsize=(8.8, 5.4))
+        ax_r = None
+
     drew = False
+    coincident: list[str] = []
     for v in variants:
-        for backend, ls, alpha in (("native", "-", 1.0), ("prolog", "--", 0.9)):
-            d = agg_f[(agg_f["backend"] == backend) & (agg_f["setting"] == v)]
-            d = d.dropna(subset=[area]).sort_values("size")
-            if d.empty:
+        series = data[v]
+        for backend in BACKENDS:
+            if backend not in series:
                 continue
-            ax.plot(d["size"], d[area], color=VARIANT_COLORS.get(v, "#555"),
-                    linestyle=ls, alpha=alpha, marker=VARIANT_MARKERS.get(v, "o"),
-                    markersize=4, linewidth=1.8,
-                    label=f"{VARIANT_LABELS.get(v, v)} · {backend}")
+            bs = BACKEND_STYLE[backend]
+            s = series[backend]
+            ax.plot(s.index, s.to_numpy(),
+                    **variant_kwargs(
+                        v, dash=bs["dash"], linewidth=bs["linewidth"],
+                        markersize=bs["markersize"], zorder=bs["zorder"],
+                        # marker vuoti per prolog: sovrapposto a native resta
+                        # visibile l'anello colorato sopra il marker pieno.
+                        markerfacecolor="white" if backend == "prolog" else style_of(v).color,
+                        markeredgecolor=style_of(v).color if backend == "prolog" else "white",
+                        markeredgewidth=1.1 if backend == "prolog" else 0.6,
+                        label=f"{label_of(v)} · {backend}"))
             drew = True
+
+        gap = _max_rel_gap(series)
+        if gap is not None and gap < COINCIDENCE_TOL:
+            coincident.append(label_of(v))
+        if ax_r is not None and gap is not None:
+            nat, pro = series["native"], series["prolog"]
+            common = nat.index.intersection(pro.index)
+            ratio = pro[common] / nat[common].replace(0, float("nan"))
+            ax_r.plot(common, ratio.to_numpy(),
+                      **variant_kwargs(v, dash="solid", linewidth=1.6, markersize=4,
+                                       label=label_of(v)))
+
     if not drew:
         plt.close(fig)
         return 0
+
     ax.set_title(f"{family} — {metric.title}: native vs prolog", fontsize=12, fontweight="bold")
-    ax.set_xlabel(XLABEL.get(family, "size (N)"))
     ax.set_ylabel(metric.ylabel)
     ax.grid(True, alpha=0.3, linestyle="--")
     _apply_fmt(ax, metric)
-    ax.legend(fontsize=7, ncol=2, title="solida=native · tratteggio=prolog", title_fontsize=7)
+    ax.legend(fontsize=7, ncol=2,
+              title="colore+marker = variante  ·  linea piena/marker pieni = native  ·  "
+                    "tratteggio/marker vuoti = prolog",
+              title_fontsize=6.5)
+
+    # Dichiarare la coincidenza e' piu' onesto (e piu' leggibile) che sperare
+    # che si distinguano due tracciati sovrapposti.
+    if coincident:
+        ax.text(0.005, 0.985,
+                "native ≡ prolog (Δ < 1%): " + ", ".join(coincident),
+                transform=ax.transAxes, fontsize=7, va="top", ha="left", color="#2C3E50",
+                bbox={"boxstyle": "round,pad=0.32", "facecolor": "#FCF3CF",
+                      "edgecolor": "#F1C40F", "linewidth": 0.7})
+
+    if ax_r is not None:
+        ax_r.axhline(1.0, color="#7F8C8D", linestyle="--", linewidth=1)
+        ax_r.set_ylabel("prolog / native", fontsize=8)
+        ax_r.set_xlabel(XLABEL.get(family, "size (N)"))
+        ax_r.grid(True, alpha=0.3, linestyle="--")
+        ax_r.tick_params(labelsize=8)
+        ax_r.legend(fontsize=6.5, ncol=3)
+    else:
+        ax.set_xlabel(XLABEL.get(family, "size (N)"))
+
+    _scope_note(ax_r if ax_r is not None else ax, metric)
     _save(fig, fam_dir / f"{area}.png")
     return 1
 
 
-def _verdict(agg_f: pd.DataFrame, family: str, fam_dir: Path) -> dict:
+# ---------------------------------------------------------------------------
+# Tabelle PNG. matplotlib da' colonne di larghezza uniforme e righe tutte
+# uguali: su una tabella con una colonna lunga ("RIASSUNTO PER AREA",
+# "total_propagator_time_ms") il testo esce dalla cella e diventa illeggibile.
+# Qui le larghezze sono proporzionali al contenuto piu' lungo di ogni colonna,
+# la figura e' dimensionata di conseguenza e le righe sono zebrate.
+# ---------------------------------------------------------------------------
+TABLE_STYLE = {
+    "header_bg": "#2C3E50",
+    "header_fg": "#FFFFFF",
+    "row_bg": ("#FFFFFF", "#EEF2F5"),      # zebratura
+    "section_bg": "#D5DBDB",
+    "grid": "#B0BEC5",
+    "win_native": "#D5F5E3",
+    "win_prolog": "#D6EAF8",
+    "win_tie": "#FDEBD0",
+    "muted": "#7F8C8D",
+}
+_CHAR_W = 0.088      # pollici per carattere a fontsize 9 (stima)
+_ROW_H = 0.30        # pollici per riga
+
+
+def _render_table(rows: list[list[str]], *, title: str, subtitle: str = "",
+                  align: list[str] | None = None,
+                  section_rows: set[int] | None = None,
+                  cell_colors: dict[tuple[int, int], str] | None = None,
+                  path: Path) -> None:
+    """`rows[0]` e' l'intestazione. Indici in `section_rows`/`cell_colors` sono
+    riferiti a `rows` (0 = header)."""
+    ncol = max(len(r) for r in rows)
+    rows = [list(r) + [""] * (ncol - len(r)) for r in rows]
+    section_rows = section_rows or set()
+    cell_colors = cell_colors or {}
+    align = align or ["center"] * ncol
+
+    # larghezza per colonna = contenuto piu' lungo (header incluso), con un
+    # minimo perche' una colonna di 1-2 caratteri non collassi.
+    widths_ch = [max(4, max(len(r[j]) for r in rows) + 2) for j in range(ncol)]
+    total_ch = sum(widths_ch)
+    col_widths = [w / total_ch for w in widths_ch]
+
+    fig_w = max(7.0, total_ch * _CHAR_W)
+    fig_h = 0.95 + _ROW_H * len(rows)
+    fig, ax = plt.subplots(figsize=(fig_w, fig_h))
+    ax.axis("off")
+    ax.set_title(title, fontsize=12.5, fontweight="bold", pad=16)
+    if subtitle:
+        ax.text(0.5, 1.015, subtitle, transform=ax.transAxes, fontsize=8,
+                color=TABLE_STYLE["muted"], ha="center", va="bottom")
+
+    tbl = ax.table(cellText=rows, colWidths=col_widths, loc="center", cellLoc="center")
+    tbl.auto_set_font_size(False)
+    tbl.set_fontsize(9)
+    tbl.scale(1, 1.35)
+
+    for (i, j), cell in tbl.get_celld().items():
+        cell.set_edgecolor(TABLE_STYLE["grid"])
+        cell.set_linewidth(0.5)
+        if i == 0:
+            cell.set_facecolor(TABLE_STYLE["header_bg"])
+            cell.set_text_props(color=TABLE_STYLE["header_fg"], fontweight="bold")
+            cell.set_height(cell.get_height() * 1.15)
+            continue
+        if i in section_rows:
+            cell.set_facecolor(TABLE_STYLE["section_bg"])
+            cell.set_text_props(fontweight="bold")
+        else:
+            cell.set_facecolor(TABLE_STYLE["row_bg"][i % 2])
+        cell.set_text_props(ha=align[j])
+        # padding coerente con l'allineamento, altrimenti il testo tocca il bordo
+        cell.PAD = 0.04
+        if align[j] == "left":
+            cell.get_text().set_x(0.03)
+        elif align[j] == "right":
+            cell.get_text().set_x(0.97)
+
+    for (i, j), color in cell_colors.items():
+        if (i, j) in tbl.get_celld():
+            tbl[i, j].set_facecolor(color)
+
+    _save(fig, path)
+
+
+_WIN_COLOR = {"native": TABLE_STYLE["win_native"],
+              "prolog": TABLE_STYLE["win_prolog"],
+              "pari": TABLE_STYLE["win_tie"]}
+
+
+def _fmt_value(metric: Metric, value: float) -> str:
+    """Numero leggibile nella tabella: GB per la memoria, compatto per i
+    conteggi, 3 cifre significative per i tempi."""
+    if metric.fmt == "gb":
+        return f"{value / 1024.0:.2f} GB"
+    if metric.fmt == "compact":
+        return _fmt_compact(value)
+    return f"{value:.3g}"
+
+
+def _verdict(agg_f: pd.DataFrame, family: str, fam_dir: Path,
+             areas: list[str] | None = None) -> dict:
     """Per ogni area e variante lazy, decreta il backend migliore (valore piu'
     basso) all'ULTIMA taglia comune risolta da entrambi. Rende una tabella PNG
-    e un dict riassuntivo {area: native|prolog|pari|solo-prolog|n/d}."""
-    rows = []
+    e un dict riassuntivo {area: native|prolog|pari|n/d}."""
+    areas = areas if areas is not None else _comparison_areas()
+    rows: list[tuple] = []
     summary: dict = {}
-    for area in COMPARISON_AREAS:
+    for area in areas:
         if area not in agg_f.columns:
             continue
         metric = METRIC_BY_KEY[area]
-        if metric.lazy_only:
-            summary[area] = "solo-prolog"
-            continue
         wins = {"native": 0, "prolog": 0, "pari": 0}
         compared = 0
-        for v in ["la", "lc"]:
+        for v in MAIN_LAZY_VARIANTS:
             nat = agg_f[(agg_f["backend"] == "native") & (agg_f["setting"] == v)].dropna(subset=[area])
             pro = agg_f[(agg_f["backend"] == "prolog") & (agg_f["setting"] == v)].dropna(subset=[area])
             common = sorted(set(nat["size"]) & set(pro["size"]))
@@ -749,10 +1147,16 @@ def _verdict(agg_f: pd.DataFrame, family: str, fam_dir: Path) -> dict:
             s = common[-1]
             nv = float(nat[nat["size"] == s][area].iloc[0])
             pv = float(pro[pro["size"] == s][area].iloc[0])
-            winner = "native" if nv < pv else ("prolog" if pv < nv else "pari")
+            # "pari" non e' solo l'uguaglianza esatta: sotto la tolleranza di
+            # coincidenza le due misure sono lo stesso numero col rumore.
+            rel = abs(pv - nv) / max(abs(nv), 1e-12)
+            if rel < COINCIDENCE_TOL:
+                winner = "pari"
+            else:
+                winner = "native" if nv < pv else "prolog"
             wins[winner] += 1
             compared += 1
-            rows.append((area, v, s, nv, pv, winner))
+            rows.append((metric, area, v, s, nv, pv, rel if pv >= nv else -rel, winner))
         if compared == 0:
             summary[area] = "n/d"                     # nessuna taglia comune
         elif wins["native"] == wins["prolog"]:
@@ -760,31 +1164,34 @@ def _verdict(agg_f: pd.DataFrame, family: str, fam_dir: Path) -> dict:
         else:
             summary[area] = "native" if wins["native"] > wins["prolog"] else "prolog"
 
-    fig, ax = plt.subplots(figsize=(8.6, 0.6 + 0.42 * (len(rows) + len(summary) + 3)))
-    ax.axis("off")
-    ax.set_title(f"{family} — Verdetto native vs prolog (ultima taglia comune)",
-                 fontsize=12, fontweight="bold", pad=12)
-    table_rows = [["Area", "Variante", "N", "native", "prolog", "Migliore"]]
-    for area, v, s, nv, pv, w in rows:
-        table_rows.append([area, v, str(s), f"{nv:.3g}", f"{pv:.3g}", w])
-    table_rows.append(["", "", "", "", "", ""])
-    table_rows.append(["RIASSUNTO PER AREA", "", "", "", "", ""])
+    header = ["Area", "Variante", "N", "native", "prolog", "Δ prolog/native", "Migliore"]
+    table_rows: list[list[str]] = [header]
+    cell_colors: dict[tuple[int, int], str] = {}
+    section_rows: set[int] = set()
+
+    for metric, area, v, s, nv, pv, rel, winner in rows:
+        table_rows.append([metric.title, label_of(v), str(s),
+                           _fmt_value(metric, nv), _fmt_value(metric, pv),
+                           f"{rel * 100:+.1f}%" if abs(rel) >= 1e-4 else "≈ 0%",
+                           winner])
+        cell_colors[(len(table_rows) - 1, 6)] = _WIN_COLOR.get(winner, "#FFFFFF")
+
+    section_rows.add(len(table_rows))
+    table_rows.append(["RIASSUNTO PER AREA", "", "", "", "", "", ""])
     for area, w in summary.items():
-        table_rows.append([area, "", "", "", "", w])
-    tbl = ax.table(cellText=table_rows, cellLoc="center", loc="center")
-    tbl.auto_set_font_size(False)
-    tbl.set_fontsize(8)
-    tbl.scale(1, 1.3)
-    for j in range(6):
-        tbl[0, j].set_facecolor("#34495E")
-        tbl[0, j].set_text_props(color="white", fontweight="bold")
-    for i, row in enumerate(table_rows[1:], start=1):
-        w = row[-1]
-        if w == "native":
-            tbl[i, 5].set_facecolor("#D5F5E3")
-        elif w == "prolog":
-            tbl[i, 5].set_facecolor("#D6EAF8")
-    _save(fig, fam_dir / "_verdict.png")
+        table_rows.append([METRIC_BY_KEY[area].title, "", "", "", "", "", w])
+        cell_colors[(len(table_rows) - 1, 6)] = _WIN_COLOR.get(w, "#FFFFFF")
+
+    _render_table(
+        table_rows,
+        title=f"{family} — Verdetto native vs prolog",
+        subtitle="confronto all'ultima taglia N risolta da ENTRAMBI i backend  ·  "
+                 f"vince il valore piu' basso  ·  scarto < {COINCIDENCE_TOL:.0%} = pari",
+        align=["left", "left", "right", "right", "right", "right", "center"],
+        section_rows=section_rows,
+        cell_colors=cell_colors,
+        path=fam_dir / "_verdict.png",
+    )
     return summary
 
 

@@ -1,52 +1,3 @@
-% ============================================================
-% PUP (Partner Units Problem) - LAZY, backend NATIVE (propagatore C++).
-% Equivalente nativo di encodings-prolog/2_PUP/PUP_la.lp.
-%
-% Logica di dominio IDENTICA al file Prolog. Le euristiche NON sono
-% stringhe Prolog ma fatti __heuristic(...) letti dal propagatore C++.
-%
-% NOTA SUI JOIN: il DSL nativo aggrega su UN solo predicato sorgente
-% (filtrato verso gli argomenti del target), quindi i join Prolog
-%   aggregate_all(count, (holds(p(..)), holds(q(..))), N)
-% sono precompilati come predicati ausiliari e poi contati con __count:
-%   sensor_assigned_zone(S,Z)  := zone S serve la zona Z, e Z e' assegnata
-%   sensor_zone_on_unit(S,U,Z) := zona Z su unit U che serve il sensore S
-% Questi ausiliari sono derivati (nessun vincolo su di essi): non cambiano
-% gli answer set, servono solo come sorgente d'aggregato incrementale.
-%
-% Mappa aggregati -> DSL nativo (semantica alpha):
-%   Deg    = #zone assegnate servite da S      -> __count(sensor_assigned_zone, filter S)
-%   Forb   = max num_forbidden_places_of_sensors(S,N)  -> __max(.., idx N, filter S)
-%   Cnt    = #sensori su unit U                 -> __count(assigned_sensor_unit, filter U)
-%   Direct = #zone su U che servono S           -> __count(sensor_zone_on_unit, filter S,U)
-%   A      = #zone su unit U                     -> __count(assigned_zone_unit, filter U)
-%   M0/M1/M2 = max num_sensors_on_unit su U/U-1/U+1 -> __max(.., idx N, filter U[+off])
-% alpha_not(p) -> __n_p (+ __semantics(alpha)). Esegui con: --heuristic=Domain
-% ============================================================
-
-% ============================================================
-% PUP (Partner Units Problem) - LAZY ALPHA (la), backend NATIVE.
-% Architettura: ALPHA/Evaluation/PUP/encoding-alpha-prologheu-double.asp
-%
-% Logica di dominio e predicati ausiliari IDENTICI a PUP_gc.lp, ma
-% nessuna direttiva #heuristic nativa: le euristiche sono fatti
-% __heuristic(...) letti dal propagatore C++ in init() e valutati a
-% runtime. Il grounder non vede alcun aggregato euristico: niente
-% esplosione combinatoria.
-%
-% Condizioni negative con semantica ALPHA (__semantics(alpha)):
-%   __n_p e' soddisfatto se p NON e' assegnato vero (basta indeciso).
-% Gli aggregati __count/__max sono mantenuti incrementalmente e letti
-% sullo stato PARZIALE corrente (nessun gating di completezza).
-% Il propagatore decide solo su target ancora liberi.
-%
-% Ranking globale (semantica alpha): (Priority, Weight) decrescenti;
-% la __priority(1) delle zone replica nativamente [W@1] > [W@0] del
-% file originale (in gc/ga e' appiattita nel peso con offset +100000).
-%
-% Stessi adattamenti di dominio di PUP_gc.lp: !=, sensorNumbers(0..2).
-% Le istanze forniscono: comUnit/1, zone2sensor/2.
-% ============================================================
 
 %%% initial assignment
 
@@ -105,7 +56,6 @@ assigned_sensor(S) :- assigned_sensor_unit(S,U).
 
 %%% auxiliary predicates for heuristics
 
-% capacita' di una unit: al massimo 2 sensori (vedi header).
 sensorNumbers(0..2).
 
 num_sensors_on_unit(N,U) :- comUnit(U), sensorNumbers(N),
@@ -145,10 +95,8 @@ num_forbidden_places_of_sensors(S,N1+4) :- assignable_sensor_unit(S,_),
 sensor_assigned_zone(S,Z)  :- zone2sensor(Z,S), assigned_zone_unit(Z,_).
 sensor_zone_on_unit(S,U,Z) :- zone2sensor(Z,S), assigned_zone_unit(Z,U).
 
-%%% heuristics (DSL nativo, semantica alpha)
+%%% heuristics
 
-% --- sensori (priorita' 0) ---
-% W = Deg*10000 + Forb*1000 + Cnt*100 + Direct*10
 __heuristic(__target(assigned_sensor_unit),
             assignable_sensor_unit,
             __n_not_assigned_sensor_unit,
@@ -159,9 +107,6 @@ __heuristic(__target(assigned_sensor_unit),
             __weight(__add(__add(__add(__mul(deg,10000), __mul(forb,1000)),
                                  __mul(cnt,100)), __mul(direct,10))),
             __priority(0), __semantics(alpha), __modifier(true)).
-
-% --- zone (priorita' 1) ---
-% W = A*10 + (6 - (M0 + M1 + M2))
 __heuristic(__target(assigned_zone_unit),
             assignable_zone_unit,
             __n_not_assigned_zone_unit,
@@ -169,8 +114,8 @@ __heuristic(__target(assigned_zone_unit),
             __bind(m0, __max(num_sensors_on_unit, 0, __filter(1,1))),
             __bind(m1, __max(num_sensors_on_unit, 0, __filter(1,1,-1))),
             __bind(m2, __max(num_sensors_on_unit, 0, __filter(1,1,1))),
-            __weight(__sub(__sub(__sub(__add(__mul(a,10), 6), m0), m1), m2)),
-            __priority(1), __semantics(alpha), __modifier(true)).
+            __weight(__add(__sub(__sub(__sub(__add(__mul(a,10), 6), m0), m1), m2), 100000)),
+            __priority(0), __semantics(alpha), __modifier(true)).
 
 #show assigned_zone_unit/2.
 #show assigned_sensor_unit/2.

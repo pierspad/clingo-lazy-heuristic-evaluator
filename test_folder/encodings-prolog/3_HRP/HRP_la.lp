@@ -1,19 +1,3 @@
-% ============================================================
-% HRP - LAZY ALPHA (la), backend Prolog (stringhe heuristic("...")).
-% Euristica di dominio di Romero 1 (Sez. 6.2.3) valutata a runtime dal
-% propagatore SWI-Prolog: NESSUN aggregato, ma 'not' su informazione
-% PARZIALE con semantica ALPHA.
-%
-% Semantica alpha = alpha_not(p): "p non e' ANCORA vero" (falso o indeciso).
-% E' la traduzione fedele del 'not T p' di Alpha ("p non assegnato true"):
-%   not T assignedThing(T)   -> alpha_not(assignedThing(T))
-%   not fullCabinet(C)       -> alpha_not(fullCabinet(C))
-%   not otherPersonTOcabinet -> alpha_not(otherPersonTOcabinet(P,C))  ...
-% I discriminatori statici (cosa lunga/corta) restano holds(thingLong|Short).
-% Priorita' per-livello native del backend: reuse(4) > fill-cab(3/2) >
-% fill-room(1) > chiusura(0). Esegui con: --heuristic=Domain e
-% LAZY_HEURISTIC_BACKEND=prolog.
-% ============================================================
 
 % --- domini di cabinet e stanze ---
 cabinetDomain(C) :- cabinetDomainNew(C).
@@ -112,17 +96,21 @@ personTOcabinet(P,C) :- personTOthing(P,T), cabinetTOthing(C,T).
 otherPersonTOcabinet(P,C) :- personTOcabinet(P2,C), person(P), P!=P2.
 otherPersonTOroom(P,R)    :- roomTOcabinet(R,C), personTOcabinet(P2,C), person(P), P!=P2.
 
-% ===== euristiche LAZY ALPHA (la) - stringhe SWI-Prolog (alpha_not) =====
-% testa: heuristic(Target, Weight, Priority, Modifier)
-heuristic("heuristic(reuseCabinet(C), 6, 4, true) :- holds(legacyCabinet(C)), target_available(reuseCabinet(C)).").
-heuristic("heuristic(reuseRoom(R), 5, 4, true) :- holds(legacyRoom(R)), target_available(reuseRoom(R)).").
-heuristic("heuristic(reuseCabinetThing(C,T), 4, 4, true) :- holds(legacyCabinetThing(C,T)), holds(thingLong(T)), target_available(reuseCabinetThing(C,T)).").
-heuristic("heuristic(reuseCabinetThing(C,T), 3, 4, true) :- holds(legacyCabinetThing(C,T)), holds(thingShort(T)), target_available(reuseCabinetThing(C,T)).").
-heuristic("heuristic(reuseRoomCabinet(R,C), 2, 4, true) :- holds(legacyRoomCabinet(R,C)), target_available(reuseRoomCabinet(R,C)).").
-heuristic("heuristic(reusePersonRoom(P,R), 1, 4, true) :- holds(legacyPersonRoom(P,R)), target_available(reusePersonRoom(P,R)).").
-heuristic("heuristic(cabinetTOthing(C,T), W, 3, true) :- holds(cabinetDomain(C)), holds(thingLong(T)), holds(personTOthing(P,T)), target_available(cabinetTOthing(C,T)), alpha_not(fullCabinet(C)), alpha_not(assignedThing(T)), alpha_not(otherPersonTOcabinet(P,C)), holds(maxCabinet(MC)), W is MC-C.").
-heuristic("heuristic(cabinetTOthing(C,T), W, 2, true) :- holds(cabinetDomain(C)), holds(thingShort(T)), holds(personTOthing(P,T)), target_available(cabinetTOthing(C,T)), alpha_not(fullCabinet(C)), alpha_not(assignedThing(T)), alpha_not(otherPersonTOcabinet(P,C)), holds(maxCabinet(MC)), W is MC-C.").
-heuristic("heuristic(roomTOcabinet(R,C), W, 1, true) :- holds(roomDomain(R)), holds(cabinet(C)), holds(personTOcabinet(P,C)), target_available(roomTOcabinet(R,C)), alpha_not(fullRoom(R)), alpha_not(assignedCabinet(C)), alpha_not(otherPersonTOroom(P,R)), holds(maxRoom(MR)), W is MR-R.").
+% ===== aux per appiattimento livelli =====
+maxCabinetId(M) :- M = #max{ C : cabinetDomain(C) }.
+maxRoomId(M)    :- M = #max{ R : roomDomain(R) }.
+levelMul(LM)    :- LM = MC + MR + 10, maxCabinetId(MC), maxRoomId(MR).
+
+% ===== euristiche LAZY ALPHA =====
+heuristic("heuristic(reuseCabinet(C), W, 1, true) :- holds(legacyCabinet(C)), target_available(reuseCabinet(C)), holds(levelMul(LM)), W is 6 + 4*LM.").
+heuristic("heuristic(reuseRoom(R), W, 1, true) :- holds(legacyRoom(R)), target_available(reuseRoom(R)), holds(levelMul(LM)), W is 5 + 4*LM.").
+heuristic("heuristic(reuseCabinetThing(C,T), W, 1, true) :- holds(legacyCabinetThing(C,T)), holds(thingLong(T)), target_available(reuseCabinetThing(C,T)), holds(levelMul(LM)), W is 4 + 4*LM.").
+heuristic("heuristic(reuseCabinetThing(C,T), W, 1, true) :- holds(legacyCabinetThing(C,T)), holds(thingShort(T)), target_available(reuseCabinetThing(C,T)), holds(levelMul(LM)), W is 3 + 4*LM.").
+heuristic("heuristic(reuseRoomCabinet(R,C), W, 1, true) :- holds(legacyRoomCabinet(R,C)), target_available(reuseRoomCabinet(R,C)), holds(levelMul(LM)), W is 2 + 4*LM.").
+heuristic("heuristic(reusePersonRoom(P,R), W, 1, true) :- holds(legacyPersonRoom(P,R)), target_available(reusePersonRoom(P,R)), holds(levelMul(LM)), W is 1 + 4*LM.").
+heuristic("heuristic(cabinetTOthing(C,T), W, 1, true) :- holds(cabinetDomain(C)), holds(thingLong(T)), holds(personTOthing(P,T)), target_available(cabinetTOthing(C,T)), alpha_not(fullCabinet(C)), alpha_not(assignedThing(T)), alpha_not(otherPersonTOcabinet(P,C)), holds(maxCabinet(MC)), holds(levelMul(LM)), W is (MC-C) + 3*LM.").
+heuristic("heuristic(cabinetTOthing(C,T), W, 1, true) :- holds(cabinetDomain(C)), holds(thingShort(T)), holds(personTOthing(P,T)), target_available(cabinetTOthing(C,T)), alpha_not(fullCabinet(C)), alpha_not(assignedThing(T)), alpha_not(otherPersonTOcabinet(P,C)), holds(maxCabinet(MC)), holds(levelMul(LM)), W is (MC-C) + 2*LM.").
+heuristic("heuristic(roomTOcabinet(R,C), W, 1, true) :- holds(roomDomain(R)), holds(cabinet(C)), holds(personTOcabinet(P,C)), target_available(roomTOcabinet(R,C)), alpha_not(fullRoom(R)), alpha_not(assignedCabinet(C)), alpha_not(otherPersonTOroom(P,R)), holds(maxRoom(MR)), holds(levelMul(LM)), W is (MR-R) + 1*LM.").
 heuristic("heuristic(cabinet(C), 1, 0, false) :- holds(cabinetDomain(C)), target_available(cabinet(C)).").
 heuristic("heuristic(room(R), 1, 0, false) :- holds(roomDomain(R)), target_available(room(R)).").
 heuristic("heuristic(cabinetTOthing(C,T), 1, 0, false) :- holds(cabinetDomain(C)), holds(thing(T)), target_available(cabinetTOthing(C,T)).").

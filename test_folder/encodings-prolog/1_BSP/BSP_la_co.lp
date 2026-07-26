@@ -1,7 +1,3 @@
-% ============================================
-% Lazy grounding delle euristiche e vincolo ottimizzato
-% il range è definito in:
-% instances/BSP_instances/BSP_range.lp
 
 x(1..n).
 heuristic_base(Base) :- Base = n + 1.
@@ -14,10 +10,10 @@ heuristic_base(Base) :- Base = n + 1.
 b(X) :- x(X), not c(X).
 c(X) :- x(X), not b(X).
 
-% Check lineare equivalente al vincolo sulla differenza tra le somme.
+% check solution
 :- not min_val <= #sum{ Y : b(Y) } <= max_val.
 
-% query-driven lazy heuristics, alpha-like default negation
+% heuristics
 heuristic("heuristic(b(X), W, 0, true) :- aggregate_all(sum(Y), holds(c(Y)), S), holds(heuristic_base(Base)), holds(x(X)), target_available(b(X)), alpha_not(c(X)), W is Base*S+X.").
 heuristic("heuristic(c(X), W, 0, true) :- aggregate_all(sum(Y), holds(b(Y)), S), holds(heuristic_base(Base)), holds(x(X)), target_available(c(X)), alpha_not(b(X)), W is Base*S+X.").
 

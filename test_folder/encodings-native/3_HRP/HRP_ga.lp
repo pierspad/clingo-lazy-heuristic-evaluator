@@ -1,27 +1,3 @@
-% ============================================================
-% HRP - GROUND ALPHA (ga): simulazione ground-and-solve della semantica
-% Alpha, coerente con BSP_ga / PUP_ga e SIMMETRICA a HRP_gc.
-%
-% Principio (cardine BSP): da gc ad ga si applica la trasformazione
-% minima e controllata ->
-%   1) si lascia cadere l'intero sotto-goal NEGATIVO su stato parziale
-%      (in Alpha 'not p' = "p non ancora vero"; in ground clingo 'not p'
-%      = "p falso", non esprimibile -> si elimina, come 'not c(X)' in BSP);
-%   2) se il peso contiene un aggregato, l'uguaglianza '=' diventa un bound
-%      '<='/'>=' su dominio statico (pattern sum_value di BSP / value di PUP).
-%      In HRP il peso e' STATICO (W=MC-C), quindi il passo 2 NON si applica:
-%      non c'e' aggregato da convertire e l'unica mossa e' il passo 1.
-%   3) i PESI restano APPIATTITI [W,true] IDENTICI a gc (niente @priority:
-%      in clingo @priority arbitra solo modifiche allo STESSO atomo, non
-%      l'ordine globale -> va appiattito nel peso, cfr. INTENT.txt).
-%
-% Risultato: gc e ga condividono lo stesso scheletro positivo e gli stessi
-% pesi, e differiscono SOLO per i 'not' (come 'lc' vs 'la' differiscono solo
-% per clingo_not vs alpha_not). La semantica Alpha FEDELE su stato parziale
-% resta catturata unicamente dalla variante lazy 'la'.
-%
-% Esegui con: --heuristic=Domain
-% ============================================================
 
 % --- domini di cabinet e stanze ---
 cabinetDomain(C) :- cabinetDomainNew(C).
@@ -120,21 +96,12 @@ personTOcabinet(P,C) :- personTOthing(P,T), cabinetTOthing(C,T).
 otherPersonTOcabinet(P,C) :- personTOcabinet(P2,C), person(P), P!=P2.
 otherPersonTOroom(P,R)    :- roomTOcabinet(R,C), personTOcabinet(P2,C), person(P), P!=P2.
 
-% ===== aux per appiattimento livelli (identico a HRP_gc) =====
+% ===== aux per appiattimento livelli =====
 maxCabinetId(M) :- M = #max{ C : cabinetDomain(C) }.
 maxRoomId(M)    :- M = #max{ R : roomDomain(R) }.
 levelMul(LM)    :- LM = MC + MR + 10, maxCabinetId(MC), maxRoomId(MR).
 
-% ===== euristiche GA (alpha-sim ground, BSP-consistente) =====
-% Rispetto a HRP_gc cadono SOLO i 'not' su stato parziale (not fullCabinet,
-% not assignedThing, not otherPerson..., e i loro binder orfani
-% personTOthing/personTOcabinet): in ground clingo 'not p' = "p falso", che
-% NON e' la semantica Alpha ("p non ancora vero"). Non essendoci aggregati
-% nel peso (W=MC-C statico), non c'e' alcun '='->'<=' da convertire come in
-% BSP/PUP: l'unica mossa alpha-sim disponibile e' lasciar cadere il
-% sotto-goal negativo. Resta un ordinamento statico (reuse > cabinet id
-% minore, lunghe prima > stanze). I PESI sono APPIATTITI [W,true], IDENTICI
-% a gc: gc e ga differiscono ESCLUSIVAMENTE per i 'not'.
+% ===== euristiche GA =====
 #heuristic reuseCabinet(C)        : legacyCabinet(C), levelMul(LM), W = 6 + 4*LM. [W, true]
 #heuristic reuseRoom(R)           : legacyRoom(R), levelMul(LM), W = 5 + 4*LM. [W, true]
 #heuristic reuseCabinetThing(C,T) : legacyCabinetThing(C,T), thingLong(T),  levelMul(LM), W = 4 + 4*LM. [W, true]

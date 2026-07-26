@@ -1,19 +1,3 @@
-% ============================================================
-% HRP - LAZY ALPHA (la), backend NATIVE (propagatore C++, fatti __heuristic).
-% Euristica di Romero 1 (Sez. 6.2.3): NESSUN aggregato, ma 'not' su stato
-% PARZIALE con semantica ALPHA (__semantics(alpha) + __n_<pred>).
-%
-% Il DSL nativo nega/lega sulla TUPLA del target, quindi i 'not' su
-% predicati a sottoinsieme di argomenti o con join sono PRECOMPILATI in
-% ausiliari same-tuple (sezione "ausiliari SAME-TUPLE"):
-%   not fullCabinet(C)            -> __n_cabFull        (cabFull(C,T))
-%   not T assignedThing(T)        -> __n_thingAssignedAt(thingAssignedAt(C,T))
-%   not otherPersonTOcabinet(P,C) -> __n_cabOtherPerson (join P precompilato)
-%   ... analoghi per roomTOcabinet.
-% Peso W = MC-C (risp. MR-R): MC/MR sono costanti iniettate dal corpo ASP
-% ":- maxCabinet(MC)". Priorita' native: reuse(4) > cab(3/2) > room(1) >
-% chiusura(0, __modifier(false)). Esegui con: --heuristic=Domain.
-% ============================================================
 
 % --- domini di cabinet e stanze ---
 cabinetDomain(C) :- cabinetDomainNew(C).
@@ -128,16 +112,21 @@ roomFull(R,C)        :- roomDomain(R), cabinet(C), fullRoom(R).
 cabAssignedAt(R,C)   :- roomDomain(R), cabinet(C), assignedCabinet(C).
 roomOtherPerson(R,C) :- roomDomain(R), cabinet(C), personTOcabinet(P,C), otherPersonTOroom(P,R).
 
-% ===== euristiche LAZY ALPHA (la) - DSL nativo __heuristic =====
-__heuristic(__target(reuseCabinet),      legacyCabinet,            __weight(6), __priority(4), __semantics(alpha), __modifier(true)).
-__heuristic(__target(reuseRoom),         legacyRoom,               __weight(5), __priority(4), __semantics(alpha), __modifier(true)).
-__heuristic(__target(reuseCabinetThing), legacyCabinetThingLong,   __weight(4), __priority(4), __semantics(alpha), __modifier(true)).
-__heuristic(__target(reuseCabinetThing), legacyCabinetThingShort,  __weight(3), __priority(4), __semantics(alpha), __modifier(true)).
-__heuristic(__target(reuseRoomCabinet),  legacyRoomCabinet,        __weight(2), __priority(4), __semantics(alpha), __modifier(true)).
-__heuristic(__target(reusePersonRoom),   legacyPersonRoom,         __weight(1), __priority(4), __semantics(alpha), __modifier(true)).
-__heuristic(__target(cabinetTOthing), cabLongCand,  __n_cabFull, __n_thingAssignedAt, __n_cabOtherPerson, __weight(__sub(MC, self)), __priority(3), __semantics(alpha), __modifier(true)) :- maxCabinet(MC).
-__heuristic(__target(cabinetTOthing), cabShortCand, __n_cabFull, __n_thingAssignedAt, __n_cabOtherPerson, __weight(__sub(MC, self)), __priority(2), __semantics(alpha), __modifier(true)) :- maxCabinet(MC).
-__heuristic(__target(roomTOcabinet),  roomCabCand,  __n_roomFull, __n_cabAssignedAt, __n_roomOtherPerson, __weight(__sub(MR, self)), __priority(1), __semantics(alpha), __modifier(true)) :- maxRoom(MR).
+% ===== aux per appiattimento livelli =====
+maxCabinetId(M) :- M = #max{ C : cabinetDomain(C) }.
+maxRoomId(M)    :- M = #max{ R : roomDomain(R) }.
+levelMul(LM)    :- LM = MC + MR + 10, maxCabinetId(MC), maxRoomId(MR).
+
+% ===== euristiche LAZY ALPHA =====
+__heuristic(__target(reuseCabinet),      legacyCabinet,            __weight(__add(6, __mul(4, LM))), __priority(1), __semantics(alpha), __modifier(true)) :- levelMul(LM).
+__heuristic(__target(reuseRoom),         legacyRoom,               __weight(__add(5, __mul(4, LM))), __priority(1), __semantics(alpha), __modifier(true)) :- levelMul(LM).
+__heuristic(__target(reuseCabinetThing), legacyCabinetThingLong,   __weight(__add(4, __mul(4, LM))), __priority(1), __semantics(alpha), __modifier(true)) :- levelMul(LM).
+__heuristic(__target(reuseCabinetThing), legacyCabinetThingShort,  __weight(__add(3, __mul(4, LM))), __priority(1), __semantics(alpha), __modifier(true)) :- levelMul(LM).
+__heuristic(__target(reuseRoomCabinet),  legacyRoomCabinet,        __weight(__add(2, __mul(4, LM))), __priority(1), __semantics(alpha), __modifier(true)) :- levelMul(LM).
+__heuristic(__target(reusePersonRoom),   legacyPersonRoom,         __weight(__add(1, __mul(4, LM))), __priority(1), __semantics(alpha), __modifier(true)) :- levelMul(LM).
+__heuristic(__target(cabinetTOthing), cabLongCand,  __n_cabFull, __n_thingAssignedAt, __n_cabOtherPerson, __weight(__add(__sub(MC, self), __mul(3, LM))), __priority(1), __semantics(alpha), __modifier(true)) :- maxCabinet(MC), levelMul(LM).
+__heuristic(__target(cabinetTOthing), cabShortCand, __n_cabFull, __n_thingAssignedAt, __n_cabOtherPerson, __weight(__add(__sub(MC, self), __mul(2, LM))), __priority(1), __semantics(alpha), __modifier(true)) :- maxCabinet(MC), levelMul(LM).
+__heuristic(__target(roomTOcabinet),  roomCabCand,  __n_roomFull, __n_cabAssignedAt, __n_roomOtherPerson, __weight(__add(__sub(MR, self), __mul(1, LM))), __priority(1), __semantics(alpha), __modifier(true)) :- maxRoom(MR), levelMul(LM).
 __heuristic(__target(cabinet),        cabinetDomain, __weight(1), __priority(0), __semantics(alpha), __modifier(false)).
 __heuristic(__target(room),           roomDomain,    __weight(1), __priority(0), __semantics(alpha), __modifier(false)).
 __heuristic(__target(cabinetTOthing), cabThingDom,   __weight(1), __priority(0), __semantics(alpha), __modifier(false)).

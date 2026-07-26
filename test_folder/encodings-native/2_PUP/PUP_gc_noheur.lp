@@ -1,28 +1,3 @@
-% ============================================================
-% PUP (Partner Units Problem) - baseline SENZA euristiche.
-% Architettura: ALPHA/Evaluation/PUP/encoding-alpha-prologheu-double.asp
-%
-% Contiene solo la logica di dominio: fatti iniziali, propagazione
-% induttiva della scelta (doppia negazione su assigned_zone_unit /
-% assigned_sensor_unit) e vincoli di integrita'.
-% Nessuna direttiva #heuristic e nessun predicato ausiliario
-% (num_sensors_on_unit/2, num_forbidden_places_of_sensors/2, ...).
-%
-% Adattamenti rispetto al file Alpha originale:
-%   - operatore di disuguaglianza: !=  (Alpha usa <>)
-%   - bound comUnit(U+-1) sulle regole assignable_*: senza, la catena
-%     induttiva U+1 e' illimitata a destra e il grounding di gringo
-%     DIVERGE (Alpha la esplora lazy, gringo materializza tutto);
-%   - vincoli di capacita' riscritti come aggregato monotono
-%     2 <= #count{...} (equivalente alla coppia esistenziale, ma con
-%     grounding lineare invece che cubico);
-%   - rimossa (da TUTTE le varianti, uniformemente) la regola di blocco
-%     "zone/sensori a distanza 2 con unit di mezzo piena": e' solo
-%     propagazione ridondante (il vincolo di adiacenza la sussume) e
-%     il suo grounding e' cubico.
-%
-% Le istanze forniscono: comUnit/1, zone2sensor/2.
-% ============================================================
 
 %%% initial assignment
 

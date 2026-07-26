@@ -1,10 +1,4 @@
-% ============================================
-% BSP - LAZY, backend NATIVE, semantica ALPHA, dominio ottimizzato "co".
-% Equivalente nativo di encodings-prolog/1_BSP/BSP_la_co.lp.
-% Stessa euristica di BSP_la.lp (alpha), ma il vincolo sulla differenza
-% tra le somme e' espresso linearmente con min_val <= #sum <= max_val.
-% W is (n+1)*S + X. Esegui con: --heuristic=Domain
-% ============================================
+
 
 x(1..n).
 
@@ -16,7 +10,7 @@ x(1..n).
 b(X) :- x(X), not c(X).
 c(X) :- x(X), not b(X).
 
-% check lineare equivalente al vincolo sulla differenza tra le somme.
+% check solution
 :- not min_val <= #sum{ Y : b(Y) } <= max_val.
 
 % heuristics (DSL nativo, semantica alpha)

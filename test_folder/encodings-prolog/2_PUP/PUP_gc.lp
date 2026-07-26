@@ -1,43 +1,3 @@
-% ============================================================
-% PUP (Partner Units Problem) - GROUND CLINGO (gc).
-% Architettura: ALPHA/Evaluation/PUP/encoding-alpha-prologheu-double.asp
-%
-% Direttive #heuristic native di clingo con AGGREGATI DINAMICI di
-% ASSEGNAMENTO (V = #count{...}, V = #max{...}) legati allo stato
-% parziale del solver. Per groundarle, gringo e' costretto a
-% "unrollare" ogni variabile-aggregato su tutti i valori possibili:
-% ogni direttiva esplode nel prodotto cartesiano
-%   Deg x Forbidden x Assigned x Direct   (sensori)
-%   Assigned x N0 x N1 x N2               (zone)
-% per ciascuna coppia ground (S,U) / (Z,U). Questa e' l'esplosione
-% combinatoria misurata dal benchmark.
-%
-% Adattamenti rispetto al file Alpha originale (motivati nei commenti):
-%   - !=  al posto di  <>
-%   - sensorNumbers(0..2) al posto di sensorNumbers(0..maxSensor):
-%     la capacita' di una unit e' 2, quindi i contatori oltre 2 non
-%     sono mai rilevanti; senza questo cap il solo predicato ausiliario
-%     num_forbidden_places_of_sensors esploderebbe in TUTTE le varianti
-%     (anche lazy e baseline), falsando il confronto.
-%   - #max{0; ...} include l'elemento costante 0: replica la convenzione
-%     "max di insieme vuoto = 0" usata da Alpha e dal runtime Prolog
-%     (dyn_max) ed evita il valore #inf di clingo.
-%   - clamp "<= 2" sui #count per-unit: limite di capacita'; senza
-%     clamp gringo enumererebbe valori fino al numero di elementi
-%     possibili sull'unit (~O(n)) invece che fino alla capacita'.
-%   - PESI LINEARIZZATI (niente @priority): in clingo la @priority di un
-%     #heuristic arbitra solo modifiche sullo STESSO atomo, NON il ranking
-%     globale tra atomi diversi (quello lo da' il solo peso, cfr. BSP e
-%     INTENT.txt). L'ordine globale "zone prima dei sensori" e' quindi
-%     appiattito nel peso tramite l'offset +100000 sulle zone, che fa da
-%     moltiplicatore di livello: peso_zona >= 100000 > max peso_sensore.
-%     Bound: max peso_sensore = maxDeg*10000 + 6*1000 + 2*100 + 2*10
-%     = maxDeg*10000 + 6220; sulle istanze double/doubleV maxDeg<=4
-%     (=> <=46220 < 100000), quindi l'offset domina sempre. Entrambe le
-%     direttive usano [W, true] (livello @0 implicito, identico).
-%
-% Le istanze forniscono: comUnit/1, zone2sensor/2.
-% ============================================================
 
 %%% initial assignment
 
@@ -96,7 +56,6 @@ assigned_sensor(S) :- assigned_sensor_unit(S,U).
 
 %%% auxiliary predicates for heuristics
 
-% capacita' di una unit: al massimo 2 sensori (vedi header).
 sensorNumbers(0..2).
 
 num_sensors_on_unit(N,U) :- comUnit(U), sensorNumbers(N),
@@ -130,8 +89,7 @@ num_forbidden_places_of_sensors(S,N1+4) :- assignable_sensor_unit(S,_),
 :- zone2sensor(Z,S), assigned_sensor_unit(S,U1), assigned_zone_unit(Z,U2), |U1-U2| > 1.
 
 
-%%% heuristics (semantica clingo: aggregati di assegnamento esatti,
-%%% condizione negativa NAF nativa "not not_assigned_...")
+%%% heuristics
 
 #heuristic assigned_sensor_unit(S,U) :
         assignable_sensor_unit(S,U),

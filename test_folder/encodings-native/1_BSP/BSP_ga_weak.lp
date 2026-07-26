@@ -1,7 +1,3 @@
-% ============================================
-% Alpha semantics ground-and-solve per BSP.
-% il range è definito in :
-% instances/BSP_instances/BSP_range.lp
 
 x(1..n).
 

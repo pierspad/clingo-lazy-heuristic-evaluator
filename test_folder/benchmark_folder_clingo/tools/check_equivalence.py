@@ -95,18 +95,25 @@ def backend_env(backend: str) -> dict[str, str]:
         env["LAZY_HEURISTIC_BACKEND"] = "prolog"
     else:
         env.pop("LAZY_HEURISTIC_BACKEND", None)
-    # Abilita il summary su stderr ("[lazy-prolog] summary decide_calls=...") cosi'
-    # da poter verificare che il propagatore prolog sia DAVVERO entrato in azione.
+    # Abilita il summary su stderr ("[lazy-<backend>] summary decide_calls=...")
+    # cosi' da poter verificare che il propagatore sia DAVVERO entrato in
+    # azione. LAZY_HEURISTIC_STATS e' il nome canonico (vale per entrambi i
+    # backend), LAZY_PROLOG_STATS resta per il binario prolog.
+    env["LAZY_HEURISTIC_STATS"] = "1"
     env["LAZY_PROLOG_STATS"] = "1"
     return env
 
 
+SUMMARY_PREFIXES = ("[lazy-prolog] summary", "[lazy-native] summary")
+
+
 def parse_decide_calls(stderr: str) -> int | None:
-    # Estrae decide_calls dal summary del backend prolog. None se il summary non
-    # e' stato emesso (il propagatore non e' mai entrato in azione: fallback).
+    # Estrae decide_calls dal summary del propagatore (native o prolog). None se
+    # il summary non e' stato emesso (il propagatore non e' mai entrato in
+    # azione: fallback silenzioso).
     for line in stderr.splitlines():
         stripped = line.strip()
-        if not stripped.startswith("[lazy-prolog] summary"):
+        if not stripped.startswith(SUMMARY_PREFIXES):
             continue
         for part in stripped.split():
             if part.startswith("decide_calls="):

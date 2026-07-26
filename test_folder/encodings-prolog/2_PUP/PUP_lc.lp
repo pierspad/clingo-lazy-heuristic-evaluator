@@ -1,28 +1,3 @@
-% ============================================================
-% PUP (Partner Units Problem) - LAZY CLINGO (lc, backend Prolog).
-% Architettura: ALPHA/Evaluation/PUP/encoding-alpha-prologheu-double.asp
-%
-% Logica di dominio e predicati ausiliari IDENTICI a PUP_gc.lp, ma
-% nessuna direttiva #heuristic nativa: le euristiche sono iniettate
-% come stringhe Prolog tramite heuristic("...") e valutate a runtime
-% dal propagatore (LAZY_HEURISTIC_BACKEND=prolog). Il grounder non
-% vede alcun aggregato euristico: niente esplosione combinatoria.
-%
-% Traduzione degli aggregati (runtime SWI-Prolog):
-%   #count{...}  -> aggregate_all(count, (holds(...), ...), V)
-%   #max{0; ...} -> dyn_max(holds(...), N, V)   (0 se l'insieme e' vuoto)
-% Condizioni negative con semantica CLINGO:
-%   not p(X)     -> clingo_not(p(X))   (vera solo se p(X) e' assegnato falso)
-% Sicurezza a runtime: target_available(...) garantisce che il target
-% sia ancora libero (ne' vero ne' falso).
-%
-% Ranking globale del backend: (Priority, Weight) decrescenti; la
-% priorita' 1 delle zone replica nativamente [W@1] > [W@0] del file
-% originale (in gc/ga e' appiattita nel peso con offset +100000).
-%
-% Stessi adattamenti di dominio di PUP_gc.lp: !=, sensorNumbers(0..2).
-% Le istanze forniscono: comUnit/1, zone2sensor/2.
-% ============================================================
 
 %%% initial assignment
 
@@ -81,7 +56,6 @@ assigned_sensor(S) :- assigned_sensor_unit(S,U).
 
 %%% auxiliary predicates for heuristics
 
-% capacita' di una unit: al massimo 2 sensori (vedi header).
 sensorNumbers(0..2).
 
 num_sensors_on_unit(N,U) :- comUnit(U), sensorNumbers(N),
@@ -115,34 +89,11 @@ num_forbidden_places_of_sensors(S,N1+4) :- assignable_sensor_unit(S,_),
 :- zone2sensor(Z,S), assigned_sensor_unit(S,U1), assigned_zone_unit(Z,U2), |U1-U2| > 1.
 
 
-%%% heuristics (stringhe Prolog, semantica clingo: clingo_not)
-% head is heuristic(Target, Weight, Priority, Modifier)
+%%% heuristics
 
 heuristic("heuristic(assigned_sensor_unit(S,U), W, 0, true) :- holds(assignable_sensor_unit(S,U)), target_available(assigned_sensor_unit(S,U)), clingo_not(not_assigned_sensor_unit(S,U)), aggregate_all(count, (holds(zone2sensor(Z,S)), holds(assigned_zone_unit(Z,_))), Deg), dyn_max(holds(num_forbidden_places_of_sensors(S,N)), N, Forb), aggregate_all(count, holds(assigned_sensor_unit(SN,U)), Cnt), aggregate_all(count, (holds(assigned_zone_unit(Z1,U)), holds(zone2sensor(Z1,S))), Direct), W is Deg*10000 + Forb*1000 + Cnt*100 + Direct*10.").
 
-% heuristic(assigned_sensor_unit(S,U), W, 0, true) :-
-%     holds(assignable_sensor_unit(S,U)),
-%     target_available(assigned_sensor_unit(S,U)),
-%     clingo_not(not_assigned_sensor_unit(S,U)),
-%     aggregate_all(count, (holds(zone2sensor(Z,S)), holds(assigned_zone_unit(Z,_))), Deg),
-%     dyn_max(holds(num_forbidden_places_of_sensors(S,N)), N, Forb),
-%     aggregate_all(count, holds(assigned_sensor_unit(SN,U)), Cnt),
-%     aggregate_all(count, (holds(assigned_zone_unit(Z1,U)), holds(zone2sensor(Z1,S))), Direct),
-%     W is Deg*10000 + Forb*1000 + Cnt*100 + Direct*10.
-
-heuristic("heuristic(assigned_zone_unit(Z,U), W, 1, true) :- holds(assignable_zone_unit(Z,U)), target_available(assigned_zone_unit(Z,U)), clingo_not(not_assigned_zone_unit(Z,U)), aggregate_all(count, holds(assigned_zone_unit(ZN,U)), A), U1 is U - 1, U2 is U + 1, dyn_max(holds(num_sensors_on_unit(N0,U)), N0, M0), dyn_max(holds(num_sensors_on_unit(N1,U1)), N1, M1), dyn_max(holds(num_sensors_on_unit(N2,U2)), N2, M2), Avail is 6 - (M0 + M1 + M2), W is A*10 + Avail.").
-
-% heuristic(assigned_zone_unit(Z,U), W, 1, true) :-
-%     holds(assignable_zone_unit(Z,U)),
-%     target_available(assigned_zone_unit(Z,U)),
-%     clingo_not(not_assigned_zone_unit(Z,U)),
-%     aggregate_all(count, holds(assigned_zone_unit(ZN,U)), A),
-%     U1 is U - 1, U2 is U + 1,
-%     dyn_max(holds(num_sensors_on_unit(N0,U)), N0, M0),
-%     dyn_max(holds(num_sensors_on_unit(N1,U1)), N1, M1),
-%     dyn_max(holds(num_sensors_on_unit(N2,U2)), N2, M2),
-%     Avail is 6 - (M0 + M1 + M2),
-%     W is A*10 + Avail.
+heuristic("heuristic(assigned_zone_unit(Z,U), W, 0, true) :- holds(assignable_zone_unit(Z,U)), target_available(assigned_zone_unit(Z,U)), clingo_not(not_assigned_zone_unit(Z,U)), aggregate_all(count, holds(assigned_zone_unit(ZN,U)), A), U1 is U - 1, U2 is U + 1, dyn_max(holds(num_sensors_on_unit(N0,U)), N0, M0), dyn_max(holds(num_sensors_on_unit(N1,U1)), N1, M1), dyn_max(holds(num_sensors_on_unit(N2,U2)), N2, M2), Avail is 6 - (M0 + M1 + M2), W is A*10 + Avail + 100000.").
 
 #show assigned_zone_unit/2.
 #show assigned_sensor_unit/2.

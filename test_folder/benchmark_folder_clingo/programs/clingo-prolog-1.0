@@ -31,6 +31,10 @@ unset _swipl_libdir
 export LAZY_HEURISTIC_BACKEND=prolog
 # Abilita l'emissione della riga "[lazy-prolog] summary ..." su stderr, da cui
 # il resultparser estrae decide_calls e i tempi del propagatore query-driven.
+# LAZY_HEURISTIC_STATS e' il nome canonico condiviso con il backend native;
+# LAZY_PROLOG_STATS resta esportato perche' e' quello che il binario prolog
+# gia' compilato riconosce.
+export LAZY_HEURISTIC_STATS=1
 export LAZY_PROLOG_STATS=1
 
 export LC_ALL=C

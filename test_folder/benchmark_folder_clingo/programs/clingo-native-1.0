@@ -15,6 +15,12 @@ set -euo pipefail
 # variabile non sia ereditata dall'ambiente (pulizia, evita falsi positivi).
 unset LAZY_HEURISTIC_BACKEND 2>/dev/null || true
 
+# Abilita la riga "[lazy-native] summary ..." su stderr (simmetrica alla
+# "[lazy-prolog] summary ..." del backend prolog): senza questo export il
+# propagatore C++ non emette NULLA e le metriche decide_calls / ms_per_decide
+# restano misurabili su un solo backend, quindi inconfrontabili.
+export LAZY_HEURISTIC_STATS=1
+
 # Locale numerico stabile per il parsing delle statistiche (punto decimale).
 export LC_ALL=C
 export LC_NUMERIC=C

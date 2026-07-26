@@ -1,38 +1,3 @@
-% ============================================================
-% PUP (Partner Units Problem) - GROUND ALPHA (ga).
-% Architettura: ALPHA/Evaluation/PUP/encoding-alpha-prologheu-double.asp
-%
-% Come PUP_gc.lp, ma le condizioni di attivazione delle euristiche
-% simulano la semantica di Alpha sullo stato parziale, replicando il
-% pattern di BSP_ga.lp (sum_value + bound) sugli aggregati:
-%
-%   - ogni variabile-aggregato e' unrollata su un DOMINIO STATICO
-%     (deg_value, forb_value, unit_count_value, occ_value) e legata
-%     all'aggregato da un BOUND invece che da un assegnamento esatto;
-%   - per le componenti con peso CRESCENTE si usa  V <= #agg{...}:
-%     la condizione diventa vera in modo monotono appena lo stato
-%     parziale raggiunge il bound (attivazione "anticipata", come la
-%     valutazione lazy di Alpha) e la selezione max-W di clasp
-%     ricostruisce il valore corrente esatto;
-%   - per N0,N1,N2 (peso DEcrescente: spazi disponibili) si usa
-%     V >= #max{...}: la selezione max-W sceglie il minimo V provato,
-%     cioe' di nuovo il valore corrente. Un lower bound qui renderebbe
-%     la componente inerte (max-W sceglierebbe sempre Ni=0);
-%   - come BSP_ga.lp elimina "not c(X)", qui sono eliminate le
-%     condizioni NAF "not not_assigned_..." (in Alpha sarebbero vere
-%     anche su atomi indefiniti; clasp comunque non decide mai atomi
-%     gia' assegnati).
-%
-% Stessi adattamenti di dominio di PUP_gc.lp (bound comUnit sugli
-% assignable, capacita' come aggregato, regola distanza-2 rimossa), piu': !=, sensorNumbers(0..2),
-% #max{0; ...} (max di insieme vuoto = 0). PESI LINEARIZZATI come in gc:
-% niente @priority (inerte tra atomi diversi in clingo), l'ordine globale
-% "zone prima dei sensori" e' appiattito nel peso dall'offset +100000
-% sulle zone (max peso_sensore = maxDeg*10000+6220 <= 46220 < 100000 sulle
-% istanze double/doubleV). Entrambe le direttive usano [W, true].
-%
-% Le istanze forniscono: comUnit/1, zone2sensor/2.
-% ============================================================
 
 %%% initial assignment
 
@@ -91,7 +56,6 @@ assigned_sensor(S) :- assigned_sensor_unit(S,U).
 
 %%% auxiliary predicates for heuristics
 
-% capacita' di una unit: al massimo 2 sensori (vedi header).
 sensorNumbers(0..2).
 
 num_sensors_on_unit(N,U) :- comUnit(U), sensorNumbers(N),
@@ -117,7 +81,7 @@ num_forbidden_places_of_sensors(S,N1+4) :- assignable_sensor_unit(S,_),
     assigned_zone_unit(Z,U), assigned_zone_unit(Z2,U+2),
     num_sensors_on_unit(N1,U+1).
 
-%%% domini statici dei valori per l'unrolling (pattern sum_value di BSP_ga)
+%%% domini statici dei valori per l'unrolling
 
 degree_sensor(S,N) :- zone2sensor(Z,S), N = #count{ZN: zone2sensor(ZN,S)}.
 max_sensor_degree(M) :- M = #max{N: degree_sensor(_,N)}.
@@ -135,7 +99,7 @@ occ_value(0..2).                           % occupazione sensori di una unit
 :- zone2sensor(Z,S), assigned_sensor_unit(S,U1), assigned_zone_unit(Z,U2), |U1-U2| > 1.
 
 
-%%% heuristics (semantica alpha simulata: domini statici + bound)
+%%% heuristics
 
 #heuristic assigned_sensor_unit(S,U) :
         assignable_sensor_unit(S,U),

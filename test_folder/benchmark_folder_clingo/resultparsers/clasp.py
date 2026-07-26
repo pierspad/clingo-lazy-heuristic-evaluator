@@ -8,13 +8,14 @@ selezionato basta `measures="clasp"` sui system + questo file in
   * tempo di SOLVING e GROUNDING derivati dalle statistiche clingo
     (Time: total (Solving: ...)) -> il grounding e' total - solving;
   * conteggi strutturali clingo: rules, variables, atoms, constraints;
-  * metriche del propagatore query-driven dal backend prolog, estratte dalla
-    riga `[lazy-prolog] summary key=value ...` su stderr
-    (decide_calls, tempi di decide/sync/query/scan/lookup/selection,
-    candidate seen/max/avg);
+  * metriche del propagatore, estratte dalla riga di summary su stderr —
+    `[lazy-prolog] summary key=value ...` per il backend SWI-Prolog e
+    `[lazy-native] summary key=value ...` per il backend C++ (decide_calls,
+    tempi di decide/sync/scan, candidate seen/max/avg), piu' la derivata
+    `ms_per_decide` comune ai due;
   * flag di sanity `lazy_active`: intercetta il fallback silenzioso di una
-    variante lazy (l*) sul backend prolog quando l'euristica NON ha mai deciso
-    (decide_calls assente o 0) -> "inactive".
+    variante lazy (l*) quando l'euristica NON ha mai deciso (decide_calls
+    assente o 0) -> "inactive". Vale per entrambi i backend.
 
 La memoria di picco (`mem`, da runlim `space`) e' misurata sull'UNICO processo
 clingo che grounda E risolve: cattura quindi anche l'esplosione di grounding
@@ -60,29 +61,56 @@ TIME_RE = re.compile(
     r"^Time[ ]*:[ ]*(?P<total>[0-9]+(?:\.[0-9]+)?)s\s*\(Solving:\s*(?P<solving>[0-9]+(?:\.[0-9]+)?)s"
 )
 
-# Riga di riepilogo del backend prolog (emessa solo con LAZY_PROLOG_STATS=1).
-SUMMARY_PREFIX = "[lazy-prolog] summary "
+# Righe di riepilogo del propagatore, emesse su stderr con
+# LAZY_HEURISTIC_STATS=1 (alias storico: LAZY_PROLOG_STATS=1). Entrambi i
+# backend usano lo stesso formato `key=value` e le stesse chiavi dove la
+# metrica ha lo stesso significato, cambia solo il prefisso:
+#   [lazy-prolog] summary ...  -> backend SWI-Prolog in-process
+#   [lazy-native] summary ...  -> backend C++ puro
+# In questo modo le misure del propagatore NON sono piu' "solo prolog": si
+# confrontano fra backend senza casi speciali nei grafici. Restano
+# intrinsecamente prolog-only le voci legate alla query esterna
+# (total_prolog_query_time_ms, total_literal_lookup_time_ms,
+# total_candidate_selection_time_ms), perche' nel backend native non esiste
+# alcun motore da interrogare: e' una differenza reale fra i due disegni, non
+# una lacuna di misura.
+SUMMARY_PREFIXES = ("[lazy-prolog] summary ", "[lazy-native] summary ")
 LAZY_FIELDS = (
+    # comuni ai due backend
     "decide_calls",
     "total_decide_time_ms",
     "total_state_sync_time_ms",
-    "total_prolog_query_time_ms",
     "total_candidate_scan_time_ms",
-    "total_literal_lookup_time_ms",
-    "total_candidate_selection_time_ms",
     "total_candidates_seen",
     "max_candidates_seen",
     "avg_candidates_per_decide",
+    # solo prolog (query verso il motore esterno)
+    "total_prolog_query_time_ms",
+    "total_literal_lookup_time_ms",
+    "total_candidate_selection_time_ms",
+    # solo native (contatori del propagatore in-memory)
+    "decide_hits",
+    "propagate_calls",
+    "undo_calls",
 )
 
 # penalized-average-runtime score constant
 PAR = 2
 
 
-def _parse_lazy_summary(line: str) -> dict[str, float]:
-    """Estrae le coppie key=value dalla riga `[lazy-prolog] summary ...`."""
+def _summary_payload(line: str) -> str | None:
+    """Se `line` e' una riga di summary del propagatore rende la parte
+    `key=value ...`, altrimenti None (qualunque sia il backend che l'ha
+    emessa)."""
+    for prefix in SUMMARY_PREFIXES:
+        if line.startswith(prefix):
+            return line.strip()[len(prefix):]
+    return None
+
+
+def _parse_lazy_summary(payload: str) -> dict[str, float]:
+    """Estrae le coppie key=value dal payload di una riga di summary."""
     out: dict[str, float] = {}
-    payload = line.strip()[len(SUMMARY_PREFIX):]
     for part in payload.split():
         if "=" not in part:
             continue
@@ -119,9 +147,11 @@ def parse(
         try:
             with open(os.path.join(path, f), errors="ignore", encoding="utf-8") as file:
                 for line in file:
-                    # Riepilogo propagatore prolog (puo' comparire una sola volta).
-                    if line.startswith(SUMMARY_PREFIX):
-                        lazy = _parse_lazy_summary(line)
+                    # Riepilogo del propagatore (native o prolog): puo'
+                    # comparire una sola volta, alla distruzione del propagatore.
+                    payload = _summary_payload(line)
+                    if payload is not None:
+                        lazy = _parse_lazy_summary(payload)
                         continue
                     # Time: total (Solving: ...).
                     mt = TIME_RE.match(line)
@@ -195,19 +225,26 @@ def parse(
     for key, value in res.items():
         result[key] = (value[0], value[1])
 
-    # --- Metriche del propagatore prolog -------------------------------------
+    # --- Metriche del propagatore (native o prolog) --------------------------
     for field in LAZY_FIELDS:
         if field in lazy:
             result[field] = ("float", lazy[field])
 
+    # Derivata comune ai due backend: costo medio di UNA decisione del
+    # propagatore. E' la metrica che rende confrontabili i due disegni
+    # (in-memory vs query a SWI) a parita' di lavoro svolto, indipendentemente
+    # da quante decisioni la ricerca abbia poi richiesto.
+    decide_calls = lazy.get("decide_calls", 0.0)
+    if decide_calls > 0 and "total_decide_time_ms" in lazy:
+        result["ms_per_decide"] = ("float", lazy["total_decide_time_ms"] / decide_calls)
+
     # --- Flag di sanity: euristica lazy attiva? ------------------------------
     # variante = nome del setting (la, lc, la_aux, ...); la prima lettera 'l'
-    # indica l'approccio lazy. is_prolog = il system e' il backend prolog.
+    # indica l'approccio lazy. Ora che ANCHE il backend native emette il
+    # summary, il flag vale per entrambi i system: un l* che non ha mai deciso
+    # e' un fallback silenzioso su gc_noheur, e va intercettato ovunque.
     variant = str(runspec.setting.name).lower()
-    is_lazy = variant.startswith("l")
-    is_prolog = "prolog" in str(runspec.system.name).lower()
-    if is_lazy and is_prolog:
-        decide_calls = lazy.get("decide_calls", 0.0)
+    if variant.startswith("l"):
         result["lazy_active"] = ("string", "active" if decide_calls > 0 else "inactive")
 
     return result
