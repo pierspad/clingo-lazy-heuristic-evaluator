@@ -6,8 +6,19 @@ Sorgente dati: il file XML prodotto da
 Contiene TUTTE le misure del resultparser custom (resultparsers/clasp.py):
 status/timeout/memout, time(wall), mem(picco RSS), solving, grounding,
 clingo_total, choices, conflicts, restarts, rules, variables, e — per le
-varianti lazy sul backend prolog — decide_calls e i tempi del propagatore
-(total_prolog_query_time_ms, total_decide_time_ms, ...).
+varianti lazy — le statistiche del propagatore (decide_calls,
+total_decide_time_ms, total_state_sync_time_ms, ...), ora emesse da ENTRAMBI i
+backend: il propagatore C++ stampa "[lazy-native] summary ..." esattamente come
+quello prolog stampa "[lazy-prolog] summary ...". Le metriche del propagatore
+sono quindi confrontabili fra backend (v. `scope` in Metric); restano
+prolog-only le sole fasi legate alla query verso il motore esterno, che nel
+backend native non esistono per costruzione.
+
+CONVENZIONE GRAFICA (v. VARIANT_STYLES): colore + marker identificano la
+VARIANTE e sono invarianti in tutte le macroaree; il tratto e' la dimensione
+libera (tratto canonico della variante negli alberi mono-backend, backend
+nell'albero di confronto). Cosi' una variante resta riconoscibile anche nei
+grafici da cui e' stata omessa un'altra.
 
 Produce TRE alberi di grafici, una sottocartella per famiglia (1_BSP/2_PUP/3_HRP):
 
@@ -452,8 +463,11 @@ def aggregate(tidy: pd.DataFrame, machine: str) -> pd.DataFrame:
     # overhead totale dell'euristica = decidere + tenere sincronizzato lo stato
     # (in propagate/undo). E' il "prezzo" complessivo del propagatore.
     if {"total_decide_time_ms", "total_state_sync_time_ms"}.issubset(wide.columns):
-        wide["total_propagator_time_ms"] = (wide["total_decide_time_ms"].fillna(0)
-                                            + wide["total_state_sync_time_ms"].fillna(0))
+        parts = wide[["total_decide_time_ms", "total_state_sync_time_ms"]]
+        # somma solo dove ALMENO una delle due componenti e' stata misurata:
+        # con un fillna(0) cieco un backend privo di statistiche risulterebbe
+        # con overhead 0 e vincerebbe ogni confronto senza aver misurato nulla.
+        wide["total_propagator_time_ms"] = parts.sum(axis=1, min_count=1)
     # frazione di chiamate a decide() in cui il propagatore ha davvero deciso
     # (backend native): il resto sono chiamate a vuoto, costo puro.
     if decide is not None and "decide_hits" in wide.columns:
@@ -813,11 +827,18 @@ def render_exploratory_tree(agg: pd.DataFrame, backend: str, base: Path,
             fam_dir = tree / study["slug"] / FAM_SUBDIR[family]
             shutil.rmtree(fam_dir, ignore_errors=True)  # v. nota overwrite in render_backend_tree
 
-            keys = [k for k in study["metrics"] if _has_data(agg_fb, k)]
+            # stesso filtro degli alberi main: una metrica definita solo per
+            # l'ALTRO backend qui non e' un dato mancante, non va disegnata.
+            keys = [k for k in study["metrics"]
+                    if _has_data(agg_fb, k) and METRIC_BY_KEY[k].applies_to(backend)]
             for k in keys:
                 metric = METRIC_BY_KEY[k]
+                # una metrica del propagatore ha senso solo sulle varianti lazy
+                # dello studio: le g* non hanno un propagatore da misurare.
+                study_variants = ([v for v in study["variants"] if v.startswith("l")]
+                                  if metric.lazy_only else study["variants"])
                 fig, ax = plt.subplots(figsize=(8, 5.2))
-                if _plot_metric_axis(ax, agg_fb, metric, family, variants=study["variants"]):
+                if _plot_metric_axis(ax, agg_fb, metric, family, variants=study_variants):
                     fig.suptitle(f"{family} — {metric.title} ({backend})\n{study['title']}",
                                  fontsize=11, fontweight="bold")
                     _save(fig, fam_dir / f"{metric.key}.png")
@@ -841,7 +862,10 @@ def _render_study_dashboard(agg_fb: pd.DataFrame, family: str, backend: str,
     fig, axes = plt.subplots(nrow, ncol, figsize=(4.6 * ncol, 3.4 * nrow), squeeze=False)
     flat = axes.flatten()
     for ax, k in zip(flat, keys):
-        _plot_metric_axis(ax, agg_fb, METRIC_BY_KEY[k], family, variants=study["variants"])
+        metric = METRIC_BY_KEY[k]
+        study_variants = ([v for v in study["variants"] if v.startswith("l")]
+                          if metric.lazy_only else study["variants"])
+        _plot_metric_axis(ax, agg_fb, metric, family, variants=study_variants)
     for ax in flat[len(keys):]:
         ax.axis("off")
     fig.suptitle(f"{family} — {study['title']} ({backend})", fontsize=13, fontweight="bold")
@@ -1044,7 +1068,7 @@ TABLE_STYLE = {
     "win_tie": "#FDEBD0",
     "muted": "#7F8C8D",
 }
-_CHAR_W = 0.088      # pollici per carattere a fontsize 9 (stima)
+_CHAR_W = 0.095      # pollici per carattere a fontsize 9 (stima prudente)
 _ROW_H = 0.30        # pollici per riga
 
 
@@ -1114,6 +1138,20 @@ _WIN_COLOR = {"native": TABLE_STYLE["win_native"],
               "pari": TABLE_STYLE["win_tie"]}
 
 
+def _fmt_delta(rel: float) -> str:
+    """Scarto relativo leggibile. Oltre il 999% si passa al fattore (x12) e poi
+    a un cappuccio: una cella con "+16764612000000000.0%" sfonda la colonna e
+    non aggiunge informazione rispetto a ">> 1000x"."""
+    if abs(rel) < 1e-4:
+        return "≈ 0%"
+    if abs(rel) < 9.99:
+        return f"{rel * 100:+.1f}%"
+    factor = 1.0 + abs(rel)
+    if factor < 1000:
+        return f"{'+' if rel > 0 else '-'}{factor:.0f}x"
+    return f"{'>' if rel > 0 else '<'} 1000x"
+
+
 def _fmt_value(metric: Metric, value: float) -> str:
     """Numero leggibile nella tabella: GB per la memoria, compatto per i
     conteggi, 3 cifre significative per i tempi."""
@@ -1172,8 +1210,7 @@ def _verdict(agg_f: pd.DataFrame, family: str, fam_dir: Path,
     for metric, area, v, s, nv, pv, rel, winner in rows:
         table_rows.append([metric.title, label_of(v), str(s),
                            _fmt_value(metric, nv), _fmt_value(metric, pv),
-                           f"{rel * 100:+.1f}%" if abs(rel) >= 1e-4 else "≈ 0%",
-                           winner])
+                           _fmt_delta(rel), winner])
         cell_colors[(len(table_rows) - 1, 6)] = _WIN_COLOR.get(winner, "#FFFFFF")
 
     section_rows.add(len(table_rows))
@@ -1186,7 +1223,8 @@ def _verdict(agg_f: pd.DataFrame, family: str, fam_dir: Path,
         table_rows,
         title=f"{family} — Verdetto native vs prolog",
         subtitle="confronto all'ultima taglia N risolta da ENTRAMBI i backend  ·  "
-                 f"vince il valore piu' basso  ·  scarto < {COINCIDENCE_TOL:.0%} = pari",
+                 f"vince il valore piu' basso  ·  scarto < {COINCIDENCE_TOL:.0%} = pari  ·  "
+                 "n/d = nessuna taglia in comune (o metrica non misurata su un backend)",
         align=["left", "left", "right", "right", "right", "right", "center"],
         section_rows=section_rows,
         cell_colors=cell_colors,
