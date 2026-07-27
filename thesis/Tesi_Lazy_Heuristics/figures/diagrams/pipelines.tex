@@ -1,0 +1,62 @@
+% ---------------------------------------------------------------------------
+% pipelines.tex -- ground-and-solve versus lazy evaluation of the same heuristic.
+% Used in the introduction, where the two approaches are first contrasted.
+% ---------------------------------------------------------------------------
+\documentclass[border=8pt]{standalone}
+\input{common.tex}
+
+\begin{document}
+\begin{tikzpicture}
+
+% ======================= ground-and-solve lane =============================
+\node[lane, anchor=west] at (0,1.35) {Ground-and-solve};
+
+\node[ground, text width=27mm] (genc) at (0.9,0)
+      {domain encoding\\[2pt]{\scriptsize\ttfamily \#heuristic b(X) : \dots}};
+\node[neutral, right=8mm of genc]              (ggrin)  {gringo};
+\node[alert,   text width=30mm, right=8mm of ggrin] (gprog)
+      {ground program\\[2pt]{\scriptsize $\Theta(n^{3})$ ground\\heuristic objects}};
+\node[ground,  text width=24mm, right=8mm of gprog] (gclasp)
+      {clasp\\[2pt]{\scriptsize \texttt{Domain} heuristic}};
+
+\draw[flow] (genc)  -- (ggrin);
+\draw[flow] (ggrin) -- (gprog);
+\draw[flow] (gprog) -- (gclasp);
+
+\node[tag, anchor=north, text=diagAlertEdge] at ($(gprog.south)+(0,-2mm)$)
+      {materialised before the first decision};
+
+% ============================== lazy lane ==================================
+\node[lane, anchor=west] at (0,-2.35) {Lazy (this thesis)};
+
+\node[lazy, text width=27mm] (lenc) at (0.9,-3.7)
+      {domain encoding\\[2pt]{\scriptsize\ttfamily \_\_heuristic(\dots)}};
+\node[neutral, right=8mm of lenc]              (lgrin)  {gringo};
+\node[lazy,   text width=30mm, right=8mm of lgrin] (lprog)
+      {ground program\\[2pt]{\scriptsize two heuristic facts,\\independent of $n$}};
+\node[lazy,   text width=24mm, right=8mm of lprog] (lclasp)
+      {clasp\\[2pt]{\scriptsize \texttt{Domain} heuristic}};
+
+\draw[flow] (lenc)  -- (lgrin);
+\draw[flow] (lgrin) -- (lprog);
+\draw[flow] (lprog) -- (lclasp);
+
+% the propagator sits underneath the solver and answers its decide calls
+\node[neutral, text width=52mm, anchor=north] (prop)
+      at ($(lclasp.south)+(-11mm,-12mm)$)
+      {lazy heuristic propagator\\[2pt]{\scriptsize evaluates the facts against the
+       partial assignment, one \texttt{decide} call at a time}};
+
+\draw[flow] ($(lclasp.south)+(-5mm,0)$) -- ($(lclasp.south)+(-5mm,-12mm)$)
+      node[tag, midway, left=1pt] {\texttt{propagate}};
+\draw[flow] ($(lclasp.south)+(6mm,-12mm)$) -- ($(lclasp.south)+(6mm,0)$)
+      node[tag, midway, right=1pt] {\texttt{decide}};
+
+% =============================== verdict ===================================
+\node[tag, anchor=west, text=diagAlertEdge] at ($(gclasp.east)+(6mm,0)$)
+      {\begin{tabular}{@{}l@{}}grounding-time\\space\end{tabular}};
+\node[tag, anchor=west, text=diagLazyEdge]  at ($(lclasp.east)+(6mm,0)$)
+      {\begin{tabular}{@{}l@{}}solving-time\\work\end{tabular}};
+
+\end{tikzpicture}
+\end{document}

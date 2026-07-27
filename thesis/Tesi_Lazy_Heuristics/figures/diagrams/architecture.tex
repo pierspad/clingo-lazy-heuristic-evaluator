@@ -1,0 +1,65 @@
+% ---------------------------------------------------------------------------
+% architecture.tex -- the propagator between clasp and the two backends.
+% Used at the head of the system-architecture section.
+%
+% Coordinates are given explicitly (in cm) rather than through relative
+% positioning, so that a box can be nudged by editing a single number.
+% ---------------------------------------------------------------------------
+\documentclass[border=8pt]{standalone}
+\input{common.tex}
+
+\begin{document}
+\begin{tikzpicture}
+
+% ============================== the grounder ===============================
+\node[neutral, text width=32mm] (gringo) at (0,3.3)
+      {\textbf{gringo}\\[2pt]{\scriptsize ground program\\ + heuristic facts}};
+
+% ============================== the solver =================================
+\node[ground, text width=32mm, minimum height=38mm] (clasp) at (0,0)
+      {\textbf{clasp}\\[3pt]{\scriptsize CDNL search loop\\[5pt]
+       partial assignment\\ and trail}};
+
+\draw[flow] (gringo) -- (clasp);
+
+% ============================ the propagator ===============================
+\node[neutral, text width=50mm, minimum height=44mm] (core) at (6.4,0) {};
+\node[font=\small\bfseries, text=diagInk, anchor=north] (coretitle)
+      at ($(core.north)+(0,-4mm)$) {HeuristicPropagator};
+\node[font=\scriptsize\ttfamily, text=diagInk, anchor=north]
+      at ($(coretitle.south)+(0,-1mm)$) {: Clingo::Heuristic};
+
+\node[draw=diagNeutralEdge, dashed, rounded corners=2pt, fill=white,
+      text width=42mm, align=center, font=\scriptsize, text=diagInk,
+      inner sep=5pt, anchor=north] (slots) at ($(core.north)+(0,-15mm)$)
+      {rule templates\\[2pt] materialised candidates\\[2pt]
+       incremental aggregate states\\[2pt] ranked targets};
+
+% callbacks between solver and propagator
+\draw[flow] ($(clasp.east)+(0,11mm)$) -- ($(core.west)+(0,11mm)$)
+      node[tag, midway, above] {\texttt{init}};
+\draw[flow] ($(clasp.east)+(0,4mm)$) -- ($(core.west)+(0,4mm)$)
+      node[tag, midway, above] {\texttt{propagate} / \texttt{undo}};
+\draw[flow] ($(core.west)+(0,-13mm)$) -- ($(clasp.east)+(0,-13mm)$)
+      node[tag, midway, below] {\texttt{decide} $\to$ signed literal};
+
+\draw[flow] (gringo.east) to[out=0,in=90] ($(core.north)+(6mm,0)$);
+\node[tag, anchor=south west] at ($(gringo.east)+(3mm,1mm)$) {symbolic atoms};
+
+% ============================== the backends ===============================
+\node[lazy, text width=47mm] (native) at (13.2,1.5)
+      {\textbf{native backend}\\[3pt]{\scriptsize\ttfamily \_\_heuristic(\dots) facts\\[3pt]
+       \normalfont C++ evaluation of the weight AST over incremental aggregates}};
+
+\node[lazy, text width=47mm] (prolog) at (13.2,-1.6)
+      {\textbf{Prolog backend}\\[3pt]{\scriptsize\ttfamily heuristic("\dots") strings\\[3pt]
+       \normalfont in-process SWI-Prolog engine mirroring the trail}};
+
+\draw[biflow] ($(core.east)+(0,10mm)$) to[out=0,in=180] (native.west);
+\draw[biflow] ($(core.east)+(0,-10mm)$) to[out=0,in=180] (prolog.west);
+
+\node[tag, text=diagLazyEdge, align=center] at (13.2,-0.05)
+      {one of the two, selected by\\ \texttt{LAZY\_HEURISTIC\_BACKEND}};
+
+\end{tikzpicture}
+\end{document}

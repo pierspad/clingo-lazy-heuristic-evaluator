@@ -136,50 +136,6 @@
       \verb https://potassco.org
       \endverb
     \endentry
-    \entry{moskewicz2001chaff}{inproceedings}{}{}
-      \name{author}{5}{}{%
-        {{hash=5b467b1e4271559b03ceb8c16befd89e}{%
-           family={Moskewicz},
-           familyi={M\bibinitperiod},
-           given={Matthew\bibnamedelima W.},
-           giveni={M\bibinitperiod\bibinitdelim W\bibinitperiod}}}%
-        {{hash=54c4b1eb93df7e948b9a00161efdafed}{%
-           family={Madigan},
-           familyi={M\bibinitperiod},
-           given={Conor\bibnamedelima F.},
-           giveni={C\bibinitperiod\bibinitdelim F\bibinitperiod}}}%
-        {{hash=aaa817c91f69c269112417f891621141}{%
-           family={Zhao},
-           familyi={Z\bibinitperiod},
-           given={Ying},
-           giveni={Y\bibinitperiod}}}%
-        {{hash=80f6baaa1e35848eb4c094ee3b81f139}{%
-           family={Zhang},
-           familyi={Z\bibinitperiod},
-           given={Lintao},
-           giveni={L\bibinitperiod}}}%
-        {{hash=e146ec2b9c0b7fc6062cd4dec46383d4}{%
-           family={Malik},
-           familyi={M\bibinitperiod},
-           given={Sharad},
-           giveni={S\bibinitperiod}}}%
-      }
-      \strng{namehash}{ea9efca74d1e590df72d9f991881c825}
-      \strng{fullhash}{38041b7bf557147ca065e35782e9bac2}
-      \strng{fullhashraw}{38041b7bf557147ca065e35782e9bac2}
-      \strng{bibnamehash}{ea9efca74d1e590df72d9f991881c825}
-      \strng{authorbibnamehash}{ea9efca74d1e590df72d9f991881c825}
-      \strng{authornamehash}{ea9efca74d1e590df72d9f991881c825}
-      \strng{authorfullhash}{38041b7bf557147ca065e35782e9bac2}
-      \strng{authorfullhashraw}{38041b7bf557147ca065e35782e9bac2}
-      \field{sortinit}{2}
-      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{booktitle}{Proceedings of the 38th Design Automation Conference}
-      \field{title}{Chaff: Engineering an Efficient SAT Solver}
-      \field{year}{2001}
-    \endentry
     \entry{gebser2013heuristics}{inproceedings}{}{}
       \name{author}{6}{}{%
         {{hash=a296fbe902a96f2ceebb7398463f3e13}{%
@@ -222,8 +178,8 @@
       \strng{authorfullhash}{86b6e58d40d23b3f9ca908dc39b6b336}
       \strng{authorfullhashraw}{86b6e58d40d23b3f9ca908dc39b6b336}
       \field{extraname}{3}
-      \field{sortinit}{3}
-      \field{sortinithash}{ad6fe7482ffbd7b9f99c9e8b5dccd3d7}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{booktitle}{Proceedings of the Twenty-Seventh AAAI Conference on Artificial Intelligence}
@@ -273,8 +229,8 @@
       \strng{authornamehash}{41fcb6fa8b9b47a41d4f776dfa9105a5}
       \strng{authorfullhash}{cabdea4ab4af3388917c70dbef37fb0e}
       \strng{authorfullhashraw}{cabdea4ab4af3388917c70dbef37fb0e}
-      \field{sortinit}{3}
-      \field{sortinithash}{ad6fe7482ffbd7b9f99c9e8b5dccd3d7}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{journaltitle}{Theory and Practice of Logic Programming}
@@ -284,6 +240,37 @@
       \field{year}{2016}
       \field{pages}{653\bibrangedash 669}
       \range{pages}{17}
+    \endentry
+    \entry{weinzierl2017blending}{inproceedings}{}{}
+      \name{author}{1}{}{%
+        {{hash=1ec32bbc9f3e08c958c6650aed4e80a8}{%
+           family={Weinzierl},
+           familyi={W\bibinitperiod},
+           given={Antonius},
+           giveni={A\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Springer}%
+      }
+      \strng{namehash}{1ec32bbc9f3e08c958c6650aed4e80a8}
+      \strng{fullhash}{1ec32bbc9f3e08c958c6650aed4e80a8}
+      \strng{fullhashraw}{1ec32bbc9f3e08c958c6650aed4e80a8}
+      \strng{bibnamehash}{1ec32bbc9f3e08c958c6650aed4e80a8}
+      \strng{authorbibnamehash}{1ec32bbc9f3e08c958c6650aed4e80a8}
+      \strng{authornamehash}{1ec32bbc9f3e08c958c6650aed4e80a8}
+      \strng{authorfullhash}{1ec32bbc9f3e08c958c6650aed4e80a8}
+      \strng{authorfullhashraw}{1ec32bbc9f3e08c958c6650aed4e80a8}
+      \field{sortinit}{3}
+      \field{sortinithash}{ad6fe7482ffbd7b9f99c9e8b5dccd3d7}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Logic Programming and Nonmonotonic Reasoning (LPNMR 2017)}
+      \field{series}{Lecture Notes in Computer Science}
+      \field{title}{Blending Lazy-Grounding and {CDNL} Search for Answer-Set Solving}
+      \field{volume}{10377}
+      \field{year}{2017}
+      \field{pages}{191\bibrangedash 204}
+      \range{pages}{14}
     \endentry
     \entry{comploi2023domain}{article}{}{}
       \name{author}{4}{}{%
@@ -327,37 +314,6 @@
       \field{pages}{59\bibrangedash 114}
       \range{pages}{56}
     \endentry
-    \entry{weinzierl2017blending}{inproceedings}{}{}
-      \name{author}{1}{}{%
-        {{hash=1ec32bbc9f3e08c958c6650aed4e80a8}{%
-           family={Weinzierl},
-           familyi={W\bibinitperiod},
-           given={Antonius},
-           giveni={A\bibinitperiod}}}%
-      }
-      \list{publisher}{1}{%
-        {Springer}%
-      }
-      \strng{namehash}{1ec32bbc9f3e08c958c6650aed4e80a8}
-      \strng{fullhash}{1ec32bbc9f3e08c958c6650aed4e80a8}
-      \strng{fullhashraw}{1ec32bbc9f3e08c958c6650aed4e80a8}
-      \strng{bibnamehash}{1ec32bbc9f3e08c958c6650aed4e80a8}
-      \strng{authorbibnamehash}{1ec32bbc9f3e08c958c6650aed4e80a8}
-      \strng{authornamehash}{1ec32bbc9f3e08c958c6650aed4e80a8}
-      \strng{authorfullhash}{1ec32bbc9f3e08c958c6650aed4e80a8}
-      \strng{authorfullhashraw}{1ec32bbc9f3e08c958c6650aed4e80a8}
-      \field{sortinit}{5}
-      \field{sortinithash}{20e9b4b0b173788c5dace24730f47d8c}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{booktitle}{Logic Programming and Nonmonotonic Reasoning (LPNMR 2017)}
-      \field{series}{Lecture Notes in Computer Science}
-      \field{title}{Blending Lazy-Grounding and {CDNL} Search for Answer-Set Solving}
-      \field{volume}{10377}
-      \field{year}{2017}
-      \field{pages}{191\bibrangedash 204}
-      \range{pages}{14}
-    \endentry
     \entry{comploi2023dynamicAggregates}{inproceedings}{}{}
       \name{author}{3}{}{%
         {{hash=40e5bbc107a8f13c09f2dd488fdf3f7a}{%
@@ -387,8 +343,8 @@
       \strng{authornamehash}{0f4402eeffe859cd950e6fb59afa3205}
       \strng{authorfullhash}{0f4402eeffe859cd950e6fb59afa3205}
       \strng{authorfullhashraw}{0f4402eeffe859cd950e6fb59afa3205}
-      \field{sortinit}{6}
-      \field{sortinithash}{b33bc299efb3c36abec520a4c896a66d}
+      \field{sortinit}{4}
+      \field{sortinithash}{9381316451d1b9788675a07e972a12a7}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{booktitle}{Proceedings of the 25th International Workshop on Configuration (ConfWS 2023)}
@@ -396,49 +352,6 @@
       \field{title}{Dynamic Aggregates in Expressive ASP Heuristics for Configuration Problems}
       \field{volume}{3509}
       \field{year}{2023}
-    \endentry
-    \entry{wielemaker2012swipl}{article}{}{}
-      \name{author}{4}{}{%
-        {{hash=e5f9595f6f307544952299b739edec19}{%
-           family={Wielemaker},
-           familyi={W\bibinitperiod},
-           given={Jan},
-           giveni={J\bibinitperiod}}}%
-        {{hash=ee8884e6f5c55d796fda4df39c101ebf}{%
-           family={Schrijvers},
-           familyi={S\bibinitperiod},
-           given={Tom},
-           giveni={T\bibinitperiod}}}%
-        {{hash=cfb3cd161eaa4054d554e7c25870071b}{%
-           family={Triska},
-           familyi={T\bibinitperiod},
-           given={Markus},
-           giveni={M\bibinitperiod}}}%
-        {{hash=9c15dc60ee74c0ca6818724456d9d37d}{%
-           family={Lager},
-           familyi={L\bibinitperiod},
-           given={Torbjörn},
-           giveni={T\bibinitperiod}}}%
-      }
-      \strng{namehash}{5c09efab0406e7b40bd4dd7544e4d270}
-      \strng{fullhash}{687fe4520f05683d8456ae5acfef5588}
-      \strng{fullhashraw}{687fe4520f05683d8456ae5acfef5588}
-      \strng{bibnamehash}{5c09efab0406e7b40bd4dd7544e4d270}
-      \strng{authorbibnamehash}{5c09efab0406e7b40bd4dd7544e4d270}
-      \strng{authornamehash}{5c09efab0406e7b40bd4dd7544e4d270}
-      \strng{authorfullhash}{687fe4520f05683d8456ae5acfef5588}
-      \strng{authorfullhashraw}{687fe4520f05683d8456ae5acfef5588}
-      \field{sortinit}{7}
-      \field{sortinithash}{108d0be1b1bee9773a1173443802c0a3}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{journaltitle}{Theory and Practice of Logic Programming}
-      \field{number}{1-2}
-      \field{title}{{SWI-Prolog}}
-      \field{volume}{12}
-      \field{year}{2012}
-      \field{pages}{67\bibrangedash 96}
-      \range{pages}{30}
     \endentry
     \entry{gelfond1988stable}{inproceedings}{}{}
       \name{author}{2}{}{%
@@ -464,8 +377,8 @@
       \strng{authornamehash}{701aac313c79e95b5099346df9bba24a}
       \strng{authorfullhash}{701aac313c79e95b5099346df9bba24a}
       \strng{authorfullhashraw}{701aac313c79e95b5099346df9bba24a}
-      \field{sortinit}{1}
-      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{sortinit}{5}
+      \field{sortinithash}{20e9b4b0b173788c5dace24730f47d8c}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{booktitle}{Proceedings of the Fifth International Conference and Symposium on Logic Programming}
@@ -506,8 +419,8 @@
       \strng{authorfullhash}{6ff2ecbb0dace9a796d510f578f069a3}
       \strng{authorfullhashraw}{6ff2ecbb0dace9a796d510f578f069a3}
       \field{extraname}{4}
-      \field{sortinit}{1}
-      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{sortinit}{8}
+      \field{sortinithash}{a231b008ebf0ecbe0b4d96dcc159445f}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{journaltitle}{Theory and Practice of Logic Programming}
@@ -553,8 +466,8 @@
       \strng{authorfullhash}{d4213acdb4ab6d160ca32e54d6f57fa1}
       \strng{authorfullhashraw}{d4213acdb4ab6d160ca32e54d6f57fa1}
       \field{extraname}{5}
-      \field{sortinit}{1}
-      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{sortinit}{9}
+      \field{sortinithash}{0a5ebc79d83c96b6579069544c73c7d4}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{booktitle}{Logic Programming and Nonmonotonic Reasoning (LPNMR 2007)}
@@ -564,6 +477,50 @@
       \field{year}{2007}
       \field{pages}{260\bibrangedash 265}
       \range{pages}{6}
+    \endentry
+    \entry{moskewicz2001chaff}{inproceedings}{}{}
+      \name{author}{5}{}{%
+        {{hash=5b467b1e4271559b03ceb8c16befd89e}{%
+           family={Moskewicz},
+           familyi={M\bibinitperiod},
+           given={Matthew\bibnamedelima W.},
+           giveni={M\bibinitperiod\bibinitdelim W\bibinitperiod}}}%
+        {{hash=54c4b1eb93df7e948b9a00161efdafed}{%
+           family={Madigan},
+           familyi={M\bibinitperiod},
+           given={Conor\bibnamedelima F.},
+           giveni={C\bibinitperiod\bibinitdelim F\bibinitperiod}}}%
+        {{hash=aaa817c91f69c269112417f891621141}{%
+           family={Zhao},
+           familyi={Z\bibinitperiod},
+           given={Ying},
+           giveni={Y\bibinitperiod}}}%
+        {{hash=80f6baaa1e35848eb4c094ee3b81f139}{%
+           family={Zhang},
+           familyi={Z\bibinitperiod},
+           given={Lintao},
+           giveni={L\bibinitperiod}}}%
+        {{hash=e146ec2b9c0b7fc6062cd4dec46383d4}{%
+           family={Malik},
+           familyi={M\bibinitperiod},
+           given={Sharad},
+           giveni={S\bibinitperiod}}}%
+      }
+      \strng{namehash}{ea9efca74d1e590df72d9f991881c825}
+      \strng{fullhash}{38041b7bf557147ca065e35782e9bac2}
+      \strng{fullhashraw}{38041b7bf557147ca065e35782e9bac2}
+      \strng{bibnamehash}{ea9efca74d1e590df72d9f991881c825}
+      \strng{authorbibnamehash}{ea9efca74d1e590df72d9f991881c825}
+      \strng{authornamehash}{ea9efca74d1e590df72d9f991881c825}
+      \strng{authorfullhash}{38041b7bf557147ca065e35782e9bac2}
+      \strng{authorfullhashraw}{38041b7bf557147ca065e35782e9bac2}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Proceedings of the 38th Design Automation Conference}
+      \field{title}{Chaff: Engineering an Efficient SAT Solver}
+      \field{year}{2001}
     \endentry
     \entry{aschinger2011pup}{inproceedings}{}{}
       \name{author}{7}{}{%
@@ -614,8 +571,8 @@
       \strng{authornamehash}{2a4014d7d56fd859bb3ca5309696b580}
       \strng{authorfullhash}{d6242ffbca0475993f0cdb77211d62e9}
       \strng{authorfullhashraw}{d6242ffbca0475993f0cdb77211d62e9}
-      \field{sortinit}{2}
-      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{booktitle}{Integration of {AI} and {OR} Techniques in Constraint Programming ({CPAIOR} 2011)}
@@ -670,8 +627,8 @@
       \strng{authornamehash}{d5967d16c12be7a672109ebae3e5f5e9}
       \strng{authorfullhash}{35a7bf39c20ae5c4456036a87ff898fa}
       \strng{authorfullhashraw}{35a7bf39c20ae5c4456036a87ff898fa}
-      \field{sortinit}{2}
-      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{booktitle}{Proceedings of the {IJCAI} 2011 Workshop on Configuration}
@@ -681,6 +638,49 @@
       \field{year}{2011}
       \field{pages}{17\bibrangedash 24}
       \range{pages}{8}
+    \endentry
+    \entry{wielemaker2012swipl}{article}{}{}
+      \name{author}{4}{}{%
+        {{hash=e5f9595f6f307544952299b739edec19}{%
+           family={Wielemaker},
+           familyi={W\bibinitperiod},
+           given={Jan},
+           giveni={J\bibinitperiod}}}%
+        {{hash=ee8884e6f5c55d796fda4df39c101ebf}{%
+           family={Schrijvers},
+           familyi={S\bibinitperiod},
+           given={Tom},
+           giveni={T\bibinitperiod}}}%
+        {{hash=cfb3cd161eaa4054d554e7c25870071b}{%
+           family={Triska},
+           familyi={T\bibinitperiod},
+           given={Markus},
+           giveni={M\bibinitperiod}}}%
+        {{hash=9c15dc60ee74c0ca6818724456d9d37d}{%
+           family={Lager},
+           familyi={L\bibinitperiod},
+           given={Torbjörn},
+           giveni={T\bibinitperiod}}}%
+      }
+      \strng{namehash}{5c09efab0406e7b40bd4dd7544e4d270}
+      \strng{fullhash}{687fe4520f05683d8456ae5acfef5588}
+      \strng{fullhashraw}{687fe4520f05683d8456ae5acfef5588}
+      \strng{bibnamehash}{5c09efab0406e7b40bd4dd7544e4d270}
+      \strng{authorbibnamehash}{5c09efab0406e7b40bd4dd7544e4d270}
+      \strng{authornamehash}{5c09efab0406e7b40bd4dd7544e4d270}
+      \strng{authorfullhash}{687fe4520f05683d8456ae5acfef5588}
+      \strng{authorfullhashraw}{687fe4520f05683d8456ae5acfef5588}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Theory and Practice of Logic Programming}
+      \field{number}{1-2}
+      \field{title}{{SWI-Prolog}}
+      \field{volume}{12}
+      \field{year}{2012}
+      \field{pages}{67\bibrangedash 96}
+      \range{pages}{30}
     \endentry
     \entry{runlim}{misc}{}{}
       \name{author}{1}{}{%
