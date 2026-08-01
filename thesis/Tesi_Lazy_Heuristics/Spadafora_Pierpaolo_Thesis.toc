@@ -1,5 +1,5 @@
 \babel@toc {english}{}\relax 
-\contentsline {section}{Abstract}{iii}{section*.2}%
+\contentsline {section}{Abstract}{ii}{section*.2}%
 \contentsline {section}{\numberline {1}Introduction and Background}{1}{section.0.1}%
 \contentsline {subsection}{\numberline {1.1}The Cost of a Dynamic Heuristic}{1}{subsection.0.1.1}%
 \contentsline {subsection}{\numberline {1.2}Answer Set Programming}{3}{subsection.0.1.2}%
@@ -35,24 +35,24 @@
 \contentsline {subsubsection}{House Reconfiguration Problem (HRP)}{20}{section*.21}%
 \contentsline {subsection}{\numberline {2.6}Correctness Validation}{20}{subsection.0.2.6}%
 \contentsline {subsection}{\numberline {2.7}Benchmark Infrastructure and Metrics}{21}{subsection.0.2.7}%
-\contentsline {section}{\numberline {3}Results}{22}{section.0.3}%
-\contentsline {subsection}{\numberline {3.1}Functional Validation}{22}{subsection.0.3.1}%
-\contentsline {subsection}{\numberline {3.2}Experimental Setup and Dataset}{22}{subsection.0.3.2}%
-\contentsline {subsection}{\numberline {3.3}Reduction of the Ground Heuristic Component}{24}{subsection.0.3.3}%
-\contentsline {subsection}{\numberline {3.4}BSP: Runtime Behaviour}{26}{subsection.0.3.4}%
-\contentsline {subsection}{\numberline {3.5}BSP: the Two Semantics Under the Microscope}{29}{subsection.0.3.5}%
-\contentsline {subsection}{\numberline {3.6}BSP: Rules, Variables, and Memory}{30}{subsection.0.3.6}%
-\contentsline {subsection}{\numberline {3.7}The Price of Laziness: Per-Decision Cost}{31}{subsection.0.3.7}%
-\contentsline {subsection}{\numberline {3.8}Two Ground Simulations of Alpha: \texttt {ga} versus \texttt {ga\_weak}}{34}{subsection.0.3.8}%
-\contentsline {subsection}{\numberline {3.9}Direct and Auxiliary Forms}{35}{subsection.0.3.9}%
-\contentsline {subsection}{\numberline {3.10}Effect of the Constraint Formulation}{36}{subsection.0.3.10}%
-\contentsline {subsection}{\numberline {3.11}PUP: the Grounding Bottleneck at Scale}{37}{subsection.0.3.11}%
-\contentsline {subsection}{\numberline {3.12}HRP: Semantics Without Aggregates}{40}{subsection.0.3.12}%
-\contentsline {subsection}{\numberline {3.13}Native versus Prolog: Summary}{41}{subsection.0.3.13}%
-\contentsline {subsection}{\numberline {3.14}Summary of Results}{42}{subsection.0.3.14}%
-\contentsline {section}{\numberline {4}Discussion and Conclusions}{43}{section.0.4}%
-\contentsline {subsection}{\numberline {4.1}Discussion of the Results}{43}{subsection.0.4.1}%
-\contentsline {subsection}{\numberline {4.2}Limitations}{45}{subsection.0.4.2}%
-\contentsline {subsection}{\numberline {4.3}Implications}{45}{subsection.0.4.3}%
-\contentsline {subsection}{\numberline {4.4}Future Work}{46}{subsection.0.4.4}%
-\contentsline {subsection}{\numberline {4.5}Conclusions}{46}{subsection.0.4.5}%
+\contentsline {section}{\numberline {3}Results}{23}{section.0.3}%
+\contentsline {subsection}{\numberline {3.1}Functional Validation}{23}{subsection.0.3.1}%
+\contentsline {subsection}{\numberline {3.2}Experimental Setup and Dataset}{23}{subsection.0.3.2}%
+\contentsline {subsection}{\numberline {3.3}Reduction of the Ground Heuristic Component}{26}{subsection.0.3.3}%
+\contentsline {subsection}{\numberline {3.4}BSP: Runtime Behaviour}{28}{subsection.0.3.4}%
+\contentsline {subsection}{\numberline {3.5}BSP: the Two Semantics Under the Microscope}{31}{subsection.0.3.5}%
+\contentsline {subsection}{\numberline {3.6}BSP: Rules, Variables, and Memory}{32}{subsection.0.3.6}%
+\contentsline {subsection}{\numberline {3.7}The Price of Laziness: Per-Decision Cost}{34}{subsection.0.3.7}%
+\contentsline {subsection}{\numberline {3.8}Two Ground Simulations of Alpha: \texttt {ga} versus \texttt {ga\_weak}}{36}{subsection.0.3.8}%
+\contentsline {subsection}{\numberline {3.9}Direct and Auxiliary Forms}{38}{subsection.0.3.9}%
+\contentsline {subsection}{\numberline {3.10}Effect of the Constraint Formulation}{39}{subsection.0.3.10}%
+\contentsline {subsection}{\numberline {3.11}PUP: the Grounding Bottleneck at Scale}{40}{subsection.0.3.11}%
+\contentsline {subsection}{\numberline {3.12}HRP: Semantics Without Aggregates}{44}{subsection.0.3.12}%
+\contentsline {subsection}{\numberline {3.13}Native versus Prolog: Summary}{45}{subsection.0.3.13}%
+\contentsline {subsection}{\numberline {3.14}Summary of Results}{46}{subsection.0.3.14}%
+\contentsline {section}{\numberline {4}Discussion and Conclusions}{48}{section.0.4}%
+\contentsline {subsection}{\numberline {4.1}Discussion of the Results}{48}{subsection.0.4.1}%
+\contentsline {subsection}{\numberline {4.2}Limitations}{50}{subsection.0.4.2}%
+\contentsline {subsection}{\numberline {4.3}Implications}{51}{subsection.0.4.3}%
+\contentsline {subsection}{\numberline {4.4}Future Work}{51}{subsection.0.4.4}%
+\contentsline {subsection}{\numberline {4.5}Conclusions}{52}{subsection.0.4.5}%
