@@ -76,6 +76,16 @@ FAMILY = {"bsp": "BSP", "double": "PUP", "house": "HRP"}
 FAM_SUBDIR = {"BSP": "1_BSP", "PUP": "2_PUP", "HRP": "3_HRP"}
 BACKENDS = ("native", "prolog")
 
+# Il solver Alpha entra in results.xml come un terzo `system` e quindi come un
+# terzo "backend" dopo la normalizzazione del nome. NON viene aggiunto a
+# BACKENDS di proposito: BACKENDS enumera i due backend DEL PROPAGATORE di
+# questa tesi, che condividono varianti, metriche e alberi di grafici. Alpha
+# non condivide nulla di tutto cio' — e' un sistema esterno con un solo
+# encoding e contatori suoi — e finirebbe in ogni albero mono-backend come una
+# cartella quasi vuota, e nel confronto native-vs-prolog come un terzo
+# incomodo. Ha il suo albero dedicato: v. render_alpha_tree().
+ALPHA_BACKEND = "alpha-qh"
+
 # ---------------------------------------------------------------------------
 # IDENTITA' VISIVA DELLE VARIANTI — convenzione unica per TUTTE le macroaree.
 #
@@ -134,6 +144,12 @@ VARIANT_STYLES: dict[str, VariantStyle] = {
     "lc":        VariantStyle("Lazy Clingo",          "#8E44AD", "D", (0, (7, 1.6, 1, 1.6))),
     "la_aux":    VariantStyle("Lazy Alpha + Aux",     "#16A085", "P", (0, (5, 1.2, 1, 1.2, 1, 1.2))),
     "la_co":     VariantStyle("Lazy Alpha + ConstrOpt", "#2E86C1", "d", (0, (4, 1.2, 4, 1.2, 1, 1.2))),
+    # --- sistema esterno: Alpha (lazy grounding nativo) -------------------
+    # Colori volutamente FUORI dalle famiglie cromatiche di sopra: nei grafici
+    # di confronto si deve vedere a colpo d'occhio quali curve sono clingo e
+    # quale e' l'altro solver.
+    "alpha":        VariantStyle("Alpha Qh (dyn. aggr.)", "#D81B60", "*", "solid"),
+    "alpha_noheur": VariantStyle("Alpha (no heur)",       "#795548", "x", (0, (1, 1.8))),
 }
 
 # Fallback per una variante non ancora censita (non deve succedere: meglio
@@ -1234,6 +1250,172 @@ def _verdict(agg_f: pd.DataFrame, family: str, fam_dir: Path,
 
 
 # ===========================================================================
+# Albero di confronto CLINGO vs ALPHA (graphs-comparison-clingo-alpha/)
+#
+# Domanda a cui risponde: quanto costa ottenere la semantica ad aggregati
+# dinamici dentro un pipeline ground-and-solve (le varianti la/ga di questa
+# tesi) rispetto a prenderla da chi la implementa nativamente (Alpha Qh)?
+#
+# COSA SI PUO' CONFRONTARE, E PERCHE' SOLO QUESTO
+# clingo e Alpha non condividono NESSUN contatore interno: clasp conta
+# choices/conflicts, Alpha conta chiamate al grounder e backtrack, e le due
+# cose non misurano lo stesso fenomeno. Non c'e' nemmeno una separazione
+# grounding/solving da confrontare, perche' nel lazy grounding le due fasi
+# sono interleavate per costruzione. Restano confrontabili solo le grandezze
+# misurate DALL'ESTERNO, da runlim, sullo stesso identico strumento per
+# entrambi i sistemi: wall-clock e picco di RSS. Sono poche, ma sono le
+# uniche che reggono in tesi; i contatori interni di Alpha finiscono in un
+# pannello a parte, dichiarato come tale.
+#
+# ATTENZIONE alla memoria: per Alpha il processo e' una JVM e `mem` include
+# l'heap RISERVATO, non quello usato (v. resultparsers/alpha.py). Il grafico
+# risponde a "quanto costa eseguire questo sistema", non a "quanto stato
+# tiene l'algoritmo". La nota e' stampata sul grafico stesso, non solo qui.
+# ===========================================================================
+ALPHA_TREE_NAME = "graphs-comparison-clingo-alpha"
+
+# Famiglie del confronto: HRP e' fuori perche' non esiste un encoding Alpha
+# degli autori (v. runscripts/runscript.xml).
+ALPHA_FAMILIES = ("BSP", "PUP")
+
+# Le varianti clingo messe a confronto. Si usa il solo backend native: il
+# confronto native-vs-prolog e' gia' un'altra macroarea, e ficcare qui anche
+# il gemello prolog raddoppierebbe le curve senza rispondere alla domanda.
+ALPHA_VS_CLINGO_VARIANTS = ["gc_noheur", "gc", "ga", "la", "lc"]
+ALPHA_OWN_VARIANTS = ["alpha", "alpha_noheur"]
+
+# Metriche misurate da runlim: le uniche confrontabili fra i due sistemi.
+ALPHA_SHARED_METRICS = ["time", "mem"]
+
+# Contatori interni di Alpha. Vivono in un pannello separato e NON sono
+# affiancati a choices/conflicts di clasp.
+ALPHA_INTERNAL_METRICS = [
+    Metric("alpha_g", "Alpha: Grounder Calls", "g", fmt="compact"),
+    Metric("alpha_bt", "Alpha: Backtracks", "bt", fmt="compact"),
+    Metric("alpha_prolog_query_ms", "Alpha: Heuristic Query Time", "Time (ms)", fmt="compact"),
+    Metric("alpha_ms_per_query", "Alpha: Cost per Heuristic Query", "ms / query"),
+]
+
+_ALPHA_MEM_NOTE = ("Alpha gira su JVM: il picco di RSS include l'heap riservato "
+                   "(-Xmx), non solo quello usato. Misura il costo di ESEGUIRE il "
+                   "sistema, non lo stato tenuto dall'algoritmo.")
+
+
+def _alpha_slice(agg: pd.DataFrame, family: str) -> pd.DataFrame:
+    """Righe del confronto per una famiglia: varianti clingo sul backend
+    native + i due setting di Alpha, con `setting` gia' pronto a fare da
+    chiave di stile (i nomi non collidono: alpha/alpha_noheur non esistono
+    fra le varianti clingo)."""
+    fam = agg[agg["family"] == family]
+    clingo = fam[(fam["backend"] == "native") & (fam["setting"].isin(ALPHA_VS_CLINGO_VARIANTS))]
+    alpha = fam[(fam["backend"] == ALPHA_BACKEND) & (fam["setting"].isin(ALPHA_OWN_VARIANTS))]
+    return pd.concat([clingo, alpha], ignore_index=True)
+
+
+def _plot_alpha_frontier(agg_f: pd.DataFrame, family: str, path: Path) -> int:
+    """Taglia massima risolta da ciascun sistema. `agg` contiene solo i run
+    RISOLTI (v. aggregate()), quindi il massimo di `size` per variante E' la
+    frontiera: nessun conteggio di timeout da rifare a mano."""
+    variants = [v for v in ALPHA_VS_CLINGO_VARIANTS + ALPHA_OWN_VARIANTS
+                if v in set(agg_f["setting"].unique())]
+    if not variants:
+        return 0
+    reach = [float(agg_f[agg_f["setting"] == v]["size"].max()) for v in variants]
+
+    fig, ax = plt.subplots(figsize=(8.8, 4.6))
+    ax.bar(range(len(variants)), reach,
+           color=[style_of(v).color for v in variants], edgecolor="white", linewidth=0.8)
+    for i, val in enumerate(reach):
+        ax.text(i, val, f"{val:g}", ha="center", va="bottom", fontsize=8)
+    ax.set_xticks(range(len(variants)))
+    ax.set_xticklabels([label_of(v) for v in variants], rotation=25, ha="right", fontsize=7.5)
+    ax.set_ylabel(XLABEL.get(family, "size (N)"), fontsize=9)
+    ax.set_title(f"{family} — largest instance solved", fontsize=11, fontweight="bold")
+    ax.grid(True, axis="y", alpha=0.3, linestyle="--")
+    ax.text(0.0, -0.42, "frontiera entro i limiti della campagna (timeout/memout del runscript); "
+                        "e' un limite inferiore, non la taglia massima risolvibile in assoluto",
+            transform=ax.transAxes, fontsize=6.5, color="#7F8C8D", ha="left", va="top", style="italic")
+    _save(fig, path)
+    return 1
+
+
+def render_alpha_tree(agg: pd.DataFrame, base: Path) -> int:
+    """graphs-comparison-clingo-alpha/<FAM>/{time,mem,frontier,_alpha_internals,_dashboard}.png"""
+    if ALPHA_BACKEND not in set(agg["backend"].unique()):
+        print(f"  [info] nessun run '{ALPHA_BACKEND}' in results.xml: "
+              f"albero {ALPHA_TREE_NAME} saltato")
+        return 0
+
+    tree = base / ALPHA_TREE_NAME
+    n = 0
+    for family in ALPHA_FAMILIES:
+        agg_f = _alpha_slice(agg, family)
+        if agg_f.empty:
+            continue
+        fam_dir = tree / FAM_SUBDIR[family]
+        # overwrite pulito, come negli altri alberi: una variante rimossa dal
+        # runscript non deve sopravvivere come PNG del run precedente.
+        shutil.rmtree(fam_dir, ignore_errors=True)
+
+        present = [v for v in ALPHA_VS_CLINGO_VARIANTS + ALPHA_OWN_VARIANTS
+                   if v in set(agg_f["setting"].unique())]
+
+        for key in ALPHA_SHARED_METRICS:
+            metric = METRIC_BY_KEY[key]
+            fig, ax = plt.subplots(figsize=(8.8, 5.4))
+            drew = _plot_metric_axis(ax, agg_f, metric, family, variants=present)
+            if key == "mem" and drew:
+                ax.text(0.0, -0.20, _ALPHA_MEM_NOTE, transform=ax.transAxes, fontsize=6.5,
+                        color="#7F8C8D", ha="left", va="top", style="italic")
+            if drew:
+                _save(fig, fam_dir / f"{key}.png")
+                n += 1
+            else:
+                plt.close(fig)
+
+        n += _plot_alpha_frontier(agg_f, family, fam_dir / "frontier.png")
+
+        # Pannello dei contatori interni di Alpha: solo righe alpha-qh, e
+        # dichiarato in titolo come non confrontabile con clingo.
+        alpha_only = agg_f[agg_f["setting"].isin(ALPHA_OWN_VARIANTS)]
+        internals = [m for m in ALPHA_INTERNAL_METRICS
+                     if m.key in alpha_only.columns and not alpha_only[m.key].dropna().empty]
+        if internals:
+            cols = 2
+            rows = (len(internals) + cols - 1) // cols
+            fig, axes = plt.subplots(rows, cols, figsize=(6.0 * cols, 4.0 * rows), squeeze=False)
+            for ax, metric in zip(axes.flat, internals):
+                _plot_metric_axis(ax, alpha_only, metric, family,
+                                  variants=[v for v in ALPHA_OWN_VARIANTS
+                                            if v in set(alpha_only["setting"].unique())])
+            for ax in axes.flat[len(internals):]:
+                ax.axis("off")
+            fig.suptitle(f"{family} — contatori interni di Alpha "
+                         f"(NON confrontabili con i contatori di clasp)",
+                         fontsize=12, fontweight="bold")
+            fig.tight_layout(rect=(0, 0, 1, 0.96))
+            _save(fig, fam_dir / "_alpha_internals.png")
+            n += 1
+
+        # Dashboard: le due metriche condivise affiancate, che e' la figura
+        # che serve in tesi.
+        fig, axes = plt.subplots(1, len(ALPHA_SHARED_METRICS),
+                                 figsize=(6.0 * len(ALPHA_SHARED_METRICS), 4.6), squeeze=False)
+        any_drew = False
+        for ax, key in zip(axes.flat, ALPHA_SHARED_METRICS):
+            any_drew |= _plot_metric_axis(ax, agg_f, METRIC_BY_KEY[key], family, variants=present)
+        fig.suptitle(f"{family} — clingo vs Alpha (misure runlim, le sole confrontabili)",
+                     fontsize=12, fontweight="bold")
+        fig.tight_layout(rect=(0, 0, 1, 0.94))
+        if any_drew:
+            _save(fig, fam_dir / "_dashboard.png")
+            n += 1
+        else:
+            plt.close(fig)
+    return n
+
+
+# ===========================================================================
 # Cartella riassuntiva "colpo d'occhio": copia (rinominata) di OGNI dashboard
 # gia' generata altrove — albero main, ogni albero di esclusione varianti
 # (VARIANT_EXCLUSIONS: no_ga, no_ga_lc, ...), ogni zoom di scala (SIZE_ZOOMS:
@@ -1273,6 +1455,11 @@ def _summary_sources(base: Path) -> list[tuple[str, Path]]:
     for family in ("BSP", "PUP", "HRP"):
         sources.append((f"verdict_{family.lower()}",
                         base / "graphs-comparison-native-prolog" / FAM_SUBDIR[family] / "_verdict.png"))
+    for family in ALPHA_FAMILIES:
+        sources.append((f"alpha_{family.lower()}",
+                        base / ALPHA_TREE_NAME / FAM_SUBDIR[family] / "_dashboard.png"))
+        sources.append((f"alpha_{family.lower()}_frontier",
+                        base / ALPHA_TREE_NAME / FAM_SUBDIR[family] / "frontier.png"))
     return sources
 
 
@@ -1359,6 +1546,13 @@ def build_jobs(agg: pd.DataFrame, base: Path, ground: pd.DataFrame | None
 
     jobs["comparison"] = _run_comparison
     order.append("comparison")
+
+    # Job indipendente: gira su un suo nodo SLURM come gli altri, e se in
+    # results.xml non ci sono run di Alpha si limita a stampare un [info].
+    # Cosi' una campagna vecchia (senza il system alpha-qh) continua a
+    # funzionare senza modifiche.
+    jobs["alpha-comparison"] = lambda: render_alpha_tree(agg, base)
+    order.append("alpha-comparison")
 
     jobs["summary"] = lambda: render_summary(base)
     order.append("summary")

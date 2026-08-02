@@ -23,6 +23,16 @@
 #     ABI/glibc specifica della macchina — e' in .gitignore ma rsync non lo
 #     rispetta; senza questo exclude un push da locale sovrascrive in
 #     silenzio il runlim ricompilato correttamente sul compute node remoto)
+#   - ALPHA/*.jar (jar nella root di ALPHA/, cioe' la release ufficiale
+#     0.7.0 scaricata a suo tempo: 37 MB inutili da spingere ad ogni push.
+#     Quella release NON supporta le direttive #heuristic — verificato: il
+#     parser muore su "no viable alternative at input '#heuristic'" — quindi
+#     non serve sul cluster. Il jar che serve e' quello COMPILATO sull'HPC da
+#     compile_all.sh in ALPHA/build/libs/, gia' escluso da '**/build/'.)
+#
+# ALPHA/ (sorgenti del solver Alpha, variante Qh con euristiche a query
+# Prolog) viene sincronizzata: sull'HPC va ricompilata contro il JPL locale,
+# non si copia il jar.
 # ============================================================
 
 function copyhpcgraphs() {
@@ -43,6 +53,7 @@ function copyhpcgraphs() {
     "graphs-native|"
     "graphs-prolog|"
     "graphs-comparison-native-prolog|"
+    "graphs-comparison-clingo-alpha|"
     "riassunto_grafici|"
     "benchmark_folder_clingo/output/results.xlsx|results-full.xlsx"
     "benchmark_folder_clingo/output-short-hpc/results.xlsx|results-short-hpc.xlsx"
@@ -103,15 +114,18 @@ function pushhpccode() {
     --exclude='**/graphs-native/' \
     --exclude='**/graphs-prolog/' \
     --exclude='**/graphs-comparison-native-prolog/' \
+    --exclude='**/graphs-comparison-clingo-alpha/' \
     --exclude='**/riassunto_grafici/' \
     --exclude='**/clingo_hpc_graphs/' \
     --exclude='/hpc_sync_functions.zsh' \
     --exclude='/compile_all_local.sh' \
     --exclude='/bench-runs-local/' \
     --exclude='**/programs/runlim' \
+    --exclude='/ALPHA/*.jar' \
     --include='/*.sh' \
     --include='/clingo-native/***' \
     --include='/clingo-prolog/***' \
+    --include='/ALPHA/***' \
     --include='/test_folder/***' \
     --exclude='/*' \
     "$local_source" "$remote_target"

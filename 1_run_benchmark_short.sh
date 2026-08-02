@@ -77,6 +77,7 @@ main() {
   bootstrap_env
   ensure_runlim
   ensure_clingo_bins
+  ensure_alpha_jar
   build_short_subset
 
   log "Derivo il runscript short ($SHORT_RS) ..."

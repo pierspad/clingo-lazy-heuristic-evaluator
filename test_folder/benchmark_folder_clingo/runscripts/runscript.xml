@@ -8,6 +8,12 @@
                                 (la prima lettera) ; *c = clingo-like, *a = alpha-like
     * famiglia -> BENCHMARK:    BSP (parametrico n), PUP (double-*.asp), HRP (house-*.asp)
 
+  PIU' UN TERZO SYSTEM FUORI MATRICE
+    * alpha-qh -> il solver lazy-grounding Alpha (variante -uqh) come
+      RIFERIMENTO ESTERNO, non come terzo backend: due setting soltanto
+      (encoding dei paper + suo baseline senza euristiche), solo su bsp/pup.
+      V. il commento esteso sopra il suo <system>.
+
   COME SI COMBINANO
     Ogni SETTING porta uno o piu' <encoding> taggati per famiglia
     (encoding_tag = bsp|pup|hrp). Ogni <folder> di benchmark ha lo stesso
@@ -114,6 +120,51 @@
     </setting>
     <setting name="la_co" tag="bsp">
       <encoding file="../encodings-prolog/1_BSP/BSP_la_co.lp" encoding_tag="bsp"/>
+    </setting>
+  </system>
+
+  <!-- ===================== SYSTEM: ALPHA (Qh) =====================
+       Terzo system, ma di natura diversa dagli altri due: non e' un terzo
+       BACKEND del meccanismo di questa tesi, e' il SISTEMA DI RIFERIMENTO
+       esterno. Alpha e' il solver lazy-grounding dei paper Comploi-Taupe, e
+       la sua variante "Qh" (-uqh, euristiche valutate come query Prolog) e'
+       l'unica implementazione esistente degli aggregati dinamici nelle
+       euristiche: cioe' esattamente la semantica che gli encoding la/lc
+       riproducono dentro clingo. Serve a rispondere a "quanto costa ottenere
+       quella semantica restando in ground-and-solve, rispetto a prenderla da
+       chi la implementa nativamente".
+
+       NIENTE MATRICE QUI. Gli assi approccio x semantica descrivono le
+       varianti di UN encoding dentro clingo; Alpha non ha varianti, ha un
+       encoding solo. I due setting sono l'encoding dei paper e il suo
+       baseline interno (-ids, euristiche ignorate), che sta ad `alpha` come
+       `gc_noheur` sta a `gc`.
+
+       ENCODING: presi TALI E QUALI dal supplementary material dei paper
+       (v. le intestazioni in ../encodings-alpha/). Non sono traduzioni
+       fatte qui - e' questo che rende il confronto difendibile.
+
+       FAMIGLIE: solo bsp e pup. Per HRP non esiste un encoding Alpha degli
+       autori: usarne uno tradotto a mano introdurrebbe una variabile in
+       piu' proprio nel confronto fra sistemi.
+
+       Riga di comando (v. programs/alpha-qh-1.0): Alpha vuole "-i file",
+       non argomenti posizionali, e le istanze BSP vanno tradotte da
+       "#const n=N." a "max_Value(N)."; se ne occupa il wrapper.
+       I -f replicano i #show degli encoding clingo, cosi' che nessuno dei
+       due sistemi paghi la stampa dei predicati ausiliari: i filtri per
+       predicati assenti in un dato encoding sono innocui.
+  -->
+  <system name="alpha-qh" version="1.0" measures="alpha" config="seq-generic"
+          cmdline="-st -n 1 -f sum_B -f sum_C -f b -f c -f assigned_zone_unit -f assigned_sensor_unit">
+
+    <setting name="alpha" tag="bsp pup" cmdline="-uqh">
+      <encoding file="../encodings-alpha/1_BSP/BSP_alpha.asp" encoding_tag="bsp"/>
+      <encoding file="../encodings-alpha/2_PUP/PUP_alpha.asp" encoding_tag="pup"/>
+    </setting>
+    <setting name="alpha_noheur" tag="bsp pup" cmdline="-ids">
+      <encoding file="../encodings-alpha/1_BSP/BSP_alpha.asp" encoding_tag="bsp"/>
+      <encoding file="../encodings-alpha/2_PUP/PUP_alpha.asp" encoding_tag="pup"/>
     </setting>
   </system>
 

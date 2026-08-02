@@ -8,9 +8,8 @@ L'approccio B si attiva quando nel programma ground compaiono **fatti stringa**
 regola** la cui testa è `heuristic(Target, Weight, Priority, Modifier)`. A ogni decisione il
 propagatore valuta le regole sullo stato corrente della ricerca e sceglie il target migliore.
 
-> Come l'altro approccio, per far **guidare** le decisioni lancia clingo con
-> **`--heuristic=Domain`** (lo fa `benchmark_runner.py`). L'euristica non cambia mai
-> l'insieme delle soluzioni, solo l'ordine di esplorazione.
+> Come l'altro approccio, tutte le run passano il flag clingo **`--heuristic=Domain`**.
+> L'euristica non cambia mai l'insieme delle risposte, solo l'ordine di esplorazione.
 
 ## Due backend di valutazione (stessa sintassi-contenitore, due stili di corpo)
 
@@ -122,18 +121,29 @@ La costante **`n`** è **inferita automaticamente** come **massimo argomento di 
 
 ## 6. Rank delle decisioni (Priority, Weight, segno)
 
-A ogni `decide()` il backend produce i candidati `heuristic(Target, W, P, Mod)` applicabili
-(target ancora liberi) e li ordina:
+A ogni `decide()` il backend valuta le regole sullo stato corrente e raccoglie i candidati
+`heuristic(Target, W, P, Mod)`; scarta quelli il cui target è già assegnato o non ha un
+letterale noto al solver, e ordina i rimanenti per:
 
-1. **Priority decrescente**, poi **Weight decrescente**, poi tie-break deterministico (stringa
-   del target, poi letterale interno).
-2. Vince il primo: il target viene deciso con segno `Mod` (`true` ⇒ letterale positivo,
-   `false` ⇒ negativo).
+1. **Priority** decrescente;
+2. a parità, **Weight** decrescente;
+3. a parità, tie-break deterministico (stringa del target, poi letterale interno).
+
+Vince il primo: il target viene deciso con segno `Mod` (`true` ⇒ letterale positivo, `false` ⇒
+negativo). Non c'è soglia — anche `Priority` e `Weight` entrambi a `0` producono una decisione,
+purché il target sia libero.
 
 Varianti di ranking via ambiente (vedi §9): di default (`LAZY_PROLOG_RANKING` assente o ≠
 `clingo-like`) si tengono tutti i candidati e si ordina globalmente; con
-`LAZY_PROLOG_RANKING=clingo-like` si tiene prima il **migliore per ciascun target** e poi si
-ordina.
+`LAZY_PROLOG_RANKING=clingo-like` si tiene prima il **migliore per ciascun target** (a parità di
+`Priority`/`Weight` vince la regola dichiarata prima) e poi si ordina.
+
+> **Differenza con l'approccio nativo.** Qui `Priority` pesa **sempre** nel confronto fra target
+> diversi, con qualsiasi semantica. Nel propagatore `__heuristic` invece entra nel rank globale
+> solo con `__semantics(alpha)`: con `clingo` risolve i conflitti fra regole dello stesso target
+> e poi viene azzerata, e restano ordinati solo per peso (vedi
+> [euristiche-native-sintassi.md](euristiche-native-sintassi.md), §8). Lì inoltre un target
+> entra in coda solo se priorità o peso sono `> 0`.
 
 ---
 
@@ -246,6 +256,7 @@ heuristic("heuristic(a(X), 10, 0, true) :- item(X), alpha_not(c(X)).").
 |---|---|
 | Fatto attivatore | `heuristic("...").` (o `prolog_heuristic("...").`) |
 | Testa | `heuristic(Target, Weight, Priority, Modifier)` — `Modifier` ∈ `true`/`false` |
+| Rank | `Priority` desc, poi `Weight` desc, poi tie-break deterministico |
 | Atomo vero sul trail | `holds(A)` (o `holds_pos(A)`) |
 | Atomo falso | `clingo_not(A)` |
 | Atomo non vero (free/false) | `alpha_not(A)` |

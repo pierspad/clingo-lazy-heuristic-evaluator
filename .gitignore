@@ -25,6 +25,7 @@ test_folder/benchmark_folder_clingo/results-short.xml
 test_folder/benchmark_folder_clingo/graphs-native/
 test_folder/benchmark_folder_clingo/graphs-prolog/
 test_folder/benchmark_folder_clingo/graphs-comparison-native-prolog/
+test_folder/benchmark_folder_clingo/graphs-comparison-clingo-alpha/
 # scratch/temporanei di generazione istanze
 test_folder/benchmark_folder_clingo/benchmarks/_short/
 test_folder/benchmark_folder_clingo/benchmarks/BSP_tmp/

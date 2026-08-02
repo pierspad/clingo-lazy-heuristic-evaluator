@@ -60,6 +60,7 @@ main() {
   bootstrap_env
   ensure_runlim
   ensure_clingo_bins
+  ensure_alpha_jar
   restore_canonical_instances
 
   cd "$TEST_DIR"

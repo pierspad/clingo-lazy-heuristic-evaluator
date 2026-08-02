@@ -113,6 +113,48 @@ ensure_clingo_bins() {
   ok "clingo prolog: $CLINGO_PROLOG_BIN"
 }
 
+# --- 3bis) jar di Alpha (Qh) --------------------------------
+# Alpha e' il sistema di riferimento esterno del confronto (v. il <system>
+# alpha-qh in runscripts/runscript.xml). Il jar NON viene ricompilato qui:
+# la sua build dipende da JPL, e quindi da SWI-Prolog costruito con
+# -DSWIPL_PACKAGES_JAVA=ON, che e' compito di compile_all.sh. Qui si
+# verifica soltanto che ci sia, e si fallisce SUBITO se manca.
+#
+# Il perche' del "fallisci subito": un jar assente non e' un errore che
+# btool sappia riconoscere. I run di alpha-qh fallirebbero uno per uno, la
+# campagna arriverebbe in fondo, i grafici verrebbero disegnati, e Alpha
+# comparirebbe come una riga di timeout al 100% - indistinguibile da un
+# risultato vero. Esattamente lo stesso genere di fallimento silenzioso
+# contro cui esiste il flag lazy_active per il backend prolog.
+ensure_alpha_jar() {
+  : "${ALPHA_JAR:=$(ls -1 "$REPO_ROOT"/ALPHA/build/libs/*-bundled.jar 2>/dev/null | head -1)}"
+  : "${SWIPL_MODERN_PREFIX:=$HOME/swipl-10}"
+  # -Xmx deve stare SOTTO il memout di runlim: se la JVM puo' riservare piu'
+  # RAM del limite, il run muore di OOM-kill di sistema invece che di memout
+  # pulito, e il resultparser non ha modo di distinguerlo da un crash.
+  # Il chiamante puo' sovrascriverlo (la suite short gira con memout molto
+  # piu' basso).
+  : "${ALPHA_XMX:=28g}"
+  export ALPHA_JAR SWIPL_MODERN_PREFIX ALPHA_XMX
+
+  if [ -z "$ALPHA_JAR" ] || [ ! -f "$ALPHA_JAR" ]; then
+    die "Jar di Alpha mancante (atteso in $REPO_ROOT/ALPHA/build/libs/*-bundled.jar).
+  Lancialo con 'sbatch compile_all.sh' (passo [6/6]), oppure esporta ALPHA_JAR=/percorso/al/jar.
+  Se compile_all.sh fallisce sul passo Alpha, quasi sempre e' JPL: controlla che
+  ~/swipl-moderno/swipl-10.0.2/packages/jpl NON sia vuota (rilancia download.sh)."
+  fi
+
+  local jpl="$SWIPL_MODERN_PREFIX/lib/swipl/lib/jpl.jar"
+  local libjpl="$SWIPL_MODERN_PREFIX/lib/swipl/lib/$(uname -m)-linux/libjpl.so"
+  [ -f "$libjpl" ] || die "libjpl.so mancante: $libjpl
+  Alpha compila anche senza, ma a runtime muore con UnsatisfiedLinkError.
+  Ricostruisci SWI-Prolog con -DSWIPL_PACKAGES_JAVA=ON (compile_all.sh)."
+  [ -f "$jpl" ] || warn "jpl.jar non trovato in $jpl (serve solo alla build, non al run)"
+
+  chmod +x "$TEST_DIR"/programs/alpha-qh-1.0 2>/dev/null || true
+  ok "alpha jar: $ALPHA_JAR (heap max $ALPHA_XMX)"
+}
+
 # --- 4) deriva un runscript dal canonico --------------------
 # uso: derive_runscript <in.xml> <out.xml> <timeout_sec> <output_attr> \
 #                       <bsp_folder> <pup_folder> <hrp_folder> <drop_hpc:0|1>
@@ -189,7 +231,7 @@ run_btool_pipeline() {
 
   # 5e) grafici: tre alberi (native / prolog / confronto) sotto out_base.
   #     ground_counts.csv (se presente) abilita i grafici di grounding.
-  log "Grafici -> $out_base/{graphs-native,graphs-prolog,graphs-comparison-native-prolog}/ ..."
+  log "Grafici -> $out_base/{graphs-native,graphs-prolog,graphs-comparison-native-prolog,graphs-comparison-clingo-alpha}/ ..."
   local gc_arg=()
   [ -f "$out_dir/ground_counts.csv" ] && gc_arg=(--ground-counts "$out_dir/ground_counts.csv")
   python3 tools/plot_results.py --results "$results" --machine "$machine" \
@@ -203,7 +245,7 @@ summarize() {
   log "RIEPILOGO ($label)"
   if [ -f "$results" ]; then ok "results: $results"; fi
   local n=0 tree
-  for tree in graphs-native graphs-prolog graphs-comparison-native-prolog; do
+  for tree in graphs-native graphs-prolog graphs-comparison-native-prolog graphs-comparison-clingo-alpha; do
     if [ -d "$out_base/$tree" ]; then
       local c
       c=$(find "$out_base/$tree" -name '*.png' | wc -l | tr -d ' ')

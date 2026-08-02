@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+# ============================================================
+# Wrapper "system" per benchmark-tool: solver ALPHA (Qh).
+#
+# Alpha e' il sistema lazy-grounding di riferimento. Questa e' la variante
+# "Qh" (flag -uqh), in cui le euristiche domain-specific sono valutate
+# come query Prolog: e' l'UNICA implementazione esistente degli aggregati
+# dinamici nelle euristiche, cioe' della semantica che gli encoding la/lc
+# di questa suite riproducono dentro clingo. Il branch upstream
+# domspec_heuristics_extended accetta la stessa sintassi ma valuta
+# l'aggregato staticamente: verificato, su BSP l'euristica non bilancia
+# nulla e i backtrack esplodono. Quindi qui serve per forza il build con
+# JPL, prodotto da compile_all.sh.
+#
+# DUE COSE che questo wrapper deve fare e che gli altri wrapper non fanno:
+#
+#  1) Alpha vuole gli input come "-i file", non come argomenti posizionali,
+#     mentre templates/seq-generic.sh accoda istanza ed encoding in fondo
+#     alla riga di comando (e' il formato di clingo). Qui li separiamo:
+#     tutto cio' che e' un file leggibile diventa un -i, il resto passa
+#     invariato come opzione.
+#
+#  2) Le istanze BSP della suite sono "#const n=N." (sintassi clingo).
+#     Alpha non ha i program constant e l'encoding dei paper prende la
+#     taglia da max_Value/1. Traduciamo al volo. E' l'alternativa a tenere
+#     due cartelle di istanze BSP parallele, che prima o poi divergono:
+#     cosi' Alpha e clingo leggono per costruzione la stessa taglia.
+#     Le istanze PUP non hanno bisogno di nulla, sono gia' byte-identiche
+#     a quelle del supplementary material dei paper (verificato).
+#
+# Env:
+#   ALPHA_JAR       jar bundled di Alpha (default: build del repo)
+#   SWIPL_MODERN_PREFIX  prefix di SWI-Prolog con JPL (default: $HOME/swipl-10)
+#   ALPHA_XMX       heap massimo della JVM (default 28g)
+#                   DEVE restare sotto il memout di runlim, altrimenti si
+#                   misura un OOM-kill del processo invece del memout
+#                   pulito che il resultparser sa riconoscere.
+# ============================================================
+set -euo pipefail
+
+: "${ALPHA_JAR:=$HOME/clingo-lazy-heuristics/ALPHA/build/libs/ALPHA-bundled.jar}"
+: "${SWIPL_MODERN_PREFIX:=$HOME/swipl-10}"
+: "${ALPHA_XMX:=28g}"
+
+if [ ! -f "$ALPHA_JAR" ]; then
+    echo "*** alpha ERROR: jar non trovato: $ALPHA_JAR (lancia compile_all.sh)" >&2
+    exit 1
+fi
+
+# libjpl.so + libswipl.so vivono nel prefix non standard costruito da
+# compile_all.sh. Senza questi export la JVM carica il jar ma fallisce ad
+# aprire la libreria nativa, e il messaggio (UnsatisfiedLinkError) non
+# assomiglia per niente a "manca SWI-Prolog".
+_arch_dir="$SWIPL_MODERN_PREFIX/lib/swipl/lib/$(uname -m)-linux"
+export SWI_HOME_DIR="$SWIPL_MODERN_PREFIX/lib/swipl"
+export LD_LIBRARY_PATH="${_arch_dir}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
+export LC_ALL=C
+export LC_NUMERIC=C
+
+# --- separazione opzioni / file ------------------------------------------
+opts=()
+inputs=()
+for arg in "$@"; do
+    if [ -f "$arg" ] && [ -r "$arg" ]; then
+        inputs+=("$arg")
+    else
+        opts+=("$arg")
+    fi
+done
+
+# --- traduzione delle istanze BSP ----------------------------------------
+# Un file che contiene SOLO "#const n=N." e' un'istanza BSP della suite.
+# Il test e' volutamente stretto (una sola direttiva, nient'altro di
+# significativo): se un domani le istanze BSP diventassero programmi veri,
+# meglio non tradurle per sbaglio ma vedere Alpha lamentarsi del "#const".
+tmpdir=""
+cleanup() { [ -n "$tmpdir" ] && rm -rf "$tmpdir"; }
+trap cleanup EXIT
+
+translated=()
+for f in "${inputs[@]}"; do
+    n=$(sed -nE 's/^[[:space:]]*#const[[:space:]]+n[[:space:]]*=[[:space:]]*([0-9]+)[[:space:]]*\..*$/\1/p' "$f" | head -1)
+    # NB: il "|| true" non e' cosmetico. grep -v esce 1 quando NON resta
+    # alcuna riga, che e' esattamente il caso di un'istanza BSP ben formata;
+    # con set -e + pipefail lo script morirebbe in silenzio proprio sul
+    # caso buono (visto in pratica: exit 1 e zero output).
+    other=$( { grep -vE '^[[:space:]]*(%|#const[[:space:]]+n[[:space:]]*=|$)' "$f" || true; } | wc -l)
+    if [ -n "$n" ] && [ "$other" -eq 0 ]; then
+        [ -n "$tmpdir" ] || tmpdir=$(mktemp -d)
+        printf 'max_Value(%s).\n' "$n" > "$tmpdir/$(basename "$f").asp"
+        translated+=("$tmpdir/$(basename "$f").asp")
+    else
+        translated+=("$f")
+    fi
+done
+
+# --- riga di comando finale ----------------------------------------------
+cmd=(java "-Xmx${ALPHA_XMX}" "-Djava.library.path=${_arch_dir}" -jar "$ALPHA_JAR")
+cmd+=("${opts[@]}")
+for f in "${translated[@]}"; do cmd+=(-i "$f"); done
+
+exec "${cmd[@]}"
