@@ -1,12 +1,12 @@
 # Fdb version 4
-["biber Spadafora_Pierpaolo_Thesis"] 1785704237.03065 "Spadafora_Pierpaolo_Thesis.bcf" "Spadafora_Pierpaolo_Thesis.bbl" "Spadafora_Pierpaolo_Thesis" 1785704247.21681 0
-  "Spadafora_Pierpaolo_Thesis.bcf" 1785704247.08778 110110 2b7bf2b20fe1cc5a3096d3258dfc9df1 "pdflatex"
+["biber Spadafora_Pierpaolo_Thesis"] 1785707753.48084 "Spadafora_Pierpaolo_Thesis.bcf" "Spadafora_Pierpaolo_Thesis.bbl" "Spadafora_Pierpaolo_Thesis" 1785707763.63267 0
+  "Spadafora_Pierpaolo_Thesis.bcf" 1785707763.50883 110036 339c9931625d35422c05dd9e4dcbe461 "pdflatex"
   "bibliografia.bib" 1783543008.92041 5438 89c0653bdc4b4faac59186716b1edb38 ""
   (generated)
   "Spadafora_Pierpaolo_Thesis.bbl"
   "Spadafora_Pierpaolo_Thesis.blg"
   (rewritten before read)
-["pdflatex"] 1785704242.44161 "/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/thesis/Tesi_Lazy_Heuristics/Spadafora_Pierpaolo_Thesis.tex" "Spadafora_Pierpaolo_Thesis.pdf" "Spadafora_Pierpaolo_Thesis" 1785704247.21709 0
+["pdflatex"] 1785707758.84519 "/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/thesis/Tesi_Lazy_Heuristics/Spadafora_Pierpaolo_Thesis.tex" "Spadafora_Pierpaolo_Thesis.pdf" "Spadafora_Pierpaolo_Thesis" 1785707763.63294 0
   "/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/thesis/Tesi_Lazy_Heuristics/Spadafora_Pierpaolo_Thesis.tex" 1785597416.47092 2209 1e72c4a8d114a262e6f4fc1d47548603 ""
   "/usr/share/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc" 1775415801 2971 def0b6c1f0b107b3b936def894055589 ""
   "/usr/share/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc" 1775415801 2900 1537cc8184ad1792082cd229ecc269f4 ""
@@ -196,17 +196,17 @@
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1780292623 3084554 70f482fd0d07ea0470b6da4c63108332 ""
   "0.1 - frontespizio.tex" 1783592480.68087 798 beb21a4311dffbbfc9d148d7757223d9 ""
   "0.2 - abstract.tex" 1785597769.53234 4373 4f0fd415710da7a76549eea89df3571b ""
-  "1 - Introduzione.tex" 1785704230.64047 21063 7a4d884a975a4135656b8753352521c3 ""
+  "1 - Introduzione.tex" 1785707745.87396 18703 4c52ba1d898aa4eced237b3ee011800a ""
   "2 - Metodologia.tex" 1785595991.13771 45189 c975c36aebbe082a385f0e3b1bd8a5d3 ""
   "3 - Risultati.tex" 1785250008.11234 64479 d4d2cde51b26f5593ddf5651cfb75fac ""
   "4 - Discussione-e-Conclusione.tex" 1785249745.0006 17958 551ad7de3caeea5791fa6182a20ef6ae ""
   "5 - Ringraziamenti.tex" 1783536303.03723 740 9ce8d512e4cf9e1465dce22c78818b36 ""
-  "Spadafora_Pierpaolo_Thesis.aux" 1785704247.08278 36415 da2f12c134827cae3c9aba0adadce334 "pdflatex"
-  "Spadafora_Pierpaolo_Thesis.bbl" 1785704237.63094 28830 2d1ff5bdbc947baff67d4323eb9e3d97 "biber Spadafora_Pierpaolo_Thesis"
-  "Spadafora_Pierpaolo_Thesis.out" 1785704247.08678 8091 c61fd7c5bd37931c9e778a1774131780 "pdflatex"
-  "Spadafora_Pierpaolo_Thesis.run.xml" 1785704247.08877 2461 d3149545ef71a0d19a62aae169c0b30a "pdflatex"
+  "Spadafora_Pierpaolo_Thesis.aux" 1785707763.50358 36317 aae4277a5f6b18b01aa6950285405344 "pdflatex"
+  "Spadafora_Pierpaolo_Thesis.bbl" 1785707754.08764 28830 2d1ff5bdbc947baff67d4323eb9e3d97 "biber Spadafora_Pierpaolo_Thesis"
+  "Spadafora_Pierpaolo_Thesis.out" 1785707763.50758 8091 c61fd7c5bd37931c9e778a1774131780 "pdflatex"
+  "Spadafora_Pierpaolo_Thesis.run.xml" 1785707763.51058 2461 d3149545ef71a0d19a62aae169c0b30a "pdflatex"
   "Spadafora_Pierpaolo_Thesis.tex" 1785597416.47092 2209 1e72c4a8d114a262e6f4fc1d47548603 ""
-  "Spadafora_Pierpaolo_Thesis.toc" 1785704247.08878 5198 d6116d0bdf3cd4f0646c886e6e5b5cda "pdflatex"
+  "Spadafora_Pierpaolo_Thesis.toc" 1785707763.51058 5197 f72e6aa1c77099c39f3f5d8d0cbf713c "pdflatex"
   "_minted/01ED3D3B33C8E0310DEA99CEA3CFD96F.highlight.minted" 1785149218.07944 70 1c5a27cb0009e7049791777135b034ff ""
   "_minted/04BBE9B1260A8D3B00C1B032D10BB3FC.highlight.minted" 1783669589.66856 87 7d44f954c61e3c7b9c0e73b86a1a9f8f ""
   "_minted/059D9D3A4D88BAE52B736CC7F8920C40.highlight.minted" 1783669589.69541 115 0f8358241b8409b6c60d3d01d62c8ee0 ""
