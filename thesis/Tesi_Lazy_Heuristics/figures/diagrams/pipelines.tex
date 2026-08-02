@@ -27,7 +27,7 @@
       {materialised before the first decision};
 
 % ============================== lazy lane ==================================
-\node[lane, anchor=west] at (0,-2.35) {Lazy (this thesis)};
+\node[lane, anchor=west] at (0,-2.35) {Lazily evaluated heuristics};
 
 \node[lazy, text width=27mm] (lenc) at (0.9,-3.7)
       {domain encoding\\[2pt]{\scriptsize\ttfamily \_\_heuristic(\dots)}};
@@ -54,9 +54,9 @@
 
 % =============================== verdict ===================================
 \node[tag, anchor=west, text=diagAlertEdge] at ($(gclasp.east)+(6mm,0)$)
-      {\begin{tabular}{@{}l@{}}grounding-time\\space\end{tabular}};
+      {\begin{tabular}{@{}l@{}}memory\\bound\end{tabular}};
 \node[tag, anchor=west, text=diagLazyEdge]  at ($(lclasp.east)+(6mm,0)$)
-      {\begin{tabular}{@{}l@{}}solving-time\\work\end{tabular}};
+      {\begin{tabular}{@{}l@{}}solving speed\\bound\end{tabular}};
 
 \end{tikzpicture}
 \end{document}

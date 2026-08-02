@@ -19,6 +19,40 @@
 
 \refsection{0}
   \datalist[entry]{none/global//global/global/global}
+    \entry{gelfond1988stable}{inproceedings}{}{}
+      \name{author}{2}{}{%
+        {{hash=9ddf8a4d782a7a6f34c25fbc4ca822b1}{%
+           family={Gelfond},
+           familyi={G\bibinitperiod},
+           given={Michael},
+           giveni={M\bibinitperiod}}}%
+        {{hash=3f9f7c9937297077325233d345cf9c91}{%
+           family={Lifschitz},
+           familyi={L\bibinitperiod},
+           given={Vladimir},
+           giveni={V\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {MIT Press}%
+      }
+      \strng{namehash}{701aac313c79e95b5099346df9bba24a}
+      \strng{fullhash}{701aac313c79e95b5099346df9bba24a}
+      \strng{fullhashraw}{701aac313c79e95b5099346df9bba24a}
+      \strng{bibnamehash}{701aac313c79e95b5099346df9bba24a}
+      \strng{authorbibnamehash}{701aac313c79e95b5099346df9bba24a}
+      \strng{authornamehash}{701aac313c79e95b5099346df9bba24a}
+      \strng{authorfullhash}{701aac313c79e95b5099346df9bba24a}
+      \strng{authorfullhashraw}{701aac313c79e95b5099346df9bba24a}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Proceedings of the Fifth International Conference and Symposium on Logic Programming}
+      \field{title}{The Stable Model Semantics for Logic Programming}
+      \field{year}{1988}
+      \field{pages}{1070\bibrangedash 1080}
+      \range{pages}{11}
+    \endentry
     \entry{gebser2012asp}{book}{}{}
       \name{author}{4}{}{%
         {{hash=a296fbe902a96f2ceebb7398463f3e13}{%
@@ -353,40 +387,6 @@
       \field{volume}{3509}
       \field{year}{2023}
     \endentry
-    \entry{gelfond1988stable}{inproceedings}{}{}
-      \name{author}{2}{}{%
-        {{hash=9ddf8a4d782a7a6f34c25fbc4ca822b1}{%
-           family={Gelfond},
-           familyi={G\bibinitperiod},
-           given={Michael},
-           giveni={M\bibinitperiod}}}%
-        {{hash=3f9f7c9937297077325233d345cf9c91}{%
-           family={Lifschitz},
-           familyi={L\bibinitperiod},
-           given={Vladimir},
-           giveni={V\bibinitperiod}}}%
-      }
-      \list{publisher}{1}{%
-        {MIT Press}%
-      }
-      \strng{namehash}{701aac313c79e95b5099346df9bba24a}
-      \strng{fullhash}{701aac313c79e95b5099346df9bba24a}
-      \strng{fullhashraw}{701aac313c79e95b5099346df9bba24a}
-      \strng{bibnamehash}{701aac313c79e95b5099346df9bba24a}
-      \strng{authorbibnamehash}{701aac313c79e95b5099346df9bba24a}
-      \strng{authornamehash}{701aac313c79e95b5099346df9bba24a}
-      \strng{authorfullhash}{701aac313c79e95b5099346df9bba24a}
-      \strng{authorfullhashraw}{701aac313c79e95b5099346df9bba24a}
-      \field{sortinit}{5}
-      \field{sortinithash}{20e9b4b0b173788c5dace24730f47d8c}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{booktitle}{Proceedings of the Fifth International Conference and Symposium on Logic Programming}
-      \field{title}{The Stable Model Semantics for Logic Programming}
-      \field{year}{1988}
-      \field{pages}{1070\bibrangedash 1080}
-      \range{pages}{11}
-    \endentry
     \entry{gebser2019multishot}{article}{}{}
       \name{author}{4}{}{%
         {{hash=a296fbe902a96f2ceebb7398463f3e13}{%
@@ -419,8 +419,8 @@
       \strng{authorfullhash}{6ff2ecbb0dace9a796d510f578f069a3}
       \strng{authorfullhashraw}{6ff2ecbb0dace9a796d510f578f069a3}
       \field{extraname}{4}
-      \field{sortinit}{8}
-      \field{sortinithash}{a231b008ebf0ecbe0b4d96dcc159445f}
+      \field{sortinit}{7}
+      \field{sortinithash}{108d0be1b1bee9773a1173443802c0a3}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{journaltitle}{Theory and Practice of Logic Programming}
@@ -466,8 +466,8 @@
       \strng{authorfullhash}{d4213acdb4ab6d160ca32e54d6f57fa1}
       \strng{authorfullhashraw}{d4213acdb4ab6d160ca32e54d6f57fa1}
       \field{extraname}{5}
-      \field{sortinit}{9}
-      \field{sortinithash}{0a5ebc79d83c96b6579069544c73c7d4}
+      \field{sortinit}{8}
+      \field{sortinithash}{a231b008ebf0ecbe0b4d96dcc159445f}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{booktitle}{Logic Programming and Nonmonotonic Reasoning (LPNMR 2007)}
@@ -514,8 +514,8 @@
       \strng{authornamehash}{ea9efca74d1e590df72d9f991881c825}
       \strng{authorfullhash}{38041b7bf557147ca065e35782e9bac2}
       \strng{authorfullhashraw}{38041b7bf557147ca065e35782e9bac2}
-      \field{sortinit}{1}
-      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{sortinit}{9}
+      \field{sortinithash}{0a5ebc79d83c96b6579069544c73c7d4}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{booktitle}{Proceedings of the 38th Design Automation Conference}
@@ -670,8 +670,8 @@
       \strng{authornamehash}{5c09efab0406e7b40bd4dd7544e4d270}
       \strng{authorfullhash}{687fe4520f05683d8456ae5acfef5588}
       \strng{authorfullhashraw}{687fe4520f05683d8456ae5acfef5588}
-      \field{sortinit}{2}
-      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{journaltitle}{Theory and Practice of Logic Programming}

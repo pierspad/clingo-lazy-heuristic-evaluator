@@ -1,5 +1,5 @@
 \babel@toc {english}{}\relax 
-\contentsline {section}{Abstract}{ii}{section*.2}%
+\contentsline {section}{Abstract}{iii}{section*.2}%
 \contentsline {section}{\numberline {1}Introduction and Background}{1}{section.0.1}%
 \contentsline {subsection}{\numberline {1.1}The Cost of a Dynamic Heuristic}{1}{subsection.0.1.1}%
 \contentsline {subsection}{\numberline {1.2}Answer Set Programming}{3}{subsection.0.1.2}%
@@ -38,6 +38,7 @@
 \contentsline {section}{\numberline {3}Results}{23}{section.0.3}%
 \contentsline {subsection}{\numberline {3.1}Functional Validation}{23}{subsection.0.3.1}%
 \contentsline {subsection}{\numberline {3.2}Experimental Setup and Dataset}{23}{subsection.0.3.2}%
+\contentsline {subsubsection}{What the Times Can and Cannot Carry}{24}{section*.22}%
 \contentsline {subsection}{\numberline {3.3}Reduction of the Ground Heuristic Component}{26}{subsection.0.3.3}%
 \contentsline {subsection}{\numberline {3.4}BSP: Runtime Behaviour}{28}{subsection.0.3.4}%
 \contentsline {subsection}{\numberline {3.5}BSP: the Two Semantics Under the Microscope}{31}{subsection.0.3.5}%
@@ -49,7 +50,7 @@
 \contentsline {subsection}{\numberline {3.11}PUP: the Grounding Bottleneck at Scale}{40}{subsection.0.3.11}%
 \contentsline {subsection}{\numberline {3.12}HRP: Semantics Without Aggregates}{44}{subsection.0.3.12}%
 \contentsline {subsection}{\numberline {3.13}Native versus Prolog: Summary}{45}{subsection.0.3.13}%
-\contentsline {subsection}{\numberline {3.14}Summary of Results}{46}{subsection.0.3.14}%
+\contentsline {subsection}{\numberline {3.14}Summary of Results}{45}{subsection.0.3.14}%
 \contentsline {section}{\numberline {4}Discussion and Conclusions}{48}{section.0.4}%
 \contentsline {subsection}{\numberline {4.1}Discussion of the Results}{48}{subsection.0.4.1}%
 \contentsline {subsection}{\numberline {4.2}Limitations}{50}{subsection.0.4.2}%
