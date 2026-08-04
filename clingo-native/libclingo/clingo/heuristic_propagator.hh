@@ -41,10 +41,11 @@ private:
     // rank_weight e' il criterio di ordinamento, cioe' la forza del candidato;
     // value e' cio' che lo slot memorizza. Per `level` i due coincidono col
     // peso, per `sign` no: li' value e' la direzione (+1/-1) e rank_weight e'
-    // il modulo del peso.
+    // il modulo del peso. E' un long long perche' il modulo di INT_MIN non e'
+    // rappresentabile come int.
     struct ResolvedModifierValue {
         bool active = false;
-        int rank_weight = 0;
+        long long rank_weight = 0;
         int value = 0;
         size_t source_candidate_id = 0;
     };
@@ -186,7 +187,7 @@ private:
                                    Clingo::Assignment const &assignment,
                                    CandidateHeuristicEffect &effect) const;
     void update_best_by_weight(ResolvedModifierValue &current,
-                               int rank_weight,
+                               long long rank_weight,
                                int value,
                                size_t candidate_id) const;
     void apply_effect_to_target_state(CandidateHeuristicEffect const &effect,

@@ -255,6 +255,31 @@ TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
         REQUIRE(models == ModelVec({{}}));
     }
 
+    // Caso estremo dello stesso ramo: INT_MIN. Il suo modulo (2147483648) non
+    // e' rappresentabile come int, quindi la forza va calcolata in un tipo piu'
+    // largo. Qui la direttiva INT_MIN gareggia contro una a INT_MAX: e' l'unico
+    // confronto che distingue un modulo calcolato davvero a 64 bit da uno
+    // troncato a int, e vincerlo richiede 2147483648 > 2147483647.
+    SECTION("__modifier(sign) handles an INT_MIN weight") {
+        Control ctl{{"1", "--heuristic=Domain"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            dom(1).
+            { a(X) } :- dom(X).
+            __heuristic(__target(a), __body(dom, __match(0, 0)),
+                        __weight(1), __modifier(true)).
+            __heuristic(__target(a), __body(dom, __match(0, 0)),
+                        __weight(2147483647), __modifier(sign)).
+            __heuristic(__target(a), __body(dom, __match(0, 0)),
+                        __weight(-2147483648), __modifier(sign)).
+            #show a/1.
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE(test_solve(ctl.solve(), models).is_satisfiable());
+        REQUIRE(models == ModelVec({{}}));
+    }
+
 
 
 

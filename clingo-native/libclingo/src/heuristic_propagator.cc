@@ -87,6 +87,14 @@ static int normalize_sign(int value) {
     return 0;
 }
 
+// Modulo del peso, totale su tutto il dominio di int. std::abs(int) su INT_MIN
+// e' comportamento indefinito (-INT_MIN non e' rappresentabile come int),
+// quindi si allarga prima a long long, dove lo e'.
+static long long weight_magnitude(int value) {
+    long long const widened = value;
+    return widened < 0 ? -widened : widened;
+}
+
 static Clingo::Symbol predicate_name_symbol(Clingo::Symbol const &atom_symbol) {
     return Clingo::Id(atom_symbol.name());
 }
@@ -765,7 +773,7 @@ bool HeuristicPropagator::evaluate_candidate_effect(size_t candidate_id,
 // `value`: lo slot `sign` memorizza la direzione (+1/-1) mentre a ordinare e'
 // la forza (il modulo del peso, v. apply_effect_to_target_state).
 void HeuristicPropagator::update_best_by_weight(ResolvedModifierValue &current,
-                                                int rank_weight,
+                                                long long rank_weight,
                                                 int value,
                                                 size_t candidate_id) const {
     if (!current.active ||
@@ -790,7 +798,7 @@ void HeuristicPropagator::apply_effect_to_target_state(CandidateHeuristicEffect 
         // scrive __weight(-100) e deve valere 100 in classifica, non -100.
         case HeuristicModifier::Sign:
             update_best_by_weight(state.sign,
-                                  std::abs(effect.bias),
+                                  weight_magnitude(effect.bias),
                                   normalize_sign(effect.bias),
                                   effect.candidate_id);
             break;
