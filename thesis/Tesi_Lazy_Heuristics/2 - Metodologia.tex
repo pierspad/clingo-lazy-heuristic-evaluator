@@ -40,7 +40,7 @@ This simulation is faithful, but its price is exactly the combinatorial explosio
 \subsubsection{Weights, Priorities, and Flattening}
 \label{sec:flattening}
 
-Section~\ref{sec:bg-heuristics} and Section~\ref{sec:bg-alpha} recorded that the two systems read the annotation $[W@P]$ of a heuristic differently. In Alpha the pair is an \emph{absolute} rank over all heuristic instances, read lexicographically: the priority $P$ is a global level and decides first, so no instance of level $P$ is considered while an instance of a level $P' > P$ is still applicable, and the weight $W$ only orders the instances that share the same level. In clingo the two fields do not compose in this way: \mintinline{text}|@P| is local, arbitrating only between the modifications attached to the \emph{same} atom, while the order in which distinct atoms are decided comes from the weight alone. An encoding written for Alpha therefore cannot be handed to clingo verbatim
+Section~\ref{sec:bg-heuristics} and Section~\ref{sec:bg-alpha} recorded that the two systems read the annotation $[W@P]$ of a heuristic differently. In Alpha the pair is an \emph{absolute} rank over all heuristic instances, read lexicographically: the priority $P$ is a global level and decides first, so no instance of level $P$ is considered while an instance of a level $P' > P$ is still applicable, and the weight $W$ only orders the instances that share the same level. In clingo the two fields do not compose in this way: \mintinline{text}|@P| is local, arbitrating only between the modifications attached to the \emph{same} atom, while the order in which distinct atoms are decided comes from the weight alone. An encoding written for Alpha therefore cannot be handed to clingo verbatim.
 
 The intended order can nevertheless be recovered, by \emph{flattening} the level into the weight:
 \[
@@ -51,7 +51,9 @@ where $M$ is a level multiplier strictly larger than any intra-level weight, so 
 
 If $M$ exceeds every intra-level weight, then $W + P\cdot M > W' + P'\cdot M$ holds exactly when $(P,W)$ precedes $(P',W')$, so the total order induced on the atoms is the one Alpha's absolute levels induce.
 
-The suite therefore adopts clingo's convention in \emph{all four variants and in both backends}: absolute levels always live in the weight, and the priority field is left to its local role of arbitrating between several directives attached to the \emph{same} atom. What that field then contains is decided benchmark by benchmark, and within a benchmark it is the same in every variant:
+The suite therefore adopts clingo's convention in \emph{all four variants and in both backends}: absolute levels always live in the weight.
+
+Flattening also disposes of the priority field itself, at least on the lazy side. Once every level is inside the weight, the weight is the only ordering criterion needed under either semantics, and the native lazy language of Section~\ref{sec:dsl} accordingly has no priority construct at all: what would arbitrate between several directives attached to the \emph{same} target is the modifier, described there. The Prolog rules keep a priority slot --- the third argument of their head --- because they mirror the shape of an Alpha rule, but no encoding relies on it: only HRP sets it to two different values, and there the flattened weights (at least $41$ for the directives it ranks first, against $1$ for the others) already induce the same order.
 
 A last convention concerns empty aggregates: \mintinline{text}|#max| over an empty set is $0$ in Alpha but $\#\mathit{inf}$ in clingo. All encodings therefore write \mintinline{text}|#max{0; ...}| with an explicit neutral element, and both lazy backends implement the same rule (the native \mintinline{text}|MaxState| returns $0$ when empty; the Prolog runtime defines \mintinline{text}|dyn_max| with a $0$ default).
 
@@ -65,7 +67,7 @@ HeuristicPropagator my_propagator;
 ctl.register_propagator(my_propagator, true);
 \end{minted}
 
-The propagator is registered on \emph{every} run of the modified binary: on a program that contains no heuristic facts it stays inert, because \mintinline{text}|init| finds nothing to watch and \mintinline{text}|decide| always returns $0$, and the same binary therefore runs the ground variants and the heuristic-free baseline without a separate build. The second argument, \mintinline{text}|true|, asks clasp to call the propagator sequentially, to avoid race conditions on the incremental state described in Section~\ref{sec:runtime}; Nothing else in clingo is touched. Figure~\ref{fig:architecture} shows the architecture of the two binary build variants.
+The propagator is registered on \emph{every} run of the modified binary: on a program that contains no heuristic facts it stays inert, because \mintinline{text}|init| finds nothing to watch and \mintinline{text}|decide| always returns $0$, and the same binary therefore runs the ground variants and the heuristic-free baseline without a separate build. The second argument, \mintinline{text}|true|, asks clasp to call the propagator sequentially, to avoid race conditions on the incremental state described in Section~\ref{sec:runtime}. Nothing else in clingo is touched. Figure~\ref{fig:architecture} shows the architecture of the two binary build variants.
 
 \begin{figure}[H]
 \centering
@@ -78,11 +80,12 @@ The class implements \mintinline{text}|Clingo::Heuristic|, that is, the propagat
 
 The propagator never adds a constraint, never derives a literal and never refuses one. It only reorders the decisions clasp would have taken anyway, so the answer sets are untouched, and a heuristic can make a run slower or faster but cannot change the meaning of the encoding. This is expanded in Section~\ref{sec:validation}.
 
-\subsection{Translation of the Heuristics directives}
+\subsection{Translation of the Heuristic Directives}
 \label{sec:dsl}
+\label{sec:translation}
 
-The native backend does not read \texttt{\#heuristics} facts: the language replaces an entire family of ground directives with a single ground facts that \emph{describes} them. 
-This subsection presents what one may write and what each construct means by deriving that fact for the BSP heuristic of Section~\ref{sec:motivation}, one component at a time, leaving to Section~\ref{sec:implementation} the question of how it is executed. 
+The native backend does not read \mintinline{text}|#heuristic| directives. Its language replaces an entire family of such directives with a single ground fact that \emph{describes} them.
+This subsection presents what one may write, and what each construct means, by deriving that fact for the BSP heuristic of Section~\ref{sec:motivation} one component at a time. How the description is executed is left to Section~\ref{sec:implementation}.
 
 The starting point is the directive as clingo reads it:
 
@@ -90,36 +93,69 @@ The starting point is the directive as clingo reads it:
 #heuristic b(X) : x(X), not c(X), S = #sum{Y : c(Y)}, W = ((n+1)*S)+X. [W, true]
 \end{minted}
 
-The \textbf{target} atom of the heuristic is \mintinline{text}|b(X)|, where $X$ ranges over the ground instances. The lazy fact names only the \emph{predicate}, \mintinline{text}|__target(b)|; the instances are found by the propagator at \mintinline{text}|init|, when the ground program is available and the enumeration of \mintinline{text}|b(...)| comes for free.\\
+\paragraph{Target.} The target atom is \mintinline{text}|b(X)|, where $X$ ranges over the ground instances. The lazy fact names only the \emph{predicate}, \mintinline{text}|__target(b)|. The instances are found by the propagator at \mintinline{text}|init|, when the ground program is available and the enumeration of \mintinline{text}|b(...)| comes for free.
 
-The condition \mintinline{text}|x(X)| is part of the \textbf{positive body} and shares its argument with the target: the candidate for \mintinline{text}|b(7)| is alive only while \mintinline{text}|x(7)| is true. Such conditions are written as the bare predicate name, \mintinline{text}|x|, and the propagator matches the position of their arguments against the target tuple.\\
+\paragraph{Positive body.} The condition \mintinline{text}|x(X)| shares its argument with the target: the candidate for \mintinline{text}|b(7)| is alive only while \mintinline{text}|x(7)| is true. A condition of this shape is written as the bare predicate name, \mintinline{text}|x|, and the propagator matches its arguments against the target tuple position by position.
 
-The condition \mintinline{text}|not c(X)| is part of the \textbf{negative body}, likewise matches the position of its arguments with the target tuple, and is written \mintinline{text}|__n_c|, the prefix marking negation.\\
+However a body predicate may have a different arity; its arguments may sit in different positions; or a value may have to be read out of it and used in the weight. The correspondence is then stated explicitly:
 
-The \textbf{semantics} used to interpret that negation is encoded in the \mintinline{text}|__semantics(S)| selector, that decides whether it is read as \enquote{\mintinline{text}|c(X)| is assigned false} or as \enquote{\mintinline{text}|c(X)| is not assigned true}.\\ 
+\begin{minted}{prolog}
+__body(pred, __match(src, tgt), __bind_arg(var, idx))
+\end{minted}
 
-The \textbf{aggregate} $S = \#\mathtt{sum}\{Y : c(Y)\}$ is the aggregate we want evaluated lazily. We denote it as \mintinline{text}|__sum(c)| and then we bind that value to the variable \mintinline{text}|s| with: \mintinline{text}|__bind(s, __sum(c))|.\\
+\mintinline{text}|__match(src, tgt)| requires argument \mintinline{text}|src| of the body atom to equal argument \mintinline{text}|tgt| of the target and both to be integers. All indices are 0-based, and at least one \mintinline{text}|__match| is mandatory, since a body atom unrelated to the target would say nothing about the candidate. \mintinline{text}|__bind_arg(var, idx)| extracts argument \mintinline{text}|idx| of the body atom into a variable usable in the weight.
 
-The \textbf{weight} $((n+1)\cdot S)+X$ cannot be carried over as it stands. A lazy fact is an ordinary ASP term, and gringo evaluates arithmetic inside terms while grounding: an infix expression written there would either be computed once, before search, or --- as is the case here, since $S$ and $X$ are not bound anywhere in the fact --- be rejected as unsafe. The weight is therefore kept \emph{unevaluated}, by writing it in prefix form as a term tree, \mintinline{text}|__weight(__add(__mul(s, B), self))|, which is to say $s \cdot B + \mathit{self}$. The three constructors \mintinline{text}|__add|, \mintinline{text}|__sub| and \mintinline{text}|__mul| are binary, denote the corresponding integer operation, and are the entire arithmetic of the language; their arguments are integer constants, variables bound elsewhere in the same fact (here \mintinline{text}|s|, bound to the sum, and \mintinline{text}|B|, an ordinary ASP variable that grounding replaces by $n+1$), or the symbol \mintinline{text}|self|, which denotes the first argument of the ground target --- the $X$ of \mintinline{text}|b(X)|. Arguments of the target other than the first are reached with \mintinline{text}|__bind_target_arg|, described below.\\
+Given the ground facts:
+\begin{minted}{prolog}
+score(1,10). score(2,5). score(3,7).
+\end{minted}
+and the target atoms:
+\begin{minted}{prolog}
+choose(1). choose(2). choose(3).
+\end{minted}
+the directive:
+\begin{minted}{prolog}
+__heuristic(__target(choose),
+            __body(score, __match(0,0), __bind_arg(w,1)),
+            __weight(w), __modifier(true)).
+\end{minted}
 
-The parser turns that tree into a small arithmetic AST once, at \mintinline{text}|init|. From then on it is evaluated \emph{one candidate at a time}: at every decision, each candidate that is currently active evaluates its own copy of the expression, with \mintinline{text}|self| holding that candidate's target argument and \mintinline{text}|s| holding whatever the sum is at that instant of the search. One expression therefore stands for as many numbers as there are targets, multiplied by the values the aggregate takes over the course of the search, and none of those numbers is ever materialised in the ground program.\\
+pairs each \mintinline{text}|choose(X)| with the \mintinline{text}|score(X,W)| that agrees with it on the first argument, and binds \mintinline{text}|w| to the second argument of that atom. The weights are then $10$, $5$ and $7$, so the propagator decides \mintinline{text}|choose(1)| first.
 
-//TODO qui priority andrebbe toldo, modifier non so se ha veramente senso, semantics è l'unico da lasciare sicuro
-\paragraph{Priority, modifier and semantics.} The three remaining fields carry the annotations of the original directive.
+\paragraph{Negative body.} The condition \mintinline{text}|not c(X)| likewise matches its arguments against the target tuple, and is written \mintinline{text}|__n_c|, the prefix marking negation.
 
-\mintinline{text}|__priority(0)| carries the priority in the local role fixed by Section~\ref{sec:flattening}. It is $0$ here because \mintinline{text}|b/1| is the target of a single directive, and it is $0$ in every BSP and PUP encoding for the same reason; the field does real work only in HRP, where the value $1$ separates the reuse and filling directives from the closing \mintinline{text}|false| directives that share their targets.
+\paragraph{Semantics.} The reading of that negation is fixed by the \mintinline{text}|__semantics(S)| selector, which decides whether \mintinline{text}|__n_c| means \enquote{\mintinline{text}|c(X)| is assigned false} or \enquote{\mintinline{text}|c(X)| is not assigned true} hence it fixes also the reading of aggregates.
 
-\mintinline{text}|__modifier(true)| carries clingo's modifier unchanged, with the same admissible values: \mintinline{text}|level| sets the ranking value alone, \mintinline{text}|sign| the preferred polarity alone, and \mintinline{text}|true| and \mintinline{text}|false| set both, the first preferring the target true and the second preferring it false. The field is not decoration, because \mintinline{text}|decide| returns a \emph{signed} literal and the modifier is what fixes that sign. Every heuristic in the suite uses \mintinline{text}|true| except the closing level of HRP, which uses \mintinline{text}|false| to drive towards false the choice atoms that no other directive claims; omitting the modifier there would fall back to the default \mintinline{text}|true| and invert the level, turning the pruning of the search tail into an instruction to populate it.
+\paragraph{Aggregates.} The aggregate $S = \#\mathtt{sum}\{Y : c(Y)\}$ is evaluated lazily. It is written \mintinline{text}|__sum(c)| and bound to a variable via \mintinline{text}|__bind(s, __sum(c))|. Besides sum, the operators \mintinline{text}|__count|, \mintinline{text}|__min|, and \mintinline{text}|__max| are also available.
 
-\mintinline{text}|__semantics(alpha)| selects the reading of negation and aggregates, and is precisely the field that distinguishes an \mintinline{text}|la| encoding from its \mintinline{text}|lc| twin: between the two, nothing else in the file changes. Assembling the components gives the fact in full:
+An aggregate can be restricted \emph{per target} using \mintinline{text}|__filter(src_idx, tgt_idx, offset)|, which keeps only source atoms whose argument at position \mintinline{text}|src_idx| equals argument \mintinline{text}|tgt_idx| of the target plus an optional \mintinline{text}|offset|. For instance, in PUP, retrieving the maximum number of sensors on the \emph{previous} unit ($U-1$) for a target \mintinline{text}|assigned_zone_unit(Z,U)| is expressed as:
+\begin{minted}{prolog}
+__bind(m1, __max(num_sensors_on_unit, 0, __filter(1, 1, -1)))
+\end{minted}
+where \mintinline{text}|0| selects the aggregated argument $N$ in \mintinline{text}|num_sensors_on_unit(N, U')|, and the filter matches $U' = U - 1$.
+
+\paragraph{Weight.} Not being possible to evaluate them at grounding time without making the grounding explode, weights are therefore expressed as \emph{unevaluated term trees} in prefix form, such as:
+\begin{minted}{prolog}
+__weight(__add(__mul(s, B), self))
+\end{minted}
+which represents $(s \cdot B + \mathit{self})$. 
+
+The binary constructors (\mintinline{text}|__add|, \mintinline{text}|__sub|, \mintinline{text}|__mul|) operate on integer constants, bound variables (e.g., \mintinline{text}|s| from an aggregate or ground variable \mintinline{text}|B|), and target arguments accessed via \mintinline{text}|self| (the first target argument) or \mintinline{text}|__bind_target_arg(var, idx)|.
+
+At \mintinline{text}|init|, the propagator compiles this tree into a lightweight AST. During search, each active candidate evaluates its weight dynamically at decision time using the current trail values, without materialising weights in the ground program.
+
+\paragraph{Modifier.} The \mintinline{text}|__modifier(M)| selector specifies Clingo's standard heuristic modifiers: \mintinline{text}|level| sets the ranking value alone, \mintinline{text}|sign| sets the preferred polarity alone, while \mintinline{text}|true| (the default) and \mintinline{text}|false| set both. 
+
+The modifier is mandatory because the solver's \mintinline{text}|decide| interface expects a \emph{signed} literal. Additionally, each modifier acts as an independent channel per target, resolving conflicts by selecting the candidate with the highest weight. Across our benchmarks, all directives use \mintinline{text}|true|, except for the final layer of HRP, which uses \mintinline{text}|false| to prune remaining choice atoms.
+
+\medskip
+Assembling the components gives the fact in full:
 
 \begin{minted}{prolog}
 __heuristic(__target(b), x, __n_c, __bind(s, __sum(c)),
-            __weight(__add(__mul(s, B), self)), __priority(0),
+            __weight(__add(__mul(s, B), self)),
             __semantics(alpha), __modifier(true)) :- B = n + 1.
 \end{minted}
-
-//TODO se priority lo rimuoviamo andrebbe rimosso anche da questa tabella, e modifier...?
 
 \begin{table}[H]
 \centering
@@ -136,20 +172,22 @@ target & \texttt{b(X)} & \texttt{\_\_target(b)} & \texttt{heuristic( b(X), W, P,
 \addlinespace[3pt]
 positive body, target tuple & \texttt{x(X)} & \texttt{x} & \texttt{holds(x(X))}\\
 \addlinespace[3pt]
-positive body, own arguments & \texttt{p(X,V)} & \texttt{\_\_body(p,} \newline \texttt{\ \ \_\_match(0,0),} \newline \texttt{\ \ \_\_bind\_arg(v,1))} & \texttt{holds(p(X,V))}\\
+positive body, join & \texttt{p(X,V)} & \texttt{\_\_body(p,} \newline \texttt{\ \ \_\_match(0,0),} \newline \texttt{\ \ \_\_bind\_arg(v,1))} & \texttt{holds(p(X,V))}\\
 \addlinespace[3pt]
 negation & \texttt{not c(X)} & \texttt{\_\_n\_c} & \texttt{alpha\_not(c(X))} \newline \texttt{clingo\_not(c(X))}\\
 \addlinespace[3pt]
-aggregate & \texttt{S = \#sum\{Y : c(Y)\}} & \texttt{\_\_bind(s,} \newline \texttt{\ \ \_\_sum(c))} & \texttt{aggregate\_all(} \newline \texttt{\ \ sum(Y), holds(c(Y)), S)}\\
+aggregate & \texttt{S = \#sum\{Y : c(Y)\}} & \texttt{\_\_bind(s,} \newline \texttt{\ \ \_\_sum(c))} \newline also \texttt{\_\_count}, \texttt{\_\_min}, \texttt{\_\_max} & \texttt{aggregate\_all(} \newline \texttt{\ \ sum(Y), holds(c(Y)), S)}\\
+\addlinespace[3pt]
+filtered aggregate & \texttt{M = \#max\{N :} \newline \texttt{\ \ q(N,U-1)\}} & \texttt{\_\_bind(m,} \newline \texttt{\ \ \_\_max(q, 0,} \newline \texttt{\ \ \ \ \_\_filter(1,1,-1)))} & \texttt{U1 is U-1,} \newline \texttt{dyn\_max(} \newline \texttt{\ \ holds(q(N,U1)),} \newline \texttt{\ \ N, M)}\\
+\addlinespace[3pt]
+target arguments & \texttt{X}, \texttt{Y} in \texttt{b(X,Y)} & \texttt{self}, \newline \texttt{\_\_bind\_target\_arg(} \newline \texttt{\ \ y, 1)} & ordinary head variables\\
 \addlinespace[4pt]
 \midrule
 \multicolumn{4}{@{}l}{\emph{annotations}}\\
 \addlinespace[2pt]
 weight & \texttt{W = ((n+1)*S)+X} & \texttt{\_\_weight(\_\_add(} \newline \texttt{\ \ \_\_mul(s,B), self))} & \texttt{W is B*S+X}\\
 \addlinespace[3pt]
-priority & \texttt{@P}, default $|W|$ & \texttt{\_\_priority(0)}, \newline default $0$ & third head argument\\
-\addlinespace[3pt]
-modifier & \texttt{[W, true]} & \texttt{\_\_modifier(true)} & fourth head argument\\
+modifier & \texttt{[W, true]} & \texttt{\_\_modifier(true)}, \newline default \texttt{true} & fourth head argument\\
 \addlinespace[3pt]
 semantics & --- (fixed by the system) & \texttt{\_\_semantics(alpha)} \newline \texttt{\_\_semantics(clingo)} & choice of \texttt{alpha\_not} / \texttt{clingo\_not}\\
 \addlinespace[3pt]
@@ -159,38 +197,3 @@ target still free & --- (implicit in clasp) & implicit: an assigned target is sk
 \caption{The same heuristic in the three notations.}
 \label{tab:translation}
 \end{table}
-
-\subsubsection{Joins, Target Arguments and Filtered Aggregates}
-\label{sec:dsl-joins}
-
-When a positive body predicate does \emph{not} share the target tuple: because it has a different arity; because its arguments sit in different positions; or because a value has to be read out of it and used in the weight; the correspondence is stated explicitly:
-
-\begin{minted}{prolog}
-__body(pred, __match(src, tgt), __bind_arg(var, idx))
-\end{minted}
-
-\mintinline{text}|__match(src, tgt)| requires argument \mintinline{text}|src| of the body atom to be equal to argument \mintinline{text}|tgt| of the target (all indices are 0-based, and at least one \mintinline{text}|__match| is mandatory, since a body atom unrelated to the target would say nothing about the candidate); \mintinline{text}|__bind_arg(var, idx)| extracts argument \mintinline{text}|idx| of the body atom into a variable usable in the weight and priority expressions. A minimal instance makes the mechanics visible. Given the facts \mintinline{text}|score(1,10)|, \mintinline{text}|score(2,5)|, \mintinline{text}|score(3,7)| and the targets \mintinline{text}|choose(1)|, \mintinline{text}|choose(2)|, \mintinline{text}|choose(3)|, the fact
-
-\begin{minted}{prolog}
-__heuristic(__target(choose),
-            __body(score, __match(0,0), __bind_arg(w,1)),
-            __weight(w), __modifier(true)).
-\end{minted}
-
-pairs each \mintinline{text}|choose(X)| with the \mintinline{text}|score(X,W)| that agrees with it on the first argument, binds \mintinline{text}|w| to the second argument of that atom, and so gives \mintinline{text}|choose(1)| weight $10$, \mintinline{text}|choose(2)| weight $5$ and \mintinline{text}|choose(3)| weight $7$: the propagator decides \mintinline{text}|choose(1)| first. Written without \mintinline{text}|__body|, the same heuristic would have to enumerate one directive per score value, which is the ground behaviour the lazy encoding exists to avoid. \mintinline{text}|__bind_target_arg(var, idx)| plays the dual role on the target itself, and is how a target of arity greater than one is read beyond its first argument, which \mintinline{text}|self| already covers. Together these constructs turn a template into a join: when several body atoms match one target, each combination becomes a candidate of its own, which is why candidate materialisation (Section~\ref{sec:runtime}) is not simply one candidate per ground target.
-
-\paragraph{Filtered aggregates.} An aggregate, likewise, need not range over the whole extension of its source predicate: it can be restricted \emph{per target}. PUP needs, for each zone, the maximum number of sensors already placed on the \emph{previous} communication unit, and writes it
-
-\begin{minted}{prolog}
-__bind(m1, __max(num_sensors_on_unit, 0, __filter(1,1,-1)))
-\end{minted}
-
-which is read from the inside out. The source predicate is \mintinline{text}|num_sensors_on_unit|, whose first argument is a sensor count $N$ and whose second is a unit $U'$. The \mintinline{text}|0| that follows the predicate name is the index of the \emph{aggregated} argument, so the value being maximised is $N$; it is a position, not a default. The \mintinline{text}|__filter(1,1,-1)| is the restriction, with the general form \mintinline{text}|__filter(src_idx, tgt_idx, offset)|: it keeps only the source atoms whose argument $1$ equals argument $1$ of the target plus the offset, here $U' = U - 1$. For the target \mintinline{text}|assigned_zone_unit(Z,U)| the whole binding therefore means: \emph{let \mintinline{text}|m1| be the largest sensor count recorded, among the atoms currently true, for the unit immediately preceding this target's unit}. The offset may be omitted and defaults to $0$ --- the sibling bindings \mintinline{text}|m0| and \mintinline{text}|m2| of the same rule use $0$ and $+1$ for the current and the following unit --- and several filters may be given, in which case they are conjoined; the empty-set convention of Section~\ref{sec:flattening} gives the value $0$ when no source atom survives them.
-
-Two things are worth noticing about this binding. First, the value it denotes is different for every target, and changes as the search proceeds, yet the fact that declares it is a single line whose size is independent of the instance: this is the same economy as the weight expression, applied to the data the weight reads. Second, a filter is a linear relation between one source argument and one target argument, which is a deliberate limitation rather than an oversight --- it is exactly what the aggregate states of Section~\ref{sec:runtime} can maintain incrementally, one update per source atom that changes, without ever re-scanning the source predicate at a decision.
-
-One restriction is worth declaring: the aggregate machinery draws from a single source predicate, so joins occurring inside an Alpha-style aggregate cannot be expressed directly. Where the original encodings need one, it is precompiled into an auxiliary derived predicate --- for PUP, \mintinline{text}|sensor_assigned_zone/2| and \mintinline{text}|sensor_zone_on_unit/3| --- which the aggregate then reads as a single source. These auxiliaries are pure definitions that appear in no constraint, so they cannot change the answer sets; they do add grounding, and that cost is charged to every variant alike, so it cannot flatter the lazy ones.
-
-This closes the design: the two axes, the conventions on weights and priorities that make the four variants comparable, the place the propagator occupies inside clingo, and the language in which a heuristic is handed to it. What remains is the machinery that executes those descriptions --- the parser, the runtime structures, the incremental aggregates and the two evaluation backends --- together with the benchmarks and the checks the measurements rest on; Section~\ref{sec:implementation} takes them in that order.
-
-
