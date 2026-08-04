@@ -119,22 +119,7 @@ __heuristic(__target(b), x, __n_c, __bind(s, __sum(c)),
             __semantics(alpha), __modifier(true)) :- B = n + 1.
 \end{minted}
 
-
-//TODO non ho capito un cazzo
-
-The body \mintinline{text}|:- B = n + 1| is only a helper: gringo evaluates arithmetic inside terms, so \mintinline{text}|__mul(s, n+1)| written directly in the head would already reduce to \mintinline{text}|__mul(s,101)| for $n = 100$, and the two forms are interchangeable here. What the body does is decouple the template from the numbers it needs, and it earns its keep as soon as those numbers are not program constants but values computed from the instance. HRP is the case in point: its level multiplier is derived by the encoding itself,
-
-\begin{minted}{prolog}
-maxCabinetId(M) :- M = #max{ C : cabinetDomain(C) }.
-maxRoomId(M)    :- M = #max{ R : roomDomain(R) }.
-levelMul(LM)    :- LM = MC + MR + 10, maxCabinetId(MC), maxRoomId(MR).
-
-__heuristic(__target(reuseCabinet), legacyCabinet,
-            __weight(__add(6, __mul(4, LM))), __priority(1),
-            __semantics(alpha), __modifier(true)) :- levelMul(LM).
-\end{minted}
-
-so the same heuristic file adapts to every instance without being edited, and without the propagator ever having to know what a program constant, an instance or an aggregate over a domain is: by the time it reads the fact, \mintinline{text}|LM| is a number. The body is the seam at which the whole of ASP remains available for computing the constants of a heuristic, while the fact itself stays a plain template. The same heuristic in the Prolog backend is the rule string of Section~\ref{sec:prolog-syntax}, and Table~\ref{tab:translation} lines up the three formulations construct by construct.
+//TODO se priority lo rimuoviamo andrebbe rimosso anche da questa tabella, e modifier...?
 
 \begin{table}[H]
 \centering
@@ -147,11 +132,11 @@ so the same heuristic file adapts to every instance without being edited, and wi
 \midrule
 \multicolumn{4}{@{}l}{\emph{structure}}\\
 \addlinespace[2pt]
-target & \texttt{b(X)} & \texttt{\_\_target(b)} & head \texttt{heuristic(} \newline \texttt{\ \ b(X), W, P, M)}\\
+target & \texttt{b(X)} & \texttt{\_\_target(b)} & \texttt{heuristic( b(X), W, P, M)}\\
 \addlinespace[3pt]
-positive body, target tuple & \texttt{x(X)} & \texttt{x} \newline (bare predicate) & \texttt{holds(x(X))}\\
+positive body, target tuple & \texttt{x(X)} & \texttt{x} & \texttt{holds(x(X))}\\
 \addlinespace[3pt]
-positive body, own arguments & \texttt{p(X,V)} & \texttt{\_\_body(p,} \newline \texttt{\ \ \_\_match(0,0),} \newline \texttt{\ \ \_\_bind\_arg(v,1))} & \texttt{holds(p(X,V))} \newline (any goal over \texttt{holds/1})\\
+positive body, own arguments & \texttt{p(X,V)} & \texttt{\_\_body(p,} \newline \texttt{\ \ \_\_match(0,0),} \newline \texttt{\ \ \_\_bind\_arg(v,1))} & \texttt{holds(p(X,V))}\\
 \addlinespace[3pt]
 negation & \texttt{not c(X)} & \texttt{\_\_n\_c} & \texttt{alpha\_not(c(X))} \newline \texttt{clingo\_not(c(X))}\\
 \addlinespace[3pt]
@@ -171,16 +156,14 @@ semantics & --- (fixed by the system) & \texttt{\_\_semantics(alpha)} \newline \
 target still free & --- (implicit in clasp) & implicit: an assigned target is skipped & \texttt{target\_available(} \newline \texttt{\ \ b(X))}\\
 \bottomrule
 \end{tabular}
-\caption{The same heuristic in the three notations, construct by construct: the first group of rows is the body of the directive, the second its annotations. The lazy formulations are per-predicate templates, so their size does not depend on the instance, whereas the clingo directive is per ground instance.}
+\caption{The same heuristic in the three notations.}
 \label{tab:translation}
 \end{table}
 
 \subsubsection{Joins, Target Arguments and Filtered Aggregates}
 \label{sec:dsl-joins}
 
-BSP's heuristic is the easy case: every one of its conditions ranges over the target's own tuple, so a bare predicate name says everything. Two constructs cover what the other benchmarks need.
-
-\paragraph{Explicit joins.} When a positive body predicate does \emph{not} share the target tuple --- because it has a different arity, because its arguments sit in different positions, or because a value has to be read out of it and used in the weight --- the correspondence is stated explicitly:
+When a positive body predicate does \emph{not} share the target tuple: because it has a different arity; because its arguments sit in different positions; or because a value has to be read out of it and used in the weight; the correspondence is stated explicitly:
 
 \begin{minted}{prolog}
 __body(pred, __match(src, tgt), __bind_arg(var, idx))

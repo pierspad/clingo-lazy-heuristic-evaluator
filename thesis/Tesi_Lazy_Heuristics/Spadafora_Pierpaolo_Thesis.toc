@@ -12,30 +12,29 @@
 \contentsline {subsubsection}{Simulating Alpha in Ground clingo}{7}{section*.3}%
 \contentsline {subsubsection}{Weights, Priorities, and Flattening}{7}{section*.4}%
 \contentsline {subsection}{\numberline {2.2}System Architecture}{8}{subsection.0.2.2}%
-\contentsline {subsection}{\numberline {2.3}Translation of the Heuristics directives}{9}{subsection.0.2.3}%
+\contentsline {subsection}{\numberline {2.3}Translation of the Heuristics directives}{10}{subsection.0.2.3}%
 \contentsline {paragraph}{Priority, modifier and semantics.}{11}{section*.5}%
 \contentsline {subsubsection}{Joins, Target Arguments and Filtered Aggregates}{12}{section*.6}%
-\contentsline {paragraph}{Explicit joins.}{12}{section*.7}%
-\contentsline {paragraph}{Filtered aggregates.}{13}{section*.8}%
+\contentsline {paragraph}{Filtered aggregates.}{13}{section*.7}%
 \contentsline {section}{\numberline {3}Implementation and Benchmark Setup}{15}{section.0.3}%
 \contentsline {subsection}{\numberline {3.1}Inside the Native Backend}{15}{subsection.0.3.1}%
-\contentsline {subsubsection}{Parser and Runtime Representation}{15}{section*.9}%
-\contentsline {subsubsection}{Incremental Aggregates}{16}{section*.10}%
-\contentsline {subsubsection}{Evaluation and Decision}{16}{section*.11}%
+\contentsline {subsubsection}{Parser and Runtime Representation}{15}{section*.8}%
+\contentsline {subsubsection}{Incremental Aggregates}{16}{section*.9}%
+\contentsline {subsubsection}{Evaluation and Decision}{16}{section*.10}%
 \contentsline {subsection}{\numberline {3.2}The Prolog Backend}{17}{subsection.0.3.2}%
-\contentsline {subsubsection}{Rule Strings and Normalisation}{17}{section*.12}%
-\contentsline {subsubsection}{The Runtime Program}{18}{section*.13}%
-\contentsline {subsubsection}{Synchronisation and Decision}{18}{section*.14}%
+\contentsline {subsubsection}{Rule Strings and Normalisation}{17}{section*.11}%
+\contentsline {subsubsection}{The Runtime Program}{18}{section*.12}%
+\contentsline {subsubsection}{Synchronisation and Decision}{18}{section*.13}%
 \contentsline {subsection}{\numberline {3.3}Benchmark Problems and Encodings}{19}{subsection.0.3.3}%
-\contentsline {subsubsection}{Balanced Set Partitioning (BSP)}{19}{section*.15}%
-\contentsline {subsubsection}{Partner Units Problem (PUP)}{19}{section*.16}%
-\contentsline {subsubsection}{House Reconfiguration Problem (HRP)}{20}{section*.17}%
+\contentsline {subsubsection}{Balanced Set Partitioning (BSP)}{19}{section*.14}%
+\contentsline {subsubsection}{Partner Units Problem (PUP)}{19}{section*.15}%
+\contentsline {subsubsection}{House Reconfiguration Problem (HRP)}{20}{section*.16}%
 \contentsline {subsection}{\numberline {3.4}Correctness Validation}{20}{subsection.0.3.4}%
 \contentsline {subsection}{\numberline {3.5}Benchmark Infrastructure and Metrics}{21}{subsection.0.3.5}%
 \contentsline {section}{\numberline {4}Results}{23}{section.0.4}%
 \contentsline {subsection}{\numberline {4.1}Functional Validation}{23}{subsection.0.4.1}%
 \contentsline {subsection}{\numberline {4.2}Experimental Setup and Dataset}{23}{subsection.0.4.2}%
-\contentsline {subsubsection}{What the Times Can and Cannot Carry}{24}{section*.18}%
+\contentsline {subsubsection}{What the Times Can and Cannot Carry}{24}{section*.17}%
 \contentsline {subsection}{\numberline {4.3}Reduction of the Ground Heuristic Component}{26}{subsection.0.4.3}%
 \contentsline {subsection}{\numberline {4.4}BSP: Runtime Behaviour}{28}{subsection.0.4.4}%
 \contentsline {subsection}{\numberline {4.5}BSP: the Two Semantics Under the Microscope}{31}{subsection.0.4.5}%
