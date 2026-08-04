@@ -182,5 +182,4 @@ struct HeuristicRuleTemplate {
     std::unordered_set<Clingo::Symbol> target_var_names;
     std::vector<TargetArgBinding> target_arg_bindings;
     ArithmeticExpression bias_expr = ArithmeticExpression::number(0);
-    ArithmeticExpression local_priority_expr = ArithmeticExpression::number(0);
 };

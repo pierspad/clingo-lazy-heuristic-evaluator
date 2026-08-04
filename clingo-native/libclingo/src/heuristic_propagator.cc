@@ -400,12 +400,12 @@ void HeuristicPropagator::init(Clingo::PropagateInit &init) {
 
 
 
-// Ordinamento condiviso dei candidati euristici (Prolog e clingo-like):
-// priority decrescente, poi weight decrescente, poi tie-break deterministico.
-// Ranked deve esporre .active{priority, weight, rule_index}, .target_string, .lit.
+// Ordinamento dei candidati euristici: il peso e' l'unico criterio, sotto
+// entrambe le semantiche (ogni livello e' gia' appiattito dentro il peso).
+// Peso decrescente, poi tie-break deterministico.
 
 // Variante usata per scegliere il miglior candidato di uno stesso target:
-// a parita' di (priority, weight) vince la regola dichiarata prima.
+// a parita' di peso vince la regola dichiarata prima.
 
 
 
@@ -639,12 +639,10 @@ void HeuristicPropagator::erase_target_decision_rank(Clingo::literal_t target_li
     if (state_it == target_states_.end() || !state_it->second.decision_ranked) return;
 
     active_decision_ranks_.erase(DecisionRankKey{
-        state_it->second.ranked_priority,
         state_it->second.ranked_weight,
         target_lit
     });
     state_it->second.decision_ranked = false;
-    state_it->second.ranked_priority = 0;
     state_it->second.ranked_weight = 0;
 }
 
@@ -751,34 +749,29 @@ bool HeuristicPropagator::evaluate_candidate_effect(size_t candidate_id,
     std::unordered_map<Clingo::Symbol, int> var_env;
     if (!build_variable_environment(tmpl, candidate, assignment, var_env)) return false;
 
-    int const local_priority = evaluate_arithmetic_expression(
-        tmpl.local_priority_expr,
-        candidate.self_value,
-        var_env
-    );
-    if (local_priority < 0) {
-        throw std::runtime_error("Lazy heuristic clingo-like: __priority locale negativa non supportata.");
-    }
-
     effect.active = true;
     effect.target_lit = candidate.target_lit;
     effect.bias = evaluate_arithmetic_expression(tmpl.bias_expr, candidate.self_value, var_env);
-    effect.local_priority = local_priority;
     effect.modifier = tmpl.modifier;
     effect.semantics = tmpl.semantics;
     effect.candidate_id = candidate_id;
     return true;
 }
 
-void HeuristicPropagator::update_best_by_local_priority(ResolvedModifierValue &current,
-                                                        int local_priority,
-                                                        int value,
-                                                        size_t candidate_id) const {
+// Fra i candidati che insistono sullo stesso slot (level o sign) di un target
+// vince il peso maggiore; a parita' di peso vince il candidato con id minore,
+// cioe' la regola dichiarata prima (tie-break deterministico). Il peso da
+// confrontare arriva come parametro a se' perche' `value` non e' sempre un peso:
+// per lo slot `sign` e' +1/-1.
+void HeuristicPropagator::update_best_by_weight(ResolvedModifierValue &current,
+                                                int rank_weight,
+                                                int value,
+                                                size_t candidate_id) const {
     if (!current.active ||
-        local_priority > current.local_priority ||
-        (local_priority == current.local_priority && candidate_id < current.source_candidate_id)) {
+        rank_weight > current.rank_weight ||
+        (rank_weight == current.rank_weight && candidate_id < current.source_candidate_id)) {
         current.active = true;
-        current.local_priority = local_priority;
+        current.rank_weight = rank_weight;
         current.value = value;
         current.source_candidate_id = candidate_id;
     }
@@ -788,24 +781,24 @@ void HeuristicPropagator::apply_effect_to_target_state(CandidateHeuristicEffect 
                                                        TargetHeuristicState &state) const {
     switch (effect.modifier) {
         case HeuristicModifier::Level:
-            update_best_by_local_priority(state.level, effect.local_priority, effect.bias, effect.candidate_id);
+            update_best_by_weight(state.level, effect.bias, effect.bias, effect.candidate_id);
             break;
 
         case HeuristicModifier::Sign:
-            update_best_by_local_priority(state.sign,
-                                          effect.local_priority,
-                                          normalize_sign(effect.bias),
-                                          effect.candidate_id);
+            update_best_by_weight(state.sign,
+                                  effect.bias,
+                                  normalize_sign(effect.bias),
+                                  effect.candidate_id);
             break;
 
         case HeuristicModifier::True:
-            update_best_by_local_priority(state.level, effect.local_priority, effect.bias, effect.candidate_id);
-            update_best_by_local_priority(state.sign, effect.local_priority, +1, effect.candidate_id);
+            update_best_by_weight(state.level, effect.bias, effect.bias, effect.candidate_id);
+            update_best_by_weight(state.sign, effect.bias, +1, effect.candidate_id);
             break;
 
         case HeuristicModifier::False:
-            update_best_by_local_priority(state.level, effect.local_priority, effect.bias, effect.candidate_id);
-            update_best_by_local_priority(state.sign, effect.local_priority, -1, effect.candidate_id);
+            update_best_by_weight(state.level, effect.bias, effect.bias, effect.candidate_id);
+            update_best_by_weight(state.sign, effect.bias, -1, effect.candidate_id);
             break;
 
         case HeuristicModifier::Init:
@@ -834,14 +827,15 @@ void HeuristicPropagator::refresh_target(Clingo::literal_t target_lit, Clingo::A
     TargetHeuristicState new_state;
     new_state.target_lit = target_lit;
     CandidateHeuristicEffect best_alpha_effect;
+    // Semantica alpha: stesso criterio globale della semantica clingo-like,
+    // peso decrescente e poi id crescente. La differenza che resta e' che qui
+    // level e sign vengono dal medesimo candidato vincente, non da due slot
+    // risolti indipendentemente.
     auto alpha_rank_is_better = [](CandidateHeuristicEffect const &candidate,
                                    CandidateHeuristicEffect const &current) {
         return !current.active ||
-               candidate.local_priority > current.local_priority ||
-               (candidate.local_priority == current.local_priority &&
-                candidate.bias > current.bias) ||
-               (candidate.local_priority == current.local_priority &&
-                candidate.bias == current.bias &&
+               candidate.bias > current.bias ||
+               (candidate.bias == current.bias &&
                 candidate.candidate_id < current.candidate_id);
     };
 
@@ -869,41 +863,37 @@ void HeuristicPropagator::refresh_target(Clingo::literal_t target_lit, Clingo::A
 
     if (best_alpha_effect.active) {
         new_state.level.active = true;
-        new_state.level.local_priority = best_alpha_effect.local_priority;
+        new_state.level.rank_weight = best_alpha_effect.bias;
         new_state.level.value = best_alpha_effect.bias;
         new_state.level.source_candidate_id = best_alpha_effect.candidate_id;
 
         if (best_alpha_effect.modifier == HeuristicModifier::True ||
             best_alpha_effect.modifier == HeuristicModifier::False) {
             new_state.sign.active = true;
-            new_state.sign.local_priority = best_alpha_effect.local_priority;
+            new_state.sign.rank_weight = best_alpha_effect.bias;
             new_state.sign.value = best_alpha_effect.modifier == HeuristicModifier::True ? +1 : -1;
             new_state.sign.source_candidate_id = best_alpha_effect.candidate_id;
         }
 
         new_state.decision_active = true;
-        new_state.decision_priority = best_alpha_effect.local_priority;
         new_state.decision_weight = best_alpha_effect.bias;
     }
     else if (new_state.level.active) {
         new_state.decision_active = true;
-        new_state.decision_priority = 0;
         new_state.decision_weight = new_state.level.value;
     }
 
     target_states_[target_lit] = new_state;
 
     if (new_state.decision_active &&
-        (new_state.decision_priority > 0 || new_state.decision_weight > 0) &&
+        new_state.decision_weight > 0 &&
         assignment.truth_value(target_lit) == Clingo::TruthValue::Free) {
         active_decision_ranks_.insert(DecisionRankKey{
-            new_state.decision_priority,
             new_state.decision_weight,
             target_lit
         });
         auto &stored_state = target_states_[target_lit];
         stored_state.decision_ranked = true;
-        stored_state.ranked_priority = new_state.decision_priority;
         stored_state.ranked_weight = new_state.decision_weight;
     }
 }
@@ -1260,9 +1250,8 @@ Clingo::literal_t HeuristicPropagator::decide(Clingo::id_t thread_id,
 
             if (!state.level.active ||
                 !state.decision_active ||
-                state.decision_priority != rank_key.priority ||
                 state.decision_weight != rank_key.weight ||
-                (state.decision_priority <= 0 && state.decision_weight <= 0)) {
+                state.decision_weight <= 0) {
                 erase_target_decision_rank(rank_key.target_lit);
                 continue;
             }

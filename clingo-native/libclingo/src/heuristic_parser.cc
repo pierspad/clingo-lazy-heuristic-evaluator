@@ -329,11 +329,9 @@ std::vector<HeuristicRuleTemplate> parse_lazy_heuristic_templates(std::vector<Cl
         tmpl.modifier = HeuristicModifier::True;
         bool has_target = false;
         bool has_weight = false;
-        bool has_priority = false;
         bool has_modifier = false;
         bool has_semantics = false;
         Clingo::Symbol weight_symbol = Clingo::Number(0);
-        Clingo::Symbol priority_symbol = Clingo::Number(0);
 
         for (size_t i = 0; i < args.size(); ++i) {
             auto const &arg = args[i];
@@ -427,16 +425,12 @@ std::vector<HeuristicRuleTemplate> parse_lazy_heuristic_templates(std::vector<Cl
                 continue;
             }
 
+            // La priorita' non fa piu' parte del linguaggio: ogni livello e' gia'
+            // appiattito dentro il peso (W_flat = W + P*M), quindi il peso e'
+            // l'unico criterio di ordinamento sotto entrambe le semantiche.
             if (arg_name == "__priority") {
-                if (arg_args.size() != 1) {
-                    throw std::runtime_error("Sintassi euristica malformata: __priority richiede esattamente un argomento.");
-                }
-                if (has_priority) {
-                    throw std::runtime_error("Sintassi euristica malformata: __priority duplicato in __heuristic.");
-                }
-                has_priority = true;
-                priority_symbol = arg_args[0];
-                continue;
+                throw std::runtime_error("Sintassi euristica malformata: __priority non e' piu' supportato in "
+                                         "__heuristic; appiattisci il livello dentro __weight.");
             }
 
             if (arg_name == "__semantics") {
@@ -532,9 +526,6 @@ std::vector<HeuristicRuleTemplate> parse_lazy_heuristic_templates(std::vector<Cl
 
         tmpl.bias_expr = parse_arithmetic_expression(
             weight_symbol, tmpl.var_bindings, tmpl.body_var_names, tmpl.target_var_names, "__weight"
-        );
-        tmpl.local_priority_expr = parse_arithmetic_expression(
-            priority_symbol, tmpl.var_bindings, tmpl.body_var_names, tmpl.target_var_names, "__priority"
         );
 
         templates.push_back(std::move(tmpl));

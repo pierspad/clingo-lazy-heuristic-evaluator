@@ -72,7 +72,7 @@ TEST_CASE("lazy-heuristic-propagator-corner-cases", "[clingo][heuristic]") {
             #const n=0.
             dom(1..n).
             { choose(X) } :- dom(X).
-            __heuristic(__target(choose), dom, __weight(self), __priority(1), __modifier(true)).
+            __heuristic(__target(choose), dom, __weight(self), __modifier(true)).
             #show choose/1.
         )");
         ctl.ground({{"base", {}}}, nullptr);
@@ -89,7 +89,7 @@ TEST_CASE("lazy-heuristic-propagator-corner-cases", "[clingo][heuristic]") {
             { choose(X) } :- dom(X).
             :- not choose(1).
             :- choose(1).
-            __heuristic(__target(choose), dom, __weight(self), __priority(1), __modifier(true)).
+            __heuristic(__target(choose), dom, __weight(self), __modifier(true)).
             #show choose/1.
         )");
         ctl.ground({{"base", {}}}, nullptr);
@@ -112,7 +112,7 @@ TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
         ctl.add("base", {}, R"(
             dom(1..3).
             1 { choose(X) : dom(X) } 1.
-            __heuristic(__target(choose), dom, __weight(self), __priority(1), __modifier(true)).
+            __heuristic(__target(choose), dom, __weight(self), __modifier(true)).
             #show choose/1.
         )");
         ctl.ground({{"base", {}}}, nullptr);
@@ -128,7 +128,7 @@ TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
             dom(1,100). dom(3,1).
             1 { choose(X,Y) : dom(X,Y) } 1.
             __heuristic(__target(choose), dom,
-                        __weight(self), __priority(1), __modifier(true)).
+                        __weight(self), __modifier(true)).
             #show choose/2.
         )");
         ctl.ground({{"base", {}}}, nullptr);
@@ -144,7 +144,7 @@ TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
             dom(1,100). dom(3,1).
             1 { choose(X,Y) : dom(X,Y) } 1.
             __heuristic(__target(choose), dom, __bind_target_arg(y, 1),
-                        __weight(y), __priority(1), __modifier(true)).
+                        __weight(y), __modifier(true)).
             #show choose/2.
         )");
         ctl.ground({{"base", {}}}, nullptr);
@@ -162,7 +162,7 @@ TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
             body(X,W) :- dom(X), score(X,W).
             1 { choose(X) : dom(X) } 1.
             __heuristic(__target(choose), __body(body, __match(0, 0), __bind_arg(w, 1)),
-                        __weight(w), __priority(1), __modifier(true)).
+                        __weight(w), __modifier(true)).
             #show choose/1.
         )");
         ctl.ground({{"base", {}}}, nullptr);
@@ -180,7 +180,7 @@ TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
             1 { choose(X) : dom(X) } 1.
             __heuristic(__target(choose), dom,
                         __bind(s, __sum(source, 1, __filter(0, 0))),
-                        __weight(s), __priority(1), __modifier(true)).
+                        __weight(s), __modifier(true)).
             #show choose/1.
         )");
         ctl.ground({{"base", {}}}, nullptr);
@@ -188,7 +188,12 @@ TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
         REQUIRE(models == ModelVec({{Function("choose", {Number(2)})}}));
     }
 
-    SECTION("local priority resolves only modifications of the same target") {
+    // Il peso e' l'unico criterio di ordinamento: fra piu' direttive sullo
+    // stesso target vince quella di peso maggiore, non quella dichiarata
+    // prima. Qui la regola con peso 10 e' la seconda: se il tie-break per id
+    // avesse la precedenza, choose(1) resterebbe a peso 1 e vincerebbe
+    // choose(2).
+    SECTION("the greatest weight claims the target under clingo semantics") {
         Control ctl{{"1", "--heuristic=Domain"}, logger, 20};
         HeuristicPropagator propagator;
         ctl.register_propagator(propagator, true);
@@ -196,15 +201,36 @@ TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
             dom(1..2).
             mark(1).
             1 { choose(X) : dom(X) } 1.
-            __heuristic(__target(choose), __body(mark, __match(0, 0)),
-                        __weight(1), __priority(100), __modifier(true)).
             __heuristic(__target(choose), dom,
-                        __weight(self), __priority(0), __modifier(true)).
+                        __weight(self), __modifier(true)).
+            __heuristic(__target(choose), __body(mark, __match(0, 0)),
+                        __weight(10), __modifier(true)).
             #show choose/1.
         )");
         ctl.ground({{"base", {}}}, nullptr);
         REQUIRE(test_solve(ctl.solve(), models).is_satisfiable());
-        REQUIRE(models == ModelVec({{Function("choose", {Number(2)})}}));
+        REQUIRE(models == ModelVec({{Function("choose", {Number(1)})}}));
+    }
+
+    // Lo slot `sign` memorizza +1/-1, non un peso: la chiave di ordinamento
+    // resta comunque il peso del candidato. La direttiva false (peso 7) deve
+    // quindi battere la true (peso 5) anche se dichiarata dopo.
+    SECTION("the greatest weight also claims the sign slot") {
+        Control ctl{{"1", "--heuristic=Domain"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            dom(1).
+            { a(X) } :- dom(X).
+            __heuristic(__target(a), __body(dom, __match(0, 0)),
+                        __weight(5), __modifier(true)).
+            __heuristic(__target(a), __body(dom, __match(0, 0)),
+                        __weight(7), __modifier(false)).
+            #show a/1.
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE(test_solve(ctl.solve(), models).is_satisfiable());
+        REQUIRE(models == ModelVec({{}}));
     }
 
 
@@ -214,26 +240,25 @@ TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
 
 
 
-
-
-
-    SECTION("__heuristic alpha priority is a global rank before weight") {
+    // Stesso contratto sotto semantica alpha: il livello e' gia' appiattito nel
+    // peso, quindi anche qui il rango globale e' il solo peso.
+    SECTION("the greatest weight claims the target under alpha semantics") {
         Control ctl{{"1", "--heuristic=Domain"}, logger, 20};
         HeuristicPropagator propagator;
         ctl.register_propagator(propagator, true);
         ctl.add("base", {}, R"(
             dom(1..2).
-            hi(2).
+            hi(1).
             1 { a(X) : dom(X) } 1.
             __heuristic(__target(a), __body(dom, __match(0, 0)),
-                        __weight(self), __priority(0), __modifier(true), __semantics(alpha)).
+                        __weight(self), __modifier(true), __semantics(alpha)).
             __heuristic(__target(a), __body(hi, __match(0, 0)),
-                        __weight(1), __priority(100), __modifier(true), __semantics(alpha)).
+                        __weight(10), __modifier(true), __semantics(alpha)).
             #show a/1.
         )");
         ctl.ground({{"base", {}}}, nullptr);
         REQUIRE(test_solve(ctl.solve(), models).is_satisfiable());
-        REQUIRE(models == ModelVec({{Function("a", {Number(2)})}}));
+        REQUIRE(models == ModelVec({{Function("a", {Number(1)})}}));
     }
 
 }
@@ -244,6 +269,20 @@ TEST_CASE("lazy-heuristic-syntax-validation", "[clingo][heuristic]") {
     Logger logger = [&messages](WarningCode code, char const *msg) {
         messages.emplace_back(code, msg);
     };
+
+    SECTION("__priority is rejected") {
+        Control ctl{{"0"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            dom(1).
+            { choose(X) } :- dom(X).
+            __heuristic(__target(choose), dom,
+                        __weight(self), __priority(1), __modifier(true)).
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE_THROWS(test_solve(ctl.solve(), models));
+    }
 
     SECTION("duplicate aggregate variable is rejected") {
         Control ctl{{"0"}, logger, 20};

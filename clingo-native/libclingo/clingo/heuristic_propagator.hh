@@ -33,15 +33,16 @@ private:
         bool active = false;
         Clingo::literal_t target_lit = 0;
         int bias = 0;
-        int local_priority = 0;
         HeuristicModifier modifier = HeuristicModifier::True;
         HeuristicSemantics semantics = HeuristicSemantics::Clingo;
         size_t candidate_id = 0;
     };
 
+    // rank_weight e' il criterio di ordinamento (sempre il peso del candidato);
+    // value e' cio' che lo slot memorizza, che per `sign` e' +1/-1 e non un peso.
     struct ResolvedModifierValue {
         bool active = false;
-        int local_priority = 0;
+        int rank_weight = 0;
         int value = 0;
         size_t source_candidate_id = 0;
     };
@@ -51,15 +52,12 @@ private:
         ResolvedModifierValue level;
         ResolvedModifierValue sign;
         bool decision_active = false;
-        int decision_priority = 0;
         int decision_weight = 0;
         bool decision_ranked = false;
-        int ranked_priority = 0;
         int ranked_weight = 0;
     };
 
     struct DecisionRankKey {
-        int priority = 0;
         int weight = 0;
         Clingo::literal_t target_lit = 0;
     };
@@ -77,7 +75,6 @@ private:
 
     struct DecisionRankGreater {
         bool operator()(DecisionRankKey const &a, DecisionRankKey const &b) const {
-            if (a.priority != b.priority) return a.priority > b.priority;
             if (a.weight != b.weight) return a.weight > b.weight;
             return a.target_lit < b.target_lit;
         }
@@ -186,10 +183,10 @@ private:
     bool evaluate_candidate_effect(size_t candidate_id,
                                    Clingo::Assignment const &assignment,
                                    CandidateHeuristicEffect &effect) const;
-    void update_best_by_local_priority(ResolvedModifierValue &current,
-                                       int local_priority,
-                                       int value,
-                                       size_t candidate_id) const;
+    void update_best_by_weight(ResolvedModifierValue &current,
+                               int rank_weight,
+                               int value,
+                               size_t candidate_id) const;
     void apply_effect_to_target_state(CandidateHeuristicEffect const &effect,
                                       TargetHeuristicState &state) const;
     Clingo::literal_t apply_resolved_sign(ResolvedModifierValue const &sign,
