@@ -17,14 +17,12 @@
       {\textbf{\ttfamily gc}\\[3pt]{\scriptsize native \texttt{\#heuristic} directives,\\
        expanded by gringo}};
 \node[ground, text width=\cw, minimum height=\ch, right=\gap of gc] (ga)
-      {\textbf{\ttfamily ga}\\[3pt]{\scriptsize the Alpha reading \emph{simulated}\\
-       by static unrolling}};
+      {\textbf{\ttfamily ga}\\[3pt]{\scriptsize simulation of Alpha semantics\\
+       by unrolling aggregates and removing `not`s}};
 \node[lazy, text width=\cw, minimum height=\ch, below=\gap of gc] (lc)
-      {\textbf{\ttfamily lc}\\[3pt]{\scriptsize propagator, clingo reading\\
-       of negation and aggregates}};
+      {\textbf{\ttfamily lc}\\[3pt]{\scriptsize lazy evaluation version of gc}};
 \node[lazy, text width=\cw, minimum height=\ch, below=\gap of ga] (la)
-      {\textbf{\ttfamily la}\\[3pt]{\scriptsize propagator, the only cell that\\
-       captures the Alpha reading exactly}};
+      {\textbf{\ttfamily la}\\[3pt]{\scriptsize lazy evaluation of gc with a proper use of Alpha semantics}};
 
 % ------------------------------- column headers ----------------------------
 \node[lane, above=5mm of gc] (hc) {clingo-like semantics};
@@ -32,21 +30,20 @@
 
 % ------------------------------- row headers -------------------------------
 \node[lane, text width=23mm, align=right, left=5mm of gc]  (rg) {Ground-\\and-solve};
-\node[lane, text width=23mm, align=right, left=5mm of lc]  (rl) {Lazy\\(propagator)};
+\node[lane, text width=23mm, align=right, left=5mm of lc]  (rl) {Lazy\\ Evaluation};
 
 % ------------------------------- axis arrows -------------------------------
 \draw[flow] ($(hc.north west)+(0,5mm)$) -- ($(ha.north east)+(0,5mm)$)
       node[tag, midway, above=1pt]
-      {\emph{semantics} axis: how a condition reads the partial assignment};
+      {\emph{semantics} axis:\\ how a condition reads the partial assignment};
 
 \draw[flow] ($(rg.north west)+(-6mm,0)$) -- ($(rl.south west)+(-6mm,0)$)
       node[tag, midway, rotate=90, above=1pt]
-      {\emph{approach} axis: when the heuristic is evaluated};
+      {\emph{approach} axis\\ when the heuristic is evaluated};
 
 % ------------------------------- baseline ----------------------------------
 \node[neutral, text width=96mm, below=8mm of lc.south west, anchor=north west]
-      {\textbf{\ttfamily gc\_noheur} --- the same domain logic with no heuristic at
-       all,\\ the reference against which every cell is read};
+      {\textbf{\ttfamily gc\_noheur}: baseline encoding without any heuristic directive};
 
 \end{tikzpicture}
 \end{document}

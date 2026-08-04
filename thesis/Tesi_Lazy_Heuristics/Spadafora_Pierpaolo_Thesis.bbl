@@ -275,6 +275,45 @@
       \field{pages}{653\bibrangedash 669}
       \range{pages}{17}
     \endentry
+    \entry{comploi2023dynamicAggregates}{inproceedings}{}{}
+      \name{author}{3}{}{%
+        {{hash=40e5bbc107a8f13c09f2dd488fdf3f7a}{%
+           family={Comploi-Taupe},
+           familyi={C\bibinithyphendelim T\bibinitperiod},
+           given={Richard},
+           giveni={R\bibinitperiod}}}%
+        {{hash=8c14fa59a9c511fd1b3a0c36b8d30d17}{%
+           family={Friedrich},
+           familyi={F\bibinitperiod},
+           given={Gerhard},
+           giveni={G\bibinitperiod}}}%
+        {{hash=2e6431897b9cf75af05868d3fb62d937}{%
+           family={Niestroj},
+           familyi={N\bibinitperiod},
+           given={Tilman},
+           giveni={T\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {CEUR-WS.org}%
+      }
+      \strng{namehash}{0f4402eeffe859cd950e6fb59afa3205}
+      \strng{fullhash}{0f4402eeffe859cd950e6fb59afa3205}
+      \strng{fullhashraw}{0f4402eeffe859cd950e6fb59afa3205}
+      \strng{bibnamehash}{0f4402eeffe859cd950e6fb59afa3205}
+      \strng{authorbibnamehash}{0f4402eeffe859cd950e6fb59afa3205}
+      \strng{authornamehash}{0f4402eeffe859cd950e6fb59afa3205}
+      \strng{authorfullhash}{0f4402eeffe859cd950e6fb59afa3205}
+      \strng{authorfullhashraw}{0f4402eeffe859cd950e6fb59afa3205}
+      \field{sortinit}{3}
+      \field{sortinithash}{ad6fe7482ffbd7b9f99c9e8b5dccd3d7}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Proceedings of the 25th International Workshop on Configuration (ConfWS 2023)}
+      \field{series}{CEUR Workshop Proceedings}
+      \field{title}{Dynamic Aggregates in Expressive ASP Heuristics for Configuration Problems}
+      \field{volume}{3509}
+      \field{year}{2023}
+    \endentry
     \entry{weinzierl2017blending}{inproceedings}{}{}
       \name{author}{1}{}{%
         {{hash=1ec32bbc9f3e08c958c6650aed4e80a8}{%
@@ -294,8 +333,8 @@
       \strng{authornamehash}{1ec32bbc9f3e08c958c6650aed4e80a8}
       \strng{authorfullhash}{1ec32bbc9f3e08c958c6650aed4e80a8}
       \strng{authorfullhashraw}{1ec32bbc9f3e08c958c6650aed4e80a8}
-      \field{sortinit}{3}
-      \field{sortinithash}{ad6fe7482ffbd7b9f99c9e8b5dccd3d7}
+      \field{sortinit}{4}
+      \field{sortinithash}{9381316451d1b9788675a07e972a12a7}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{booktitle}{Logic Programming and Nonmonotonic Reasoning (LPNMR 2017)}
@@ -347,45 +386,6 @@
       \field{year}{2023}
       \field{pages}{59\bibrangedash 114}
       \range{pages}{56}
-    \endentry
-    \entry{comploi2023dynamicAggregates}{inproceedings}{}{}
-      \name{author}{3}{}{%
-        {{hash=40e5bbc107a8f13c09f2dd488fdf3f7a}{%
-           family={Comploi-Taupe},
-           familyi={C\bibinithyphendelim T\bibinitperiod},
-           given={Richard},
-           giveni={R\bibinitperiod}}}%
-        {{hash=8c14fa59a9c511fd1b3a0c36b8d30d17}{%
-           family={Friedrich},
-           familyi={F\bibinitperiod},
-           given={Gerhard},
-           giveni={G\bibinitperiod}}}%
-        {{hash=2e6431897b9cf75af05868d3fb62d937}{%
-           family={Niestroj},
-           familyi={N\bibinitperiod},
-           given={Tilman},
-           giveni={T\bibinitperiod}}}%
-      }
-      \list{publisher}{1}{%
-        {CEUR-WS.org}%
-      }
-      \strng{namehash}{0f4402eeffe859cd950e6fb59afa3205}
-      \strng{fullhash}{0f4402eeffe859cd950e6fb59afa3205}
-      \strng{fullhashraw}{0f4402eeffe859cd950e6fb59afa3205}
-      \strng{bibnamehash}{0f4402eeffe859cd950e6fb59afa3205}
-      \strng{authorbibnamehash}{0f4402eeffe859cd950e6fb59afa3205}
-      \strng{authornamehash}{0f4402eeffe859cd950e6fb59afa3205}
-      \strng{authorfullhash}{0f4402eeffe859cd950e6fb59afa3205}
-      \strng{authorfullhashraw}{0f4402eeffe859cd950e6fb59afa3205}
-      \field{sortinit}{4}
-      \field{sortinithash}{9381316451d1b9788675a07e972a12a7}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{booktitle}{Proceedings of the 25th International Workshop on Configuration (ConfWS 2023)}
-      \field{series}{CEUR Workshop Proceedings}
-      \field{title}{Dynamic Aggregates in Expressive ASP Heuristics for Configuration Problems}
-      \field{volume}{3509}
-      \field{year}{2023}
     \endentry
     \entry{gebser2019multishot}{article}{}{}
       \name{author}{4}{}{%
