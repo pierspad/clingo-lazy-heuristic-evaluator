@@ -38,8 +38,10 @@ private:
         size_t candidate_id = 0;
     };
 
-    // rank_weight e' il criterio di ordinamento (sempre il peso del candidato);
-    // value e' cio' che lo slot memorizza, che per `sign` e' +1/-1 e non un peso.
+    // rank_weight e' il criterio di ordinamento, cioe' la forza del candidato;
+    // value e' cio' che lo slot memorizza. Per `level` i due coincidono col
+    // peso, per `sign` no: li' value e' la direzione (+1/-1) e rank_weight e'
+    // il modulo del peso.
     struct ResolvedModifierValue {
         bool active = false;
         int rank_weight = 0;

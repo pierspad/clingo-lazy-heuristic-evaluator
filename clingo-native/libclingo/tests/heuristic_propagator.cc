@@ -233,6 +233,28 @@ TEST_CASE("lazy-heuristic-propagator-decisions", "[clingo][heuristic]") {
         REQUIRE(models == ModelVec({{}}));
     }
 
+    // Con __modifier(sign) la direzione e' nel segno del peso: a ordinare deve
+    // essere la forza, cioe' il modulo. Ordinando per peso con segno, la
+    // direttiva "preferisci falso, forza 100" varrebbe -100 e perderebbe contro
+    // la piu' debole delle regole positive.
+    SECTION("a negative __modifier(sign) rule ranks by strength, not signed weight") {
+        Control ctl{{"1", "--heuristic=Domain"}, logger, 20};
+        HeuristicPropagator propagator;
+        ctl.register_propagator(propagator, true);
+        ctl.add("base", {}, R"(
+            dom(1).
+            { a(X) } :- dom(X).
+            __heuristic(__target(a), __body(dom, __match(0, 0)),
+                        __weight(1), __modifier(true)).
+            __heuristic(__target(a), __body(dom, __match(0, 0)),
+                        __weight(-100), __modifier(sign)).
+            #show a/1.
+        )");
+        ctl.ground({{"base", {}}}, nullptr);
+        REQUIRE(test_solve(ctl.solve(), models).is_satisfiable());
+        REQUIRE(models == ModelVec({{}}));
+    }
+
 
 
 

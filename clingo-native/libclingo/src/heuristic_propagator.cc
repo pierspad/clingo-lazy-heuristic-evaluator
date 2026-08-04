@@ -759,10 +759,11 @@ bool HeuristicPropagator::evaluate_candidate_effect(size_t candidate_id,
 }
 
 // Fra i candidati che insistono sullo stesso slot (level o sign) di un target
-// vince il peso maggiore; a parita' di peso vince il candidato con id minore,
-// cioe' la regola dichiarata prima (tie-break deterministico). Il peso da
-// confrontare arriva come parametro a se' perche' `value` non e' sempre un peso:
-// per lo slot `sign` e' +1/-1.
+// vince la forza maggiore; a parita' di forza vince il candidato con id minore,
+// cioe' la regola dichiarata prima (tie-break deterministico). La chiave di
+// ordinamento arriva come parametro a se' perche' non coincide sempre con
+// `value`: lo slot `sign` memorizza la direzione (+1/-1) mentre a ordinare e'
+// la forza (il modulo del peso, v. apply_effect_to_target_state).
 void HeuristicPropagator::update_best_by_weight(ResolvedModifierValue &current,
                                                 int rank_weight,
                                                 int value,
@@ -784,9 +785,12 @@ void HeuristicPropagator::apply_effect_to_target_state(CandidateHeuristicEffect 
             update_best_by_weight(state.level, effect.bias, effect.bias, effect.candidate_id);
             break;
 
+        // Con __modifier(sign) la direzione sta nel segno del peso, quindi la
+        // forza della direttiva e' il modulo: "preferisci falso, forza 100" si
+        // scrive __weight(-100) e deve valere 100 in classifica, non -100.
         case HeuristicModifier::Sign:
             update_best_by_weight(state.sign,
-                                  effect.bias,
+                                  std::abs(effect.bias),
                                   normalize_sign(effect.bias),
                                   effect.candidate_id);
             break;
