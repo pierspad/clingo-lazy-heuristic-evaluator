@@ -152,7 +152,31 @@ ensure_alpha_jar() {
   [ -f "$jpl" ] || warn "jpl.jar non trovato in $jpl (serve solo alla build, non al run)"
 
   chmod +x "$TEST_DIR"/programs/alpha-qh-1.0 2>/dev/null || true
-  ok "alpha jar: $ALPHA_JAR (heap max $ALPHA_XMX)"
+
+  # --- smoke run: 2 secondi che valgono tre controlli statici -------------
+  # Un programma banale con -uqh esercita l'INTERA catena: jar presente,
+  # JVM abbastanza recente, libjpl.so caricabile, motore Prolog avviato
+  # (NaiveGrounder istanzia il modulo Prolog anche senza euristiche).
+  # Serve perche' i modi di rompersi qui sono tutti silenziosi o tardivi:
+  #   - JVM piu' vecchia del JDK che ha costruito jpl.jar -> a runtime
+  #     UnsupportedClassVersionError (successo il 2026-08-03: java 11 di
+  #     sistema sul login node contro jpl.jar compilato con il JDK 21 di
+  #     get_jdk.sh). Il wrapper ora sceglie la JVM da se', ma se qualcuno
+  #     forza ALPHA_JAVA a mano si torna li';
+  #   - libjpl.so assente -> UnsatisfiedLinkError, messaggio che non
+  #     assomiglia per niente a "manca SWI-Prolog".
+  # Senza questo guard il sintomo arriva a campagna avviata, run per run,
+  # sotto forma di centinaia di errori identici.
+  local probe
+  if ! probe=$("$TEST_DIR/programs/alpha-qh-1.0" -uqh -n 1 -str "p(1). q(X) :- p(X)." 2>&1); then
+    die "Alpha non parte. Output:
+$(echo "$probe" | tail -15)"
+  fi
+  case "$probe" in
+    *SATISFIABLE*) ok "alpha jar: $ALPHA_JAR (heap max $ALPHA_XMX)" ;;
+    *) die "Alpha parte ma non risolve il programma di prova. Output:
+$(echo "$probe" | tail -15)" ;;
+  esac
 }
 
 # --- 4) deriva un runscript dal canonico --------------------

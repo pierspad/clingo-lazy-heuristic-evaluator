@@ -6,7 +6,11 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
-#SBATCH --time=00:45:00
+# 45m -> 1h30 (2026-08-03): questo job ora costruisce anche i packages di
+# SWI-Prolog (JPL) e il solver Alpha via gradle, che al primo giro si scarica
+# la propria distribuzione. Con 4 cpu il vecchio limite era troppo stretto, e
+# un job ucciso a meta' lascia una build parziale che poi confonde.
+#SBATCH --time=01:30:00
 
 set -euo pipefail
 
@@ -37,22 +41,39 @@ _prep_build_dir() {
 # $HOME e lanciare con JAVA_HOME=/percorso/al/jdk sbatch compile_all.sh
 # ------------------------------------------------------------
 _load_java() {
+  # 1) JAVA_HOME esplicito (sbatch --export=ALL,JAVA_HOME=...)
   if [ -n "${JAVA_HOME:-}" ] && [ -x "${JAVA_HOME}/bin/javac" ]; then
     echo "    JDK gia' fornito via JAVA_HOME=$JAVA_HOME"
-  elif command -v module &>/dev/null; then
+  else
+    # 2) JDK scompattato in $HOME da get_jdk.sh. E' il caso NORMALE su questo
+    #    cluster: `module avail` non elenca alcun java (verificato 2026-08-03,
+    #    solo toolchain C/C++), quindi il modulo non c'e' proprio da caricare.
+    local d
+    for d in "$HOME"/jdk-* "$HOME"/jdk; do
+      if [ -x "$d/bin/javac" ]; then
+        JAVA_HOME="$d"; export JAVA_HOME
+        echo "    JDK trovato in \$HOME: $JAVA_HOME"
+        break
+      fi
+    done
+  fi
+  # 3) modulo (altri cluster, o se un domani ne aggiungono uno qui)
+  if [ -z "${JAVA_HOME:-}" ] && command -v module &>/dev/null; then
     local cand
     for cand in openjdk jdk java openjdk/17 openjdk/21; do
       module load "$cand" &>/dev/null && { echo "    modulo java caricato: $cand"; break; }
     done
   fi
+  # 4) javac gia' in PATH
   if [ -z "${JAVA_HOME:-}" ] && command -v javac &>/dev/null; then
     JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
     export JAVA_HOME
   fi
   if [ -z "${JAVA_HOME:-}" ] || [ ! -x "${JAVA_HOME}/bin/javac" ]; then
     echo "XX  Nessun JDK trovato (serve javac, non basta il solo java runtime)." >&2
-    echo "    Prova 'module avail' per cercarne uno, oppure scompatta un JDK in \$HOME e rilancia con:" >&2
-    echo "      sbatch --export=ALL,JAVA_HOME=\$HOME/jdk-21 compile_all.sh" >&2
+    echo "    Su questo cluster non esiste un modulo java: scaricane uno in \$HOME con" >&2
+    echo "      sh get_jdk.sh" >&2
+    echo "    e poi rilancia 'sbatch compile_all.sh' (lo trovera' da solo)." >&2
     exit 1
   fi
   export PATH="$JAVA_HOME/bin:$PATH"
@@ -68,16 +89,48 @@ cd ~/swipl-moderno/swipl-10.0.2
 _prep_build_dir build
 cd build
 export PKG_CONFIG_PATH=$HOME/swipl-10/share/pkgconfig:${PKG_CONFIG_PATH:-}
-# SWIPL_PACKAGES_JAVA=ON (era OFF fino al 2026-08-03) e' cio' che produce
-# jpl.jar e libjpl.so, senza i quali il solver Alpha "Qh" — quello con gli
-# aggregati dinamici nelle euristiche, che passa da query Prolog — non
-# compila nemmeno. Richiede i sorgenti COMPLETI: v. il commento in
-# ../../swipl-moderno/download.sh sul perche' l'archive di GitHub non basta.
-# Tutti gli altri gruppi di package sono spenti esplicitamente: prima non
-# se ne costruiva NESSUNO (i submodule erano vuoti), quindi lasciarli ai
-# default ora vorrebbe dire allungare la build e aggiungere dipendenze di
-# sistema (openssl, libarchive, python, bdb...) che sul cluster possono
-# semplicemente non esserci. Teniamo BASIC, che serve a JPL, piu' JAVA.
+
+# ------------------------------------------------------------
+# SELEZIONE DEI PACKAGE: lista ESPLICITA, non i flag di gruppo.
+#
+# Ci serve un package solo, jpl (jpl.jar + libjpl.so), senza il quale il
+# solver Alpha "Qh" — quello con gli aggregati dinamici nelle euristiche,
+# che passa da query Prolog — non compila nemmeno. Richiede i sorgenti
+# COMPLETI: v. il commento in ../../swipl-moderno/download.sh sul perche'
+# l'archive di GitHub non basta.
+#
+# I flag di gruppo -DSWIPL_PACKAGES_<GRUPPO>=OFF NON bastano, e il modo in
+# cui falliscono e' insidioso. cmake/PackageSelection.cmake dichiara
+#     set(SWIPL_PKG_DEPS_http clib sgml json ssl)
+# e `http` sta nel gruppo BASIC: quindi ssl e json vengono RITIRATI DENTRO
+# come dipendenze, e SWIPL_PACKAGES_SSL=OFF resta scritto in CMakeCache
+# senza alcun effetto. Sul cluster questo si e' manifestato il 2026-08-03
+# come una build morta a 1023/1025 su packages/ssl/tests/test_certs, che
+# invoca openssl e non trova openssl.cnf nel prefix Spack. Cioe': falliva
+# la generazione di certificati di TEST di un package che non ci serve, e
+# si portava dietro l'intero `ninja install` (jpl.jar era gia' stato
+# costruito al passo 1022, ma senza install non arriva in $HOME/swipl-10).
+#
+# SWIPL_PACKAGE_LIST scavalca tutta la macchina dei gruppi: PackageSelection
+# la usa se e' gia' DEFINED e salta add_package_sets(). jpl non ha
+# dipendenze dichiarate, quindi la lista resta davvero di uno.
+#
+# Nota: prima del 2026-08-03 qui non si costruiva NESSUN package (i
+# submodule erano vuoti) e clingo-prolog funzionava lo stesso, perche' gli
+# serve solo libswipl. Costruire il solo jpl e' quindi strettamente piu' di
+# quello che c'era, non meno.
+# ------------------------------------------------------------
+SWIPL_PKGS="jpl"
+
+# Cambiare SWIPL_PACKAGE_LIST su una build dir gia' configurata lascia in
+# giro target e cache del vecchio insieme di package. Se la lista non
+# combacia, la build dir va ributtata via: e' l'unico caso in cui lo
+# facciamo senza CLEAN_BUILD=1, ed e' mirato al solo swipl.
+if [ -f CMakeCache.txt ] && ! grep -q "^SWIPL_PACKAGE_LIST:.*=${SWIPL_PKGS}$" CMakeCache.txt; then
+  echo "    lista package cambiata: ributto la build dir di SWI-Prolog"
+  cd ..; rm -rf build; mkdir -p build; cd build
+fi
+
 cmake .. -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX=$HOME/swipl-10 \
@@ -86,12 +139,7 @@ cmake .. -G Ninja \
   -DCMAKE_AR=/usr/bin/ar \
   -DCMAKE_RANLIB=/usr/bin/ranlib \
   -DINSTALL_DOCUMENTATION=OFF \
-  -DSWIPL_PACKAGES_BASIC=ON -DSWIPL_PACKAGES_JAVA=ON \
-  -DSWIPL_PACKAGES_X=OFF -DSWIPL_PACKAGES_ODBC=OFF \
-  -DSWIPL_PACKAGES_ARCHIVE=OFF -DSWIPL_PACKAGES_BDB=OFF -DSWIPL_PACKAGES_GUI=OFF \
-  -DSWIPL_PACKAGES_JSON=OFF -DSWIPL_PACKAGES_PCRE=OFF -DSWIPL_PACKAGES_PYTHON=OFF \
-  -DSWIPL_PACKAGES_SSL=OFF -DSWIPL_PACKAGES_TERM=OFF -DSWIPL_PACKAGES_TIPC=OFF \
-  -DSWIPL_PACKAGES_YAML=OFF
+  -DSWIPL_PACKAGE_LIST="$SWIPL_PKGS"
 
 ninja -j ${SLURM_CPUS_PER_TASK:-2}
 ninja install

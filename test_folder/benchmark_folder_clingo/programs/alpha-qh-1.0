@@ -38,14 +38,71 @@
 # ============================================================
 set -euo pipefail
 
-: "${ALPHA_JAR:=$HOME/clingo-lazy-heuristics/ALPHA/build/libs/ALPHA-bundled.jar}"
+# Glob invece del nome fisso: gradle battezza il jar in base al NOME DELLA
+# CARTELLA del progetto (ALPHA-bundled.jar qui, alpha-bundled.jar altrove),
+# e scripts/bench_common.sh lo cerca gia' cosi'. Tenere due convenzioni
+# diverse significa che il wrapper puo' fallire su un jar che la pipeline
+# considera presente.
+: "${ALPHA_DIR:=$HOME/clingo-lazy-heuristics/ALPHA}"
+: "${ALPHA_JAR:=$(ls -1 "$ALPHA_DIR"/build/libs/*-bundled.jar 2>/dev/null | head -1)}"
 : "${SWIPL_MODERN_PREFIX:=$HOME/swipl-10}"
 : "${ALPHA_XMX:=28g}"
 
-if [ ! -f "$ALPHA_JAR" ]; then
-    echo "*** alpha ERROR: jar non trovato: $ALPHA_JAR (lancia compile_all.sh)" >&2
+if [ -z "$ALPHA_JAR" ] || [ ! -f "$ALPHA_JAR" ]; then
+    echo "*** alpha ERROR: nessun *-bundled.jar in $ALPHA_DIR/build/libs" >&2
+    if [ -d "$ALPHA_DIR/build/libs" ]; then
+        echo "    la cartella esiste ma contiene: $(ls -1 "$ALPHA_DIR/build/libs" 2>/dev/null | tr '\n' ' ')" >&2
+        echo "    -> il passo [6/6] di compile_all.sh e' fallito a meta'." >&2
+    else
+        echo "    la cartella build/libs non esiste: il passo [6/6] di compile_all.sh non e' mai arrivato in fondo." >&2
+        echo "    Guarda il log della build:  grep -nE '==>|XX |FAILED|error' ~/clingo-lazy-heuristics/compile_*.log | tail -30" >&2
+    fi
     exit 1
 fi
+
+# --- scelta della JVM ---------------------------------------------------
+# NON basta invocare `java` ereditando il PATH. jpl.jar viene costruito
+# dentro SWI-Prolog dal JDK che compile_all.sh ha trovato (tipicamente
+# $HOME/jdk-21, scaricato da get_jdk.sh), e javac senza -target produce
+# class file della PROPRIA versione. Se a runtime gira un java piu' vecchio
+# — sul login node del cluster il `java` di sistema e' l'11 — si ottiene:
+#
+#   UnsupportedClassVersionError: org/jpl7/PrologException has been compiled
+#   by a more recent version of the Java Runtime (class file version 65.0),
+#   this version of the Java Runtime only recognizes ... up to 55.0
+#
+# (65 = Java 21, 55 = Java 11). Succederebbe identico sui compute node, cioe'
+# su OGNI run della campagna, non solo nelle prove a mano. Quindi qui la JVM
+# si risolve con lo stesso ordine di precedenza con cui compile_all.sh
+# risolve javac, per costruzione: stesso JDK a build e a runtime.
+: "${ALPHA_JAVA:=}"
+if [ -z "$ALPHA_JAVA" ]; then
+    if [ -n "${JAVA_HOME:-}" ] && [ -x "$JAVA_HOME/bin/java" ]; then
+        ALPHA_JAVA="$JAVA_HOME/bin/java"
+    else
+        for _jdk in "$HOME"/jdk-* "$HOME"/jdk; do
+            if [ -x "$_jdk/bin/java" ]; then ALPHA_JAVA="$_jdk/bin/java"; break; fi
+        done
+        unset _jdk
+    fi
+fi
+[ -n "$ALPHA_JAVA" ] || ALPHA_JAVA="$(command -v java || true)"
+if [ -z "$ALPHA_JAVA" ]; then
+    echo "*** alpha ERROR: nessuna JVM trovata (ne' JAVA_HOME, ne' \$HOME/jdk-*, ne' java in PATH)" >&2
+    echo "    Scaricane una con:  sh ~/clingo-lazy-heuristics/get_jdk.sh" >&2
+    exit 1
+fi
+
+# Guard sulla versione: meglio un messaggio che nomina il problema che uno
+# stack trace di UnsupportedClassVersionError dentro un log di benchmark.
+_javaver=$("$ALPHA_JAVA" -version 2>&1 | sed -nE 's/^[a-zA-Z ]*version "([0-9]+).*/\1/p' | head -1)
+if [ -n "$_javaver" ] && [ "$_javaver" -lt 17 ] 2>/dev/null; then
+    echo "*** alpha ERROR: JVM troppo vecchia: $ALPHA_JAVA (Java $_javaver)" >&2
+    echo "    jpl.jar e' compilato dal JDK usato da compile_all.sh (>= 17): serve la stessa JVM." >&2
+    echo "    Scarica il JDK con 'sh get_jdk.sh' oppure esporta ALPHA_JAVA=/percorso/jdk/bin/java" >&2
+    exit 1
+fi
+unset _javaver
 
 # libjpl.so + libswipl.so vivono nel prefix non standard costruito da
 # compile_all.sh. Senza questi export la JVM carica il jar ma fallisce ad
@@ -96,7 +153,7 @@ for f in "${inputs[@]}"; do
 done
 
 # --- riga di comando finale ----------------------------------------------
-cmd=(java "-Xmx${ALPHA_XMX}" "-Djava.library.path=${_arch_dir}" -jar "$ALPHA_JAR")
+cmd=("$ALPHA_JAVA" "-Xmx${ALPHA_XMX}" "-Djava.library.path=${_arch_dir}" -jar "$ALPHA_JAR")
 cmd+=("${opts[@]}")
 for f in "${translated[@]}"; do cmd+=(-i "$f"); done
 

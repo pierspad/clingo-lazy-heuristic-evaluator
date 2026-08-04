@@ -45,27 +45,55 @@ _prep_build_dir() {
   mkdir -p "$dir"
 }
 
-log "[1/3] Configurazione e compilazione SWI-Prolog 10 (source: ../swipl-moderno/) ..."
+log "[1/4] Configurazione e compilazione SWI-Prolog 10 con JPL (source: ../swipl-moderno/) ..."
 [ -d "$SWIPL_SRC" ] || { echo "Sorgenti assenti: esegui prima ../swipl-moderno/download.sh"; exit 1; }
+# packages/jpl vuota = sorgenti scaricati con il vecchio download.sh (archive
+# GitHub, submodule non espansi). Senza quelli JPL non si costruisce e Alpha
+# non compila, ma cmake/ninja NON lo segnalano: il package viene semplicemente
+# saltato. Meglio dirlo qui.
+[ -f "$SWIPL_SRC/packages/jpl/CMakeLists.txt" ] || {
+  echo "packages/jpl vuota: rilancia ../swipl-moderno/download.sh (ora prende il tarball completo)"; exit 1; }
+if [ -z "${JAVA_HOME:-}" ] && command -v javac &>/dev/null; then
+  JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
+  export JAVA_HOME
+fi
+[ -n "${JAVA_HOME:-}" ] && [ -x "$JAVA_HOME/bin/javac" ] || {
+  echo "JDK non trovato (serve javac). Installane uno o esporta JAVA_HOME."; exit 1; }
+log "     javac: $(javac -version 2>&1)"
 _prep_build_dir "$SWIPL_SRC/build"
 cd "$SWIPL_SRC/build"
+# Selezione ESPLICITA del package: solo jpl. I flag di gruppo
+# -DSWIPL_PACKAGES_<GRUPPO>=OFF non bastano, perche' `http` (gruppo BASIC)
+# dichiara ssl e json fra le proprie dipendenze e li ritira dentro comunque
+# — v. il commento esteso in compile_all.sh, dove questo ha fatto morire una
+# build sul cluster a 1023/1025 sui certificati di test di openssl.
+SWIPL_PKGS="jpl"
+if [ -f CMakeCache.txt ] && ! grep -q "^SWIPL_PACKAGE_LIST:.*=${SWIPL_PKGS}$" CMakeCache.txt; then
+  log "     lista package cambiata: ributto la build dir di SWI-Prolog"
+  cd ..; rm -rf build; mkdir -p build; cd build
+fi
 cmake .. -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX="$SWIPL_PREFIX" \
   -DCMAKE_C_COMPILER=gcc \
   -DCMAKE_CXX_COMPILER=g++ \
   -DINSTALL_DOCUMENTATION=OFF \
-  -DSWIPL_PACKAGES_X=OFF -DSWIPL_PACKAGES_JAVA=OFF -DSWIPL_PACKAGES_ODBC=OFF
+  -DSWIPL_PACKAGE_LIST="$SWIPL_PKGS"
 ninja
 ninja install
 
-log "[2/3] Compilazione Clingo Nativo ..."
+JPL_JAR="$SWIPL_PREFIX/lib/swipl/lib/jpl.jar"
+JPL_LIB_DIR="$SWIPL_PREFIX/lib/swipl/lib/$(uname -m)-linux"
+[ -f "$JPL_JAR" ] && [ -f "$JPL_LIB_DIR/libjpl.so" ] || {
+  echo "JPL non costruito: manca $JPL_JAR o $JPL_LIB_DIR/libjpl.so"; exit 1; }
+
+log "[2/4] Compilazione Clingo Nativo ..."
 _prep_build_dir "$REPO_ROOT/clingo-native/build"
 cd "$REPO_ROOT/clingo-native/build"
 cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release
 ninja
 
-log "[3/3] Compilazione Clingo Prolog (con backend SWI-Prolog) ..."
+log "[3/4] Compilazione Clingo Prolog (con backend SWI-Prolog) ..."
 _prep_build_dir "$REPO_ROOT/clingo-prolog/build"
 cd "$REPO_ROOT/clingo-prolog/build"
 cmake .. -G Ninja \
@@ -76,8 +104,17 @@ cmake .. -G Ninja \
   -DCMAKE_CXX_COMPILER=g++
 ninja
 
+log "[4/4] Compilazione Alpha (Qh, riferimento esterno) ..."
+cd "$REPO_ROOT/ALPHA"
+[ "$CLEAN_BUILD" = 1 ] && rm -rf build
+./gradlew bundledJar --no-daemon -PjplJar="$JPL_JAR"
+ALPHA_JAR="$(ls -1 "$REPO_ROOT"/ALPHA/build/libs/*-bundled.jar 2>/dev/null | head -1)"
+[ -n "$ALPHA_JAR" ] || { echo "Alpha: nessun *-bundled.jar in ALPHA/build/libs"; exit 1; }
+
 echo
 log "COMPILATO CON SUCCESSO (locale)"
 log "swipl:         $SWIPL_PREFIX/bin/swipl"
+log "jpl:           $JPL_JAR"
 log "clingo-native: $REPO_ROOT/clingo-native/build/bin/clingo"
 log "clingo-prolog: $REPO_ROOT/clingo-prolog/build/bin/clingo"
+log "alpha:         $ALPHA_JAR"

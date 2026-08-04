@@ -33,7 +33,8 @@ clingo_hpc_graphs/      risultati e grafici scaricati dall'HPC
 
 ## Build
 
-Richiede i sorgenti di SWI-Prolog 10 in `../swipl-moderno/` (`../swipl-moderno/download.sh`).
+Richiede i sorgenti di SWI-Prolog 10 in `../swipl-moderno/` (`../swipl-moderno/download.sh`) e
+un **JDK** (serve `javac`, non basta il runtime).
 
 ```bash
 ./compile_all_local.sh
@@ -42,7 +43,44 @@ Richiede i sorgenti di SWI-Prolog 10 in `../swipl-moderno/` (`../swipl-moderno/d
 Compila SWI-Prolog (in `$HOME/swipl-10`) e i due clingo in `clingo-native/build` e
 `clingo-prolog/build` — gli stessi path che gli script di benchmark si aspettano. La build è
 incrementale; `CLEAN_BUILD=1` forza una ricompilazione pulita. Su HPC si usa `compile_all.sh`
-(via `sbatch`, con i moduli Spack).
+(via `sbatch`, con i moduli Spack), che compila anche il solver Alpha.
+
+**SWI-Prolog va costruito con JPL**: il solver Alpha usato come riferimento esterno valuta le
+euristiche come query Prolog e senza `jpl.jar`/`libjpl.so` non compila. Per questo `download.sh`
+prende il tarball completo di swi-prolog.org e non l'archive di GitHub, dove `packages/` sono
+submodule non espansi (directory vuote, e nessun package viene costruito senza che nulla lo
+segnali).
+
+La selezione avviene con `-DSWIPL_PACKAGE_LIST=jpl`, **non** con i flag di gruppo
+`-DSWIPL_PACKAGES_<GRUPPO>=OFF`. Quei flag non bastano: `cmake/PackageSelection.cmake` dichiara
+`SWIPL_PKG_DEPS_http = clib sgml json ssl` e `http` sta nel gruppo BASIC, quindi `ssl` e `json`
+vengono ritirati dentro come dipendenze mentre `SWIPL_PACKAGES_SSL=OFF` resta scritto in
+`CMakeCache.txt` senza alcun effetto. Sul cluster è costato una build morta a 1023/1025 sui
+certificati di *test* di openssl (`openssl.cnf` assente nel prefix Spack), con `jpl.jar` già
+costruito ma `ninja install` mai eseguito. Con la lista esplicita i target passano da ~1025 a
+~349 e la superficie di fallimento sparisce.
+
+**Il cluster kr non ha alcun modulo java** (`module avail` elenca solo toolchain C/C++, verificato
+il 2026-08-03), quindi il JDK va scompattato in `$HOME` una volta sola:
+
+```bash
+sh get_jdk.sh
+```
+
+Scarica Eclipse Temurin 21 (versione pinnata, sha256 verificato) in `$HOME/jdk-21`, senza root e
+senza package manager. `compile_all.sh` cerca `$HOME/jdk-*` da solo; in alternativa si può
+passare un JDK già presente altrove:
+
+Lo **stesso** JDK serve anche a *runtime*, non solo alla build: `jpl.jar` viene compilato da
+`javac` senza `-target`, quindi porta i class file della versione del JDK che l'ha costruito, e
+una JVM più vecchia lo rifiuta con `UnsupportedClassVersionError` (sul login node del cluster
+`java` è l'11, contro un `jpl.jar` compilato con il 21). Per questo `programs/alpha-qh-1.0`
+risolve la JVM con lo stesso ordine di precedenza — `JAVA_HOME`, poi `$HOME/jdk-*`, poi `java`
+in PATH — invece di fidarsi del PATH, e `ALPHA_JAVA` permette di forzarla.
+
+```bash
+sbatch --export=ALL,JAVA_HOME=/percorso/al/jdk compile_all.sh
+```
 
 ## Benchmark
 
@@ -57,6 +95,8 @@ parametri e dettagli.
 | `4_run_benchmark_hpc.sh` | suite completa distribuita su SLURM |
 | `5_evaluate_hpc.sh` | estrae `results.xml` dai run finiti e delega la Fase 4 a `6_...` |
 | `6_plot_graphs_hpc.sh` | grafici; su HPC un job SLURM per figura, in locale in sequenza |
+
+`get_jdk.sh` non fa parte della pipeline: è un passo di setup una-tantum, vedi *Build*.
 
 Tutti sono idempotenti: i run già completati vengono saltati, `FORCE=1` rifà tutto. `3_` e `4_`
 si rilanciano da soli su un compute node via `srun` se invocati dal login node (compilare sul
@@ -81,11 +121,38 @@ sono i `<setting>` di `test_folder/benchmark_folder_clingo/runscripts/runscript.
 | `la_aux` | lazy Alpha con l'aggregato precalcolato in un predicato ausiliario (solo BSP) |
 | `la_co` | lazy Alpha con vincolo BSP lineare (solo BSP) |
 
+### Il solver Alpha come riferimento esterno
+
+Oltre ai due backend del propagatore, `runscript.xml` definisce un terzo `<system>`,
+`alpha-qh`, che **non fa parte della matrice**: è il solver lazy-grounding dei paper
+Comploi-Taupe, usato per rispondere a "quanto costa ottenere la semantica ad aggregati dinamici
+dentro clingo, rispetto a prenderla da chi la implementa nativamente".
+
+| Setting | Descrizione |
+|---|---|
+| `alpha` | encoding dei paper con `-uqh` (euristiche valutate come query Prolog) |
+| `alpha_noheur` | stesso encoding con `-ids`: baseline interno, sta ad `alpha` come `gc_noheur` sta a `gc` |
+
+Solo su BSP e PUP: per HRP non esiste un encoding Alpha degli autori, e tradurne uno a mano
+introdurrebbe una variabile in più proprio nel confronto fra sistemi. Gli encoding in
+`encodings-alpha/` sono copiati **tali e quali** da `ALPHA/Evaluation/`, e le istanze PUP della
+suite sono byte-identiche a quelle del supplementary material.
+
+Due avvertenze che valgono ogni volta che si leggono quei numeri:
+
+- serve la variante **Qh** (`-uqh`). Il branch upstream `domspec_heuristics_extended` accetta la
+  stessa sintassi ma valuta l'aggregato staticamente: su BSP l'euristica non bilancia nulla
+  (tutto finisce in `b`) e i backtrack esplodono. La release ufficiale 0.7.0 non supporta
+  affatto `#heuristic`;
+- Alpha gira su JVM: il picco di RSS misurato da runlim include l'heap **riservato** (`-Xmx`,
+  fissato dal wrapper sotto il memout). Confrontabili fra i due sistemi sono solo le misure
+  esterne di runlim — wall-clock e RSS — non i contatori interni, che contano fenomeni diversi.
+
 ## Risultati e grafici
 
 I run scrivono in `test_folder/benchmark_folder_clingo/` (`results.xml`, `output/`); i grafici
 finiscono in `test_folder/graphs-native/`, `graphs-prolog/`,
-`graphs-comparison-native-prolog/` e `riassunto_grafici/`.
+`graphs-comparison-native-prolog/`, `graphs-comparison-clingo-alpha/` e `riassunto_grafici/`.
 
 Per rigenerare i grafici da dati già raccolti, senza rifare i run:
 
