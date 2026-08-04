@@ -12,54 +12,80 @@
 \begin{tikzpicture}
 
 % ============================== the grounder ===============================
-\node[neutral, text width=32mm] (gringo) at (0,3.3)
+\node[neutral, text width=30mm] (gringo) at (0, 3.2)
       {\textbf{gringo}\\[2pt]{\scriptsize ground program\\ + heuristic facts}};
 
 % ============================== the solver =================================
-\node[ground, text width=32mm, minimum height=38mm] (clasp) at (0,0)
+\node[ground, text width=30mm, minimum height=42mm] (clasp) at (0, -0.6)
       {\textbf{clasp}\\[3pt]{\scriptsize CDNL search loop\\[5pt]
        partial assignment\\ and trail}};
 
 \draw[flow] (gringo) -- (clasp);
 
-% ============================ the propagator ===============================
-\node[neutral, text width=50mm, minimum height=44mm] (core) at (6.4,0) {};
-\node[font=\small\bfseries, text=diagInk, anchor=north] (coretitle)
-      at ($(core.north)+(0,-4mm)$) {HeuristicPropagator};
-\node[font=\scriptsize\ttfamily, text=diagInk, anchor=north]
-      at ($(coretitle.south)+(0,-1mm)$) {: Clingo::Heuristic};
+% ==================== BINARY 1: clingo-native ==============================
+\node[neutral, text width=42mm, minimum height=32mm] (prop_native) at (5.6, 1.8) {};
+\node[font=\small\bfseries, text=diagInk, anchor=north] (title_nat)
+      at ($(prop_native.north)+(0,-2.5mm)$) {HeuristicPropagator};
+\node[font=\tiny\ttfamily, text=diagInk, anchor=north]
+      at ($(title_nat.south)+(0,-0.5mm)$) {(Native build)};
 
 \node[draw=diagNeutralEdge, dashed, rounded corners=2pt, fill=white,
-      text width=42mm, align=center, font=\scriptsize, text=diagInk,
-      inner sep=5pt, anchor=north] (slots) at ($(core.north)+(0,-15mm)$)
-      {rule templates\\[2pt] materialised candidates\\[2pt]
-       incremental aggregate states\\[2pt] ranked targets};
+      text width=36mm, align=center, font=\tiny, text=diagInk,
+      inner sep=3pt, anchor=north] at ($(prop_native.north)+(0,-11mm)$)
+      {rule AST templates\\[1pt] materialised candidates\\[1pt]
+       incremental aggregate states\\[1pt] ranked targets};
 
-% callbacks between solver and propagator
-\draw[flow] ($(clasp.east)+(0,11mm)$) -- ($(core.west)+(0,11mm)$)
-      node[tag, midway, above] {\texttt{init}};
-\draw[flow] ($(clasp.east)+(0,4mm)$) -- ($(core.west)+(0,4mm)$)
-      node[tag, midway, above] {\texttt{propagate} / \texttt{undo}};
-\draw[flow] ($(core.west)+(0,-13mm)$) -- ($(clasp.east)+(0,-13mm)$)
-      node[tag, midway, below] {\texttt{decide} $\to$ signed literal};
+\node[lazy, text width=44mm, minimum height=32mm] (native) at (11.6, 1.8)
+      {\textbf{C++ backend}\\[2pt]{\scriptsize\ttfamily \_\_heuristic(\dots) facts\\[2pt]
+       \normalfont\tiny C++ evaluation of weight ASTs\\ over incremental aggregates}};
 
-\draw[flow] (gringo.east) to[out=0,in=90] ($(core.north)+(6mm,0)$);
-\node[tag, anchor=south west] at ($(gringo.east)+(3mm,1mm)$) {symbolic atoms};
+\draw[biflow] ($(prop_native.east)+(0,0)$) -- ($(native.west)+(0,0)$);
 
-% ============================== the backends ===============================
-\node[lazy, text width=47mm] (native) at (13.2,1.5)
-      {\textbf{native backend}\\[3pt]{\scriptsize\ttfamily \_\_heuristic(\dots) facts\\[3pt]
-       \normalfont C++ evaluation of the weight AST over incremental aggregates}};
+\begin{scope}[on background layer]
+  \node[draw=diagLazyEdge, fill=diagLazy!25, dashed, rounded corners=4pt, line width=0.8pt,
+        fit=(prop_native) (native), inner sep=7pt] (box_native) {};
+  \node[font=\scriptsize\bfseries\ttfamily, text=diagLazyEdge, anchor=south west]
+        at (box_native.north west) {clingo-native binary};
+\end{scope}
 
-\node[lazy, text width=47mm] (prolog) at (13.2,-1.6)
-      {\textbf{Prolog backend}\\[3pt]{\scriptsize\ttfamily heuristic("\dots") strings\\[3pt]
-       \normalfont in-process SWI-Prolog engine mirroring the trail}};
+% ==================== BINARY 2: clingo-prolog ==============================
+\node[neutral, text width=42mm, minimum height=32mm] (prop_prolog) at (5.6, -3.0) {};
+\node[font=\small\bfseries, text=diagInk, anchor=north] (title_pro)
+      at ($(prop_prolog.north)+(0,-2.5mm)$) {HeuristicPropagator};
+\node[font=\tiny\ttfamily, text=diagInk, anchor=north]
+      at ($(title_pro.south)+(0,-0.5mm)$) {(Prolog build)};
 
-\draw[biflow] ($(core.east)+(0,10mm)$) to[out=0,in=180] (native.west);
-\draw[biflow] ($(core.east)+(0,-10mm)$) to[out=0,in=180] (prolog.west);
+\node[draw=diagNeutralEdge, dashed, rounded corners=2pt, fill=white,
+      text width=36mm, align=center, font=\tiny, text=diagInk,
+      inner sep=3pt, anchor=north] at ($(prop_prolog.north)+(0,-11mm)$)
+      {dynamic trail facts\\[1pt] SWI-Prolog term cache\\[1pt]
+       query state synchronisation\\[1pt] ranked targets};
 
-\node[tag, text=diagLazyEdge, align=center] at (13.2,-0.05)
-      {one of the two, selected by\\ \texttt{LAZY\_HEURISTIC\_BACKEND}};
+\node[lazy, text width=44mm, minimum height=32mm] (prolog) at (11.6, -3.0)
+      {\textbf{Prolog backend}\\[2pt]{\scriptsize\ttfamily heuristic("\dots") strings\\[2pt]
+       \normalfont\tiny in-process SWI-Prolog engine\\ mirroring the search trail}};
+
+\draw[biflow] ($(prop_prolog.east)+(0,0)$) -- ($(prolog.west)+(0,0)$);
+
+\begin{scope}[on background layer]
+  \node[draw=diagLazyEdge, fill=diagLazy!25, dashed, rounded corners=4pt, line width=0.8pt,
+        fit=(prop_prolog) (prolog), inner sep=7pt] (box_prolog) {};
+  \node[font=\scriptsize\bfseries\ttfamily, text=diagLazyEdge, anchor=south west]
+        at (box_prolog.north west) {clingo-prolog binary};
+\end{scope}
+
+% ==================== CALLBACK FLOWS FROM CLASP ============================
+% Connections from gringo/clasp to both propagators
+\draw[flow] (gringo.east) to[out=0,in=180] ($(prop_native.west)+(0,10mm)$);
+\draw[flow] ($(clasp.east)+(0,12mm)$) -- ($(prop_native.west)+(0,-2mm)$)
+      node[tag, midway, above, sloped] {\tiny \texttt{init}, \texttt{propagate}/\texttt{undo}};
+\draw[flow] ($(prop_native.west)+(0,-10mm)$) -- ($(clasp.east)+(0,4mm)$)
+      node[tag, midway, below, sloped] {\tiny \texttt{decide} $\to$ literal};
+
+\draw[flow] ($(clasp.east)+(0,-4mm)$) -- ($(prop_prolog.west)+(0,10mm)$)
+      node[tag, midway, above, sloped] {\tiny \texttt{init}, \texttt{propagate}/\texttt{undo}};
+\draw[flow] ($(prop_prolog.west)+(0,2mm)$) -- ($(clasp.east)+(0,-12mm)$)
+      node[tag, midway, below, sloped] {\tiny \texttt{decide} $\to$ literal};
 
 \end{tikzpicture}
 \end{document}

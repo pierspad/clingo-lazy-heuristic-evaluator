@@ -53,13 +53,6 @@ If $M$ exceeds every intra-level weight, then $W + P\cdot M > W' + P'\cdot M$ ho
 
 The suite therefore adopts clingo's convention in \emph{all four variants and in both backends}: absolute levels always live in the weight, and the priority field is left to its local role of arbitrating between several directives attached to the \emph{same} atom. What that field then contains is decided benchmark by benchmark, and within a benchmark it is the same in every variant:
 
-\begin{itemize}
-    \item in BSP and in PUP the priority is $0$ throughout. Each target predicate is addressed by exactly one directive --- \mintinline{text}|b/1| and \mintinline{text}|c/1| in BSP, \mintinline{text}|assigned_sensor_unit/2| and \mintinline{text}|assigned_zone_unit/2| in PUP --- so no two directives ever compete on one atom and there is nothing local to arbitrate;
-    \item in HRP it takes the two values $1$ and $0$. The reuse and filling directives carry priority $1$ with modifier \mintinline{text}|true|, the closing directives that push the remaining choice atoms to false carry priority $0$; since the two families do meet on the same targets (\mintinline{text}|cabinetTOthing/2| and \mintinline{text}|roomTOcabinet/2| are claimed by both), the higher priority makes the \mintinline{text}|true| directive win wherever it applies, and the closing one takes effect only where it does not. In the ground variants that arbitration comes for free from clingo's implicit default $P=|W|$: the closing directives are annotated \mintinline{text}|[1, false]| and lose against weights of the order of $4 \cdot \mathit{LM}$. The lazy variants must state it, because a lazy fact has no such default and its priority is $0$ unless written.
-\end{itemize}
-
-Under the Alpha semantics the priority is read a second time, as the global rank of the target (Section~\ref{sec:decision}). Keeping it at $0$ in BSP and PUP is what makes the two readings coincide there, so that the \mintinline{text}|lc|/\mintinline{text}|la| contrast on those benchmarks is not contaminated by the priority; in HRP the two values order the closing level after the others, which is the intended order anyway.
-
 A last convention concerns empty aggregates: \mintinline{text}|#max| over an empty set is $0$ in Alpha but $\#\mathit{inf}$ in clingo. All encodings therefore write \mintinline{text}|#max{0; ...}| with an explicit neutral element, and both lazy backends implement the same rule (the native \mintinline{text}|MaxState| returns $0$ when empty; the Prolog runtime defines \mintinline{text}|dyn_max| with a $0$ default).
 
 \subsection{System Architecture}
@@ -72,12 +65,12 @@ HeuristicPropagator my_propagator;
 ctl.register_propagator(my_propagator, true);
 \end{minted}
 
-Those two lines are the whole integration, and both details in them matter. They sit on the path that builds the grounder and starts the solver, so the propagator is registered on \emph{every} run of the modified binary: on a program that contains no heuristic facts it stays inert, because \mintinline{text}|init| finds nothing to watch and \mintinline{text}|decide| always returns $0$, and the same binary therefore runs the ground variants and the heuristic-free baseline without a separate build --- which is also what makes the comparison of Section~\ref{sec:results} a comparison between encodings rather than between executables. The second argument, \mintinline{text}|true|, asks clasp to call the propagator sequentially, so that one instance of the class can serve the whole search without locking the incremental state described in Section~\ref{sec:runtime}; the campaigns are single-threaded in any case. Nothing else in clingo is touched, and no clasp internals are reached: everything downstream is the class answering the callbacks. Figure~\ref{fig:architecture} shows where it sits.
+The propagator is registered on \emph{every} run of the modified binary: on a program that contains no heuristic facts it stays inert, because \mintinline{text}|init| finds nothing to watch and \mintinline{text}|decide| always returns $0$, and the same binary therefore runs the ground variants and the heuristic-free baseline without a separate build. The second argument, \mintinline{text}|true|, asks clasp to call the propagator sequentially, to avoid race conditions on the incremental state described in Section~\ref{sec:runtime}; Nothing else in clingo is touched. Figure~\ref{fig:architecture} shows the architecture of the two binary build variants.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{architecture}
-\caption{The heuristic propagator between clasp and the two evaluation backends.}
+\caption{System architecture of the two binary variants (\texttt{clingo-native} and \texttt{clingo-prolog}), showing their respective heuristic propagators and evaluation backends attached to clasp.}
 \label{fig:architecture}
 \end{figure}
 
@@ -85,13 +78,11 @@ The class implements \mintinline{text}|Clingo::Heuristic|, that is, the propagat
 
 The propagator never adds a constraint, never derives a literal and never refuses one. It only reorders the decisions clasp would have taken anyway, so the answer sets are untouched, and a heuristic can make a run slower or faster but cannot change the meaning of the encoding. This is expanded in Section~\ref{sec:validation}.
 
-\subsection{The Native Heuristic Language}
+\subsection{Translation of the Heuristics directives}
 \label{sec:dsl}
 
-\subsubsection{From a \texttt{\#heuristic} Directive to a Lazy Heuristic}
-\label{sec:translation}
-
-The native backend does not read heuristics: it reads \emph{descriptions} of heuristics, written in a small declarative language whose sentences are ordinary ground facts. This subsection presents that language --- what one may write and what each construct means --- leaving to Section~\ref{sec:implementation} the question of how it is executed. The language replaces a family of ground directives with a single ground fact that describes them. This subsection derives that fact for the BSP heuristic of Section~\ref{sec:motivation}, one component at a time; the other encodings are built the same way.
+The native backend does not read \texttt{\#heuristics} facts: the language replaces an entire family of ground directives with a single ground facts that \emph{describes} them. 
+This subsection presents what one may write and what each construct means by deriving that fact for the BSP heuristic of Section~\ref{sec:motivation}, one component at a time, leaving to Section~\ref{sec:implementation} the question of how it is executed. 
 
 The starting point is the directive as clingo reads it:
 
@@ -113,6 +104,7 @@ The \textbf{weight} $((n+1)\cdot S)+X$ cannot be carried over as it stands. A la
 
 The parser turns that tree into a small arithmetic AST once, at \mintinline{text}|init|. From then on it is evaluated \emph{one candidate at a time}: at every decision, each candidate that is currently active evaluates its own copy of the expression, with \mintinline{text}|self| holding that candidate's target argument and \mintinline{text}|s| holding whatever the sum is at that instant of the search. One expression therefore stands for as many numbers as there are targets, multiplied by the values the aggregate takes over the course of the search, and none of those numbers is ever materialised in the ground program.\\
 
+//TODO qui priority andrebbe toldo, modifier non so se ha veramente senso, semantics è l'unico da lasciare sicuro
 \paragraph{Priority, modifier and semantics.} The three remaining fields carry the annotations of the original directive.
 
 \mintinline{text}|__priority(0)| carries the priority in the local role fixed by Section~\ref{sec:flattening}. It is $0$ here because \mintinline{text}|b/1| is the target of a single directive, and it is $0$ in every BSP and PUP encoding for the same reason; the field does real work only in HRP, where the value $1$ separates the reuse and filling directives from the closing \mintinline{text}|false| directives that share their targets.
@@ -127,7 +119,10 @@ __heuristic(__target(b), x, __n_c, __bind(s, __sum(c)),
             __semantics(alpha), __modifier(true)) :- B = n + 1.
 \end{minted}
 
-The body \mintinline{text}|:- B = n + 1| deserves a word, because it is easy to read more into it than there is. It is not what makes the fact ground: gringo evaluates arithmetic inside terms, so \mintinline{text}|__mul(s, n+1)| written directly in the head would already reduce to \mintinline{text}|__mul(s,101)| for $n = 100$, and the two forms are interchangeable here. What the body does is decouple the template from the numbers it needs, and it earns its keep as soon as those numbers are not program constants but values computed from the instance. HRP is the case in point: its level multiplier is derived by the encoding itself,
+
+//TODO non ho capito un cazzo
+
+The body \mintinline{text}|:- B = n + 1| is only a helper: gringo evaluates arithmetic inside terms, so \mintinline{text}|__mul(s, n+1)| written directly in the head would already reduce to \mintinline{text}|__mul(s,101)| for $n = 100$, and the two forms are interchangeable here. What the body does is decouple the template from the numbers it needs, and it earns its keep as soon as those numbers are not program constants but values computed from the instance. HRP is the case in point: its level multiplier is derived by the encoding itself,
 
 \begin{minted}{prolog}
 maxCabinetId(M) :- M = #max{ C : cabinetDomain(C) }.
