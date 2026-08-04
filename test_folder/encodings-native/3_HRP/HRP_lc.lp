@@ -118,16 +118,16 @@ maxRoomId(M)    :- M = #max{ R : roomDomain(R) }.
 levelMul(LM)    :- LM = MC + MR + 10, maxCabinetId(MC), maxRoomId(MR).
 
 % ===== euristiche LAZY CLINGO =====
-__heuristic(__target(reuseCabinet),      legacyCabinet,            __weight(__add(6, __mul(4, LM))), __priority(1), __semantics(clingo), __modifier(true)) :- levelMul(LM).
-__heuristic(__target(reuseRoom),         legacyRoom,               __weight(__add(5, __mul(4, LM))), __priority(1), __semantics(clingo), __modifier(true)) :- levelMul(LM).
-__heuristic(__target(reuseCabinetThing), legacyCabinetThingLong,   __weight(__add(4, __mul(4, LM))), __priority(1), __semantics(clingo), __modifier(true)) :- levelMul(LM).
-__heuristic(__target(reuseCabinetThing), legacyCabinetThingShort,  __weight(__add(3, __mul(4, LM))), __priority(1), __semantics(clingo), __modifier(true)) :- levelMul(LM).
-__heuristic(__target(reuseRoomCabinet),  legacyRoomCabinet,        __weight(__add(2, __mul(4, LM))), __priority(1), __semantics(clingo), __modifier(true)) :- levelMul(LM).
-__heuristic(__target(reusePersonRoom),   legacyPersonRoom,         __weight(__add(1, __mul(4, LM))), __priority(1), __semantics(clingo), __modifier(true)) :- levelMul(LM).
-__heuristic(__target(cabinetTOthing), cabLongCand,  __n_cabFull, __n_thingAssignedAt, __n_cabOtherPerson, __weight(__add(__sub(MC, self), __mul(3, LM))), __priority(1), __semantics(clingo), __modifier(true)) :- maxCabinet(MC), levelMul(LM).
-__heuristic(__target(cabinetTOthing), cabShortCand, __n_cabFull, __n_thingAssignedAt, __n_cabOtherPerson, __weight(__add(__sub(MC, self), __mul(2, LM))), __priority(1), __semantics(clingo), __modifier(true)) :- maxCabinet(MC), levelMul(LM).
-__heuristic(__target(roomTOcabinet),  roomCabCand,  __n_roomFull, __n_cabAssignedAt, __n_roomOtherPerson, __weight(__add(__sub(MR, self), __mul(1, LM))), __priority(1), __semantics(clingo), __modifier(true)) :- maxRoom(MR), levelMul(LM).
-__heuristic(__target(cabinet),        cabinetDomain, __weight(1), __priority(0), __semantics(clingo), __modifier(false)).
-__heuristic(__target(room),           roomDomain,    __weight(1), __priority(0), __semantics(clingo), __modifier(false)).
-__heuristic(__target(cabinetTOthing), cabThingDom,   __weight(1), __priority(0), __semantics(clingo), __modifier(false)).
-__heuristic(__target(roomTOcabinet),  roomCabCand,   __weight(1), __priority(0), __semantics(clingo), __modifier(false)).
+__heuristic(__target(reuseCabinet),      legacyCabinet,            __weight(__add(6, __mul(4, LM))), __semantics(clingo), __modifier(true)) :- levelMul(LM).
+__heuristic(__target(reuseRoom),         legacyRoom,               __weight(__add(5, __mul(4, LM))), __semantics(clingo), __modifier(true)) :- levelMul(LM).
+__heuristic(__target(reuseCabinetThing), legacyCabinetThingLong,   __weight(__add(4, __mul(4, LM))), __semantics(clingo), __modifier(true)) :- levelMul(LM).
+__heuristic(__target(reuseCabinetThing), legacyCabinetThingShort,  __weight(__add(3, __mul(4, LM))), __semantics(clingo), __modifier(true)) :- levelMul(LM).
+__heuristic(__target(reuseRoomCabinet),  legacyRoomCabinet,        __weight(__add(2, __mul(4, LM))), __semantics(clingo), __modifier(true)) :- levelMul(LM).
+__heuristic(__target(reusePersonRoom),   legacyPersonRoom,         __weight(__add(1, __mul(4, LM))), __semantics(clingo), __modifier(true)) :- levelMul(LM).
+__heuristic(__target(cabinetTOthing), cabLongCand,  __n_cabFull, __n_thingAssignedAt, __n_cabOtherPerson, __weight(__add(__sub(MC, self), __mul(3, LM))), __semantics(clingo), __modifier(true)) :- maxCabinet(MC), levelMul(LM).
+__heuristic(__target(cabinetTOthing), cabShortCand, __n_cabFull, __n_thingAssignedAt, __n_cabOtherPerson, __weight(__add(__sub(MC, self), __mul(2, LM))), __semantics(clingo), __modifier(true)) :- maxCabinet(MC), levelMul(LM).
+__heuristic(__target(roomTOcabinet),  roomCabCand,  __n_roomFull, __n_cabAssignedAt, __n_roomOtherPerson, __weight(__add(__sub(MR, self), __mul(1, LM))), __semantics(clingo), __modifier(true)) :- maxRoom(MR), levelMul(LM).
+__heuristic(__target(cabinet),        cabinetDomain, __weight(1), __semantics(clingo), __modifier(false)).
+__heuristic(__target(room),           roomDomain,    __weight(1), __semantics(clingo), __modifier(false)).
+__heuristic(__target(cabinetTOthing), cabThingDom,   __weight(1), __semantics(clingo), __modifier(false)).
+__heuristic(__target(roomTOcabinet),  roomCabCand,   __weight(1), __semantics(clingo), __modifier(false)).

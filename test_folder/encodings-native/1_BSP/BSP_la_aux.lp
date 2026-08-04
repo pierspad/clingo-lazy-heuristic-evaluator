@@ -17,10 +17,10 @@ h_c(X,S) :- x(X), not b(X), S = #sum{Y : b(Y)}.
 
 % heuristics
 __heuristic(__target(b), __body(h_b, __match(0,0), __bind_arg(s,1)),
-            __weight(__add(__mul(s, B), self)), __priority(0),
+            __weight(__add(__mul(s, B), self)),
             __semantics(alpha), __modifier(true)) :- B = n + 1.
 __heuristic(__target(c), __body(h_c, __match(0,0), __bind_arg(s,1)),
-            __weight(__add(__mul(s, B), self)), __priority(0),
+            __weight(__add(__mul(s, B), self)),
             __semantics(alpha), __modifier(true)) :- B = n + 1.
 
 #show b/1.

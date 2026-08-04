@@ -106,7 +106,7 @@ __heuristic(__target(assigned_sensor_unit),
             __bind(direct, __count(sensor_zone_on_unit, 0, __filter(0,0), __filter(1,1))),
             __weight(__add(__add(__add(__mul(deg,10000), __mul(forb,1000)),
                                  __mul(cnt,100)), __mul(direct,10))),
-            __priority(0), __semantics(clingo), __modifier(true)).
+            __semantics(clingo), __modifier(true)).
 __heuristic(__target(assigned_zone_unit),
             assignable_zone_unit,
             __n_not_assigned_zone_unit,
@@ -115,7 +115,7 @@ __heuristic(__target(assigned_zone_unit),
             __bind(m1, __max(num_sensors_on_unit, 0, __filter(1,1,-1))),
             __bind(m2, __max(num_sensors_on_unit, 0, __filter(1,1,1))),
             __weight(__add(__sub(__sub(__sub(__add(__mul(a,10), 6), m0), m1), m2), 100000)),
-            __priority(0), __semantics(clingo), __modifier(true)).
+            __semantics(clingo), __modifier(true)).
 
 #show assigned_zone_unit/2.
 #show assigned_sensor_unit/2.

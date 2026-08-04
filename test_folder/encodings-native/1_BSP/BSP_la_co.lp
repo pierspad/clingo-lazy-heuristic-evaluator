@@ -15,10 +15,10 @@ c(X) :- x(X), not b(X).
 
 % heuristics (DSL nativo, semantica alpha)
 __heuristic(__target(b), x, __n_c, __bind(s, __sum(c)),
-            __weight(__add(__mul(s, B), self)), __priority(0),
+            __weight(__add(__mul(s, B), self)),
             __semantics(alpha), __modifier(true)) :- B = n + 1.
 __heuristic(__target(c), x, __n_b, __bind(s, __sum(b)),
-            __weight(__add(__mul(s, B), self)), __priority(0),
+            __weight(__add(__mul(s, B), self)),
             __semantics(alpha), __modifier(true)) :- B = n + 1.
 
 #show b/1.
