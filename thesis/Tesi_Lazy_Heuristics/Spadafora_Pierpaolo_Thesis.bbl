@@ -348,45 +348,6 @@
       \field{pages}{653\bibrangedash 669}
       \range{pages}{17}
     \endentry
-    \entry{comploi2023dynamicAggregates}{inproceedings}{}{}
-      \name{author}{3}{}{%
-        {{hash=40e5bbc107a8f13c09f2dd488fdf3f7a}{%
-           family={Comploi-Taupe},
-           familyi={C\bibinithyphendelim T\bibinitperiod},
-           given={Richard},
-           giveni={R\bibinitperiod}}}%
-        {{hash=8c14fa59a9c511fd1b3a0c36b8d30d17}{%
-           family={Friedrich},
-           familyi={F\bibinitperiod},
-           given={Gerhard},
-           giveni={G\bibinitperiod}}}%
-        {{hash=2e6431897b9cf75af05868d3fb62d937}{%
-           family={Niestroj},
-           familyi={N\bibinitperiod},
-           given={Tilman},
-           giveni={T\bibinitperiod}}}%
-      }
-      \list{publisher}{1}{%
-        {CEUR-WS.org}%
-      }
-      \strng{namehash}{0f4402eeffe859cd950e6fb59afa3205}
-      \strng{fullhash}{0f4402eeffe859cd950e6fb59afa3205}
-      \strng{fullhashraw}{0f4402eeffe859cd950e6fb59afa3205}
-      \strng{bibnamehash}{0f4402eeffe859cd950e6fb59afa3205}
-      \strng{authorbibnamehash}{0f4402eeffe859cd950e6fb59afa3205}
-      \strng{authornamehash}{0f4402eeffe859cd950e6fb59afa3205}
-      \strng{authorfullhash}{0f4402eeffe859cd950e6fb59afa3205}
-      \strng{authorfullhashraw}{0f4402eeffe859cd950e6fb59afa3205}
-      \field{sortinit}{4}
-      \field{sortinithash}{9381316451d1b9788675a07e972a12a7}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{booktitle}{Proceedings of the 25th International Workshop on Configuration (ConfWS 2023)}
-      \field{series}{CEUR Workshop Proceedings}
-      \field{title}{Dynamic Aggregates in Expressive ASP Heuristics for Configuration Problems}
-      \field{volume}{3509}
-      \field{year}{2023}
-    \endentry
     \entry{weinzierl2017blending}{inproceedings}{}{}
       \name{author}{1}{}{%
         {{hash=1ec32bbc9f3e08c958c6650aed4e80a8}{%
@@ -406,8 +367,8 @@
       \strng{authornamehash}{1ec32bbc9f3e08c958c6650aed4e80a8}
       \strng{authorfullhash}{1ec32bbc9f3e08c958c6650aed4e80a8}
       \strng{authorfullhashraw}{1ec32bbc9f3e08c958c6650aed4e80a8}
-      \field{sortinit}{5}
-      \field{sortinithash}{20e9b4b0b173788c5dace24730f47d8c}
+      \field{sortinit}{4}
+      \field{sortinithash}{9381316451d1b9788675a07e972a12a7}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{booktitle}{Logic Programming and Nonmonotonic Reasoning (LPNMR 2017)}
@@ -449,8 +410,8 @@
       \strng{authornamehash}{4a343a188d8ef53fedd6d4083145dcf2}
       \strng{authorfullhash}{a1d6bb2e17be019af582984e6f1322a2}
       \strng{authorfullhashraw}{a1d6bb2e17be019af582984e6f1322a2}
-      \field{sortinit}{5}
-      \field{sortinithash}{20e9b4b0b173788c5dace24730f47d8c}
+      \field{sortinit}{4}
+      \field{sortinithash}{9381316451d1b9788675a07e972a12a7}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{journaltitle}{Journal of Artificial Intelligence Research}
@@ -459,6 +420,45 @@
       \field{year}{2023}
       \field{pages}{59\bibrangedash 114}
       \range{pages}{56}
+    \endentry
+    \entry{comploi2023dynamicAggregates}{inproceedings}{}{}
+      \name{author}{3}{}{%
+        {{hash=40e5bbc107a8f13c09f2dd488fdf3f7a}{%
+           family={Comploi-Taupe},
+           familyi={C\bibinithyphendelim T\bibinitperiod},
+           given={Richard},
+           giveni={R\bibinitperiod}}}%
+        {{hash=8c14fa59a9c511fd1b3a0c36b8d30d17}{%
+           family={Friedrich},
+           familyi={F\bibinitperiod},
+           given={Gerhard},
+           giveni={G\bibinitperiod}}}%
+        {{hash=2e6431897b9cf75af05868d3fb62d937}{%
+           family={Niestroj},
+           familyi={N\bibinitperiod},
+           given={Tilman},
+           giveni={T\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {CEUR-WS.org}%
+      }
+      \strng{namehash}{0f4402eeffe859cd950e6fb59afa3205}
+      \strng{fullhash}{0f4402eeffe859cd950e6fb59afa3205}
+      \strng{fullhashraw}{0f4402eeffe859cd950e6fb59afa3205}
+      \strng{bibnamehash}{0f4402eeffe859cd950e6fb59afa3205}
+      \strng{authorbibnamehash}{0f4402eeffe859cd950e6fb59afa3205}
+      \strng{authornamehash}{0f4402eeffe859cd950e6fb59afa3205}
+      \strng{authorfullhash}{0f4402eeffe859cd950e6fb59afa3205}
+      \strng{authorfullhashraw}{0f4402eeffe859cd950e6fb59afa3205}
+      \field{sortinit}{4}
+      \field{sortinithash}{9381316451d1b9788675a07e972a12a7}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Proceedings of the 25th International Workshop on Configuration (ConfWS 2023)}
+      \field{series}{CEUR Workshop Proceedings}
+      \field{title}{Dynamic Aggregates in Expressive ASP Heuristics for Configuration Problems}
+      \field{volume}{3509}
+      \field{year}{2023}
     \endentry
     \entry{gebser2019multishot}{article}{}{}
       \name{author}{4}{}{%
@@ -492,8 +492,8 @@
       \strng{authorfullhash}{6ff2ecbb0dace9a796d510f578f069a3}
       \strng{authorfullhashraw}{6ff2ecbb0dace9a796d510f578f069a3}
       \field{extraname}{4}
-      \field{sortinit}{8}
-      \field{sortinithash}{a231b008ebf0ecbe0b4d96dcc159445f}
+      \field{sortinit}{7}
+      \field{sortinithash}{108d0be1b1bee9773a1173443802c0a3}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{journaltitle}{Theory and Practice of Logic Programming}
@@ -539,8 +539,8 @@
       \strng{authorfullhash}{d4213acdb4ab6d160ca32e54d6f57fa1}
       \strng{authorfullhashraw}{d4213acdb4ab6d160ca32e54d6f57fa1}
       \field{extraname}{5}
-      \field{sortinit}{9}
-      \field{sortinithash}{0a5ebc79d83c96b6579069544c73c7d4}
+      \field{sortinit}{8}
+      \field{sortinithash}{a231b008ebf0ecbe0b4d96dcc159445f}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{booktitle}{Logic Programming and Nonmonotonic Reasoning (LPNMR 2007)}
@@ -587,8 +587,8 @@
       \strng{authornamehash}{ea9efca74d1e590df72d9f991881c825}
       \strng{authorfullhash}{38041b7bf557147ca065e35782e9bac2}
       \strng{authorfullhashraw}{38041b7bf557147ca065e35782e9bac2}
-      \field{sortinit}{1}
-      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{sortinit}{9}
+      \field{sortinithash}{0a5ebc79d83c96b6579069544c73c7d4}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{booktitle}{Proceedings of the 38th Design Automation Conference}

@@ -6,28 +6,23 @@
 
 Answer Set Programming (ASP) is a declarative approach to combinatorial search. Instead of describing an algorithm step by step, the modeller describes the properties that an admissible solution must satisfy, and a solver enumerates the assignments that satisfy them \cite{gelfond1988stable, gebser2012asp, clingoGuide}.
 
-An ASP solver is essentially a highly optimized backtracking, or more appropriately \emph{backjumping}, engine and they are typically divided in two main categories: ground-and-solve and lazy grounding.
+ASP solvers are essentially highly optimized backtracking, or more appropriately \emph{backjumping}, engines, and the current State Of The Art (SOTA) is dominated by two main categories: ground-and-solve and lazy grounding.
 
 In ground-and-solve systems, such as clingo, first-order rules are instantiated over the problem domain before search starts, including the domain-specific heuristics that direct the solver's search. 
 This approach is inherently memory-bound, with bottlenecks manifesting in two main scenarios: as problem instances scale, and whenever domain-specific heuristics depend on dynamic search state, for instance through an aggregate over the atoms that are true \emph{at that point of the search}. 
-Since grounding happens before the search starts its only option is to enumerate every value the aggregate could take, and a single heuristic ends up costing a number of ground objects that is combinatorial in the size of the instance.\\
-In contrast, lazy-grounding systems interleave grounding and solving. While this yields significantly higher memory efficiency, allowing a further reach on memory-intensive problems, it comes at the cost of a significantly slower search.
+Since grounding happens before the search starts, its only option is to enumerate every value the aggregate could take, and a single heuristic ends up costing a number of ground objects that is combinatorial in the size of the instance. In contrast, lazy-grounding systems interleave grounding and solving. While this yields significantly higher memory efficiency, allowing a further reach on memory-intensive problems, it comes at the cost of a significantly slower search.
 
-Depending on the type of engine an ASP solver can be seen as an engine that compiles or interprets a very convenient and elegant declarative language \cite[aspcore 2.0] to search for a solution. The convenience of that language is paid for in control: the modeller states \emph{what} an admissible solution is, but not \emph{how} the engine should look for one.
+Depending on its underlying architecture, an ASP solver can be seen as an engine that compiles or interprets a very convenient and elegant declarative language \cite{calimeri2020aspcore2} to search for a solution. The convenience of that language is paid for in control: the modeller states \emph{what} an admissible solution is, but not \emph{how} the engine should look for one. A pure backtracking approach behaves as an uninformed search, and on problems whose structure is known by construction, guiding the solver with that knowledge is extremely helpful.
 
-A pure backtracking approach behaves as an uninformed search, and on problems whose structure is known by construction, guiding the solver with that knowledge is extremely helpful.
-\emph{Domain-specific heuristics} are the means by which the modeller feeds that knowledge into the search.
-
-
-Syntactically they are declarative annotations that the grounder instantiates like ordinary rules, and their purpose is to tell the solver which atom to decide next, and with which polarity; their impact on solving is well documented \cite{gebser2013heuristics,dodaro2016combining}. They are, however, part of the program, and clingo instantiates the program before search starts. A heuristic is therefore expanded, in full, before the first decision is taken.
-That expansion can be relatively harmless as long as the heuristic depends only on the input. It stops being harmless as soon as the heuristic depends on \emph{how the search is going}, which is precisely when a heuristic is most useful. Consider the directive used throughout this thesis to guide Balanced Set Partitioning, the problem of splitting $\{1,\ldots,n\}$ into two sets \mintinline{text}|b/1| and \mintinline{text}|c/1| of nearly equal sum:
+\emph{Domain-specific heuristics} are the means by which the modeller feeds that knowledge into the search. Syntactically they are declarative annotations that the grounder instantiates like ordinary rules, and their purpose is to tell the solver which atom to decide next, and with which polarity; their impact on solving is well documented \cite{gebser2013heuristics,dodaro2016combining}. They are, however, part of the program, and clingo instantiates the program before search starts. A heuristic is therefore expanded, in full, before the first decision is taken.
+That expansion can be relatively harmless as long as the heuristic depends only on the input. It stops being harmless as soon as the heuristic depends on \emph{how the search is going}, which is precisely when a heuristic is most useful. Consider the directive used throughout this thesis to guide Balanced Sum Problem, the problem of splitting $\{1,\ldots,n\}$ into two sets \mintinline{text}|b/1| and \mintinline{text}|c/1| of nearly equal sum:
 
 \begin{minted}{prolog}
 #heuristic b(X) : x(X), not c(X), S = #sum{Y : c(Y)}, W = ((n+1)*S)+X. [W, true]
 \end{minted}
 
 The rule reads: prefer to place the element $X$ into $b$, the more strongly the larger the sum $S$ of what is already in $c$.\\
-It is a natural greedy policy, and it is \emph{dynamic} in the sense of \cite{comploi2023dynamicAggregates}, because $S$ is a property of the partial solution built so far, not of the instance. The aggregate value $S$ appears \emph{inside the weight}, and the atoms \mintinline{text}|c(Y)| it sums over are guessed by the search rather than given as facts. The grounder cannot know what $S$ will be. Its only option is to enumerate every value the sum could reach and to materialise a separate ground directive for every pair $(X,S)$. The encoding pairs this directive with its symmetric counterpart for \mintinline{text}|c/1|, and the two together produce $\Theta(n^{3})$ ground objects, more than a million at $n = 100$. All of them instantiate the same single rule the modeller wrote, and all but the one that matches the current sum are inert at any given decision.
+The aggregate value $S$ appears \emph{inside the weight}, and the atoms \mintinline{text}|c(Y)| it sums over are guessed by the search rather than given as facts. The grounder cannot know what $S$ will be. Its only option is to enumerate every value the sum could reach and to materialise a separate ground directive for every pair $(X,S)$ producing $\Theta(n^{3})$ ground objects, more than a million at $n = 100$. All of them instantiate the same single rule the modeller wrote, and all but the one that matches the current sum are inert at any given decision.
 A domain-specific heuristic introduced to help the engine solve a problem quicker ends up putting the answer out of reach.
 
 \begin{figure}[H]
@@ -37,11 +32,9 @@ A domain-specific heuristic introduced to help the engine solve a problem quicke
 \label{fig:pipelines}
 \end{figure}
 
-The alternative is to leave the heuristic symbolic and to evaluate it while the search runs, when the partial assignment that $S$ refers to actually exists. In lazy-grounding solvers this is the natural reading, and it has already been tested \cite{weinzierl2017blending,comploi2023domain,comploi2023dynamicAggregates}. This work asks whether the same effect can be obtained inside clingo without giving up its ground-and-solve pipeline, that is, whether a ground-and-solve engine can be equipped with lazily evaluated heuristics (Figure~\ref{fig:pipelines}).
+The alternative is to leave the heuristic symbolic and to evaluate it while the search runs, when the partial assignment that $S$ refers to actually exists. This is the natural approach in lazy-grounding solvers and it has already been tested \cite{weinzierl2017blending,comploi2023domain,comploi2023dynamicAggregates}. This work asks whether the same effect can be obtained inside clingo without giving up its ground-and-solve pipeline and speed advantage, that is, whether a ground-and-solve engine can be equipped with lazily evaluated heuristics (Figure~\ref{fig:pipelines}) and outperform a SOTA Lazy-ground solver.
 
-The rest of this section fixes the notions this work rests on: the semantics of ASP (Section~\ref{sec:bg-asp}), the ground-and-solve architecture and the search loop the propagator plugs into (Section~\ref{sec:bg-cdcl}), the \mintinline{text}|#heuristic| syntaxes and the two conventions of clingo that the thesis keeps returning to (Section~\ref{sec:bg-heuristics}), Alpha's reading of partial assignments, which is the semantic reference for the whole work (Section~\ref{sec:bg-alpha}), and the interfaces through which clingo can be extended at solving time (Section~\ref{sec:bg-propagator}). Section~\ref{sec:contributions} then states the objective and the contributions precisely.
-
-\newpage
+%TODO RILETTO FINO A QUI
 
 \section{Answer Set Programming}
 \label{sec:bg-asp}
@@ -118,6 +111,6 @@ The thesis makes the following contributions.
     \item \textbf{A measured account of the cost of laziness.} Both backends are instrumented per decision, so the runtime price of the approach is reported alongside its grounding saving instead of being declared.
 \end{enumerate}
 
-The evaluation covers three problem families, Balanced Set Partitioning, the Partner Units Problem and the House Reconfiguration Problem, on both backends, with a correctness harness that checks that no variant changes the answer sets. The implementation is available at \url{https://github.com/pierspad/clingo-lazy-heuristic-evaluator}.
+The evaluation covers three problem families, Balanced Sum Problem, the Partner Units Problem and the House Reconfiguration Problem, on both backends, with a correctness harness that checks that no variant changes the answer sets. The implementation is available at \url{https://github.com/pierspad/clingo-lazy-heuristic-evaluator}.
 
 Chapter~\ref{sec:methodology} presents the experimental design and the heuristic language, Chapter~\ref{sec:implementation} the two backends and the benchmark setup, Chapter~\ref{sec:results} the results, and Chapter~\ref{sec:discussion} discusses them and states the limitations.
