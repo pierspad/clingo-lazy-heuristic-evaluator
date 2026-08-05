@@ -4,7 +4,7 @@
 \section{The Cost of a Dynamic Heuristic}
 \label{sec:motivation}
 
-Answer Set Programming (ASP) is a declarative approach to combinatorial search. Instead of describing an algorithm step by step, the modeller describes the properties that an admissible solution must satisfy, and a solver enumerates the assignments that satisfy them \cite{gelfond1988stable, gebser2012asp, clingoGuide}.
+Answer Set Programming (ASP) is a declarative approach to combinatorial search. Instead of describing an algorithm step by step, the modeller describes the properties that an admissible solution must satisfy, and a solver enumerates the assignments that satisfy them \cite{gelfond1988stable, schaub2024aspPractice, clingoGuide}.
 
 ASP solvers are essentially highly optimized backtracking, or more appropriately \emph{backjumping}, engines. The current state of the art (SOTA) is dominated by two main paradigms: ground-and-solve and lazy grounding.
 
@@ -34,8 +34,6 @@ A domain-specific heuristic introduced to help the engine solve a problem quicke
 
 The alternative is to leave the heuristic symbolic and to evaluate it while the search runs, when the partial assignment that $S$ refers to actually exists. This is the natural approach in lazy-grounding solvers and it has already been tested \cite{weinzierl2017blending,comploi2023domain,comploi2023dynamicAggregates}. This work asks whether the same effect can be obtained inside clingo without giving up its ground-and-solve pipeline and speed advantage, that is, whether a ground-and-solve engine can be equipped with lazily evaluated heuristics (Figure~\ref{fig:pipelines}) and outperform a \textbf{SOTA} lazy-ground solver.
 
-%TODO RILETTO FINO A QUI
-
 \section{Answer Set Programming}
 \label{sec:bg-asp}
 
@@ -58,15 +56,22 @@ the candidate $X = \{a\}$ gives the reduct $\{a \leftarrow\}$, whose least model
 The candidate $\{a,b\}$ deletes both rules, leaving the least model $\emptyset$: not stable. 
 A stable model is then a set of atoms both closed under the rules and justified by them, in which every atom has a non-circular derivation that survives the model's own assumptions about what is false.
 
-In the \emph{guess-and-check} idiom a choice construct opens the solution space, integrity constraints prune the candidates that violate the specification, and the answer sets of the program correspond one-to-one to the solutions of the problem. ASP syntax extends normal rules with first-order variables, arithmetic, conditional literals, and three constructs this thesis uses throughout. A \emph{choice rule} such as \mintinline{text}|{ b(X) } :- x(X)| leaves the truth of its head open, so its head atoms, called \emph{choice atoms} below, are exactly the ones the solver has to decide. An \emph{integrity constraint} \mintinline{text}|:- Body.| is a rule with empty head and forbids every model that satisfies $Body$. An \emph{aggregate atom} such as \mintinline{text}|#sum|, \mintinline{text}|#count|, \mintinline{text}|#min| or \mintinline{text}|#max| condenses a set of weighted contributions into a single comparable value \cite{clingoGuide}.
-Aggregates are central to this work: the heuristics under study rank decisions by expressions such as \enquote{the current sum of the elements already placed in a set}, and how and \emph{when} such an aggregate is evaluated is exactly what differentiates the systems compared here.
+In the \emph{guess-and-check} idiom a choice construct opens the solution space, integrity constraints prune the candidates that violate the specification, and the answer sets of the program correspond one-to-one to the solutions of the problem. ASP syntax extends normal rules with first-order variables, arithmetic, conditional literals, and three constructs this thesis uses throughout. 
+A \emph{choice rule} such as \mintinline{text}|{ b(X) } :- x(X)| leaves the truth of its head open, so its head atoms, called \emph{choice atoms} below, are exactly the ones the solver has to decide. 
+An \emph{integrity constraint} \mintinline{text}|:- Body.| is a rule with empty head and forbids every model that satisfies $Body$. 
+An \emph{aggregate atom} such as \mintinline{text}|#sum|, \mintinline{text}|#count|, \mintinline{text}|#min| or \mintinline{text}|#max| condenses a set of weighted contributions into a single comparable value \cite{clingoGuide}. Aggregates are central to this work: the heuristics under study rank decisions by expressions such as \enquote{the current sum of the elements already placed in a set}, and how and \emph{when} such an aggregate is evaluated is exactly what differentiates the systems compared here.
 
 \section{Ground-and-Solve: gringo, clasp, and Conflict-Driven Search}
 \label{sec:bg-cdcl}
 
-clingo \cite{gebser2019multishot} couples the grounder gringo with the solver clasp into a single system. The grounder instantiates the first-order program over its Herbrand universe, producing a variable-free program; gringo restricts this expansion to rule instances whose positive body is potentially derivable, so the ground program is in general much smaller than the full instantiation, but it must still be materialised in full before search starts. The solver clasp \cite{gebser2007clasp} then computes the stable models of the ground program with \emph{conflict-driven nogood learning} (CDNL). The solver maintains a \emph{partial assignment}, a consistent set of literals over the program atoms; it alternates deterministic \emph{unit propagation} with nondeterministic \emph{decisions}, and when propagation derives a contradiction it analyses the conflict, learns a nogood built around the \emph{first unique implication point}, and \emph{backjumps} to the decision level at which that nogood becomes unit. Which atom to decide on, and with which polarity, is delegated to a \emph{decision heuristic}; clasp's default is activity based, in the family introduced by \cite{moskewicz2001chaff}, and favours atoms that appear in recent conflicts.
+Clingo \cite{gebser2019multishot} couples the grounder Gringo with the solver Clasp into a single system. 
+The grounder instantiates the first-order program over its Herbrand universe, producing a variable-free program. To mitigate combinatorial explosion, Gringo restricts this expansion to rule instances whose positive body is potentially derivable; as a result, the ground program is generally much smaller than a full instantiation, though it must still be materialised in full before search starts. 
+The solver Clasp \cite{gebser2007clasp} then searches for the stable models of the ground program using \emph{conflict-driven nogood learning} (CDNL), an algorithm that learns from conflict-inducing choices.
+The solver maintains a \emph{partial assignment}, a consistent set of literals over the program atoms; it \emph{unit propagation} steps with \emph{decision} step, and when propagation derives a contradiction, it analyses the conflict, learns a nogood built around the \emph{First Unique Implication Point}(1UIP), and \emph{backjumps} to the decision level at which that nogood becomes unit. Which atom to decide on, and with which polarity, is delegated to a \emph{decision heuristic}; clasp's default is activity based, in the family introduced by \cite{moskewicz2001chaff}, and favours atoms that appear in recent conflicts.
 
-This approach entails that every atom and every rule the solver will ever see must exist before the first decision is made and also that the size of the ground program is the dominant memory cost of the pipeline; when a program fragment ranges over the product of several value domains, its instantiation grows polynomially, or worse, in the instance parameters. \emph{Grounding bottleneck} is a well-known limitation of ground-and-solve systems \cite{comploi2023domain}; Chapter~\ref{sec:results} measures one concrete manifestation of it, namely heuristic directives whose weight depends on an aggregate value.
+This approach entails that every atom and every rule clasp will ever see must exist before the first decision is made and also that the size of the ground program is the dominant memory cost of the pipeline. \emph{Grounding bottleneck} is a well-known limitation of ground-and-solve systems \cite{comploi2023domain}; Chapter~\ref{sec:results} measures one concrete manifestation of it, namely heuristic directives whose weight depends on an aggregate value.
+
+%TODO RILETTO FINO A QUI
 
 \section{Domain-Specific Heuristics in clingo}
 \label{sec:bg-heuristics}
