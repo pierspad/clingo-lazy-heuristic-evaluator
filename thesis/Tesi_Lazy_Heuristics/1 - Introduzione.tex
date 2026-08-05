@@ -6,7 +6,7 @@
 
 Answer Set Programming (ASP) is a declarative approach to combinatorial search. Instead of describing an algorithm step by step, the modeller describes the properties that an admissible solution must satisfy, and a solver enumerates the assignments that satisfy them \cite{gelfond1988stable, gebser2012asp, clingoGuide}.
 
-ASP solvers are essentially highly optimized backtracking, or more appropriately \emph{backjumping}, engines, and the current State Of The Art (SOTA) is dominated by two main categories: ground-and-solve and lazy grounding.
+ASP solvers are essentially highly optimized backtracking, or more appropriately \emph{backjumping}, engines. The current state of the art (SOTA) is dominated by two main paradigms: ground-and-solve and lazy grounding.
 
 In ground-and-solve systems, such as clingo, first-order rules are instantiated over the problem domain before search starts, including the domain-specific heuristics that direct the solver's search. 
 This approach is inherently memory-bound, with bottlenecks manifesting in two main scenarios: as problem instances scale, and whenever domain-specific heuristics depend on dynamic search state, for instance through an aggregate over the atoms that are true \emph{at that point of the search}. 
@@ -32,7 +32,7 @@ A domain-specific heuristic introduced to help the engine solve a problem quicke
 \label{fig:pipelines}
 \end{figure}
 
-The alternative is to leave the heuristic symbolic and to evaluate it while the search runs, when the partial assignment that $S$ refers to actually exists. This is the natural approach in lazy-grounding solvers and it has already been tested \cite{weinzierl2017blending,comploi2023domain,comploi2023dynamicAggregates}. This work asks whether the same effect can be obtained inside clingo without giving up its ground-and-solve pipeline and speed advantage, that is, whether a ground-and-solve engine can be equipped with lazily evaluated heuristics (Figure~\ref{fig:pipelines}) and outperform a SOTA Lazy-ground solver.
+The alternative is to leave the heuristic symbolic and to evaluate it while the search runs, when the partial assignment that $S$ refers to actually exists. This is the natural approach in lazy-grounding solvers and it has already been tested \cite{weinzierl2017blending,comploi2023domain,comploi2023dynamicAggregates}. This work asks whether the same effect can be obtained inside clingo without giving up its ground-and-solve pipeline and speed advantage, that is, whether a ground-and-solve engine can be equipped with lazily evaluated heuristics (Figure~\ref{fig:pipelines}) and outperform a \textbf{SOTA} lazy-ground solver.
 
 %TODO RILETTO FINO A QUI
 
