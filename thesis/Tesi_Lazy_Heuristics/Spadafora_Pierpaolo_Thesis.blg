@@ -1,0 +1,15 @@
+[0] Config.pm:328> INFO - This is Biber 2.21
+[0] Config.pm:331> INFO - Logfile is 'Spadafora_Pierpaolo_Thesis.blg'
+[43] biber:342> INFO - === mer ago  5, 2026, 19:30:47
+[56] Biber.pm:421> INFO - Reading 'Spadafora_Pierpaolo_Thesis.bcf'
+[102] Biber.pm:1002> INFO - Found 18 citekeys in bib section 0
+[114] Biber.pm:4487> INFO - Processing section 0
+[121] Biber.pm:4678> INFO - Looking for bibtex file 'bibliografia.bib' for section 0
+[122] bibtex.pm:1713> INFO - LaTeX decoding ...
+[134] bibtex.pm:1519> INFO - Found BibTeX data source 'bibliografia.bib'
+[290] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'normalization = NFD' with 'normalization = prenormalized'
+[290] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'variable = shifted' with 'variable = non-ignorable'
+[290] Biber.pm:4307> INFO - Sorting list 'none/global//global/global/global' of type 'entry' with template 'none' and locale 'en-US'
+[290] Biber.pm:4313> INFO - No sort tailoring available for locale 'en-US'
+[304] bbl.pm:676> INFO - Writing 'Spadafora_Pierpaolo_Thesis.bbl' with encoding 'UTF-8'
+[313] bbl.pm:779> INFO - Output to Spadafora_Pierpaolo_Thesis.bbl

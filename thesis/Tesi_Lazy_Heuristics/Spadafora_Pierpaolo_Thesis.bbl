@@ -53,48 +53,36 @@
       \field{pages}{1070\bibrangedash 1080}
       \range{pages}{11}
     \endentry
-    \entry{gebser2012asp}{book}{}{}
-      \name{author}{4}{}{%
-        {{hash=a296fbe902a96f2ceebb7398463f3e13}{%
-           family={Gebser},
-           familyi={G\bibinitperiod},
-           given={Martin},
-           giveni={M\bibinitperiod}}}%
-        {{hash=75758236531a52ffc97ef10f8b482f05}{%
-           family={Kaminski},
-           familyi={K\bibinitperiod},
-           given={Roland},
-           giveni={R\bibinitperiod}}}%
-        {{hash=3fe0253f0b3212a4109e50143a91fede}{%
-           family={Kaufmann},
-           familyi={K\bibinitperiod},
-           given={Benjamin},
-           giveni={B\bibinitperiod}}}%
+    \entry{schaub2024aspPractice}{misc}{}{}
+      \name{author}{1}{}{%
         {{hash=3c55d70c19bd5f5a654a6ad7ae64450c}{%
            family={Schaub},
            familyi={S\bibinitperiod},
            given={Torsten},
            giveni={T\bibinitperiod}}}%
       }
-      \list{publisher}{2}{%
-        {Morgan}%
-        {Claypool Publishers}%
-      }
-      \strng{namehash}{980252df49c9c725a120aee1519288fc}
-      \strng{fullhash}{6ff2ecbb0dace9a796d510f578f069a3}
-      \strng{fullhashraw}{6ff2ecbb0dace9a796d510f578f069a3}
-      \strng{bibnamehash}{980252df49c9c725a120aee1519288fc}
-      \strng{authorbibnamehash}{980252df49c9c725a120aee1519288fc}
-      \strng{authornamehash}{980252df49c9c725a120aee1519288fc}
-      \strng{authorfullhash}{6ff2ecbb0dace9a796d510f578f069a3}
-      \strng{authorfullhashraw}{6ff2ecbb0dace9a796d510f578f069a3}
-      \field{extraname}{1}
+      \strng{namehash}{3c55d70c19bd5f5a654a6ad7ae64450c}
+      \strng{fullhash}{3c55d70c19bd5f5a654a6ad7ae64450c}
+      \strng{fullhashraw}{3c55d70c19bd5f5a654a6ad7ae64450c}
+      \strng{bibnamehash}{3c55d70c19bd5f5a654a6ad7ae64450c}
+      \strng{authorbibnamehash}{3c55d70c19bd5f5a654a6ad7ae64450c}
+      \strng{authornamehash}{3c55d70c19bd5f5a654a6ad7ae64450c}
+      \strng{authorfullhash}{3c55d70c19bd5f5a654a6ad7ae64450c}
+      \strng{authorfullhashraw}{3c55d70c19bd5f5a654a6ad7ae64450c}
       \field{sortinit}{1}
       \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
+      \field{howpublished}{Potassco slide package, University of Potsdam}
+      \field{note}{Version 1.22.0, 4 October 2024}
       \field{title}{Answer Set Solving in Practice}
-      \field{year}{2012}
+      \field{year}{2024}
+      \verb{urlraw}
+      \verb https://teaching.potassco.org
+      \endverb
+      \verb{url}
+      \verb https://teaching.potassco.org
+      \endverb
     \endentry
     \entry{clingoGuide}{manual}{}{}
       \name{author}{9}{}{%
@@ -155,7 +143,7 @@
       \strng{authornamehash}{980252df49c9c725a120aee1519288fc}
       \strng{authorfullhash}{2de6f7a1c8515a366015847617c73e6d}
       \strng{authorfullhashraw}{2de6f7a1c8515a366015847617c73e6d}
-      \field{extraname}{2}
+      \field{extraname}{1}
       \field{sortinit}{1}
       \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
       \field{labelnamesource}{author}
@@ -284,7 +272,7 @@
       \strng{authornamehash}{980252df49c9c725a120aee1519288fc}
       \strng{authorfullhash}{86b6e58d40d23b3f9ca908dc39b6b336}
       \strng{authorfullhashraw}{86b6e58d40d23b3f9ca908dc39b6b336}
-      \field{extraname}{3}
+      \field{extraname}{2}
       \field{sortinit}{3}
       \field{sortinithash}{ad6fe7482ffbd7b9f99c9e8b5dccd3d7}
       \field{labelnamesource}{author}
@@ -491,7 +479,7 @@
       \strng{authornamehash}{980252df49c9c725a120aee1519288fc}
       \strng{authorfullhash}{6ff2ecbb0dace9a796d510f578f069a3}
       \strng{authorfullhashraw}{6ff2ecbb0dace9a796d510f578f069a3}
-      \field{extraname}{4}
+      \field{extraname}{3}
       \field{sortinit}{7}
       \field{sortinithash}{108d0be1b1bee9773a1173443802c0a3}
       \field{labelnamesource}{author}
@@ -538,7 +526,7 @@
       \strng{authornamehash}{980252df49c9c725a120aee1519288fc}
       \strng{authorfullhash}{d4213acdb4ab6d160ca32e54d6f57fa1}
       \strng{authorfullhashraw}{d4213acdb4ab6d160ca32e54d6f57fa1}
-      \field{extraname}{5}
+      \field{extraname}{4}
       \field{sortinit}{8}
       \field{sortinithash}{a231b008ebf0ecbe0b4d96dcc159445f}
       \field{labelnamesource}{author}
@@ -778,6 +766,77 @@
       \field{howpublished}{\url{https://github.com/arminbiere/runlim}}
       \field{note}{Accessed 2026}
       \field{title}{runlim: a tool for sampling time and memory usage of a process}
+    \endentry
+    \entry{biere2015scoring}{inproceedings}{}{}
+      \name{author}{2}{}{%
+        {{hash=22081d00e30965a89f413e528510617e}{%
+           family={Biere},
+           familyi={B\bibinitperiod},
+           given={Armin},
+           giveni={A\bibinitperiod}}}%
+        {{hash=00cba42bd010c829a401a390bbaece9c}{%
+           family={Fröhlich},
+           familyi={F\bibinitperiod},
+           given={Andreas},
+           giveni={A\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Springer}%
+      }
+      \strng{namehash}{637824bc93b3324e60f9d2a2b6e1c9de}
+      \strng{fullhash}{637824bc93b3324e60f9d2a2b6e1c9de}
+      \strng{fullhashraw}{637824bc93b3324e60f9d2a2b6e1c9de}
+      \strng{bibnamehash}{637824bc93b3324e60f9d2a2b6e1c9de}
+      \strng{authorbibnamehash}{637824bc93b3324e60f9d2a2b6e1c9de}
+      \strng{authornamehash}{637824bc93b3324e60f9d2a2b6e1c9de}
+      \strng{authorfullhash}{637824bc93b3324e60f9d2a2b6e1c9de}
+      \strng{authorfullhashraw}{637824bc93b3324e60f9d2a2b6e1c9de}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Theory and Applications of Satisfiability Testing ({SAT} 2015)}
+      \field{series}{Lecture Notes in Computer Science}
+      \field{title}{Evaluating {CDCL} Variable Scoring Schemes}
+      \field{volume}{9340}
+      \field{year}{2015}
+      \true{nocite}
+      \field{pages}{405\bibrangedash 422}
+      \range{pages}{18}
+    \endentry
+    \entry{dodaro2020wasp}{article}{}{}
+      \name{author}{2}{}{%
+        {{hash=5dab82e1316a61875fa864346d121e08}{%
+           family={Dodaro},
+           familyi={D\bibinitperiod},
+           given={Carmine},
+           giveni={C\bibinitperiod}}}%
+        {{hash=d50b8c03eb60f0c7de0df2462c97c37c}{%
+           family={Ricca},
+           familyi={R\bibinitperiod},
+           given={Francesco},
+           giveni={F\bibinitperiod}}}%
+      }
+      \strng{namehash}{fbec77ab7f3230b764da577e78e49679}
+      \strng{fullhash}{fbec77ab7f3230b764da577e78e49679}
+      \strng{fullhashraw}{fbec77ab7f3230b764da577e78e49679}
+      \strng{bibnamehash}{fbec77ab7f3230b764da577e78e49679}
+      \strng{authorbibnamehash}{fbec77ab7f3230b764da577e78e49679}
+      \strng{authornamehash}{fbec77ab7f3230b764da577e78e49679}
+      \strng{authorfullhash}{fbec77ab7f3230b764da577e78e49679}
+      \strng{authorfullhashraw}{fbec77ab7f3230b764da577e78e49679}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Theory and Practice of Logic Programming}
+      \field{number}{2}
+      \field{title}{The External Interface for Extending {WASP}}
+      \field{volume}{20}
+      \field{year}{2020}
+      \true{nocite}
+      \field{pages}{225\bibrangedash 248}
+      \range{pages}{24}
     \endentry
   \enddatalist
 \endrefsection
