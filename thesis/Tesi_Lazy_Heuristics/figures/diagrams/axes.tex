@@ -18,7 +18,7 @@
        expanded by gringo}};
 \node[ground, text width=\cw, minimum height=\ch, right=\gap of gc] (ga)
       {\textbf{\ttfamily ga}\\[3pt]{\scriptsize simulation of Alpha semantics\\
-       by unrolling aggregates and removing `not`s}};
+       by unrolling aggregates and dropping the negative literals}};
 \node[lazy, text width=\cw, minimum height=\ch, below=\gap of gc] (lc)
       {\textbf{\ttfamily lc}\\[3pt]{\scriptsize lazy evaluation version of gc}};
 \node[lazy, text width=\cw, minimum height=\ch, below=\gap of ga] (la)
@@ -35,11 +35,11 @@
 % ------------------------------- axis arrows -------------------------------
 \draw[flow] ($(hc.north west)+(0,5mm)$) -- ($(ha.north east)+(0,5mm)$)
       node[tag, midway, above=1pt]
-      {\emph{semantics} axis:\\ how a condition reads the partial assignment};
+      {\emph{semantics} axis: how a condition reads the partial assignment};
 
 \draw[flow] ($(rg.north west)+(-6mm,0)$) -- ($(rl.south west)+(-6mm,0)$)
       node[tag, midway, rotate=90, above=1pt]
-      {\emph{approach} axis\\ when the heuristic is evaluated};
+      {\emph{approach} axis: where the heuristic is evaluated};
 
 % ------------------------------- baseline ----------------------------------
 \node[neutral, text width=96mm, below=8mm of lc.south west, anchor=north west]

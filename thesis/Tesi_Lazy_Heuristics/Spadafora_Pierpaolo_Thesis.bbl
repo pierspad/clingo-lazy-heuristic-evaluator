@@ -170,6 +170,79 @@
       \verb https://potassco.org
       \endverb
     \endentry
+    \entry{calimeri2020aspcore2}{article}{}{}
+      \name{author}{10}{}{%
+        {{hash=e9fed945f8bf084a0ec7bf1512943829}{%
+           family={Calimeri},
+           familyi={C\bibinitperiod},
+           given={Francesco},
+           giveni={F\bibinitperiod}}}%
+        {{hash=e1629fff88cdb6d71cc8d8fc6f9b987a}{%
+           family={Faber},
+           familyi={F\bibinitperiod},
+           given={Wolfgang},
+           giveni={W\bibinitperiod}}}%
+        {{hash=a296fbe902a96f2ceebb7398463f3e13}{%
+           family={Gebser},
+           familyi={G\bibinitperiod},
+           given={Martin},
+           giveni={M\bibinitperiod}}}%
+        {{hash=b2685c3a4bfe04504965af8f9931bc38}{%
+           family={Ianni},
+           familyi={I\bibinitperiod},
+           given={Giovambattista},
+           giveni={G\bibinitperiod}}}%
+        {{hash=75758236531a52ffc97ef10f8b482f05}{%
+           family={Kaminski},
+           familyi={K\bibinitperiod},
+           given={Roland},
+           giveni={R\bibinitperiod}}}%
+        {{hash=a2dcd09387a6a4dcce9091a37aa63477}{%
+           family={Krennwallner},
+           familyi={K\bibinitperiod},
+           given={Thomas},
+           giveni={T\bibinitperiod}}}%
+        {{hash=77e491ad5f8cdd4f2edef120a74f5a17}{%
+           family={Leone},
+           familyi={L\bibinitperiod},
+           given={Nicola},
+           giveni={N\bibinitperiod}}}%
+        {{hash=a65827edc12272b7d5310245c1a17588}{%
+           family={Maratea},
+           familyi={M\bibinitperiod},
+           given={Marco},
+           giveni={M\bibinitperiod}}}%
+        {{hash=d50b8c03eb60f0c7de0df2462c97c37c}{%
+           family={Ricca},
+           familyi={R\bibinitperiod},
+           given={Francesco},
+           giveni={F\bibinitperiod}}}%
+        {{hash=3c55d70c19bd5f5a654a6ad7ae64450c}{%
+           family={Schaub},
+           familyi={S\bibinitperiod},
+           given={Torsten},
+           giveni={T\bibinitperiod}}}%
+      }
+      \strng{namehash}{2bddcfae0fa16febf1655a9896a8b6ed}
+      \strng{fullhash}{87ac8a48fc48eb99ed666e9982d9c226}
+      \strng{fullhashraw}{87ac8a48fc48eb99ed666e9982d9c226}
+      \strng{bibnamehash}{2bddcfae0fa16febf1655a9896a8b6ed}
+      \strng{authorbibnamehash}{2bddcfae0fa16febf1655a9896a8b6ed}
+      \strng{authornamehash}{2bddcfae0fa16febf1655a9896a8b6ed}
+      \strng{authorfullhash}{87ac8a48fc48eb99ed666e9982d9c226}
+      \strng{authorfullhashraw}{87ac8a48fc48eb99ed666e9982d9c226}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Theory and Practice of Logic Programming}
+      \field{number}{2}
+      \field{title}{{ASP-Core-2} Input Language Format}
+      \field{volume}{20}
+      \field{year}{2020}
+      \field{pages}{294\bibrangedash 309}
+      \range{pages}{16}
+    \endentry
     \entry{gebser2013heuristics}{inproceedings}{}{}
       \name{author}{6}{}{%
         {{hash=a296fbe902a96f2ceebb7398463f3e13}{%
@@ -212,8 +285,8 @@
       \strng{authorfullhash}{86b6e58d40d23b3f9ca908dc39b6b336}
       \strng{authorfullhashraw}{86b6e58d40d23b3f9ca908dc39b6b336}
       \field{extraname}{3}
-      \field{sortinit}{2}
-      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{sortinit}{3}
+      \field{sortinithash}{ad6fe7482ffbd7b9f99c9e8b5dccd3d7}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{booktitle}{Proceedings of the Twenty-Seventh AAAI Conference on Artificial Intelligence}
@@ -263,8 +336,8 @@
       \strng{authornamehash}{41fcb6fa8b9b47a41d4f776dfa9105a5}
       \strng{authorfullhash}{cabdea4ab4af3388917c70dbef37fb0e}
       \strng{authorfullhashraw}{cabdea4ab4af3388917c70dbef37fb0e}
-      \field{sortinit}{2}
-      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{sortinit}{3}
+      \field{sortinithash}{ad6fe7482ffbd7b9f99c9e8b5dccd3d7}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{journaltitle}{Theory and Practice of Logic Programming}
@@ -304,8 +377,8 @@
       \strng{authornamehash}{0f4402eeffe859cd950e6fb59afa3205}
       \strng{authorfullhash}{0f4402eeffe859cd950e6fb59afa3205}
       \strng{authorfullhashraw}{0f4402eeffe859cd950e6fb59afa3205}
-      \field{sortinit}{3}
-      \field{sortinithash}{ad6fe7482ffbd7b9f99c9e8b5dccd3d7}
+      \field{sortinit}{4}
+      \field{sortinithash}{9381316451d1b9788675a07e972a12a7}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{booktitle}{Proceedings of the 25th International Workshop on Configuration (ConfWS 2023)}
@@ -333,8 +406,8 @@
       \strng{authornamehash}{1ec32bbc9f3e08c958c6650aed4e80a8}
       \strng{authorfullhash}{1ec32bbc9f3e08c958c6650aed4e80a8}
       \strng{authorfullhashraw}{1ec32bbc9f3e08c958c6650aed4e80a8}
-      \field{sortinit}{4}
-      \field{sortinithash}{9381316451d1b9788675a07e972a12a7}
+      \field{sortinit}{5}
+      \field{sortinithash}{20e9b4b0b173788c5dace24730f47d8c}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{booktitle}{Logic Programming and Nonmonotonic Reasoning (LPNMR 2017)}
@@ -376,8 +449,8 @@
       \strng{authornamehash}{4a343a188d8ef53fedd6d4083145dcf2}
       \strng{authorfullhash}{a1d6bb2e17be019af582984e6f1322a2}
       \strng{authorfullhashraw}{a1d6bb2e17be019af582984e6f1322a2}
-      \field{sortinit}{4}
-      \field{sortinithash}{9381316451d1b9788675a07e972a12a7}
+      \field{sortinit}{5}
+      \field{sortinithash}{20e9b4b0b173788c5dace24730f47d8c}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{journaltitle}{Journal of Artificial Intelligence Research}
@@ -419,8 +492,8 @@
       \strng{authorfullhash}{6ff2ecbb0dace9a796d510f578f069a3}
       \strng{authorfullhashraw}{6ff2ecbb0dace9a796d510f578f069a3}
       \field{extraname}{4}
-      \field{sortinit}{7}
-      \field{sortinithash}{108d0be1b1bee9773a1173443802c0a3}
+      \field{sortinit}{8}
+      \field{sortinithash}{a231b008ebf0ecbe0b4d96dcc159445f}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{journaltitle}{Theory and Practice of Logic Programming}
@@ -466,8 +539,8 @@
       \strng{authorfullhash}{d4213acdb4ab6d160ca32e54d6f57fa1}
       \strng{authorfullhashraw}{d4213acdb4ab6d160ca32e54d6f57fa1}
       \field{extraname}{5}
-      \field{sortinit}{8}
-      \field{sortinithash}{a231b008ebf0ecbe0b4d96dcc159445f}
+      \field{sortinit}{9}
+      \field{sortinithash}{0a5ebc79d83c96b6579069544c73c7d4}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{booktitle}{Logic Programming and Nonmonotonic Reasoning (LPNMR 2007)}
@@ -514,8 +587,8 @@
       \strng{authornamehash}{ea9efca74d1e590df72d9f991881c825}
       \strng{authorfullhash}{38041b7bf557147ca065e35782e9bac2}
       \strng{authorfullhashraw}{38041b7bf557147ca065e35782e9bac2}
-      \field{sortinit}{9}
-      \field{sortinithash}{0a5ebc79d83c96b6579069544c73c7d4}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{booktitle}{Proceedings of the 38th Design Automation Conference}

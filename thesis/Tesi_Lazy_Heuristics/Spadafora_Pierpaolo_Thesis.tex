@@ -19,7 +19,6 @@
 \usepackage{csquotes}
 \usepackage[hidelinks]{hyperref}
 
-
 \newcommand{\ThesisGraphQuality}{SD} % change to HD for the final graph set
 \graphicspath{
     {figures/}
@@ -28,7 +27,6 @@
     {figures/bsp/\ThesisGraphQuality/no_la_co-no_ga_weak-no_la_aux/}
 }
 
-\renewcommand\thesection{\arabic{section}}
 \setlist[itemize]{leftmargin=*, itemsep=2pt, topsep=4pt}
 \setlist[enumerate]{leftmargin=*, itemsep=2pt, topsep=4pt}
 \setlength{\emergencystretch}{3em}
@@ -73,25 +71,21 @@
 
 \pagenumbering{gobble}
 \input{0.1 - frontespizio}
+
 \clearpage
 \pagenumbering{roman}
 \tableofcontents
-\newpage
-\input{0.2 - abstract}
-\newpage
+
+\include{0.2 - abstract}
+
 \pagenumbering{arabic}
-\input{1 - Introduzione}
-\newpage
-\input{2 - Metodologia}
-\newpage
-\input{3 - Implementazione}
-\newpage
-\input{4 - Risultati}
-\newpage
-\input{5 - Discussione-e-Conclusione}
-\newpage
-\printbibliography
-\newpage
-\input{6 - Ringraziamenti}
+\include{1 - Introduzione}
+\include{2 - Metodologia}
+\include{3 - Implementazione}
+\include{4 - Risultati}
+\include{5 - Discussione-e-Conclusione}
+
+\printbibliography[heading=bibintoc]
+\include{6 - Ringraziamenti}
 
 \end{document}

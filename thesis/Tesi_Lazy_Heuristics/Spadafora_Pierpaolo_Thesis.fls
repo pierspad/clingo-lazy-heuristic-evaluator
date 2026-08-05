@@ -203,6 +203,27 @@ INPUT /usr/share/texmf-dist/tex/latex/l3packages/xparse/xparse.sty
 INPUT ./Spadafora_Pierpaolo_Thesis.aux
 INPUT ./Spadafora_Pierpaolo_Thesis.aux
 INPUT Spadafora_Pierpaolo_Thesis.aux
+INPUT ./0.2 - abstract.aux
+INPUT ./0.2 - abstract.aux
+INPUT 0.2 - abstract.aux
+INPUT ./1 - Introduzione.aux
+INPUT ./1 - Introduzione.aux
+INPUT 1 - Introduzione.aux
+INPUT ./2 - Metodologia.aux
+INPUT ./2 - Metodologia.aux
+INPUT 2 - Metodologia.aux
+INPUT ./3 - Implementazione.aux
+INPUT ./3 - Implementazione.aux
+INPUT 3 - Implementazione.aux
+INPUT ./4 - Risultati.aux
+INPUT ./4 - Risultati.aux
+INPUT 4 - Risultati.aux
+INPUT ./5 - Discussione-e-Conclusione.aux
+INPUT ./5 - Discussione-e-Conclusione.aux
+INPUT 5 - Discussione-e-Conclusione.aux
+INPUT ./6 - Ringraziamenti.aux
+INPUT ./6 - Ringraziamenti.aux
+INPUT 6 - Ringraziamenti.aux
 OUTPUT Spadafora_Pierpaolo_Thesis.aux
 INPUT /usr/share/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 INPUT /usr/share/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
@@ -271,12 +292,16 @@ INPUT Spadafora_Pierpaolo_Thesis.toc
 INPUT /usr/share/texmf-dist/fonts/tfm/jknappen/ec/ectt1200.tfm
 OUTPUT Spadafora_Pierpaolo_Thesis.toc
 INPUT ./0.2 - abstract.tex
+OUTPUT 0.2 - abstract.aux
+INPUT ./0.2 - abstract.tex
+INPUT ./0.2 - abstract.tex
 INPUT ./0.2 - abstract.tex
 INPUT 0.2 - abstract.tex
 INPUT /usr/share/texmf-dist/fonts/tfm/jknappen/ec/ecrm1728.tfm
 INPUT /usr/share/texmf-dist/fonts/tfm/jknappen/ec/ecbx1728.tfm
 INPUT ./1 - Introduzione.tex
 INPUT ./1 - Introduzione.tex
+OUTPUT 1 - Introduzione.aux
 INPUT ./1 - Introduzione.tex
 INPUT ./1 - Introduzione.tex
 INPUT 1 - Introduzione.tex
@@ -314,6 +339,9 @@ INPUT /usr/share/texmf-dist/fonts/tfm/jknappen/ec/ecrm0600.tfm
 INPUT ./_minted/9DB9EAD10EB9116F05F8B3A01F42ACE3.highlight.minted
 INPUT ./_minted/9DB9EAD10EB9116F05F8B3A01F42ACE3.highlight.minted
 INPUT _minted/9DB9EAD10EB9116F05F8B3A01F42ACE3.highlight.minted
+INPUT ./_minted/6757C5633C44EDA9A5DDB3612961F753.highlight.minted
+INPUT ./_minted/6757C5633C44EDA9A5DDB3612961F753.highlight.minted
+INPUT _minted/6757C5633C44EDA9A5DDB3612961F753.highlight.minted
 INPUT ./figures/diagrams/png/pipelines.png
 INPUT ./figures/diagrams/png/pipelines.png
 INPUT ./figures/diagrams/png/pipelines.png
@@ -327,6 +355,9 @@ INPUT /usr/share/texmf-dist/fonts/tfm/public/cm/cmti7.tfm
 INPUT ./_minted/E5BBF534195CAADF067719C12EAAAE13.highlight.minted
 INPUT ./_minted/E5BBF534195CAADF067719C12EAAAE13.highlight.minted
 INPUT _minted/E5BBF534195CAADF067719C12EAAAE13.highlight.minted
+INPUT ./_minted/D5C627CB8FDF61CF170C78E76411713F.highlight.minted
+INPUT ./_minted/D5C627CB8FDF61CF170C78E76411713F.highlight.minted
+INPUT _minted/D5C627CB8FDF61CF170C78E76411713F.highlight.minted
 INPUT ./_minted/2BD74DF5C42844FBAD2DD4298CB7FBE9.highlight.minted
 INPUT ./_minted/2BD74DF5C42844FBAD2DD4298CB7FBE9.highlight.minted
 INPUT _minted/2BD74DF5C42844FBAD2DD4298CB7FBE9.highlight.minted
@@ -387,17 +418,30 @@ INPUT _minted/42F0BA6AC49203CD1FFC0AB25B1C7E16.highlight.minted
 INPUT ./_minted/8C0C6AE80ABF9EE0A07BF4E27B2C99C7.highlight.minted
 INPUT ./_minted/8C0C6AE80ABF9EE0A07BF4E27B2C99C7.highlight.minted
 INPUT _minted/8C0C6AE80ABF9EE0A07BF4E27B2C99C7.highlight.minted
+INPUT ./_minted/8C0C6AE80ABF9EE0A07BF4E27B2C99C7.highlight.minted
+INPUT ./_minted/8C0C6AE80ABF9EE0A07BF4E27B2C99C7.highlight.minted
+INPUT _minted/8C0C6AE80ABF9EE0A07BF4E27B2C99C7.highlight.minted
 INPUT ./2 - Metodologia.tex
 INPUT ./2 - Metodologia.tex
+OUTPUT 2 - Metodologia.aux
 INPUT ./2 - Metodologia.tex
 INPUT ./2 - Metodologia.tex
 INPUT 2 - Metodologia.tex
+INPUT ./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted
+INPUT ./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted
+INPUT _minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted
+INPUT ./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted
+INPUT ./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted
+INPUT _minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted
 INPUT ./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted
 INPUT ./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted
 INPUT _minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted
-INPUT ./_minted/D35E4FF5327B9D284B15386B60BAC5C3.highlight.minted
-INPUT ./_minted/D35E4FF5327B9D284B15386B60BAC5C3.highlight.minted
-INPUT _minted/D35E4FF5327B9D284B15386B60BAC5C3.highlight.minted
+INPUT ./_minted/FAEF8EDF2E48A2A65DF7943EB6B9C9F4.highlight.minted
+INPUT ./_minted/FAEF8EDF2E48A2A65DF7943EB6B9C9F4.highlight.minted
+INPUT _minted/FAEF8EDF2E48A2A65DF7943EB6B9C9F4.highlight.minted
+INPUT ./_minted/B9AAB00C6787A8AF8A433BA4FF1D93B3.highlight.minted
+INPUT ./_minted/B9AAB00C6787A8AF8A433BA4FF1D93B3.highlight.minted
+INPUT _minted/B9AAB00C6787A8AF8A433BA4FF1D93B3.highlight.minted
 INPUT ./_minted/DCA53EA453A86F0F3B5CF3166A3012B4.highlight.minted
 INPUT ./_minted/DCA53EA453A86F0F3B5CF3166A3012B4.highlight.minted
 INPUT _minted/DCA53EA453A86F0F3B5CF3166A3012B4.highlight.minted
@@ -456,6 +500,9 @@ INPUT _minted/5A70ED68CBD7232810B54C01B297DDB9.highlight.minted
 INPUT ./_minted/244C3493D7D3E2BD1596C352EC8B6183.highlight.minted
 INPUT ./_minted/244C3493D7D3E2BD1596C352EC8B6183.highlight.minted
 INPUT _minted/244C3493D7D3E2BD1596C352EC8B6183.highlight.minted
+INPUT ./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted
+INPUT ./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted
+INPUT _minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted
 INPUT ./_minted/3F1BF3DD5DB18C05411C89173036C967.highlight.minted
 INPUT ./_minted/3F1BF3DD5DB18C05411C89173036C967.highlight.minted
 INPUT _minted/3F1BF3DD5DB18C05411C89173036C967.highlight.minted
@@ -606,6 +653,18 @@ INPUT _minted/10A1C371F2BC162BEAF08FA72A9A6AA9.highlight.minted
 INPUT ./_minted/10A1C371F2BC162BEAF08FA72A9A6AA9.highlight.minted
 INPUT ./_minted/10A1C371F2BC162BEAF08FA72A9A6AA9.highlight.minted
 INPUT _minted/10A1C371F2BC162BEAF08FA72A9A6AA9.highlight.minted
+INPUT ./_minted/D45882165FABF467EDD8460D3953EC59.highlight.minted
+INPUT ./_minted/D45882165FABF467EDD8460D3953EC59.highlight.minted
+INPUT _minted/D45882165FABF467EDD8460D3953EC59.highlight.minted
+INPUT ./_minted/C3D7D422CA28C926E180CE46E2F39ED3.highlight.minted
+INPUT ./_minted/C3D7D422CA28C926E180CE46E2F39ED3.highlight.minted
+INPUT _minted/C3D7D422CA28C926E180CE46E2F39ED3.highlight.minted
+INPUT ./_minted/C3D7D422CA28C926E180CE46E2F39ED3.highlight.minted
+INPUT ./_minted/C3D7D422CA28C926E180CE46E2F39ED3.highlight.minted
+INPUT _minted/C3D7D422CA28C926E180CE46E2F39ED3.highlight.minted
+INPUT ./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted
+INPUT ./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted
+INPUT _minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted
 INPUT ./_minted/F06E7EB6451EA4CF57019032BA49B06A.highlight.minted
 INPUT ./_minted/F06E7EB6451EA4CF57019032BA49B06A.highlight.minted
 INPUT _minted/F06E7EB6451EA4CF57019032BA49B06A.highlight.minted
@@ -661,18 +720,25 @@ INPUT _minted/185A7CCFE3EF8C63A971CFF7EF128CAC.highlight.minted
 INPUT ./_minted/948C7CDD2A34D8067E883B681D2E01BC.highlight.minted
 INPUT ./_minted/948C7CDD2A34D8067E883B681D2E01BC.highlight.minted
 INPUT _minted/948C7CDD2A34D8067E883B681D2E01BC.highlight.minted
-INPUT ./_minted/86ED032BC02D81151A863C2620C14FF6.highlight.minted
-INPUT ./_minted/86ED032BC02D81151A863C2620C14FF6.highlight.minted
-INPUT _minted/86ED032BC02D81151A863C2620C14FF6.highlight.minted
 INPUT ./_minted/EA3A7780B3B47D117C347C1FB96592E4.highlight.minted
 INPUT ./_minted/EA3A7780B3B47D117C347C1FB96592E4.highlight.minted
 INPUT _minted/EA3A7780B3B47D117C347C1FB96592E4.highlight.minted
 INPUT ./_minted/2A21C20B4EAB1198D8CA3102B2A85C27.highlight.minted
 INPUT ./_minted/2A21C20B4EAB1198D8CA3102B2A85C27.highlight.minted
 INPUT _minted/2A21C20B4EAB1198D8CA3102B2A85C27.highlight.minted
+INPUT ./_minted/86ED032BC02D81151A863C2620C14FF6.highlight.minted
+INPUT ./_minted/86ED032BC02D81151A863C2620C14FF6.highlight.minted
+INPUT _minted/86ED032BC02D81151A863C2620C14FF6.highlight.minted
 INPUT ./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted
 INPUT ./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted
 INPUT _minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted
+INPUT ./_minted/BC733067B28BEEE4FA77C47E6D787669.highlight.minted
+INPUT ./_minted/BC733067B28BEEE4FA77C47E6D787669.highlight.minted
+INPUT _minted/BC733067B28BEEE4FA77C47E6D787669.highlight.minted
+INPUT ./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted
+INPUT ./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted
+INPUT _minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted
+INPUT /usr/share/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc
 INPUT ./_minted/0855E459795B54826E03A75CED49A845.highlight.minted
 INPUT ./_minted/0855E459795B54826E03A75CED49A845.highlight.minted
 INPUT _minted/0855E459795B54826E03A75CED49A845.highlight.minted
@@ -700,7 +766,6 @@ INPUT _minted/89C44729B7479D48DA1320CFE57B842C.highlight.minted
 INPUT ./_minted/83BB8BBFA2D40411B7337A2EEE543757.highlight.minted
 INPUT ./_minted/83BB8BBFA2D40411B7337A2EEE543757.highlight.minted
 INPUT _minted/83BB8BBFA2D40411B7337A2EEE543757.highlight.minted
-INPUT /usr/share/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc
 INPUT /usr/share/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm
 INPUT /usr/share/texmf-dist/fonts/tfm/public/cm/cmti10.tfm
 INPUT /usr/share/texmf-dist/fonts/tfm/public/cm/cmti7.tfm
@@ -714,6 +779,7 @@ INPUT /usr/share/texmf-dist/fonts/tfm/jknappen/ec/ecbx1000.tfm
 INPUT /usr/share/texmf-dist/fonts/tfm/jknappen/ec/ecti1000.tfm
 INPUT ./3 - Implementazione.tex
 INPUT ./3 - Implementazione.tex
+OUTPUT 3 - Implementazione.aux
 INPUT ./3 - Implementazione.tex
 INPUT ./3 - Implementazione.tex
 INPUT 3 - Implementazione.tex
@@ -723,6 +789,9 @@ INPUT _minted/F379BE75050488FD4CA7092ADE6F4A36.highlight.minted
 INPUT ./_minted/04BBE9B1260A8D3B00C1B032D10BB3FC.highlight.minted
 INPUT ./_minted/04BBE9B1260A8D3B00C1B032D10BB3FC.highlight.minted
 INPUT _minted/04BBE9B1260A8D3B00C1B032D10BB3FC.highlight.minted
+INPUT ./_minted/1C0583C32F7B66861415F300E865749B.highlight.minted
+INPUT ./_minted/1C0583C32F7B66861415F300E865749B.highlight.minted
+INPUT _minted/1C0583C32F7B66861415F300E865749B.highlight.minted
 INPUT ./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted
 INPUT ./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted
 INPUT _minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted
@@ -786,9 +855,18 @@ INPUT _minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted
 INPUT ./_minted/07AF35E2B47CFAD4B5F2DC7E28908A14.highlight.minted
 INPUT ./_minted/07AF35E2B47CFAD4B5F2DC7E28908A14.highlight.minted
 INPUT _minted/07AF35E2B47CFAD4B5F2DC7E28908A14.highlight.minted
+INPUT ./_minted/7586FB7195809AF8BD62FC6F6EC62127.highlight.minted
+INPUT ./_minted/7586FB7195809AF8BD62FC6F6EC62127.highlight.minted
+INPUT _minted/7586FB7195809AF8BD62FC6F6EC62127.highlight.minted
+INPUT ./_minted/E57A565D848CFF916C9608AC888E1EED.highlight.minted
+INPUT ./_minted/E57A565D848CFF916C9608AC888E1EED.highlight.minted
+INPUT _minted/E57A565D848CFF916C9608AC888E1EED.highlight.minted
 INPUT ./_minted/28D766099570CA483739284393578E06.highlight.minted
 INPUT ./_minted/28D766099570CA483739284393578E06.highlight.minted
 INPUT _minted/28D766099570CA483739284393578E06.highlight.minted
+INPUT ./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted
+INPUT ./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted
+INPUT _minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted
 INPUT ./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted
 INPUT ./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted
 INPUT _minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted
@@ -994,6 +1072,9 @@ INPUT _minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted
 INPUT ./_minted/CDDC1F42525D1D3D9632D7223624B8B7.highlight.minted
 INPUT ./_minted/CDDC1F42525D1D3D9632D7223624B8B7.highlight.minted
 INPUT _minted/CDDC1F42525D1D3D9632D7223624B8B7.highlight.minted
+INPUT ./_minted/1C0583C32F7B66861415F300E865749B.highlight.minted
+INPUT ./_minted/1C0583C32F7B66861415F300E865749B.highlight.minted
+INPUT _minted/1C0583C32F7B66861415F300E865749B.highlight.minted
 INPUT ./_minted/9FFB83F95A9C3F9A947C3CBF8634250D.highlight.minted
 INPUT ./_minted/9FFB83F95A9C3F9A947C3CBF8634250D.highlight.minted
 INPUT _minted/9FFB83F95A9C3F9A947C3CBF8634250D.highlight.minted
@@ -1011,6 +1092,7 @@ INPUT ./_minted/1FDDC2770EE0B5228454C0994FE0AEAE.highlight.minted
 INPUT _minted/1FDDC2770EE0B5228454C0994FE0AEAE.highlight.minted
 INPUT ./4 - Risultati.tex
 INPUT ./4 - Risultati.tex
+OUTPUT 4 - Risultati.aux
 INPUT ./4 - Risultati.tex
 INPUT ./4 - Risultati.tex
 INPUT 4 - Risultati.tex
@@ -1280,15 +1362,18 @@ INPUT _minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted
 INPUT ./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
 INPUT ./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
 INPUT _minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
-INPUT ./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted
-INPUT ./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted
-INPUT _minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted
-INPUT ./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted
-INPUT ./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted
-INPUT _minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted
+INPUT ./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted
+INPUT ./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted
+INPUT _minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted
 INPUT ./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
 INPUT ./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
 INPUT _minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
+INPUT ./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted
+INPUT ./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted
+INPUT _minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted
+INPUT ./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted
+INPUT ./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted
+INPUT _minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted
 INPUT ./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
 INPUT ./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
 INPUT _minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
@@ -1434,6 +1519,15 @@ INPUT /usr/share/texmf-dist/fonts/tfm/jknappen/ec/ecrm0800.tfm
 INPUT /usr/share/texmf-dist/fonts/tfm/jknappen/ec/ecti0800.tfm
 INPUT /usr/share/texmf-dist/fonts/tfm/jknappen/ec/ecti0600.tfm
 INPUT /usr/share/texmf-dist/fonts/tfm/jknappen/ec/ectt1440.tfm
+INPUT ./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted
+INPUT ./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted
+INPUT _minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted
+INPUT ./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
+INPUT ./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
+INPUT _minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
+INPUT ./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted
+INPUT ./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted
+INPUT _minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted
 INPUT ./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
 INPUT ./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
 INPUT _minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
@@ -1448,18 +1542,24 @@ INPUT ./figures/hpc/SD/bsp/expl_gaweak_choices.png
 INPUT ./figures/hpc/SD/bsp/expl_gaweak_choices.png
 INPUT ./figures/hpc/SD/bsp/expl_gaweak_choices.png
 INPUT ./figures/hpc/SD/bsp/expl_gaweak_choices.png
-INPUT ./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
-INPUT ./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
-INPUT _minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
 INPUT ./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted
 INPUT ./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted
 INPUT _minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted
+INPUT ./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted
+INPUT ./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted
+INPUT _minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted
+INPUT ./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
+INPUT ./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
+INPUT _minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
 INPUT ./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted
 INPUT ./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted
 INPUT _minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted
 INPUT ./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted
 INPUT ./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted
 INPUT _minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted
+INPUT ./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
+INPUT ./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
+INPUT _minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
 INPUT ./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted
 INPUT ./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted
 INPUT _minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted
@@ -1719,6 +1819,7 @@ INPUT ./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted
 INPUT _minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted
 INPUT ./5 - Discussione-e-Conclusione.tex
 INPUT ./5 - Discussione-e-Conclusione.tex
+OUTPUT 5 - Discussione-e-Conclusione.aux
 INPUT ./5 - Discussione-e-Conclusione.tex
 INPUT ./5 - Discussione-e-Conclusione.tex
 INPUT 5 - Discussione-e-Conclusione.tex
@@ -1734,18 +1835,18 @@ INPUT _minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted
 INPUT ./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
 INPUT ./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
 INPUT _minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
-INPUT ./_minted/7C6DF664132E4E9E736044E9871D70E7.highlight.minted
-INPUT ./_minted/7C6DF664132E4E9E736044E9871D70E7.highlight.minted
-INPUT _minted/7C6DF664132E4E9E736044E9871D70E7.highlight.minted
-INPUT ./_minted/CEF609D18F7E303A94A86B0D5C1B8FE7.highlight.minted
-INPUT ./_minted/CEF609D18F7E303A94A86B0D5C1B8FE7.highlight.minted
-INPUT _minted/CEF609D18F7E303A94A86B0D5C1B8FE7.highlight.minted
 INPUT ./_minted/8CAA4AFCDA5BE94D1144DB5D41F3F3A9.highlight.minted
 INPUT ./_minted/8CAA4AFCDA5BE94D1144DB5D41F3F3A9.highlight.minted
 INPUT _minted/8CAA4AFCDA5BE94D1144DB5D41F3F3A9.highlight.minted
 INPUT ./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted
 INPUT ./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted
 INPUT _minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted
+INPUT ./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted
+INPUT ./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted
+INPUT _minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted
+INPUT ./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
+INPUT ./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
+INPUT _minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted
 INPUT ./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted
 INPUT ./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted
 INPUT _minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted
@@ -1806,10 +1907,32 @@ INPUT _minted/F379BE75050488FD4CA7092ADE6F4A36.highlight.minted
 INPUT /usr/share/texmf-dist/fonts/tfm/jknappen/ec/eccc1200.tfm
 INPUT ./6 - Ringraziamenti.tex
 INPUT ./6 - Ringraziamenti.tex
+OUTPUT 6 - Ringraziamenti.aux
 INPUT ./6 - Ringraziamenti.tex
 INPUT ./6 - Ringraziamenti.tex
 INPUT 6 - Ringraziamenti.tex
 INPUT Spadafora_Pierpaolo_Thesis.aux
+INPUT ./0.2 - abstract.aux
+INPUT ./0.2 - abstract.aux
+INPUT 0.2 - abstract.aux
+INPUT ./1 - Introduzione.aux
+INPUT ./1 - Introduzione.aux
+INPUT 1 - Introduzione.aux
+INPUT ./2 - Metodologia.aux
+INPUT ./2 - Metodologia.aux
+INPUT 2 - Metodologia.aux
+INPUT ./3 - Implementazione.aux
+INPUT ./3 - Implementazione.aux
+INPUT 3 - Implementazione.aux
+INPUT ./4 - Risultati.aux
+INPUT ./4 - Risultati.aux
+INPUT 4 - Risultati.aux
+INPUT ./5 - Discussione-e-Conclusione.aux
+INPUT ./5 - Discussione-e-Conclusione.aux
+INPUT 5 - Discussione-e-Conclusione.aux
+INPUT ./6 - Ringraziamenti.aux
+INPUT ./6 - Ringraziamenti.aux
+INPUT 6 - Ringraziamenti.aux
 INPUT ./Spadafora_Pierpaolo_Thesis.out
 INPUT ./Spadafora_Pierpaolo_Thesis.out
 INPUT Spadafora_Pierpaolo_Thesis.run.xml
