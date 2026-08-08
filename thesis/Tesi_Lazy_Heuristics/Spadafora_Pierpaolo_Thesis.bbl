@@ -583,6 +583,49 @@
       \field{title}{Chaff: Engineering an Efficient SAT Solver}
       \field{year}{2001}
     \endentry
+    \entry{wielemaker2012swipl}{article}{}{}
+      \name{author}{4}{}{%
+        {{hash=e5f9595f6f307544952299b739edec19}{%
+           family={Wielemaker},
+           familyi={W\bibinitperiod},
+           given={Jan},
+           giveni={J\bibinitperiod}}}%
+        {{hash=ee8884e6f5c55d796fda4df39c101ebf}{%
+           family={Schrijvers},
+           familyi={S\bibinitperiod},
+           given={Tom},
+           giveni={T\bibinitperiod}}}%
+        {{hash=cfb3cd161eaa4054d554e7c25870071b}{%
+           family={Triska},
+           familyi={T\bibinitperiod},
+           given={Markus},
+           giveni={M\bibinitperiod}}}%
+        {{hash=9c15dc60ee74c0ca6818724456d9d37d}{%
+           family={Lager},
+           familyi={L\bibinitperiod},
+           given={Torbjörn},
+           giveni={T\bibinitperiod}}}%
+      }
+      \strng{namehash}{5c09efab0406e7b40bd4dd7544e4d270}
+      \strng{fullhash}{687fe4520f05683d8456ae5acfef5588}
+      \strng{fullhashraw}{687fe4520f05683d8456ae5acfef5588}
+      \strng{bibnamehash}{5c09efab0406e7b40bd4dd7544e4d270}
+      \strng{authorbibnamehash}{5c09efab0406e7b40bd4dd7544e4d270}
+      \strng{authornamehash}{5c09efab0406e7b40bd4dd7544e4d270}
+      \strng{authorfullhash}{687fe4520f05683d8456ae5acfef5588}
+      \strng{authorfullhashraw}{687fe4520f05683d8456ae5acfef5588}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Theory and Practice of Logic Programming}
+      \field{number}{1-2}
+      \field{title}{{SWI-Prolog}}
+      \field{volume}{12}
+      \field{year}{2012}
+      \field{pages}{67\bibrangedash 96}
+      \range{pages}{30}
+    \endentry
     \entry{aschinger2011pup}{inproceedings}{}{}
       \name{author}{7}{}{%
         {{hash=1b614ef6b9a5c45651c61d8bb49eb362}{%
@@ -700,49 +743,6 @@
       \field{pages}{17\bibrangedash 24}
       \range{pages}{8}
     \endentry
-    \entry{wielemaker2012swipl}{article}{}{}
-      \name{author}{4}{}{%
-        {{hash=e5f9595f6f307544952299b739edec19}{%
-           family={Wielemaker},
-           familyi={W\bibinitperiod},
-           given={Jan},
-           giveni={J\bibinitperiod}}}%
-        {{hash=ee8884e6f5c55d796fda4df39c101ebf}{%
-           family={Schrijvers},
-           familyi={S\bibinitperiod},
-           given={Tom},
-           giveni={T\bibinitperiod}}}%
-        {{hash=cfb3cd161eaa4054d554e7c25870071b}{%
-           family={Triska},
-           familyi={T\bibinitperiod},
-           given={Markus},
-           giveni={M\bibinitperiod}}}%
-        {{hash=9c15dc60ee74c0ca6818724456d9d37d}{%
-           family={Lager},
-           familyi={L\bibinitperiod},
-           given={Torbjörn},
-           giveni={T\bibinitperiod}}}%
-      }
-      \strng{namehash}{5c09efab0406e7b40bd4dd7544e4d270}
-      \strng{fullhash}{687fe4520f05683d8456ae5acfef5588}
-      \strng{fullhashraw}{687fe4520f05683d8456ae5acfef5588}
-      \strng{bibnamehash}{5c09efab0406e7b40bd4dd7544e4d270}
-      \strng{authorbibnamehash}{5c09efab0406e7b40bd4dd7544e4d270}
-      \strng{authornamehash}{5c09efab0406e7b40bd4dd7544e4d270}
-      \strng{authorfullhash}{687fe4520f05683d8456ae5acfef5588}
-      \strng{authorfullhashraw}{687fe4520f05683d8456ae5acfef5588}
-      \field{sortinit}{1}
-      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{journaltitle}{Theory and Practice of Logic Programming}
-      \field{number}{1-2}
-      \field{title}{{SWI-Prolog}}
-      \field{volume}{12}
-      \field{year}{2012}
-      \field{pages}{67\bibrangedash 96}
-      \range{pages}{30}
-    \endentry
     \entry{runlim}{misc}{}{}
       \name{author}{1}{}{%
         {{hash=22081d00e30965a89f413e528510617e}{%
@@ -759,8 +759,8 @@
       \strng{authornamehash}{22081d00e30965a89f413e528510617e}
       \strng{authorfullhash}{22081d00e30965a89f413e528510617e}
       \strng{authorfullhashraw}{22081d00e30965a89f413e528510617e}
-      \field{sortinit}{2}
-      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{howpublished}{\url{https://github.com/arminbiere/runlim}}

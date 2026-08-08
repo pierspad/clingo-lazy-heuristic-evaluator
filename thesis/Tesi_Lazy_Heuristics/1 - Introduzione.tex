@@ -74,41 +74,31 @@ This approach entails that every atom and every rule clasp will ever see must ex
 \section{Domain-Specific Heuristics in clingo}
 \label{sec:bg-heuristics}
 
-Clasp allow the modeller to steer its decision heuristic using domain-specific knowledge through the \mintinline{text}|#heuristic| directive \cite{gebser2013heuristics}:
+Clasp allows the modeller to steer its decision heuristic using domain-specific knowledge through the \mintinline{text}|#heuristic| directive \cite{gebser2013heuristics}:
 
 \begin{minted}{prolog}
 #heuristic A : Body. [W@P, M]
 \end{minted}
 
-For every ground instance whose $Body$ holds, the directive attaches to the atom $A$ a \emph{modification} with weight $W$, priority $P$ and modifier $M$. 
-
-%% TODO questa parte ha senso specificarla solo nella metodologia quando si parla delle correzioni che vengono applicate rispetto ad alpha
-%Two notes on this are worth stating. The priority \mintinline{text}|@P| (in clingo) does \emph{not} rank different atoms against each other: it only arbitrates between several modifications attached to the \emph{same} atom, the one with the highest priority winning, while the global order in which distinct atoms are decided is induced by the weight alone. The second concerns the \emph{truth} of the $Body$ of a ground directive which is evaluated with respect to an \emph{established} truth; a condition \mintinline{text}|not a| contributes only once $a$ has been assigned false, and an aggregate has a value only once its source atoms are determined. Both conventions are natural in a pipeline that grounds first and searches afterwards, and both differ from the lazy-grounding reading described next. That pair of differences is what generates the experimental design of Chapter~\ref{sec:methodology}.
-% fino a qui
+Here, $A$ is the target domain atom whose decision choice is steered in the direction specified by the \emph{modifier} $M$. This heuristic applies only if the body of the heuristic rule is satisfied. Among the grounded heurisics the one with a greater weight $W$ has precedence; if two heuristics have the same target atom then the one with the higher priority $P$ will be chosen for the comparison
 
 \section{Lazy Grounding, Alpha, and Heuristics over Partial Assignments}
 \label{sec:bg-alpha}
 
 Alpha \cite{weinzierl2017blending} is the reference SOTA lazy-ground solver for this work.
 
-Comploi-Taupe et al.\ extended Alpha with declaratively specified domain-specific heuristics evaluated against the \emph{partial} assignment maintained during solving \cite{comploi2023domain}. Their semantics differs from clingo's on two main points.
+Comploi-Taupe et al.\ extended Alpha with declaratively specified domain-specific heuristics evaluated against the \emph{partial} assignment maintained during solving \cite{comploi2023domain}. Its semantics differs from clingo's on two main points.
 
-%TODO forse sarebbe meglio dire "more on this in section..."
-On the evaluation of negated atoms in the body o a heuristic: in Alpha $\mathit{not}\; a$ is satisfied as soon as $a$ is \emph{not assigned true}, so a heuristic fires on undecided atoms instead of waiting for established falsity like in Clasp. 
-On the priority ranking of heuristics: in Alpha the annotations $(W,P)$ form \emph{global levels}: every applicable heuristic with priority $P$ strictly precedes every heuristic with a lower priority, regardless of weights, and the weight discriminates only inside a level. 
-
-A subsequent extension added \emph{dynamic aggregates} to Alpha's heuristic language \cite{comploi2023dynamicAggregates}: aggregate expressions in heuristic conditions are re-evaluated over the atoms currently true in the partial assignment, so their value evolves as search proceeds. This is what makes a heuristic such as \enquote{prefer the element whose insertion keeps the two sums balanced} directly expressible, and the two papers demonstrate the approach on configuration benchmarks, including the Partner Units Problem \cite{aschinger2011pup} and the House Reconfiguration Problem \cite{friedrich2011reconfiguration} used here.
-%TODO forse sarebbe meglio dire "more on this in section..."
+Specifically, Alpha evaluates negated body literals against unassigned atoms and prioritizes $P$ over weight $W$ in the tuple $(W@P)$, always preferring higher priority values. Only when two atom, even different, have the same priority are they compared by weight. A complete formalization of these semantic differences and their integration into our experimental design is provided in Chapter~\ref{sec:methodology}.
 
 \section{Extending clingo: Propagators and the Heuristic Interface}
 \label{sec:bg-propagator}
 
 Nothing in the previous sections suggests that clingo can be made to evaluate anything at search time. It does, however, expose a supported way in: \emph{propagators}, user-supplied components registered with the solver that take part in the search loop \cite{gebser2019multishot}. This thesis uses that door to add \emph{guidance} that is computed rather than materialised.
 
-%TODO RILETTO FINO A QUI
 A propagator has four callbacks. During \mintinline{text}|init|, it inspects the symbolic atoms of the ground program, maps the atoms it cares about to solver literals, and registers \emph{watches} on them. During search, \mintinline{text}|propagate| is invoked when a watched literal becomes true, \mintinline{text}|undo| when backtracking retracts it, and \mintinline{text}|check| on total assignments. The propagator is woken only by clasp when a change occurs in an atom it asked to observe.
 
-The \mintinline{text}|Clingo::Heuristic| interface inherits from Propagator and extends it with a \mintinline{text}|decide| callback, invoked at each decision step \emph{before} the solver's built-in heuristic. The Heuristic object receives the current assignment of the solver and either returns a signed literal, which becomes the next decision, or returns $0$, in which case Clasp falls back to its default heuristic %%TODO magari qui è il caso di mettere vsids?%.
+The \mintinline{text}|Clingo::Heuristic| interface inherits from Propagator and extends it with a \mintinline{text}|decide| callback, invoked at each decision step \emph{before} the solver's built-in heuristic. The Heuristic object receives the current assignment of the solver and either returns a signed literal, which becomes the next decision, or returns $0$, in which case Clasp falls back to its default activity-based heuristic (VSIDS \cite{moskewicz2001chaff}).
 This is the mechanism the rest of the thesis builds on. It keeps the declarative heuristic descriptions in memory, evaluates them incrementally against the trail, and answers each \mintinline{text}|decide| call with the best applicable target.
 
 \section{Objective and Contributions}
@@ -116,23 +106,18 @@ This is the mechanism the rest of the thesis builds on. It keeps the declarative
 
 This work asks whether the same effect of lazily evaluating heuristics can be obtained inside clingo without giving up its ground-and-solve pipeline and speed advantage, that is, whether a ground-and-solve engine can be equipped with lazily evaluated heuristics (Figure~\ref{fig:pipelines}) and if the overhead of this can still allow us to outperform a \textbf{SOTA} lazy-ground solver.
 
-%% TODO non sono sicuro che questo paragrafetto abbia senso
-The question has two halves that the literature tends to answer together and that this work keeps apart: \emph{where} a heuristic is evaluated, before search or during it, and \emph{how} it reads information that is not yet complete, under clingo's convention or under Alpha's.
-%% TODO non sono sicuro che questo paragrafetto abbia senso
-
-%% TODO sarebbe meglio scriverlo nel capitolo inale coi results?
 The thesis makes the following contributions.
 
 \begin{enumerate}
-    \item \textbf{A lazy heuristic evaluator for clingo.} A propagator, registered through the public \mintinline{text}|Clingo::Heuristic| interface and without any change to clasp, that keeps a declarative heuristic in memory as a compact description and evaluates it at every decision against the current partial assignment. Both readings of partial information, the clingo-like and the Alpha-like, are available behind one syntax and selected by a single token.
-    \item \textbf{Two evaluation backends over a common design.} A compiled C++ backend, which materialises one candidate per ground target and maintains incremental aggregate states, and an in-process SWI-Prolog backend, which evaluates the heuristic as an ordinary logic program against a mirrored image of the solver trail. The pair makes the trade-off between per-decision efficiency and expressive freedom measurable rather than assumed.
-    \item \textbf{An experimental design that separates representation from semantics.} Two orthogonal axes, approach and semantics, give four variants of every encoding plus a heuristic-free baseline, so that no measured difference has to be attributed to two causes at once.
-    \item \textbf{A flattening rule for Alpha-style annotations.} Alpha's priority levels are global, clingo's are local to a single atom. Section~\ref{sec:flattening} states the transformation that folds a level into the weight, the conditions under which it preserves the intended order, and the limit of the clingo weight field that constrains it.
-    \item \textbf{A measured account of the cost of laziness.} Both backends are instrumented per decision, so the runtime price of the approach is reported alongside its grounding saving instead of being declared.
+    \item \textbf{A lazy heuristic evaluator for clingo.} A propagator, registered through the public \mintinline{text}|Clingo::Heuristic| interface, that keeps a declarative heuristic in memory as a compact description and evaluates it at every decision against the current partial assignment. 
+    \item \textbf{Two backends} A compiled C++ backend, which materialises one candidate per ground target and maintains incremental aggregate states, and an in-process SWI-Prolog backend, which evaluates the heuristic as an ordinary logic program against a mirrored image of the solver trail.
+    \item \textbf{separating representation from semantics.} Ground-&-Solve, Lazy, Clingo semantics and Alpha semantics combined give four variants of every encoding plus a heuristic-free baseline, so that no measured difference has to be attributed to two causes at once.
+    \item \textbf{Flattening of the weights for Alpha-style heuristics.} Alpha's priority levels are global, while clingo's are local to a single atom. Section~\ref{sec:flattening} presents the transformation that folds a level into the weight, the conditions under which it preserves the intended order and the weight field limit imposed by clingo.
+    \item \textbf{Trade-off analysis of the lazy approach.} By collecting per-decision metrics in both backends, we evaluate the exact computational overhead of lazy grounding against its savings in program size.
 \end{enumerate}
 
-The evaluation covers three problem families, Balanced Sum Problem, the Partner Units Problem and the House Reconfiguration Problem, on both backends, with a correctness harness that checks that no variant changes the answer sets. The implementation is available at \url{https://github.com/pierspad/clingo-lazy-heuristic-evaluator}.
-%% TODO sarebbe meglio scriverlo nel capitolo inale coi results?
+The evaluation covers three problem families, Balanced Sum Problem, the Partner Units Problem and the House Reconfiguration Problem, on both backends, with a correctness harness that checks that no variant changes the answer sets. The implementation is available at 
+\footnote{\url{https://github.com/pierspad/clingo-lazy-heuristic-evaluator}}
 
 
 

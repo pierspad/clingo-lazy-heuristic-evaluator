@@ -27,6 +27,11 @@ Produce TRE alberi di grafici, una sottocartella per famiglia (1_BSP/2_PUP/3_HRP
     <out-base>/graphs-comparison-native-prolog/   native vs prolog (varianti lazy),
                                              con "verdetto" del migliore per area
 
+Ogni cartella di famiglia ha DUE dashboard: `_dashboard.png` (metriche definite
+per tutte le varianti) e `_dashboard_propagator.png` (metriche del propagatore,
+che esistono solo per le varianti lazy). Sono domande diverse e hanno un numero
+diverso di curve: in un'unica griglia da 26 pannelli non si leggeva niente.
+
 I grafici comparativi principali mostrano SOLO l'encoding di riferimento e le
 4 varianti oggetto della tesi (MAIN_VARIANTS): gc_noheur, gc, ga, la, lc.
 Le varianti esplorative (la_co, la_aux, ga_weak) NON vi compaiono: vivono in
@@ -57,6 +62,7 @@ import argparse
 import math
 import re
 import shutil
+import textwrap
 import xml.etree.ElementTree as ET
 from collections.abc import Callable
 from pathlib import Path
@@ -367,7 +373,10 @@ COMPARISON_AREAS = ["solving", "grounding", "clingo_total", "mem",
 
 # Dashboard per-backend: una "immagine generale" con tutto. I pannelli CORE
 # stanno in alto; gli EXTRA vengono ACCODATI sotto (righe finali), nell'ordine.
-DASHBOARD_CORE = ["grounding", "solving", "clingo_total", "mem",
+# Le due liste vengono poi RIPARTITE su due figure in base allo scope della
+# metrica (v. _render_dashboard): _dashboard.png con le metriche di tutte le
+# varianti, _dashboard_propagator.png con quelle del propagatore (solo lazy).
+DASHBOARD_CORE =["grounding", "solving", "clingo_total", "mem",
                   "choices", "conflicts", "restarts", "solving_ms_per_choice"]
 DASHBOARD_EXTRA = ["rules", "variables", "atoms", "constraints", "time",
                    "decide_calls", "ms_per_decide", "total_decide_time_ms",
@@ -496,6 +505,16 @@ def aggregate(tidy: pd.DataFrame, machine: str) -> pd.DataFrame:
     return agg
 
 
+def attempted_settings(tidy: pd.DataFrame, machine: str) -> dict[tuple[str, str], set[str]]:
+    """{(backend, family): varianti LANCIATE}, timeout inclusi. `aggregate`
+    tiene solo i run risolti: una variante che fallisce ovunque sparisce dai
+    dati e diventa indistinguibile da una mai eseguita. Serve ai grafici che
+    devono dire "provata e mai riuscita" invece di tacere (v. frontiera)."""
+    sub = tidy[tidy["machine"] == machine]
+    return {k: set(v) for k, v in
+            sub.groupby(["backend", "family"])["setting"].unique().to_dict().items()}
+
+
 # ===========================================================================
 # Formattazione assi
 # ===========================================================================
@@ -516,14 +535,49 @@ def _fmt_gb_from_mb(v, _p=None):
     return f"{g:.0f}" if abs(g) >= 100 or g.is_integer() else f"{g:.2f}".rstrip("0").rstrip(".")
 
 
+class _GBLocator(MaxNLocator):
+    """Tick su valori "tondi" in GB per un asse i cui DATI sono in MB.
+
+    MaxNLocator sceglie multipli tondi dell'unita' dei dati: sui MB da'
+    5000/10000/15000, che l'etichettatore in GB rende come 4.88/9.77/14.65.
+    Qui i tick si scelgono in GB e si riconvertono in MB solo alla fine."""
+
+    def tick_values(self, vmin, vmax):
+        return [t * 1024.0 for t in super().tick_values(vmin / 1024.0, vmax / 1024.0)]
+
+
 def _apply_fmt(ax, metric: Metric):
     if metric.fmt == "gb":
-        ax.yaxis.set_major_locator(MaxNLocator(nbins=6))
+        ax.yaxis.set_major_locator(_GBLocator(nbins=6))
         ax.yaxis.set_major_formatter(FuncFormatter(_fmt_gb_from_mb))
     elif metric.fmt == "compact":
         ax.yaxis.set_major_locator(MaxNLocator(nbins=6))
         ax.yaxis.set_major_formatter(FuncFormatter(_fmt_compact))
     ax.yaxis.offsetText.set_visible(False)
+
+
+def _wrap(text: str, width: int) -> str:
+    """Titolo a capo su piu' righe: un titolo piu' largo del pannello sconfina
+    sulla cella accanto (in dashboard) o viene tagliato dal crop di savefig.
+    Gli a capo gia' presenti nel testo sono rispettati."""
+    return "\n".join("\n".join(textwrap.wrap(line, width)) or line
+                     for line in text.split("\n"))
+
+
+def _figure_note(fig, text: str, *, width: int = 140, y: float = 0.015,
+                 reserve: bool = True) -> None:
+    """Nota in calce alla FIGURA, non all'axes.
+
+    Prima era un ax.text a y=-0.20 in coordinate axes: (a) nei grafici singoli
+    finiva SOPRA l'xlabel, (b) nelle dashboard tight_layout la conta come parte
+    dell'axes e, essendo larga il triplo del pannello, restringeva il grafico
+    fino a renderlo illeggibile (era il caso di HRP/prolog). Un testo di FIGURA
+    non appartiene a nessun axes: tight_layout non lo vede, e il crop di
+    savefig(bbox_inches="tight") lo tiene."""
+    if reserve:
+        fig.subplots_adjust(bottom=max(0.17, fig.subplotpars.bottom))
+    fig.text(0.01, y, textwrap.fill(text, width), fontsize=6.5,
+             color="#7F8C8D", ha="left", va="bottom", style="italic")
 
 
 # ===========================================================================
@@ -542,14 +596,22 @@ def _scope_note(ax, metric: Metric) -> None:
     varianti/backend non compaiono, invece di lasciare il grafico monco."""
     note = SCOPE_NOTES.get(metric.scope)
     if note:
-        ax.text(0.0, -0.20, note, transform=ax.transAxes, fontsize=6.5,
-                color="#7F8C8D", ha="left", va="top", style="italic")
+        _figure_note(ax.figure, note)
 
 
-def _plot_metric_axis(ax, agg_fb: pd.DataFrame, metric: Metric, family: str, *, variants=None) -> bool:
+def _plot_metric_axis(ax, agg_fb: pd.DataFrame, metric: Metric, family: str, *, variants=None,
+                      title: str | None = None, title_width: int = 80,
+                      legend: bool = True, note: bool = True) -> bool:
+    """Disegna UNA metrica. `title` sostituisce il titolo di default (il
+    chiamante che ha un titolo piu' informativo lo passa qui invece di
+    aggiungere una suptitle sopra: due titoli sovrapposti sullo stesso grafico
+    dicevano la stessa cosa due volte). `legend=False`/`note=False` servono
+    alle dashboard, che hanno una legenda condivisa e le note a pie' di
+    figura."""
+    heading = _wrap(metric.title if title is None else title, title_width)
     if metric.key not in agg_fb.columns:
         ax.text(0.5, 0.5, "metrica assente", transform=ax.transAxes, ha="center", va="center", color="#AAA")
-        ax.set_title(metric.title, fontsize=11, fontweight="bold")
+        ax.set_title(heading, fontsize=11, fontweight="bold")
         return False
     variants = variants if variants is not None else _variants_present(agg_fb)
     drew = False
@@ -560,15 +622,78 @@ def _plot_metric_axis(ax, agg_fb: pd.DataFrame, metric: Metric, family: str, *, 
         # Tratto libero => tratto canonico della variante (v. VARIANT_STYLES).
         ax.plot(d["size"], d[metric.key], **variant_kwargs(v))
         drew = True
-    ax.set_title(metric.title, fontsize=11, fontweight="bold")
+    ax.set_title(heading, fontsize=11, fontweight="bold")
     ax.set_xlabel(XLABEL.get(family, "size (N)"), fontsize=9)
     ax.set_ylabel(metric.ylabel, fontsize=9)
     ax.grid(True, alpha=0.3, linestyle="--")
     _apply_fmt(ax, metric)
     if drew:
-        ax.legend(fontsize=7, ncol=2)
-        _scope_note(ax, metric)
+        if legend:
+            # ncol=1: a 2 colonne la legenda e' piu' larga dell'axes appena le
+            # etichette sono lunghe ("G&S Clingo (no heur)") e finisce sui dati.
+            ax.legend(fontsize=7, ncol=1, framealpha=0.85)
+        if note:
+            _scope_note(ax, metric)
     return drew
+
+
+# ---------------------------------------------------------------------------
+# Griglia di pannelli (dashboard). UNA legenda condivisa in testa, note di
+# scope a pie' di figura: dentro una cella da 4.6" una legenda per pannello e'
+# piu' larga dell'axes, e tight_layout — che la conta come parte dell'axes —
+# comprimeva il grafico fino a lasciarne un francobollo (HRP/prolog).
+# ---------------------------------------------------------------------------
+def _dashboard_grid(agg_fb: pd.DataFrame, family: str, metrics: list[Metric], *,
+                    variants: list[str], lazy_variants: list[str],
+                    suptitle: str, path: Path, ncol: int = 4,
+                    panel: tuple[float, float] = (4.6, 3.4),
+                    row_break_after: int = 0,
+                    extra_notes: list[str] | None = None) -> int:
+    if not metrics:
+        return 0
+    panels: list[Metric | None] = list(metrics)
+    if 0 < row_break_after < len(metrics):
+        pad = (-row_break_after) % ncol
+        panels = metrics[:row_break_after] + [None] * pad + metrics[row_break_after:]
+    nrow = math.ceil(len(panels) / ncol)
+    fig_h = panel[1] * nrow
+    fig, axes = plt.subplots(nrow, ncol, figsize=(panel[0] * ncol, fig_h), squeeze=False)
+    flat = axes.flatten()
+
+    handles: dict[str, object] = {}
+    notes: list[str] = list(extra_notes or [])
+    for ax, metric in zip(flat, panels):
+        if metric is None:
+            ax.axis("off")
+            continue
+        vs = lazy_variants if metric.lazy_only else variants
+        drew = _plot_metric_axis(ax, agg_fb, metric, family, variants=vs,
+                                 title_width=34, legend=False, note=False)
+        if not drew:
+            continue
+        for h, lab in zip(*ax.get_legend_handles_labels()):
+            handles.setdefault(lab, h)
+        n = SCOPE_NOTES.get(metric.scope)
+        if n and n not in notes:
+            notes.append(n)
+    for ax in flat[len(panels):]:
+        ax.axis("off")
+
+    # margini in POLLICI convertiti in frazione: cosi' la banda di titolo e
+    # legenda resta della stessa altezza qualunque sia il numero di righe.
+    top_pad = 0.85 / fig_h
+    bot_pad = (0.20 + 0.16 * len(notes)) / fig_h if notes else 0.06 / fig_h
+    fig.tight_layout(rect=(0, bot_pad, 1, 1 - top_pad))
+    fig.suptitle(suptitle, fontsize=15, fontweight="bold", y=1 - 0.22 / fig_h)
+    if handles:
+        fig.legend(list(handles.values()), list(handles), loc="upper center",
+                   bbox_to_anchor=(0.5, 1 - 0.44 / fig_h), ncol=min(len(handles), 7),
+                   fontsize=9, frameon=True, framealpha=0.9)
+    if notes:
+        fig.text(0.008, 0.06 / fig_h, "\n".join(textwrap.fill(n, 220) for n in notes),
+                 fontsize=8, color="#7F8C8D", ha="left", va="bottom", style="italic")
+    _save(fig, path)
+    return 1
 
 
 def _save(fig, path: Path):
@@ -666,10 +791,11 @@ def render_backend_tree(agg: pd.DataFrame, backend: str, base: Path, ground: pd.
             if metric.key not in agg_fb.columns or agg_fb[metric.key].dropna().empty:
                 continue
             fig, ax = plt.subplots(figsize=(8, 5.2))
-            metric_variants = MAIN_LAZY_VARIANTS if metric.lazy_only else variants
-            if _plot_metric_axis(ax, agg_fb, metric, family, variants=metric_variants):
-                fig.suptitle(f"{family} — {metric.title} ({backend}){label_suffix}",
-                            fontsize=12, fontweight="bold")
+            # anche le metriche del propagatore rispettano le esclusioni
+            # dell'albero gemello: in "no_lc" lc non deve ricomparire qui.
+            metric_variants = (_lazy_of(variants) if metric.lazy_only else variants)
+            if _plot_metric_axis(ax, agg_fb, metric, family, variants=metric_variants,
+                                 title=f"{family} — {metric.title} ({backend}){label_suffix}"):
                 _save(fig, fam_dir / f"{metric.key}.png")
                 n += 1
             else:
@@ -686,36 +812,42 @@ def _has_data(agg_fb: pd.DataFrame, key: str) -> bool:
     return key in agg_fb.columns and not agg_fb[key].dropna().empty
 
 
+def _lazy_of(variants: list[str]) -> list[str]:
+    """Varianti lazy fra quelle ammesse nell'albero corrente."""
+    return [v for v in MAIN_LAZY_VARIANTS if v in variants]
+
+
 def _render_dashboard(agg_fb: pd.DataFrame, family: str, backend: str, fam_dir: Path,
                       *, variants: list[str] | None = None, label_suffix: str = "") -> int:
+    """DUE dashboard, non una.
+
+    Metriche a scope "all" e metriche del propagatore rispondono a domande
+    diverse e hanno un numero diverso di curve (5 varianti contro le sole 2
+    lazy). Mescolarle nella stessa griglia (a) faceva una tavola da 26 pannelli
+    illeggibile a qualunque dimensione di stampa, (b) invitava a leggere i
+    pannelli a 2 curve come se ga/gc ci fossero "andate in timeout", mentre
+    quelle metriche per le varianti non lazy non esistono proprio."""
     variants = variants if variants is not None else MAIN_VARIANTS
+    lazy = _lazy_of(variants)
     core = [k for k in DASHBOARD_CORE
             if _has_data(agg_fb, k) and METRIC_BY_KEY[k].applies_to(backend)]
     extra = [k for k in DASHBOARD_EXTRA
              if _has_data(agg_fb, k) and METRIC_BY_KEY[k].applies_to(backend)]
-    keys = core + extra
-    if not keys:
-        return 0
-    ncol = 4
-    # allinea l'inizio degli EXTRA a una nuova riga, cosi' restano "accodati sotto".
-    pad = (-len(core)) % ncol if extra else 0
-    panels = core + [None] * pad + extra
-    nrow = math.ceil(len(panels) / ncol)
-    fig, axes = plt.subplots(nrow, ncol, figsize=(4.6 * ncol, 3.4 * nrow), squeeze=False)
-    flat = axes.flatten()
-    for ax, k in zip(flat, panels):
-        if k is None:
-            ax.axis("off")
-            continue
-        metric = METRIC_BY_KEY[k]
-        _plot_metric_axis(ax, agg_fb, metric, family,
-                          variants=MAIN_LAZY_VARIANTS if metric.lazy_only else variants)
-    for ax in flat[len(panels):]:
-        ax.axis("off")
-    fig.suptitle(f"{family} Dashboard — {backend}{label_suffix}", fontsize=15, fontweight="bold")
-    fig.tight_layout(rect=[0, 0, 1, 0.97])
-    _save(fig, fam_dir / "_dashboard.png")
-    return 1
+    shared = [METRIC_BY_KEY[k] for k in core + extra if not METRIC_BY_KEY[k].lazy_only]
+    prop = [METRIC_BY_KEY[k] for k in core + extra if METRIC_BY_KEY[k].lazy_only]
+
+    n = _dashboard_grid(
+        agg_fb, family, shared, variants=variants, lazy_variants=lazy,
+        suptitle=f"{family} Dashboard — {backend}{label_suffix}",
+        path=fam_dir / "_dashboard.png",
+        # gli EXTRA ricominciano da una riga nuova, cosi' restano "accodati sotto"
+        row_break_after=len([k for k in core if not METRIC_BY_KEY[k].lazy_only]))
+    n += _dashboard_grid(
+        agg_fb, family, prop, variants=variants, lazy_variants=lazy,
+        suptitle=f"{family} Dashboard del propagatore (solo varianti lazy) "
+                 f"— {backend}{label_suffix}",
+        path=fam_dir / "_dashboard_propagator.png")
+    return n
 
 
 def _render_ratio(agg_fb: pd.DataFrame, family: str, backend: str, fam_dir: Path,
@@ -854,9 +986,9 @@ def render_exploratory_tree(agg: pd.DataFrame, backend: str, base: Path,
                 study_variants = ([v for v in study["variants"] if v.startswith("l")]
                                   if metric.lazy_only else study["variants"])
                 fig, ax = plt.subplots(figsize=(8, 5.2))
-                if _plot_metric_axis(ax, agg_fb, metric, family, variants=study_variants):
-                    fig.suptitle(f"{family} — {metric.title} ({backend})\n{study['title']}",
-                                 fontsize=11, fontweight="bold")
+                if _plot_metric_axis(ax, agg_fb, metric, family, variants=study_variants,
+                                     title=f"{family} — {metric.title} ({backend})\n"
+                                           f"{study['title']}", title_width=90):
                     _save(fig, fam_dir / f"{metric.key}.png")
                     n += 1
                 else:
@@ -873,21 +1005,12 @@ def _render_study_dashboard(agg_fb: pd.DataFrame, family: str, backend: str,
                             fam_dir: Path, study: dict, keys: list[str]) -> int:
     if not keys:
         return 0
-    ncol = min(3, len(keys))
-    nrow = math.ceil(len(keys) / ncol)
-    fig, axes = plt.subplots(nrow, ncol, figsize=(4.6 * ncol, 3.4 * nrow), squeeze=False)
-    flat = axes.flatten()
-    for ax, k in zip(flat, keys):
-        metric = METRIC_BY_KEY[k]
-        study_variants = ([v for v in study["variants"] if v.startswith("l")]
-                          if metric.lazy_only else study["variants"])
-        _plot_metric_axis(ax, agg_fb, metric, family, variants=study_variants)
-    for ax in flat[len(keys):]:
-        ax.axis("off")
-    fig.suptitle(f"{family} — {study['title']} ({backend})", fontsize=13, fontweight="bold")
-    fig.tight_layout(rect=[0, 0, 1, 0.95])
-    _save(fig, fam_dir / "_dashboard.png")
-    return 1
+    return _dashboard_grid(
+        agg_fb, family, [METRIC_BY_KEY[k] for k in keys],
+        variants=study["variants"],
+        lazy_variants=[v for v in study["variants"] if v.startswith("l")],
+        suptitle=f"{family} — {study['title']} ({backend})",
+        path=fam_dir / "_dashboard.png", ncol=min(3, len(keys)))
 
 
 # ===========================================================================
@@ -1037,9 +1160,12 @@ def _plot_comparison_metric(agg_f: pd.DataFrame, area: str, family: str, fam_dir
     ax.set_ylabel(metric.ylabel)
     ax.grid(True, alpha=0.3, linestyle="--")
     _apply_fmt(ax, metric)
+    # titolo della legenda su tre righe: in una sola era piu' largo del
+    # riquadro delle voci e allargava la legenda su meta' del grafico.
     ax.legend(fontsize=7, ncol=2,
-              title="colore+marker = variante  ·  linea piena/marker pieni = native  ·  "
-                    "tratteggio/marker vuoti = prolog",
+              title="colore + marker = variante\n"
+                    "linea piena / marker pieni = native\n"
+                    "tratteggio / marker vuoti = prolog",
               title_fontsize=6.5)
 
     # Dichiarare la coincidenza e' piu' onesto (e piu' leggibile) che sperare
@@ -1057,6 +1183,10 @@ def _plot_comparison_metric(agg_f: pd.DataFrame, area: str, family: str, fam_dir
         ax_r.set_xlabel(XLABEL.get(family, "size (N)"))
         ax_r.grid(True, alpha=0.3, linestyle="--")
         ax_r.tick_params(labelsize=8)
+        # il rapporto arriva a 5 cifre (ms_per_decide su HRP): senza formato
+        # compatto le etichette dell'asse sono piu' larghe del pannello.
+        ax_r.yaxis.set_major_locator(MaxNLocator(nbins=4))
+        ax_r.yaxis.set_major_formatter(FuncFormatter(_fmt_compact))
         ax_r.legend(fontsize=6.5, ncol=3)
     else:
         ax.set_xlabel(XLABEL.get(family, "size (N)"))
@@ -1108,13 +1238,19 @@ def _render_table(rows: list[list[str]], *, title: str, subtitle: str = "",
     col_widths = [w / total_ch for w in widths_ch]
 
     fig_w = max(7.0, total_ch * _CHAR_W)
-    fig_h = 0.95 + _ROW_H * len(rows)
+    # sottotitolo a capo sulla larghezza della tabella: su una riga sola era
+    # piu' largo della figura (il crop di savefig si allargava fino a lui,
+    # facendo sembrare la tabella minuscola) e finiva sopra il titolo.
+    sub_lines = textwrap.wrap(subtitle, max(60, int(fig_w / _CHAR_W) - 4)) if subtitle else []
+    fig_h = 0.95 + 0.16 * len(sub_lines) + _ROW_H * len(rows)
     fig, ax = plt.subplots(figsize=(fig_w, fig_h))
     ax.axis("off")
-    ax.set_title(title, fontsize=12.5, fontweight="bold", pad=16)
-    if subtitle:
-        ax.text(0.5, 1.015, subtitle, transform=ax.transAxes, fontsize=8,
-                color=TABLE_STYLE["muted"], ha="center", va="bottom")
+    # il titolo sta SOPRA il sottotitolo: il suo pad deve scavalcarlo tutto.
+    ax.set_title(title, fontsize=12.5, fontweight="bold", pad=14 + 10.5 * len(sub_lines))
+    if sub_lines:
+        ax.annotate("\n".join(sub_lines), xy=(0.5, 1.0), xycoords="axes fraction",
+                    xytext=(0, 6), textcoords="offset points", fontsize=8,
+                    color=TABLE_STYLE["muted"], ha="center", va="bottom")
 
     tbl = ax.table(cellText=rows, colWidths=col_widths, loc="center", cellLoc="center")
     tbl.auto_set_font_size(False)
@@ -1312,35 +1448,55 @@ def _alpha_slice(agg: pd.DataFrame, family: str) -> pd.DataFrame:
     return pd.concat([clingo, alpha], ignore_index=True)
 
 
-def _plot_alpha_frontier(agg_f: pd.DataFrame, family: str, path: Path) -> int:
+def _plot_alpha_frontier(agg_f: pd.DataFrame, family: str, path: Path,
+                         *, attempted: set[str] | None = None) -> int:
     """Taglia massima risolta da ciascun sistema. `agg` contiene solo i run
     RISOLTI (v. aggregate()), quindi il massimo di `size` per variante E' la
-    frontiera: nessun conteggio di timeout da rifare a mano."""
-    variants = [v for v in ALPHA_VS_CLINGO_VARIANTS + ALPHA_OWN_VARIANTS
-                if v in set(agg_f["setting"].unique())]
+    frontiera: nessun conteggio di timeout da rifare a mano.
+
+    `attempted` = le varianti effettivamente LANCIATE per questa famiglia. Chi
+    non ha risolto NIENTE (nemmeno l'istanza piu' piccola) sparisce da `agg` e
+    prima spariva anche dal grafico: su PUP mancava del tutto `alpha_noheur`,
+    dando l'impressione che non fosse stato provato invece che il contrario —
+    ha fallito ovunque. Ora resta con una barra a 0, che e' il suo risultato."""
+    known = ALPHA_VS_CLINGO_VARIANTS + ALPHA_OWN_VARIANTS
+    solved = set(agg_f["setting"].unique())
+    variants = [v for v in known if v in solved or (attempted and v in attempted)]
     if not variants:
         return 0
-    reach = [float(agg_f[agg_f["setting"] == v]["size"].max()) for v in variants]
+    reach = [float(agg_f[agg_f["setting"] == v]["size"].max()) if v in solved else 0.0
+             for v in variants]
 
     fig, ax = plt.subplots(figsize=(8.8, 4.6))
     ax.bar(range(len(variants)), reach,
            color=[style_of(v).color for v in variants], edgecolor="white", linewidth=0.8)
     for i, val in enumerate(reach):
-        ax.text(i, val, f"{val:g}", ha="center", va="bottom", fontsize=8)
+        ax.text(i, val, f"{val:g}" if val else "0 — nessuna",
+                ha="center", va="bottom", fontsize=8,
+                color="#2C3E50" if val else "#C0392B",
+                fontweight="normal" if val else "bold")
     ax.set_xticks(range(len(variants)))
-    ax.set_xticklabels([label_of(v) for v in variants], rotation=25, ha="right", fontsize=7.5)
-    ax.set_ylabel(XLABEL.get(family, "size (N)"), fontsize=9)
+    ax.set_xticklabels([_wrap(label_of(v), 18) for v in variants],
+                       rotation=25, ha="right", fontsize=7.5)
+    ax.set_ylabel(f"max {XLABEL.get(family, 'size (N)')} risolta", fontsize=9)
     ax.set_title(f"{family} — largest instance solved", fontsize=11, fontweight="bold")
     ax.grid(True, axis="y", alpha=0.3, linestyle="--")
-    ax.text(0.0, -0.42, "frontiera entro i limiti della campagna (timeout/memout del runscript); "
-                        "e' un limite inferiore, non la taglia massima risolvibile in assoluto",
-            transform=ax.transAxes, fontsize=6.5, color="#7F8C8D", ha="left", va="top", style="italic")
+    note = ("frontiera entro i limiti della campagna (timeout/memout del runscript); "
+            "e' un limite inferiore, non la taglia massima risolvibile in assoluto")
+    if any(r == 0 for r in reach):
+        note += ".  0 = lanciata ma nessuna istanza risolta, nemmeno la piu' piccola"
+    fig.subplots_adjust(bottom=0.30)
+    _figure_note(fig, note, reserve=False, y=0.02)
     _save(fig, path)
     return 1
 
 
-def render_alpha_tree(agg: pd.DataFrame, base: Path) -> int:
-    """graphs-comparison-clingo-alpha/<FAM>/{time,mem,frontier,_alpha_internals,_dashboard}.png"""
+def render_alpha_tree(agg: pd.DataFrame, base: Path,
+                      attempted: dict[tuple[str, str], set[str]] | None = None) -> int:
+    """graphs-comparison-clingo-alpha/<FAM>/{time,mem,frontier,_alpha_internals,_dashboard}.png
+
+    `attempted` (v. attempted_settings) serve solo alla frontiera, per
+    distinguere "non lanciata" da "lanciata e mai riuscita"."""
     if ALPHA_BACKEND not in set(agg["backend"].unique()):
         print(f"  [info] nessun run '{ALPHA_BACKEND}' in results.xml: "
               f"albero {ALPHA_TREE_NAME} saltato")
@@ -1363,17 +1519,21 @@ def render_alpha_tree(agg: pd.DataFrame, base: Path) -> int:
         for key in ALPHA_SHARED_METRICS:
             metric = METRIC_BY_KEY[key]
             fig, ax = plt.subplots(figsize=(8.8, 5.4))
-            drew = _plot_metric_axis(ax, agg_f, metric, family, variants=present)
+            drew = _plot_metric_axis(ax, agg_f, metric, family, variants=present,
+                                     title=f"{family} — {metric.title}: clingo vs Alpha")
             if key == "mem" and drew:
-                ax.text(0.0, -0.20, _ALPHA_MEM_NOTE, transform=ax.transAxes, fontsize=6.5,
-                        color="#7F8C8D", ha="left", va="top", style="italic")
+                _figure_note(fig, _ALPHA_MEM_NOTE)
             if drew:
                 _save(fig, fam_dir / f"{key}.png")
                 n += 1
             else:
                 plt.close(fig)
 
-        n += _plot_alpha_frontier(agg_f, family, fam_dir / "frontier.png")
+        fam_attempted = set()
+        for be in (ALPHA_BACKEND, "native"):
+            fam_attempted |= set((attempted or {}).get((be, family), set()))
+        n += _plot_alpha_frontier(agg_f, family, fam_dir / "frontier.png",
+                                  attempted=fam_attempted)
 
         # Pannello dei contatori interni di Alpha: solo righe alpha-qh, e
         # dichiarato in titolo come non confrontabile con clingo.
@@ -1381,37 +1541,23 @@ def render_alpha_tree(agg: pd.DataFrame, base: Path) -> int:
         internals = [m for m in ALPHA_INTERNAL_METRICS
                      if m.key in alpha_only.columns and not alpha_only[m.key].dropna().empty]
         if internals:
-            cols = 2
-            rows = (len(internals) + cols - 1) // cols
-            fig, axes = plt.subplots(rows, cols, figsize=(6.0 * cols, 4.0 * rows), squeeze=False)
-            for ax, metric in zip(axes.flat, internals):
-                _plot_metric_axis(ax, alpha_only, metric, family,
-                                  variants=[v for v in ALPHA_OWN_VARIANTS
-                                            if v in set(alpha_only["setting"].unique())])
-            for ax in axes.flat[len(internals):]:
-                ax.axis("off")
-            fig.suptitle(f"{family} — contatori interni di Alpha "
+            alpha_present = [v for v in ALPHA_OWN_VARIANTS
+                             if v in set(alpha_only["setting"].unique())]
+            n += _dashboard_grid(
+                alpha_only, family, internals,
+                variants=alpha_present, lazy_variants=alpha_present,
+                suptitle=f"{family} — contatori interni di Alpha "
                          f"(NON confrontabili con i contatori di clasp)",
-                         fontsize=12, fontweight="bold")
-            fig.tight_layout(rect=(0, 0, 1, 0.96))
-            _save(fig, fam_dir / "_alpha_internals.png")
-            n += 1
+                path=fam_dir / "_alpha_internals.png", ncol=2, panel=(6.0, 4.0))
 
         # Dashboard: le due metriche condivise affiancate, che e' la figura
         # che serve in tesi.
-        fig, axes = plt.subplots(1, len(ALPHA_SHARED_METRICS),
-                                 figsize=(6.0 * len(ALPHA_SHARED_METRICS), 4.6), squeeze=False)
-        any_drew = False
-        for ax, key in zip(axes.flat, ALPHA_SHARED_METRICS):
-            any_drew |= _plot_metric_axis(ax, agg_f, METRIC_BY_KEY[key], family, variants=present)
-        fig.suptitle(f"{family} — clingo vs Alpha (misure runlim, le sole confrontabili)",
-                     fontsize=12, fontweight="bold")
-        fig.tight_layout(rect=(0, 0, 1, 0.94))
-        if any_drew:
-            _save(fig, fam_dir / "_dashboard.png")
-            n += 1
-        else:
-            plt.close(fig)
+        n += _dashboard_grid(
+            agg_f, family, [METRIC_BY_KEY[k] for k in ALPHA_SHARED_METRICS],
+            variants=present, lazy_variants=present,
+            suptitle=f"{family} — clingo vs Alpha (misure runlim, le sole confrontabili)",
+            path=fam_dir / "_dashboard.png", ncol=len(ALPHA_SHARED_METRICS),
+            panel=(6.4, 4.9), extra_notes=[_ALPHA_MEM_NOTE])
     return n
 
 
@@ -1420,8 +1566,15 @@ def render_alpha_tree(agg: pd.DataFrame, base: Path) -> int:
 # gia' generata altrove — albero main, ogni albero di esclusione varianti
 # (VARIANT_EXCLUSIONS: no_ga, no_ga_lc, ...), ogni zoom di scala (SIZE_ZOOMS:
 # zoom100, ...), ogni studio esplorativo (EXPLORATORY_STUDIES), per ciascun
-# backend/famiglia — piu' i 3 verdetti native-vs-prolog, in un'unica cartella
-# piatta: <base>/riassunto_grafici/.
+# backend/famiglia — piu' i 3 verdetti native-vs-prolog, sotto
+# <base>/riassunto_grafici/.
+#
+# NON piatta: una cartella sola con ~50 PNG e' illeggibile quanto la vecchia
+# dashboard da 26 pannelli — per confrontare due grafici della stessa
+# macroarea bisognava riconoscerli dal prefisso del nome. Qui c'e' una
+# sottocartella per MACROAREA (v. SUMMARY_AREAS) e, dentro le due macroaree
+# grosse (un albero per backend), una per famiglia: cosi' ogni foglia ha una
+# manciata di file e i nomi non devono piu' portare tutto il contesto.
 # Sono COPIE (shutil.copy2): gli originali restano al loro posto nei
 # rispettivi alberi graphs-*/. L'elenco e' costruito DINAMICAMENTE da
 # BACKENDS/VARIANT_EXCLUSIONS/SIZE_ZOOMS/EXPLORATORY_STUDIES invece che da una
@@ -1433,53 +1586,107 @@ def render_alpha_tree(agg: pd.DataFrame, base: Path) -> int:
 # ===========================================================================
 SUMMARY_DIR_NAME = "riassunto_grafici"
 
+# Una sottocartella per macroarea. Numerate nell'ordine in cui si guardano
+# (prima le varianti dentro un backend, poi i due confronti, poi gli studi
+# esplorativi), cosi' l'ordinamento alfabetico del file manager coincide con
+# l'ordine di lettura.
+SUMMARY_AREAS = {
+    "native": "1_varianti-native",
+    "prolog": "2_varianti-prolog",
+    "comparison": "3_native-vs-prolog",
+    "alpha": "4_clingo-vs-alpha",
+    "exploratory": "5_esplorativi",
+}
 
-def _summary_sources(base: Path) -> list[tuple[str, Path]]:
-    sources: list[tuple[str, Path]] = []
+SUMMARY_AREA_DESC = {
+    "1_varianti-native": "le 5 varianti a confronto sul backend native, una cartella per famiglia",
+    "2_varianti-prolog": "le 5 varianti a confronto sul backend prolog, una cartella per famiglia",
+    "3_native-vs-prolog": "verdetto per area: quale backend vince, all'ultima taglia comune",
+    "4_clingo-vs-alpha": "confronto col sistema esterno Alpha (solo BSP e PUP, v. ALPHA_FAMILIES)",
+    "5_esplorativi": "studi mirati sulle varianti fuori dal confronto principale",
+}
+
+
+def _summary_sources(base: Path) -> list[tuple[Path, Path]]:
+    """[(percorso RELATIVO dentro riassunto_grafici, sorgente da copiare)]."""
+    sources: list[tuple[Path, Path]] = []
     for backend in BACKENDS:
+        area = Path(SUMMARY_AREAS.get(backend, backend))
+        expl_area = Path(SUMMARY_AREAS["exploratory"])
+        tree = base / f"graphs-{backend}"
         for family in ("BSP", "PUP", "HRP"):
             fam_dir = FAM_SUBDIR[family]
-            tag = f"{backend}_{family.lower()}"
-            sources.append((f"{tag}_main",
-                            base / f"graphs-{backend}" / fam_dir / "_dashboard.png"))
+            dst = area / fam_dir
+            sources.append((dst / "main.png", tree / fam_dir / "_dashboard.png"))
+            # la dashboard del propagatore solo per l'albero main: nelle
+            # esclusioni/zoom cambia poco (toccano soprattutto le varianti non
+            # lazy) e riempirebbe il riassunto di copie quasi identiche.
+            sources.append((dst / "main_propagatore.png",
+                            tree / fam_dir / "_dashboard_propagator.png"))
             for excl in VARIANT_EXCLUSIONS:
-                sources.append((f"{tag}_{excl['slug']}",
-                                base / f"graphs-{backend}" / f"{fam_dir}-{excl['slug']}" / "_dashboard.png"))
+                sources.append((dst / f"{excl['slug']}.png",
+                                tree / f"{fam_dir}-{excl['slug']}" / "_dashboard.png"))
             for zoom in SIZE_ZOOMS:
-                sources.append((f"{tag}_{zoom['slug']}",
-                                base / f"graphs-{backend}" / f"{fam_dir}-{zoom['slug']}" / "_dashboard.png"))
+                sources.append((dst / f"{zoom['slug']}.png",
+                                tree / f"{fam_dir}-{zoom['slug']}" / "_dashboard.png"))
             for study in EXPLORATORY_STUDIES:
-                sources.append((f"{tag}_expl_{study['slug']}",
-                                base / f"graphs-{backend}" / "exploratory" / study["slug"]
-                                / fam_dir / "_dashboard.png"))
+                # gli esplorativi sono raggruppati per STUDIO, non per backend:
+                # la domanda e' "cosa dice questo studio", e le due risposte
+                # (native/prolog) vanno lette una accanto all'altra.
+                sources.append((expl_area / study["slug"] / f"{fam_dir}_{backend}.png",
+                                tree / "exploratory" / study["slug"] / fam_dir / "_dashboard.png"))
+    cmp_area = Path(SUMMARY_AREAS["comparison"])
     for family in ("BSP", "PUP", "HRP"):
-        sources.append((f"verdict_{family.lower()}",
+        sources.append((cmp_area / f"{FAM_SUBDIR[family]}_verdetto.png",
                         base / "graphs-comparison-native-prolog" / FAM_SUBDIR[family] / "_verdict.png"))
+    alpha_area = Path(SUMMARY_AREAS["alpha"])
     for family in ALPHA_FAMILIES:
-        sources.append((f"alpha_{family.lower()}",
-                        base / ALPHA_TREE_NAME / FAM_SUBDIR[family] / "_dashboard.png"))
-        sources.append((f"alpha_{family.lower()}_frontier",
-                        base / ALPHA_TREE_NAME / FAM_SUBDIR[family] / "frontier.png"))
+        fam_dir = FAM_SUBDIR[family]
+        sources.append((alpha_area / f"{fam_dir}_dashboard.png",
+                        base / ALPHA_TREE_NAME / fam_dir / "_dashboard.png"))
+        sources.append((alpha_area / f"{fam_dir}_frontiera.png",
+                        base / ALPHA_TREE_NAME / fam_dir / "frontier.png"))
     return sources
 
 
+def _write_summary_index(out_dir: Path, copied: list[Path]) -> None:
+    """_INDICE.txt: cosa c'e' in ogni sottocartella e da quale albero viene.
+    Una cartella di sole PNG non puo' spiegarsi da sola, e il riassunto e' il
+    primo posto dove si va a guardare a distanza di mesi."""
+    lines = ["RIASSUNTO GRAFICI — copie delle dashboard/verdetti dai vari alberi graphs-*/",
+             "Generato da tools/plot_results.py (job 'summary'). Gli originali restano",
+             "nei rispettivi alberi: qui c'e' solo il colpo d'occhio, organizzato per",
+             "macroarea.", ""]
+    for area, desc in SUMMARY_AREA_DESC.items():
+        files = sorted(p for p in copied if p.parts[0] == area)
+        if not files:
+            continue
+        lines.append(f"{area}/  — {desc}")
+        for p in files:
+            lines.append(f"    {p.relative_to(area)}")
+        lines.append("")
+    (out_dir / "_INDICE.txt").write_text("\n".join(lines), encoding="utf-8")
+
+
 def render_summary(base: Path) -> int:
-    """Raccoglie in <base>/riassunto_grafici/ tutte le dashboard/verdetti gia'
-    prodotti da render_backend_tree/render_exploratory_tree/render_comparison_tree
-    (v. _summary_sources), rinominati in modo descrittivo
-    (<backend>_<famiglia>_<variante|expl_<studio>>.png / verdict_<famiglia>.png)."""
+    """Raccoglie in <base>/riassunto_grafici/<macroarea>/ tutte le dashboard e i
+    verdetti gia' prodotti da render_backend_tree/render_exploratory_tree/
+    render_comparison_tree/render_alpha_tree (v. _summary_sources)."""
     out_dir = base / SUMMARY_DIR_NAME
     # overwrite pulito: se uno slug/studio e' stato rinominato o rimosso da
     # VARIANT_EXCLUSIONS/EXPLORATORY_STUDIES, la copia vecchia non deve restare.
     shutil.rmtree(out_dir, ignore_errors=True)
     out_dir.mkdir(parents=True, exist_ok=True)
-    n = 0
-    for dst_name, src in _summary_sources(base):
+    copied: list[Path] = []
+    for rel, src in _summary_sources(base):
         if not src.exists():
             continue
-        shutil.copy2(src, out_dir / f"{dst_name}.png")
-        n += 1
-    return n
+        dst = out_dir / rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
+        copied.append(rel)
+    _write_summary_index(out_dir, copied)
+    return len(copied)
 
 
 # ===========================================================================
@@ -1498,7 +1705,8 @@ def render_summary(base: Path) -> int:
 # 6_plot_graphs_hpc.sh (funziona anche in locale, v. quel file) sugli stessi
 # results.xml/xlsx gia' scaricati.
 # ===========================================================================
-def build_jobs(agg: pd.DataFrame, base: Path, ground: pd.DataFrame | None
+def build_jobs(agg: pd.DataFrame, base: Path, ground: pd.DataFrame | None,
+               attempted: dict[tuple[str, str], set[str]] | None = None
                ) -> tuple[dict[str, Callable[[], int]], list[str], dict]:
     jobs: dict[str, Callable[[], int]] = {}
     order: list[str] = []
@@ -1551,7 +1759,7 @@ def build_jobs(agg: pd.DataFrame, base: Path, ground: pd.DataFrame | None
     # results.xml non ci sono run di Alpha si limita a stampare un [info].
     # Cosi' una campagna vecchia (senza il system alpha-qh) continua a
     # funzionare senza modifiche.
-    jobs["alpha-comparison"] = lambda: render_alpha_tree(agg, base)
+    jobs["alpha-comparison"] = lambda: render_alpha_tree(agg, base, attempted)
     order.append("alpha-comparison")
 
     jobs["summary"] = lambda: render_summary(base)
@@ -1602,7 +1810,7 @@ def main() -> None:
     base = args.out_base
     base.mkdir(parents=True, exist_ok=True)
 
-    jobs, order, state = build_jobs(agg, base, ground)
+    jobs, order, state = build_jobs(agg, base, ground, attempted_settings(tidy, args.machine))
 
     if args.list_jobs:
         for jid in order:

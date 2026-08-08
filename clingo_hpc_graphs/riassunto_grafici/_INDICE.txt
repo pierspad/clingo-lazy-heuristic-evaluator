@@ -1,0 +1,61 @@
+RIASSUNTO GRAFICI — copie delle dashboard/verdetti dai vari alberi graphs-*/
+Generato da tools/plot_results.py (job 'summary'). Gli originali restano
+nei rispettivi alberi: qui c'e' solo il colpo d'occhio, organizzato per
+macroarea.
+
+1_varianti-native/  — le 5 varianti a confronto sul backend native, una cartella per famiglia
+    1_BSP/main.png
+    1_BSP/main_propagatore.png
+    1_BSP/no_ga.png
+    1_BSP/no_ga_lc.png
+    1_BSP/no_lc.png
+    1_BSP/zoom100.png
+    2_PUP/main.png
+    2_PUP/main_propagatore.png
+    2_PUP/no_ga.png
+    2_PUP/no_ga_lc.png
+    2_PUP/no_lc.png
+    2_PUP/zoom100.png
+    3_HRP/main.png
+    3_HRP/main_propagatore.png
+    3_HRP/no_ga.png
+    3_HRP/no_ga_lc.png
+    3_HRP/no_lc.png
+
+2_varianti-prolog/  — le 5 varianti a confronto sul backend prolog, una cartella per famiglia
+    1_BSP/main.png
+    1_BSP/main_propagatore.png
+    1_BSP/no_ga.png
+    1_BSP/no_ga_lc.png
+    1_BSP/no_lc.png
+    1_BSP/zoom100.png
+    2_PUP/main.png
+    2_PUP/main_propagatore.png
+    2_PUP/no_ga.png
+    2_PUP/no_ga_lc.png
+    2_PUP/no_lc.png
+    2_PUP/zoom100.png
+    3_HRP/main.png
+    3_HRP/main_propagatore.png
+    3_HRP/no_ga.png
+    3_HRP/no_ga_lc.png
+    3_HRP/no_lc.png
+
+3_native-vs-prolog/  — verdetto per area: quale backend vince, all'ultima taglia comune
+    1_BSP_verdetto.png
+    2_PUP_verdetto.png
+    3_HRP_verdetto.png
+
+4_clingo-vs-alpha/  — confronto col sistema esterno Alpha (solo BSP e PUP, v. ALPHA_FAMILIES)
+    1_BSP_dashboard.png
+    1_BSP_frontiera.png
+    2_PUP_dashboard.png
+    2_PUP_frontiera.png
+
+5_esplorativi/  — studi mirati sulle varianti fuori dal confronto principale
+    ga_vs_ga_weak/1_BSP_native.png
+    ga_vs_ga_weak/1_BSP_prolog.png
+    la_aux_vs_gs/1_BSP_native.png
+    la_aux_vs_gs/1_BSP_prolog.png
+    la_co_grounding/1_BSP_native.png
+    la_co_grounding/1_BSP_prolog.png
