@@ -128,15 +128,33 @@ Oltre ai due backend del propagatore, `runscript.xml` definisce un terzo `<syste
 Comploi-Taupe, usato per rispondere a "quanto costa ottenere la semantica ad aggregati dinamici
 dentro clingo, rispetto a prenderla da chi la implementa nativamente".
 
-| Setting | Descrizione |
-|---|---|
-| `alpha` | encoding dei paper con `-uqh` (euristiche valutate come query Prolog) |
-| `alpha_noheur` | stesso encoding con `-ids`: baseline interno, sta ad `alpha` come `gc_noheur` sta a `gc` |
+| Setting | Famiglie | Descrizione |
+|---|---|---|
+| `alpha` | bsp pup hrp | encoding dei paper con `-uqh` (euristiche valutate come query Prolog) |
+| `alpha_noheur` | bsp pup hrp | stesso encoding con `-ids`: baseline interno, sta ad `alpha` come `gc_noheur` sta a `gc` |
+| `alpha_dom` | hrp | stesso encoding con lo store domain-specific **nativo** di Alpha, senza `-uqh` |
 
-Solo su BSP e PUP: per HRP non esiste un encoding Alpha degli autori, e tradurne uno a mano
-introdurrebbe una variabile in più proprio nel confronto fra sistemi. Gli encoding in
-`encodings-alpha/` sono copiati **tali e quali** da `ALPHA/Evaluation/`, e le istanze PUP della
-suite sono byte-identiche a quelle del supplementary material.
+Gli encoding in `encodings-alpha/` sono copiati **tali e quali** dai materiali degli autori
+(BSP e PUP da `ALPHA/Evaluation/`, HRP da `ALPHA/src/test/resources/DomainHeuristics/House/`),
+e le istanze PUP della suite sono byte-identiche a quelle del supplementary material.
+
+**HRP misura una cosa diversa da BSP e PUP.** L'encoding HRP degli autori viene dal paper sulle
+euristiche domain-specific, dove HRP è la Case Study 1, e le sue euristiche **non usano
+aggregati dinamici**: le condizioni sono letterali normali e pesi aritmetici, l'aggregato sta
+una regola più in là (in `fullCabinet`/`fullRoom`). È la stessa forma dell'euristica di
+`HRP_la.lp`/`HRP_lc.lp` di questa suite, che di quel file sono un port riga per riga. Quindi
+HRP confronta ground-and-solve contro lazy grounding **a parità di euristica**, isolando
+l'effetto che su BSP e PUP è mescolato a quello degli aggregati dinamici: è il controllo che
+separa i due, non un terzo doppione. Per la stessa ragione HRP ha il setting extra `alpha_dom`:
+senza niente di dinamico da valutare, `-uqh` paga il ponte verso Prolog per nulla, e il
+confronto `alpha` vs `alpha_dom` sulla stessa famiglia misura esattamente quanto costa.
+
+Le istanze `house-*.asp` della suite scrivono i fatti legacy con nomi piatti
+(`legacyCabinet/1`, `legacyRoomCabinet/2`, …), l'encoding degli autori li legge come termini
+dentro `legacyConfig/1`. Il raccordo è `encodings-alpha/3_HRP/HRP_alpha_bridge.asp`: sette
+regole di **sola rinomina**, nessun vincolo e nessuna scelta, passato come secondo `<encoding>`
+con lo stesso `encoding_tag`. Non si tocca né l'encoding degli autori né le istanze — che sono
+condivise con gli encoding clingo, e aggiungerci fatti ne cambierebbe il grounding.
 
 Due avvertenze che valgono ogni volta che si leggono quei numeri:
 

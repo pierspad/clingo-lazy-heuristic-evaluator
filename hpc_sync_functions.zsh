@@ -72,17 +72,46 @@ function copyhpcgraphs() {
 
   # Ciclo esplicito: file singoli con nome locale esplicito, cartelle (dst
   # vuota) dentro local_target mantenendo la struttura.
-  local item src dst
+  #
+  # CARTELLE = mirror (--delete-after). Questa macro deve rispondere a "dammi
+  # i grafici di ADESSO", e senza cancellazione non lo faceva: una PNG che il
+  # run corrente non produce piu' sopravviveva in locale, indistinguibile
+  # dalle nuove. Non e' teorico — e' successo con
+  # graphs-comparison-native-prolog/*/prolog_ms_per_decide.png, rimasta in
+  # giro dopo che _comparison_areas() aveva smesso di generarla, e con le PNG
+  # a nome piatto di riassunto_grafici/ dopo il passaggio alle sottocartelle
+  # per macroarea. rsync cancella SOLO dentro l'albero che sta trasferendo
+  # (clingo_hpc_graphs/graphs-native/, ecc.): il resto di clingo_hpc_graphs/
+  # — results.xml, gli xlsx, i csv — non viene toccato.
+  #
+  # --delete-AFTER, non --delete-during: le cancellazioni avvengono solo a
+  # trasferimento riuscito. Se la connessione cade a meta' ti restano i
+  # grafici vecchi (stato coerente) invece di un albero mezzo svuotato.
+  #
+  # FILE singoli = nessuna cancellazione: results-short-hpc.xlsx assente
+  # durante una full run e' la norma, e la copia della campagna precedente
+  # deve restare dov'e'.
+  local item src dst rsync_err
+  local -a del_opt
+  rsync_err="$(mktemp)"
   for item in $targets; do
     src="${item%%|*}"
     dst="${item##*|}"
-    rsync -avz --progress \
-      --include='*/' \
-      "${remote_host}:${base_remote_dir}/${src}" \
-      "${local_target}${dst}" 2>/dev/null || echo "⚠️  Nota: ${src} non presente sull'HPC (normale se non hai lanciato questo scenario, es. short-hpc durante una full run, o se ground_counts.csv non è mai stato generato a mano con tools/ground_counts.py — NON implica che la run in corso sia incompleta)."
+    del_opt=()
+    [ -z "$dst" ] && del_opt=(--delete-after)
+    if ! rsync -avz --progress "${del_opt[@]}" \
+           "${remote_host}:${base_remote_dir}/${src}" \
+           "${local_target}${dst}" 2>"$rsync_err"; then
+      echo "⚠️  Nota: ${src} non scaricata (normale se non hai lanciato questo scenario, es. short-hpc durante una full run, o se ground_counts.csv non è mai stato generato a mano con tools/ground_counts.py — NON implica che la run in corso sia incompleta)."
+      # stderr mostrato invece che buttato: ora che le cartelle vengono
+      # specchiate, "non c'era sull'HPC" e "la connessione e' caduta" hanno
+      # conseguenze diverse e devi poterle distinguere.
+      [ -s "$rsync_err" ] && sed 's/^/     rsync: /' "$rsync_err"
+    fi
   done
+  rm -f "$rsync_err"
 
-  echo "✅ Sincronizzazione completata. Controlla la cartella: $local_target"
+  echo "✅ Sincronizzazione completata (cartelle in mirror: quello che vedi è quello che c'è sull'HPC). Controlla la cartella: $local_target"
 }
 
 function pushhpccode() {

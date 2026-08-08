@@ -156,6 +156,11 @@ VARIANT_STYLES: dict[str, VariantStyle] = {
     # quale e' l'altro solver.
     "alpha":        VariantStyle("Alpha Qh (dyn. aggr.)", "#D81B60", "*", "solid"),
     "alpha_noheur": VariantStyle("Alpha (no heur)",       "#795548", "x", (0, (1, 1.8))),
+    # HRP-only: euristiche domain-specific senza -uqh (v. il setting
+    # alpha_dom nel runscript). Colore imparentato con "alpha" perche' e' lo
+    # stesso sistema con lo stesso encoding, marker diverso perche' e' un
+    # altro modo di valutare l'euristica.
+    "alpha_dom":    VariantStyle("Alpha (domspec nativo)", "#F06292", "p", (0, (5, 1.5))),
 }
 
 # Fallback per una variante non ancora censita (non deve succedere: meglio
@@ -1410,15 +1415,23 @@ def _verdict(agg_f: pd.DataFrame, family: str, fam_dir: Path,
 # ===========================================================================
 ALPHA_TREE_NAME = "graphs-comparison-clingo-alpha"
 
-# Famiglie del confronto: HRP e' fuori perche' non esiste un encoding Alpha
-# degli autori (v. runscripts/runscript.xml).
-ALPHA_FAMILIES = ("BSP", "PUP")
+# Famiglie del confronto. HRP c'e' dal 2026-08-08: l'encoding Alpha degli
+# autori esiste (paper sulle euristiche domain-specific, Case Study 1) ed e'
+# in encodings-alpha/3_HRP/. Attenzione a cosa misura pero': su HRP le
+# euristiche NON usano aggregati dinamici, quindi la famiglia confronta
+# ground-and-solve contro lazy grounding a parita' di euristica — e' il
+# controllo che separa i due effetti che BSP e PUP misurano insieme.
+# V. il commento sopra <system name="alpha-qh"> in runscripts/runscript.xml.
+ALPHA_FAMILIES = ("BSP", "PUP", "HRP")
 
 # Le varianti clingo messe a confronto. Si usa il solo backend native: il
 # confronto native-vs-prolog e' gia' un'altra macroarea, e ficcare qui anche
 # il gemello prolog raddoppierebbe le curve senza rispondere alla domanda.
 ALPHA_VS_CLINGO_VARIANTS = ["gc_noheur", "gc", "ga", "la", "lc"]
-ALPHA_OWN_VARIANTS = ["alpha", "alpha_noheur"]
+# alpha_dom esiste solo su HRP: dove manca sparisce da solo dai grafici, e
+# nella frontiera compare come "lanciata e mai riuscita" solo se il
+# runscript l'ha davvero eseguita (v. attempted_settings).
+ALPHA_OWN_VARIANTS = ["alpha", "alpha_dom", "alpha_noheur"]
 
 # Metriche misurate da runlim: le uniche confrontabili fra i due sistemi.
 ALPHA_SHARED_METRICS = ["time", "mem"]
@@ -1507,6 +1520,16 @@ def render_alpha_tree(agg: pd.DataFrame, base: Path,
     for family in ALPHA_FAMILIES:
         agg_f = _alpha_slice(agg, family)
         if agg_f.empty:
+            continue
+        # Senza righe Alpha per QUESTA famiglia non c'e' un confronto da fare:
+        # _alpha_slice restituirebbe le sole varianti clingo e uscirebbe un
+        # "clingo vs Alpha" con dentro solo clingo. Capita ogni volta che si
+        # aggiunge una famiglia ad ALPHA_FAMILIES prima di aver rilanciato la
+        # campagna (HRP, 2026-08-08): meglio saltarla dicendolo.
+        if agg_f[agg_f["backend"] == ALPHA_BACKEND].empty:
+            print(f"  [info] {family}: nessun run '{ALPHA_BACKEND}' in questi risultati "
+                  f"(campagna precedente all'aggiunta della famiglia?): "
+                  f"cartella {FAM_SUBDIR[family]} saltata in {ALPHA_TREE_NAME}")
             continue
         fam_dir = tree / FAM_SUBDIR[family]
         # overwrite pulito, come negli altri alberi: una variante rimossa dal

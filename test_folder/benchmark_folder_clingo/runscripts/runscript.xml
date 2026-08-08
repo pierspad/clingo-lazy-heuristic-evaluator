@@ -144,9 +144,26 @@
        (v. le intestazioni in ../encodings-alpha/). Non sono traduzioni
        fatte qui - e' questo che rende il confronto difendibile.
 
-       FAMIGLIE: solo bsp e pup. Per HRP non esiste un encoding Alpha degli
-       autori: usarne uno tradotto a mano introdurrebbe una variabile in
-       piu' proprio nel confronto fra sistemi.
+       FAMIGLIE: tutte e tre. bsp e pup vengono dal supplementary material
+       di "Dynamic Aggregates ..."; hrp dall'encoding degli autori per
+       "Domain-specific Heuristics in ASP" (HRP e' la Case Study 1 della sua
+       Sezione 6.2), che sta in ALPHA/src/test/resources/DomainHeuristics/
+       House/ ed e' copiato verbatim in ../encodings-alpha/3_HRP/.
+
+       ATTENZIONE a cosa misura HRP: le sue euristiche NON usano aggregati
+       dinamici (condizioni con letterali normali e pesi aritmetici;
+       l'aggregato sta una regola piu' in la', in fullCabinet/fullRoom).
+       Quindi HRP confronta ground-and-solve contro lazy grounding a parita'
+       di euristica, isolando l'effetto che su BSP/PUP e' mescolato a quello
+       degli aggregati dinamici. E' un controllo, non un terzo doppione.
+       Per la stessa ragione qui -uqh non ha niente di dinamico da valutare:
+       v. il setting alpha_dom qui sotto.
+
+       Le istanze house-*.asp scrivono i fatti legacy con nomi piatti,
+       l'encoding degli autori li legge dentro legacyConfig/1: il raccordo
+       (sette regole di sola rinomina) e' in HRP_alpha_bridge.asp, elencato
+       come secondo <encoding> con lo stesso encoding_tag - benchmark-tool
+       accoda tutti gli encoding di un tag sulla riga di comando.
 
        Riga di comando (v. programs/alpha-qh-1.0): Alpha vuole "-i file",
        non argomenti posizionali, e le istanze BSP vanno tradotte da
@@ -156,15 +173,42 @@
        predicati assenti in un dato encoding sono innocui.
   -->
   <system name="alpha-qh" version="1.0" measures="alpha" config="seq-generic"
-          cmdline="-st -n 1 -f sum_B -f sum_C -f b -f c -f assigned_zone_unit -f assigned_sensor_unit">
+          cmdline="-st -n 1 -f sum_B -f sum_C -f b -f c -f assigned_zone_unit -f assigned_sensor_unit -f cabinetTOthing -f roomTOcabinet">
 
-    <setting name="alpha" tag="bsp pup" cmdline="-uqh">
+    <setting name="alpha" tag="bsp pup hrp" cmdline="-uqh">
       <encoding file="../encodings-alpha/1_BSP/BSP_alpha.asp" encoding_tag="bsp"/>
       <encoding file="../encodings-alpha/2_PUP/PUP_alpha.asp" encoding_tag="pup"/>
+      <encoding file="../encodings-alpha/3_HRP/HRP_alpha.asp" encoding_tag="hrp"/>
+      <encoding file="../encodings-alpha/3_HRP/HRP_alpha_bridge.asp" encoding_tag="hrp"/>
     </setting>
-    <setting name="alpha_noheur" tag="bsp pup" cmdline="-ids">
+    <setting name="alpha_noheur" tag="bsp pup hrp" cmdline="-ids">
       <encoding file="../encodings-alpha/1_BSP/BSP_alpha.asp" encoding_tag="bsp"/>
       <encoding file="../encodings-alpha/2_PUP/PUP_alpha.asp" encoding_tag="pup"/>
+      <encoding file="../encodings-alpha/3_HRP/HRP_alpha.asp" encoding_tag="hrp"/>
+      <encoding file="../encodings-alpha/3_HRP/HRP_alpha_bridge.asp" encoding_tag="hrp"/>
+    </setting>
+
+    <!-- HRP-only: euristiche domain-specific valutate dallo store NATIVO di
+         Alpha, senza -uqh. Due ragioni.
+         (1) E' la modalita' usata dal paper da cui l'encoding HRP proviene:
+             senza aggregati dinamici nelle condizioni, -uqh paga il ponte
+             verso Prolog per valutare condizioni che Alpha sa gia' valutare
+             da solo. Il confronto alpha vs alpha_dom sulla STESSA famiglia
+             misura quindi esattamente quanto costa -uqh a vuoto — un numero
+             che al momento in tesi non c'e'.
+         (2) E' anche la rete di sicurezza della campagna: e' l'unica delle
+             tre modalita' verificabile senza SWI-Prolog+JPL, ed e' stata
+             provata in locale su house-2/4/10/20 (SAT, bt=0, soluzioni
+             ricontrollate contro i vincoli HRP con clingo). Se -uqh su HRP
+             desse problemi sul cluster, i dati HRP-vs-Alpha esistono lo
+             stesso e non serve rilanciare la campagna.
+         NON e' estesa a bsp/pup: li' senza -uqh l'aggregato nell'euristica
+         verrebbe valutato staticamente e l'euristica non bilancerebbe nulla
+         (v. l'intestazione di programs/alpha-qh-1.0), cioe' sarebbe un run
+         con una semantica sbagliata, non una variante. -->
+    <setting name="alpha_dom" tag="hrp" cmdline="">
+      <encoding file="../encodings-alpha/3_HRP/HRP_alpha.asp" encoding_tag="hrp"/>
+      <encoding file="../encodings-alpha/3_HRP/HRP_alpha_bridge.asp" encoding_tag="hrp"/>
     </setting>
   </system>
 
@@ -211,10 +255,12 @@
        SLURM (visto nello smoke test: "Found 1 jobs to dispatch").
        Dentro ciascun project, con walltime="2h" (vedi <distjob> sopra)
        "btool gen" produce PIU' *.dist per project, non piu' uno solo:
-       BSP (320 run: 20 istanze [10..200 step 10, esteso 2026-07-22] x 8
-       setting x 2 backend) -> ~27 *.dist stimati, PUP e HRP (100 run
-       ciascuno: 10 istanze x 5 setting x 2 backend) -> ~9 *.dist ciascuno,
-       per un totale di ~45 job SLURM invece di 3-4 (stima approssimata:
+       BSP (360 run: 20 istanze [10..200 step 10, esteso 2026-07-22] x
+       [8 setting x 2 backend clingo + 2 setting alpha]) -> ~30 *.dist
+       stimati, PUP (120 run: 10 istanze x [5 setting x 2 backend + 2
+       alpha]) e HRP (130 run: 10 istanze x [5 setting x 2 backend + 3
+       alpha, il terzo e' alpha_dom]) -> ~10 *.dist ciascuno,
+       per un totale di ~50 job SLURM invece di 3-4 (stima approssimata:
        "run per *.dist" dipende dal tempo reale di ciascun run, che ora va
        fino a 600s/run col timeout alzato, non solo dal conteggio). Restano
        comunque ben sotto il MaxSubmit=100 per utente su kr/kr-big (sacctmgr,
