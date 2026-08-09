@@ -759,8 +759,8 @@
       \strng{authornamehash}{22081d00e30965a89f413e528510617e}
       \strng{authorfullhash}{22081d00e30965a89f413e528510617e}
       \strng{authorfullhashraw}{22081d00e30965a89f413e528510617e}
-      \field{sortinit}{1}
-      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{howpublished}{\url{https://github.com/arminbiere/runlim}}

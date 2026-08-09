@@ -213,14 +213,14 @@ MAIN_LAZY_VARIANTS = ["la", "lc"]
 EXPLORATORY_STUDIES = [
     {
         "slug": "la_co_grounding",
-        "title": "la_co: linearizzazione del vincolo e impatto sul grounding",
+        "title": "la_co: constraint linearisation and its impact on grounding",
         "variants": ["gc", "la", "lc", "la_co"],
         "metrics": ["grounding", "solving", "clingo_total", "mem", "rules", "constraints"],
         "ground": True,
     },
     {
         "slug": "la_aux_vs_gs",
-        "title": "la_aux: comportamento ground-and-solve forzato (atteso ~gc)",
+        "title": "la_aux: forced ground-and-solve behaviour (expected ~gc)",
         "variants": ["gc_noheur", "gc", "ga", "la", "la_aux"],
         "metrics": ["grounding", "solving", "clingo_total", "mem",
                     "choices", "conflicts", "decide_calls"],
@@ -228,7 +228,7 @@ EXPLORATORY_STUDIES = [
     },
     {
         "slug": "ga_vs_ga_weak",
-        "title": "ga vs ga_weak: unrolling degli aggregati vs sola negazione-as-alpha",
+        "title": "ga vs ga_weak: aggregate unrolling vs alpha-negation alone",
         "variants": ["gc_noheur", "gc", "ga", "ga_weak", "la", "lc"],
         "metrics": ["grounding", "solving", "clingo_total", "mem",
                     "choices", "conflicts", "rules", "constraints"],
@@ -267,10 +267,10 @@ SCOPE_NATIVE = "native"
 # con una sola curva sembra un grafico rotto invece che una misura che per
 # l'altro backend non e' definita.
 SCOPE_NOTES = {
-    SCOPE_PROPAGATOR: "metrica del propagatore: definita solo per le varianti lazy (l*)",
-    SCOPE_PROLOG: "metrica specifica del backend prolog: nel backend native non esiste "
-                  "una fase di query verso un motore esterno",
-    SCOPE_NATIVE: "metrica specifica del backend native (propagatore C++ in-memory)",
+    SCOPE_PROPAGATOR: "propagator metric: defined only for the lazy variants (l*)",
+    SCOPE_PROLOG: "prolog-backend metric: the native backend has no query phase "
+                  "towards an external engine",
+    SCOPE_NATIVE: "native-backend metric (in-memory C++ propagator)",
 }
 
 
@@ -615,7 +615,7 @@ def _plot_metric_axis(ax, agg_fb: pd.DataFrame, metric: Metric, family: str, *, 
     figura."""
     heading = _wrap(metric.title if title is None else title, title_width)
     if metric.key not in agg_fb.columns:
-        ax.text(0.5, 0.5, "metrica assente", transform=ax.transAxes, ha="center", va="center", color="#AAA")
+        ax.text(0.5, 0.5, "metric not available", transform=ax.transAxes, ha="center", va="center", color="#AAA")
         ax.set_title(heading, fontsize=11, fontweight="bold")
         return False
     variants = variants if variants is not None else _variants_present(agg_fb)
@@ -849,7 +849,7 @@ def _render_dashboard(agg_fb: pd.DataFrame, family: str, backend: str, fam_dir: 
         row_break_after=len([k for k in core if not METRIC_BY_KEY[k].lazy_only]))
     n += _dashboard_grid(
         agg_fb, family, prop, variants=variants, lazy_variants=lazy,
-        suptitle=f"{family} Dashboard del propagatore (solo varianti lazy) "
+        suptitle=f"{family} Propagator dashboard (lazy variants only) "
                  f"— {backend}{label_suffix}",
         path=fam_dir / "_dashboard_propagator.png")
     return n
@@ -1168,9 +1168,9 @@ def _plot_comparison_metric(agg_f: pd.DataFrame, area: str, family: str, fam_dir
     # titolo della legenda su tre righe: in una sola era piu' largo del
     # riquadro delle voci e allargava la legenda su meta' del grafico.
     ax.legend(fontsize=7, ncol=2,
-              title="colore + marker = variante\n"
-                    "linea piena / marker pieni = native\n"
-                    "tratteggio / marker vuoti = prolog",
+              title="colour + marker = variant\n"
+                    "solid line / filled markers = native\n"
+                    "dashed line / hollow markers = prolog",
               title_fontsize=6.5)
 
     # Dichiarare la coincidenza e' piu' onesto (e piu' leggibile) che sperare
@@ -1292,7 +1292,7 @@ def _render_table(rows: list[list[str]], *, title: str, subtitle: str = "",
 
 _WIN_COLOR = {"native": TABLE_STYLE["win_native"],
               "prolog": TABLE_STYLE["win_prolog"],
-              "pari": TABLE_STYLE["win_tie"]}
+              "tie": TABLE_STYLE["win_tie"]}
 
 
 def _fmt_delta(rel: float) -> str:
@@ -1331,7 +1331,7 @@ def _verdict(agg_f: pd.DataFrame, family: str, fam_dir: Path,
         if area not in agg_f.columns:
             continue
         metric = METRIC_BY_KEY[area]
-        wins = {"native": 0, "prolog": 0, "pari": 0}
+        wins = {"native": 0, "prolog": 0, "tie": 0}
         compared = 0
         for v in MAIN_LAZY_VARIANTS:
             nat = agg_f[(agg_f["backend"] == "native") & (agg_f["setting"] == v)].dropna(subset=[area])
@@ -1346,20 +1346,20 @@ def _verdict(agg_f: pd.DataFrame, family: str, fam_dir: Path,
             # coincidenza le due misure sono lo stesso numero col rumore.
             rel = abs(pv - nv) / max(abs(nv), 1e-12)
             if rel < COINCIDENCE_TOL:
-                winner = "pari"
+                winner = "tie"
             else:
                 winner = "native" if nv < pv else "prolog"
             wins[winner] += 1
             compared += 1
             rows.append((metric, area, v, s, nv, pv, rel if pv >= nv else -rel, winner))
         if compared == 0:
-            summary[area] = "n/d"                     # nessuna taglia comune
+            summary[area] = "n/a"                     # nessuna taglia comune
         elif wins["native"] == wins["prolog"]:
-            summary[area] = "pari"
+            summary[area] = "tie"
         else:
             summary[area] = "native" if wins["native"] > wins["prolog"] else "prolog"
 
-    header = ["Area", "Variante", "N", "native", "prolog", "Δ prolog/native", "Migliore"]
+    header = ["Area", "Variant", "N", "native", "prolog", "Δ prolog/native", "Better"]
     table_rows: list[list[str]] = [header]
     cell_colors: dict[tuple[int, int], str] = {}
     section_rows: set[int] = set()
@@ -1371,17 +1371,17 @@ def _verdict(agg_f: pd.DataFrame, family: str, fam_dir: Path,
         cell_colors[(len(table_rows) - 1, 6)] = _WIN_COLOR.get(winner, "#FFFFFF")
 
     section_rows.add(len(table_rows))
-    table_rows.append(["RIASSUNTO PER AREA", "", "", "", "", "", ""])
+    table_rows.append(["SUMMARY BY AREA", "", "", "", "", "", ""])
     for area, w in summary.items():
         table_rows.append([METRIC_BY_KEY[area].title, "", "", "", "", "", w])
         cell_colors[(len(table_rows) - 1, 6)] = _WIN_COLOR.get(w, "#FFFFFF")
 
     _render_table(
         table_rows,
-        title=f"{family} — Verdetto native vs prolog",
-        subtitle="confronto all'ultima taglia N risolta da ENTRAMBI i backend  ·  "
-                 f"vince il valore piu' basso  ·  scarto < {COINCIDENCE_TOL:.0%} = pari  ·  "
-                 "n/d = nessuna taglia in comune (o metrica non misurata su un backend)",
+        title=f"{family} — Verdict: native vs prolog",
+        subtitle="compared at the largest size N solved by BOTH backends  ·  "
+                 f"the lower value wins  ·  gap < {COINCIDENCE_TOL:.0%} = tie  ·  "
+                 "n/a = no common size (or metric not measured on one backend)",
         align=["left", "left", "right", "right", "right", "right", "center"],
         section_rows=section_rows,
         cell_colors=cell_colors,
@@ -1445,9 +1445,9 @@ ALPHA_INTERNAL_METRICS = [
     Metric("alpha_ms_per_query", "Alpha: Cost per Heuristic Query", "ms / query"),
 ]
 
-_ALPHA_MEM_NOTE = ("Alpha gira su JVM: il picco di RSS include l'heap riservato "
-                   "(-Xmx), non solo quello usato. Misura il costo di ESEGUIRE il "
-                   "sistema, non lo stato tenuto dall'algoritmo.")
+_ALPHA_MEM_NOTE = ("Alpha runs on the JVM: its peak RSS includes the heap RESERVED "
+                   "via -Xmx, not only the heap in use. It measures the cost of RUNNING "
+                   "the system, not the state the algorithm holds.")
 
 
 def _alpha_slice(agg: pd.DataFrame, family: str) -> pd.DataFrame:
@@ -1484,20 +1484,20 @@ def _plot_alpha_frontier(agg_f: pd.DataFrame, family: str, path: Path,
     ax.bar(range(len(variants)), reach,
            color=[style_of(v).color for v in variants], edgecolor="white", linewidth=0.8)
     for i, val in enumerate(reach):
-        ax.text(i, val, f"{val:g}" if val else "0 — nessuna",
+        ax.text(i, val, f"{val:g}" if val else "0 — none",
                 ha="center", va="bottom", fontsize=8,
                 color="#2C3E50" if val else "#C0392B",
                 fontweight="normal" if val else "bold")
     ax.set_xticks(range(len(variants)))
     ax.set_xticklabels([_wrap(label_of(v), 18) for v in variants],
                        rotation=25, ha="right", fontsize=7.5)
-    ax.set_ylabel(f"max {XLABEL.get(family, 'size (N)')} risolta", fontsize=9)
+    ax.set_ylabel(f"largest {XLABEL.get(family, 'size (N)')} solved", fontsize=9)
     ax.set_title(f"{family} — largest instance solved", fontsize=11, fontweight="bold")
     ax.grid(True, axis="y", alpha=0.3, linestyle="--")
-    note = ("frontiera entro i limiti della campagna (timeout/memout del runscript); "
-            "e' un limite inferiore, non la taglia massima risolvibile in assoluto")
+    note = ("frontier within the campaign limits (runscript timeout/memout); "
+            "it is a lower bound, not the largest instance solvable in absolute terms")
     if any(r == 0 for r in reach):
-        note += ".  0 = lanciata ma nessuna istanza risolta, nemmeno la piu' piccola"
+        note += ".  0 = launched but no instance solved, not even the smallest"
     fig.subplots_adjust(bottom=0.30)
     _figure_note(fig, note, reserve=False, y=0.02)
     _save(fig, path)
@@ -1569,8 +1569,8 @@ def render_alpha_tree(agg: pd.DataFrame, base: Path,
             n += _dashboard_grid(
                 alpha_only, family, internals,
                 variants=alpha_present, lazy_variants=alpha_present,
-                suptitle=f"{family} — contatori interni di Alpha "
-                         f"(NON confrontabili con i contatori di clasp)",
+                suptitle=f"{family} — Alpha internal counters "
+                         f"(NOT comparable with clasp's counters)",
                 path=fam_dir / "_alpha_internals.png", ncol=2, panel=(6.0, 4.0))
 
         # Dashboard: le due metriche condivise affiancate, che e' la figura
@@ -1578,7 +1578,7 @@ def render_alpha_tree(agg: pd.DataFrame, base: Path,
         n += _dashboard_grid(
             agg_f, family, [METRIC_BY_KEY[k] for k in ALPHA_SHARED_METRICS],
             variants=present, lazy_variants=present,
-            suptitle=f"{family} — clingo vs Alpha (misure runlim, le sole confrontabili)",
+            suptitle=f"{family} — clingo vs Alpha (runlim measures, the only comparable ones)",
             path=fam_dir / "_dashboard.png", ncol=len(ALPHA_SHARED_METRICS),
             panel=(6.4, 4.9), extra_notes=[_ALPHA_MEM_NOTE])
     return n

@@ -59,6 +59,10 @@ FIGURES=(
   "graphs-native/exploratory/ga_vs_ga_weak/1_BSP|solving.png|bsp|expl_gaweak_solving.png"
   "graphs-native/exploratory/ga_vs_ga_weak/1_BSP|choices.png|bsp|expl_gaweak_choices.png"
   "graphs-native/exploratory/ga_vs_ga_weak/1_BSP|conflicts.png|bsp|expl_gaweak_conflicts.png"
+  # confronto col riferimento esterno Alpha (solo BSP e PUP)
+  "graphs-comparison-clingo-alpha/1_BSP|_dashboard.png|alpha|bsp_dashboard.png"
+  "graphs-comparison-clingo-alpha/2_PUP|_dashboard.png|alpha|pup_dashboard.png"
+  "graphs-comparison-clingo-alpha/1_BSP|_alpha_internals.png|alpha|bsp_internals.png"
   # HRP
   "graphs-native/3_HRP|solving.png|hrp|native_solving.png"
   "graphs-native/3_HRP|choices.png|hrp|native_choices.png"
