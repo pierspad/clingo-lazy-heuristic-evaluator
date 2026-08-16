@@ -11,7 +11,7 @@ The parser in \path{libclingo/src/heuristic_parser.cc} turns each \mintinline{te
 
 During \mintinline{text}|init|, the propagator inspects the ground symbolic atoms and builds an index mapping each predicate and its argument tuple to the corresponding solver literal. It then materializes candidates: for each ground target atom and matching combination of positive body atoms, it creates a \mintinline{text}|RuntimeHeuristicCandidate| storing the target literal, target tuple, body literals, bound variable values, and instantiated aggregate keys.
 
-In BSP with $n = 100$, this yields only $100$ candidates (one per \mintinline{text}|b(X)|), whereas the standard ground encoding produces $1{,}010{,}200$ directives because it must enumerate all values of $S$. Thus, candidate materialization scales with the number of ground targets rather than the aggregate domain size, since aggregates are evaluated dynamically at runtime instead of being grounded exhaustively. 
+In BSP with $n = 100$, this yields only $100$ candidates for \mintinline{text}|b(X)| (and $200$ across both partitions), whereas the standard ground encoding generates $1{,}010{,}200$ directives ($2 \times 100 \times 5051$) to cover all possible discrete sums $S \in \{0, \ldots, 5050\}$. Thus, candidate materialization in the lazy propagator scales linearly with the number of ground targets rather than with the domain size of dynamic aggregates, eliminating exhaustive grounding. 
 
 Finally, the propagator registers watches exclusively for literals that affect heuristic state: both polarities of target and negative body literals, positive body literals, and aggregate source literals.
 
@@ -22,7 +22,7 @@ Sums and counts (\mintinline{text}|SumState|, \mintinline{text}|CountState|) sto
 
 Each source atom updates the \mintinline{text}|AggregateState| matched by its \mintinline{text}|RuntimeAggregateKey|: values are added in \mintinline{text}|propagate| and removed in \mintinline{text}|undo|.
 
-Under \textit{clingo} semantics, an aggregate is evaluated only after all its source literals are assigned, gating dependent candidates until then. Under \textit{Alpha} semantics, candidates directly read whatever partial aggregate value is currently available on the trail.
+Under \textit{Clingo} semantics, an aggregate is evaluated only after all its source literals are assigned, gating dependent candidates until then. Under \textit{Alpha} semantics, candidates directly read whatever partial aggregate value is currently available on the trail.
 
 \subsection{Evaluation and Decision}
 \label{sec:decision}
@@ -39,7 +39,7 @@ static bool negative_literal_is_satisfied(HeuristicSemantics s, Clingo::TruthVal
 
 Once a candidate satisfies its body conditions, the propagator computes its numerical weight by evaluating its weight AST over the current aggregate values and term arguments. The resulting effect is then applied to the target literal's \mintinline{text}|TargetHeuristicState|.
 
-The native propagator adopts four of clingo's domain heuristic modifiers:
+The native propagator adopts four of Clingo's domain heuristic modifiers:
 \begin{itemize}
     \item \mintinline{text}|level|: sets the branching priority to $w$ (higher values are chosen first), leaving the truth polarity unchanged;
     \item \mintinline{text}|sign|: sets the preferred truth polarity based on the arithmetic sign of $w$ (positive for \textit{true}, negative for \textit{false}), using $|w|$ to resolve precedence among conflicting sign directives;
@@ -47,7 +47,7 @@ The native propagator adopts four of clingo's domain heuristic modifiers:
     \item \mintinline{text}|false|: sets the branching priority to $w$ and forces the truth polarity to \textit{false}.
 \end{itemize}
 
-clingo's remaining modifiers, \mintinline{text}|init| and \mintinline{text}|factor|, are not supported because custom propagators cannot manipulate clasp's internal VSIDS score tables.
+Clingo's remaining modifiers, \mintinline{text}|init| and \mintinline{text}|factor|, are not supported because custom propagators cannot manipulate Clasp's internal VSIDS score tables.
 
 If multiple heuristic rules target the same atom, their effects are combined into a \mintinline{text}|TargetHeuristicState| that tracks the \mintinline{text}|level| and \mintinline{text}|sign| across all active \mintinline{text}|RuntimeHeuristicCandidate| instances.
 
@@ -57,9 +57,9 @@ Unassigned targets with an active \mintinline{text}|level| are stored in an orde
 std::set<DecisionRankKey, DecisionRankGreater> active_decision_ranks_;
 \end{minted}
 
-Entries are sorted by decreasing weight. Because weights are stored as standard 32-bit integers, this avoids the 16-bit saturation limit of clasp's internal domain table (Section~\ref{sec:flattening}).
+Entries are sorted by decreasing weight. Because weights are stored as standard 32-bit integers, this avoids the 16-bit saturation limit of Clasp's internal domain table (Section~\ref{sec:flattening}).
 
-When clasp calls \mintinline{text}|decide|, the propagator inspects \mintinline{text}|active_decision_ranks_| from the beginning, discarding any targets that are already assigned on the trail or whose weights have changed. It then branches on the first valid target using its stored \mintinline{text}|sign|. If the set is empty, the propagator checks whether clasp's fallback atom has a stored \mintinline{text}|sign|; otherwise, it returns $0$ to delegate the decision to clasp. During backtracking, \mintinline{text}|undo| restores aggregates and candidate states using \mintinline{text}|noexcept| functions to prevent state corruption during solver unwinding.
+When Clasp calls \mintinline{text}|decide|, the propagator inspects \mintinline{text}|active_decision_ranks_| from the beginning, discarding any targets that are already assigned on the trail or whose weights have changed. It then branches on the first valid target using its stored \mintinline{text}|sign|. If the set is empty, the propagator checks whether Clasp's fallback atom has a stored \mintinline{text}|sign|; otherwise, it returns $0$ to delegate the decision to Clasp. During backtracking, \mintinline{text}|undo| restores aggregates and candidate states using \mintinline{text}|noexcept| functions to prevent state corruption during solver unwinding.
 
 
 \section{The Prolog Backend}
@@ -80,7 +80,7 @@ heuristic("heuristic(b(X), W, 0, true) :-
 
 The rule body uses standard Prolog syntax and maps directly to the native constructs: \mintinline{text}|holds/1| for positive conditions, \mintinline{text}|alpha_not/1| for negative conditions, \mintinline{text}|aggregate_all/3| for dynamic sums, and \mintinline{text}|is/2| for arithmetic evaluation of weights. Furthermore, \mintinline{text}|target_available/1| ensures the target atom is still unassigned. While the native backend checks this implicitly during candidate selection, the Prolog rule must state it explicitly to prevent proposing atoms that are already assigned on the trail.
 
-During initialization, the propagator collects all \mintinline{text}|heuristic/1| facts, normalizes the rule strings, and classifies their semantics: rules containing \mintinline{text}|clingo_not(...)| use clingo semantics, while all others use Alpha semantics. The propagator extracts the predicate signatures referenced in the rules (\mintinline{text}|holds|, \mintinline{text}|alpha_not|, \mintinline{text}|clingo_not|, \mintinline{text}|target_available|, and rule targets) and asserts into Prolog only solver atoms matching those signatures, avoiding unnecessary memory and synchronization overhead from irrelevant predicates.
+During initialization, the propagator collects all \mintinline{text}|heuristic/1| facts, normalizes the rule strings, and classifies their semantics: rules containing \mintinline{text}|clingo_not(...)| use Clingo semantics, while all others use Alpha semantics. The propagator extracts the predicate signatures referenced in the rules (\mintinline{text}|holds|, \mintinline{text}|alpha_not|, \mintinline{text}|clingo_not|, \mintinline{text}|target_available|, and rule targets) and asserts into Prolog only solver atoms matching those signatures, avoiding unnecessary memory and synchronization overhead from irrelevant predicates.
 
 \subsection{The Runtime Program}
 
@@ -96,7 +96,7 @@ dyn_max(Goal, Template, Max) :-
     (aggregate_all(max(Template), Goal, R) -> Max = R ; Max = 0).
 \end{minted}
 
-As clasp makes decisions, the propagator mirrors the trail in the Prolog database by adding \mintinline{text}|true_atom(A)| when an atom is assigned to true and \mintinline{text}|false_atom(A)| when it is assigned to false, removing them upon backtracking. Undecided atoms simply do not exist in the database. Because of this, \mintinline{text}|alpha_not(A)| succeeds whenever an atom does not hold true. In contrast, \mintinline{text}|clingo_not(A)| requires an explicit \mintinline{text}|false_atom(A)| on the trail. In the same way, \mintinline{text}|aggregate_all| dynamically computes sums and counts over the atoms currently true on the trail. \mintinline{text}|target_available(A)| verifies that a target is neither true nor false before branching on it, and \mintinline{text}|dyn_max/3| defaults to $0$ when evaluating an empty set (Section~\ref{sec:flattening}).
+As Clasp makes decisions, the propagator mirrors the trail in the Prolog database by adding \mintinline{text}|true_atom(A)| when an atom is assigned to true and \mintinline{text}|false_atom(A)| when it is assigned to false, removing them upon backtracking. Undecided atoms simply do not exist in the database. Because of this, \mintinline{text}|alpha_not(A)| succeeds whenever an atom does not hold true. In contrast, \mintinline{text}|clingo_not(A)| requires an explicit \mintinline{text}|false_atom(A)| on the trail. In the same way, \mintinline{text}|aggregate_all| dynamically computes sums and counts over the atoms currently true on the trail. \mintinline{text}|target_available(A)| verifies that a target is neither true nor false before branching on it, and \mintinline{text}|dyn_max/3| defaults to $0$ when evaluating an empty set (Section~\ref{sec:flattening}).
 
 
 \subsection{Synchronisation and Decision}
@@ -111,7 +111,7 @@ At each decision point (\mintinline{text}|decide|), the backend queries all solu
 \subsection{Balanced Sum Problem (BSP)}
 \label{sec:bsp}
 
-The BSP divides the set of integers $\{1,\ldots,n\}$ into two disjoint sets, \mintinline{text}|b/1| and \mintinline{text}|c/1|, such that their sums differ by at most one. The heuristic greedily assigns each integer to the set with the larger current sum to maintain balance throughout the search. Because all decisions share a single priority level, the current sum $S$ acts as the primary ranking term, with the element value $X$ resolving ties between equal sums.
+The BSP divides the set of integers $\{1,\ldots,n\}$ into two disjoint sets, \mintinline{text}|b/1| and \mintinline{text}|c/1|, such that their sums differ by at most one. The heuristic greedily assigns unassigned integers to set $b$ with a priority proportional to the current sum of set $c$, driving the solver toward balanced partitions. Because all decisions share a single priority level, the current sum $S$ acts as the primary ranking term, with the element value $X$ resolving ties between equal sums.
 
 Beyond the core four-variant matrix, the BSP evaluation includes three exploratory settings: \mintinline{text}|ga_weak|, which tests the ground heuristic without unrolling dynamic sum bounds; \mintinline{text}|la_aux|, which implements lazy evaluation over pre-materialized auxiliary atoms \mintinline{text}|h_b(X,S)|; and \mintinline{text}|la_co|, which evaluates the lazy heuristic against an alternative linear formulation of the balance constraint.
 
@@ -120,7 +120,7 @@ Beyond the core four-variant matrix, the BSP evaluation includes three explorato
 
 The PUP \cite{aschinger2011pup} assigns communication units to interconnected zones and sensors under capacity and topology constraints. The heuristic uses a two-level priority policy: zones are assigned first, followed by sensors.
 
-The base encoding is taken from the Alpha reference literature \cite{aschinger2011pup,comploi2023dynamicAggregates}. However, because the original encoding was written for a lazy solver, running it directly in clingo causes a severe grounding bottleneck. To fix this without altering the valid solutions, the encoding was cleaned up with a few standard optimizations: bounding unit indices to valid ranges, expressing capacity limits via linear \mintinline{text}|#count| aggregates, and removing a redundant blocking rule that created excessive ground constraints.
+The base encoding is taken from the Alpha reference literature \cite{aschinger2011pup,comploi2023dynamicAggregates}. However, because the original encoding was written for a lazy solver, running it directly in Clingo causes a severe grounding bottleneck. To fix this without altering the valid solutions, the encoding was cleaned up with a few standard optimizations: bounding unit indices to valid ranges, expressing capacity limits via linear \mintinline{text}|#count| aggregates, and removing a redundant blocking rule that created excessive ground constraints.
 
 Finally, the global priority of zones over sensors is flattened into the heuristic weights using the $+100{,}000$ offset introduced in Section~\ref{sec:flattening}.
 
