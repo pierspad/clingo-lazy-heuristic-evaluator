@@ -1,7 +1,7 @@
 PWD /home/ribben/Desktop/Thesis/clingo-lazy-heuristics/thesis/Tesi_Lazy_Heuristics
 INPUT /usr/share/texmf-dist/web2c/texmf.cnf
 INPUT /var/lib/texmf/web2c/pdftex/pdflatex.fmt
-INPUT Spadafora_Pierpaolo_Thesis.tex
+INPUT /home/ribben/Desktop/Thesis/clingo-lazy-heuristics/thesis/Tesi_Lazy_Heuristics/Spadafora_Pierpaolo_Thesis.tex
 OUTPUT Spadafora_Pierpaolo_Thesis.log
 INPUT /usr/share/texmf-dist/tex/latex/base/report.cls
 INPUT /usr/share/texmf-dist/tex/latex/base/report.cls

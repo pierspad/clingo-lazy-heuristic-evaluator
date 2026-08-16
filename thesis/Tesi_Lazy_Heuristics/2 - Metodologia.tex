@@ -5,7 +5,7 @@
 
 Every experiment in this thesis compares encodings of the same problem that differ in how the domain-specific heuristic is represented and interpreted. The rules that define the problem, its guess and its constraints, are held fixed across the variants of a family; what varies are the two properties that Section~\ref{sec:bg-heuristics} and Section~\ref{sec:bg-alpha} identified as the points on which Clingo and Alpha disagree, and they vary independently.
 
-The \emph{approach} axis fixes where the heuristic is evaluated. In the ground-and-solve approach the heuristic is written with native \mintinline{text}|#heuristic| directives: Gringo expands them before search and Clasp's Domain heuristic consumes the resulting ground objects. In the lazy approach the heuristic remains a handful of ground facts, \mintinline{text}|__heuristic(...)| for the native backend and \mintinline{text}|heuristic("...")| for the Prolog one, which the propagator reads at its initialisation and evaluates at every decision step against the partial assignment.
+The \emph{approach} axis fixes where the heuristic is evaluated. In the ground-and-solve approach the heuristic is written with native \mintinline{text}|#heuristic| directives: Gringo expands them before search and Clasp's Domain heuristic consumes the resulting ground objects. In the lazy approach the heuristic remains a handful of ground facts, \mintinline{text}|__heuristic(...)| for the native backend and \mintinline{text}|heuristic("...")| for the Prolog one, which the propagator reads at its initialization and evaluates at every decision step against the partial assignment.
 
 The \emph{semantics} axis fixes how a heuristic condition reads partial information: the Clingo-like semantics, under which \mintinline{text}|not a| holds only once $a$ has been assigned false and an aggregate has a value only once its sources are determined, against the Alpha-like semantics, under which \mintinline{text}|not a| holds as soon as $a$ is not assigned true, and an aggregate is computed over the atoms currently true. Only the second reading makes a heuristic dynamic in the sense of reacting to a partial assignment during search, as motivated in Section~\ref{sec:motivation}: an instruction such as \enquote{prefer the element whose insertion keeps the two sums balanced} presupposes that the sum can be evaluated against an assignment that is still being built; under Clingo's semantics, that sum simply has no value until it is too late for the guidance to matter.
 
@@ -83,7 +83,8 @@ The propagator is registered on \emph{every} run of the modified binary. On a pr
 In both builds, the class implements \mintinline{text}|Clingo::Heuristic|---the propagator interface extended with the \mintinline{text}|decide| callback (Section~\ref{sec:bg-propagator}). Both backends follow the same four-step lifecycle:
 \begin{itemize}[leftmargin=1.5em, itemsep=1pt]
     \item During \mintinline{text}|init|, they scan symbolic atoms for trigger facts (\mintinline{text}|__heuristic(...)| in the C++ build and \mintinline{text}|heuristic("...")| in the Prolog build), construct their runtime representation, and register watches on solver literals.
-    \item During search, \mintinline{text}|propagate| and \mintinline{text}|undo| keep the internal state synchronized with the trail.
+    \item During forward search, \mintinline{text}|propagate| updates internal aggregate and candidate states as watched literals become true.
+    \item During backtracking, \mintinline{text}|undo| restores internal aggregate and candidate states as literals are retracted from the trail.
     \item At each decision point, \mintinline{text}|decide| either returns a signed literal for the highest-ranked target or returns $0$, delegating the decision to Clasp's fallback heuristic.
 \end{itemize}
 To activate this mechanism, runs are launched with the flag \mintinline{text}|--heuristic=Domain|. A detailed discussion of the architectural differences between the two backends is provided in Chapter~\ref{sec:implementation}.
@@ -136,7 +137,7 @@ pairs each \mintinline{text}|choose(X)| with the \mintinline{text}|score(X,W)| t
 
 \paragraph{Semantics.} The reading of that negation is fixed by the \mintinline{text}|__semantics(S)| selector, which decides whether \mintinline{text}|__n_c| means \enquote{\mintinline{text}|c(X)| is assigned false} or \enquote{\mintinline{text}|c(X)| is not assigned true}. The same selector fixes the reading of aggregates, described below. It takes \mintinline{text}|alpha| or \mintinline{text}|clingo|, and defaults to \mintinline{text}|clingo|, so that a directive written without it behaves as the native \mintinline{text}|#heuristic| it replaces.
 
-\paragraph{Aggregates} are evaluated lazily during search. \mintinline{text}|__bind(s, __sum(c))| binds variable \mintinline{text}|s| to the sum over the predicate \mintinline{text}|c| (by default aggregating its first argument). The operators \mintinline{text}|__count|, \mintinline{text}|__min|, and \mintinline{text}|__max| follow the same structure.
+\paragraph{Aggregates.} Aggregates are evaluated lazily during search. \mintinline{text}|__bind(s, __sum(c))| binds variable \mintinline{text}|s| to the sum over the predicate \mintinline{text}|c| (by default aggregating its first argument). The operators \mintinline{text}|__count|, \mintinline{text}|__min|, and \mintinline{text}|__max| follow the same structure.
 
 An aggregate can be restricted \emph{per target} using \mintinline{text}|__filter(src_idx, tgt_idx, offset)|, which keeps only source atoms whose argument at position \mintinline{text}|src_idx| equals argument \mintinline{text}|tgt_idx| of the target plus an optional \mintinline{text}|offset|. For instance, in PUP, retrieving the maximum number of sensors on the \emph{previous} unit ($U-1$) for a target \mintinline{text}|assigned_zone_unit(Z,U)| is expressed as:
 \begin{minted}{prolog}
@@ -144,13 +145,13 @@ __bind(m1, __max(num_sensors_on_unit, 0, __filter(1, 1, -1)))
 \end{minted}
 where \mintinline{text}|0| selects the aggregated argument $N$ in \mintinline{text}|num_sensors_on_unit(N, U')|, and the filter matches $U' = U - 1$.
 
-\paragraph{Weight} is expressed as a \emph{term tree} such as:
+\paragraph{Weight.} Weight is expressed as a \emph{term tree} such as:
 \begin{minted}{prolog}
 __weight(__add(__mul(s, B), self))
 \end{minted}
 which represents $(s \cdot B + \mathit{self})$, where \mintinline{text}|self| is a shorthand for the target atom's argument at index 0 without requiring a variable binding.
 
-The binary constructors \mintinline{text}|__add|, \mintinline{text}|__sub|, and \mintinline{text}|__mul| form expression trees whose leaves belong to three categories: integer constants; variables of the heuristic language and target arguments (accessed through \mintinline{text}|self| or \mintinline{text}|__bind_target_arg(var, idx)| for any other).
+The binary constructors \mintinline{text}|__add|, \mintinline{text}|__sub|, and \mintinline{text}|__mul| form expression trees whose leaves belong to three categories: integer constants, variables of the heuristic language, and target arguments (accessed through \mintinline{text}|self| or \mintinline{text}|__bind_target_arg(var, idx)| for any other).
 
 At \mintinline{text}|init|, the propagator compiles all weight term trees into ASTs. During search, each active heuristic object evaluates its weight AST dynamically against the current trail state, avoiding the memory overhead of materializing them in the ground program. Only candidates with a strictly positive resolved weight are taken into account; the others are ignored, leaving their decision to the solver's default heuristic.
 
