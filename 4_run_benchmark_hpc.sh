@@ -12,9 +12,19 @@ set -euo pipefail
 # diagnosticato per lo "smoke test fantasma". Ci rilanciamo su un compute
 # node via srun prima di toccare qualunque compilazione; la sottomissione
 # dei job distjob (btool run-dist) funziona normalmente anche da li'.
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+TEST_DIR="$REPO_ROOT/test_folder/benchmark_folder_clingo"
+
 if [ -z "${SLURM_JOB_ID:-}" ]; then
-  echo "==> Non sono su un compute node: mi rilancio via 'srun --partition=kr' ..."
-  exec srun --partition=kr --ntasks=1 --cpus-per-task=4 --time=00:30:00 bash "$0" "$@"
+  # Il rilancio va sullo STESSO insieme di nodi su cui girera' la campagna:
+  # qui dentro ensure_runlim/ensure_clingo_bins compilano i binari, e
+  # compilarli su un nodo diverso da quello di misura reintrodurrebbe dalla
+  # porta di servizio la disomogeneita' che il pinning toglie.
+  # shellcheck disable=SC1091
+  . "$TEST_DIR/scripts/hpc_target.sh"
+  hpc_pin_args
+  echo "==> Non sono su un compute node: mi rilancio via 'srun ${HPC_PIN_ARGS[*]}' ..."
+  exec srun "${HPC_PIN_ARGS[@]}" --ntasks=1 --cpus-per-task=4 --time=00:30:00 bash "$0" "$@"
 fi
 
 # ============================================================
@@ -29,9 +39,6 @@ FULL_TIMEOUT=600
 # runscript.xml dichiarava gia' (ma che FULL_TIMEOUT=300 sovrascriveva).
 # v. [[project_graphs_analysis_2026-07-22]].
 # ============================================================
-
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
-TEST_DIR="$REPO_ROOT/test_folder/benchmark_folder_clingo"
 
 # shellcheck disable=SC1091
 . "$TEST_DIR/scripts/bench_common.sh"
@@ -56,6 +63,7 @@ restore_canonical_instances() {
 main() {
   log "SUITE COMPLETA CLUSTER — timeout ${FULL_TIMEOUT}s, partizione SLURM"
 
+  hpc_target_ensure
   ensure_no_pending_dist_jobs
   bootstrap_env
   ensure_runlim
@@ -70,16 +78,20 @@ main() {
     "$FULL_RS_IN" "$FULL_RS_OUT" \
     "$FULL_TIMEOUT" "$FULL_OUTPUT" \
     "benchmarks/BSP" "benchmarks/PUP" "benchmarks/HRP" \
-    "0"
+    "0" "$HPC_PARTITION"
 
   log "Generazione dei job distribuiti tramite btool gen ..."
   btool gen -c "$FULL_RS_OUT"
 
-  log "Sottomissione dei job alla coda SLURM (3 project paralleli: bsp/pup/hrp, partizione 'kr') ..."
+  log "Sottomissione dei job alla coda SLURM (3 project paralleli: bsp/pup/hrp, partizione '$HPC_PARTITION') ..."
   local proj dispatched=0
   for proj in study-hpc-bsp study-hpc-pup study-hpc-hrp; do
     local d="$FULL_OUTPUT/$proj/hpc"
     if [ -d "$d" ]; then
+      # PRIMA di sottomettere: il pinning va scritto negli *.dist appena
+      # generati (benchmark-tool non sa niente di --exclude, v. il commento
+      # su pin_dist_scripts in scripts/hpc_target.sh).
+      pin_dist_scripts "$d"
       log "  -> dispatch $proj ($d)"
       btool run-dist "$d"
       dispatched=$((dispatched + 1))
@@ -87,6 +99,7 @@ main() {
       warn "cartella non trovata, salto: $d"
     fi
   done
+  record_hpc_target "$FULL_OUTPUT"
   [ "$dispatched" -gt 0 ] || die "nessun project dispacciato: controlla l'output di 'btool gen -c' sopra"
 
   echo

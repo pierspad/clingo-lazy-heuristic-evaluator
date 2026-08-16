@@ -53,7 +53,11 @@ TEST_DIR="$REPO_ROOT/test_folder/benchmark_folder_clingo"
 # ------------------------------------------------------------
 #  COSTANTI MODIFICABILI
 # ------------------------------------------------------------
-PARTITION="kr,kr-big"     # v. [[project-hpc-job-granularity]]: kr-slv escluso, niente association
+# Partizione dei job di PLOT. Volutamente NON pinnata sul gruppo omogeneo di
+# scripts/hpc_target.sh: qui non si misura niente, si disegnano PNG, quindi
+# vincolarli ai nodi di misura servirebbe solo a farli aspettare. Resta pero'
+# allineata alla partizione configurata, cosi' c'e' un posto solo da cambiare.
+PARTITION="${HPC_PARTITION:-kr}"
 CPUS_PER_JOB=1            # ogni job disegna PNG con matplotlib: single-core, niente da parallelizzare dentro
 MEM_PER_JOB="2G"
 TIME_PER_JOB="00:15:00"   # abbondante: un singolo "*:main"/"*:excl:*" impiega di norma <1 minuto

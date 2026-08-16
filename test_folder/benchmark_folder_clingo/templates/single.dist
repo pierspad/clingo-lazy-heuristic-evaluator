@@ -29,6 +29,16 @@ echo ""
 for i in $jobs
 do
     echo "running " $i
+    # Traccia del nodo, run per run. I job sono pinnati su un insieme
+    # omogeneo (scripts/hpc_target.sh, --exclude iniettato da
+    # pin_dist_scripts), ma il pinning e' una promessa: questo file e' la
+    # prova. report_nodes_used() li aggrega in nodes_used.txt, ed e' quello
+    # che permette di scrivere in tesi "la campagna ha girato su N nodi
+    # identici" invece di doverlo assumere.
+    # Solo se il run non e' gia' completato: seq-generic.sh salta i run con
+    # .finished, e riscrivere .node li attribuirebbe al nodo sbagliato.
+    d="$(dirname $i)"
+    [ -e "$d/.finished" ] || hostname > "$d/.node" 2>/dev/null
     if ! $i; then
         echo "!! job fallito (exit $?): $i" >&2
     fi

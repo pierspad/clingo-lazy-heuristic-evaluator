@@ -219,15 +219,31 @@
        btool impacchetta i run in sequenza finche' non riempie la walltime, poi
        ne apre uno nuovo (vedi commento sotto il <project>). Walltime piu' corta
        = piu' *.dist per project = piu' allocazioni SLURM esclusive concorrenti,
-       usando meglio i nodi liberi di kr/kr-big invece di tenerne 3 impegnati
-       per ~24h a testa. memout invariato: e' un limite di runlim via software,
-       non della RAM fisica del nodo, quindi aggiungere kr-big (più RAM) non
-       altera il risultato "ground muore di memout su PUP grande" - gli da solo
-       margine contro un OOM-killer di sistema prima del memout pulito.
-       partition="kr,kr-big": kr-slv escluso, nessuna association per l'utente
-       (vedi sacctmgr show associations) - fallirebbe in sottomissione. -->
+       usando meglio i nodi liberi della partizione invece di tenerne 3
+       impegnati per ~24h a testa.
+       partition: kr-slv e' comunque escluso, nessuna association per l'utente
+       (vedi sacctmgr show associations) - fallirebbe in sottomissione.
+
+       partition="kr" (2026-08-14, era "kr,kr-big"): i due nodi di kr-big
+       hanno hardware diverso da quelli di kr, e SLURM dispacciava su
+       entrambe le partizioni indifferentemente. Il risultato era che tre
+       varianti BSP che groundano lo STESSO programma (gc_noheur, la, lc)
+       mostravano tempi di grounding divergenti del 28% mediano e del 46% a
+       n=140, abbastanza da spostare la frontiera di una variante al top del
+       range - una differenza dovuta al nodo, non alla variante. Il capitolo
+       Risultati ha dovuto dichiararlo come caveat (sec:node-variance).
+       Questo valore e' comunque solo il DEFAULT statico: gli script di run
+       lo sovrascrivono con $HPC_PARTITION e aggiungono un vincolo di
+       esclusione ("sbatch ..exclude") per i nodi non omogenei dentro la
+       partizione (v. scripts/hpc_target.sh, che e'
+       l'unica fonte di verita' condivisa con i guard srun e compile_all.sh).
+       Non alza il rischio di memout: memout=30000 e' un limite software di
+       runlim, non la RAM fisica del nodo, quindi rinunciare alla RAM in piu'
+       di kr-big non cambia il risultato "ground muore di memout su PUP
+       grande"; toglie solo il margine contro un OOM-killer di sistema prima
+       del memout pulito, che sui nodi kr non si e' mai osservato. -->
   <distjob name="dist-hpc"  timeout="600s" runs="1" memout="30000"
-           script_mode="timeout" walltime="2h" cpt="4" partition="kr,kr-big"/>
+           script_mode="timeout" walltime="2h" cpt="4" partition="kr"/>
 
   <!-- ===================== BENCHMARK (una famiglia per benchmark) ===================== -->
   <benchmark name="BSP">
@@ -266,8 +282,11 @@
        comunque ben sotto il MaxSubmit=100 per utente su kr/kr-big (sacctmgr,
        verificato 2026-07-10).
        "btool run-dist" (default -j 100) li sottomette tutti; SLURM li
-       accoda e li fa partire via via che i nodi di kr (10) e kr-big (2) si
-       liberano, invece di tenerne solo 3 impegnati per l'intera durata.
+       accoda e li fa partire via via che i nodi di kr (10) si liberano,
+       invece di tenerne solo 3 impegnati per l'intera durata. E' anche il
+       motivo per cui il pinning sceglie un GRUPPO di nodi omogenei e non un
+       nodo solo: con i job dichiarati "exclusive", un nodo solo vuol dire
+       una allocazione alla volta e la campagna passa da ore a giorni.
        I 3/4_run_benchmark_*.sh ciclano comunque sui 3 nomi di project (uno
        per famiglia): e' "btool run-dist" che, per ciascun project,
        dispaccia tutti i suoi *.dist.

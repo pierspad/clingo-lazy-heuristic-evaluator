@@ -75,13 +75,24 @@ EOF
   "$VENV_BTOOL" conv -m all -o "$OUTPUT_DIR/results.xlsx" results.xml
   ok "Excel generato con successo."
 
+  # 6bis. Su che nodi ha girato davvero la campagna.
+  #    E' il controllo che rende il pinning una constatazione invece di una
+  #    speranza: senza questo file, in tesi si potrebbe solo scrivere "i job
+  #    sono stati vincolati a nodi omogenei", che e' una dichiarazione di
+  #    intenti. Con questo file si scrive quanti nodi distinti hanno servito
+  #    la campagna e quali. Va prodotto prima dei grafici perche' se dice
+  #    qualcosa di inatteso (piu' nodi del previsto) i grafici vanno letti
+  #    con l'occhio del vecchio caveat.
+  log "Fase 3bis: Riepilogo dei nodi di esecuzione ..."
+  report_nodes_used "$OUTPUT_DIR"
+
   # 7. Assicuriamoci che matplotlib sia installato IN QUESTO SPECIFICO VENV prima del plot
   log "Verifica e installazione pacchetti grafici nel venv..."
   "$VENV_PIP" install --quiet matplotlib pandas openpyxl
 
   # 8. Generazione grafici: delegata a 6_plot_graphs_hpc.sh, che sottomette
   #    ogni job indipendente di plot_results.py (--list-jobs/--only, v. quel
-  #    file) come job SLURM separato sui nodi kr/kr-big invece di girare in
+  #    file) come job SLURM separato sui nodi della partizione invece di girare in
   #    sequenza su un solo core (~5 minuti), poi fa da solo watch (poll su
   #    squeue) finche' non sono finiti e infine rilancia "summary" in locale.
   #    Stessi default che passavamo prima a plot_results.py (results.xml qui,
@@ -92,6 +103,7 @@ EOF
   echo
   ok "ELABORAZIONE COMPLETATA!"
   ok "I dati e l'Excel si trovano in $OUTPUT_DIR/"
+  ok "Nodi di esecuzione: $OUTPUT_DIR/nodes_used.txt (da citare in tesi al posto del caveat sec:node-variance)"
   ok "Controlla la directory 'test_folder/' per vedere i grafici generati!"
 }
 

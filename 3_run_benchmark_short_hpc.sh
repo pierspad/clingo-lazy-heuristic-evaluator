@@ -16,9 +16,18 @@ set -euo pipefail
 # $SLURM_JOB_ID), ci rilanciamo da soli su un compute node via `srun`, prima
 # di toccare qualunque compilazione. btool gen/run-dist funzionano
 # normalmente anche da dentro un job SLURM (sottomissione annidata supportata).
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+TEST_DIR="$REPO_ROOT/test_folder/benchmark_folder_clingo"
+
 if [ -z "${SLURM_JOB_ID:-}" ]; then
-  echo "==> Non sono su un compute node: mi rilancio via 'srun --partition=kr' ..."
-  exec srun --partition=kr --ntasks=1 --cpus-per-task=4 --time=00:30:00 bash "$0" "$@"
+  # Stesso insieme di nodi della suite completa (v. il commento gemello in
+  # 4_run_benchmark_hpc.sh): lo smoke test serve a provare la configurazione
+  # che poi misura davvero, non una configurazione vicina.
+  # shellcheck disable=SC1091
+  . "$TEST_DIR/scripts/hpc_target.sh"
+  hpc_pin_args
+  echo "==> Non sono su un compute node: mi rilancio via 'srun ${HPC_PIN_ARGS[*]}' ..."
+  exec srun "${HPC_PIN_ARGS[@]}" --ntasks=1 --cpus-per-task=4 --time=00:30:00 bash "$0" "$@"
 fi
 
 # ============================================================
@@ -30,9 +39,6 @@ SHORT_BSP_END=5
 SHORT_PUP_COUNT=2     
 SHORT_HRP_COUNT=2
 # ============================================================
-
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
-TEST_DIR="$REPO_ROOT/test_folder/benchmark_folder_clingo"
 
 # shellcheck disable=SC1091
 . "$TEST_DIR/scripts/bench_common.sh"
@@ -69,6 +75,7 @@ build_short_subset() {
 
 main() {
   log "SMOKE TEST CLUSTER — timeout ${TIMEOUT}s, subset isolato"
+  hpc_target_ensure
   ensure_no_pending_dist_jobs
   bootstrap_env
   ensure_runlim
@@ -83,7 +90,7 @@ main() {
     "$SHORT_RS_IN" "$SHORT_RS_OUT" \
     "$TIMEOUT" "$SHORT_OUTPUT" \
     "$SHORT_BENCH/BSP" "$SHORT_BENCH/PUP" "$SHORT_BENCH/HRP" \
-    "0"
+    "0" "$HPC_PARTITION"
 
   log "btool gen -c per cluster ..."
   btool gen -c "$SHORT_RS_OUT"
@@ -93,6 +100,7 @@ main() {
   for proj in study-hpc-bsp study-hpc-pup study-hpc-hrp; do
     local d="$SHORT_OUTPUT/$proj/hpc"
     if [ -d "$d" ]; then
+      pin_dist_scripts "$d"
       log "  -> dispatch $proj ($d)"
       btool run-dist "$d"
       dispatched=$((dispatched + 1))
@@ -100,6 +108,7 @@ main() {
       warn "cartella non trovata, salto: $d"
     fi
   done
+  record_hpc_target "$SHORT_OUTPUT"
   [ "$dispatched" -gt 0 ] || die "nessun project dispacciato: controlla l'output di 'btool gen -c' sopra"
 
   echo

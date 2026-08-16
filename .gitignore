@@ -30,3 +30,6 @@ test_folder/benchmark_folder_clingo/graphs-comparison-clingo-alpha/
 test_folder/benchmark_folder_clingo/benchmarks/_short/
 test_folder/benchmark_folder_clingo/benchmarks/BSP_tmp/
 test_folder/benchmark_folder_clingo/benchmarks.bak/
+# insieme di nodi SLURM congelato per la campagna (generato sull'HPC da
+# scripts/hpc_target.sh: e' uno stato del cluster, non del repo)
+.hpc_target.conf

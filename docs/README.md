@@ -105,6 +105,42 @@ login node produce binari linkati alla glibc sbagliata).
 `bench-runs-local/` contiene copie degli stessi script con `REPO_ROOT` risalito di un livello,
 per lanciarli da lì in locale; non vengono mai sincronizzate verso l'HPC.
 
+### Su quali nodi girano le misure
+
+I nodi del cluster non sono identici, e la differenza è misurabile: prima del pinning, tre
+varianti BSP che groundano lo **stesso** programma (`gc_noheur`, `la`, `lc`) mostravano tempi di
+grounding divergenti del 28% mediano e del 46% a *n*=140, abbastanza da spostare la frontiera di
+una variante al top del range. Era un caveat esplicito del capitolo Risultati
+(`sec:node-variance`), che costringeva a non fare nessun claim sui tempi fra varianti
+same-encoding.
+
+`test_folder/benchmark_folder_clingo/scripts/hpc_target.sh` è l'unica fonte di verità su dove
+girano le misure. Al primo uso rileva il **gruppo omogeneo più numeroso** della partizione
+(stessa CPU, socket, core, thread, RAM), lo congela in `.hpc_target.conf` nella root del repo e
+lo impone a tutto: i guard `srun` di `3_`/`4_`, gli `*.dist` generati da `btool gen`
+(vincolo di esclusione iniettato da `pin_dist_scripts`) e la compilazione (`compile_all.sh` si
+risottomette da solo se SLURM lo mette su un nodo fuori dal gruppo — un binario tarato su una
+microarchitettura diversa da quella di esecuzione rimetterebbe in circolo la stessa varianza).
+
+Si sceglie un **gruppo** e non un nodo solo perché i job sono `--exclusive`: su un nodo solo
+gira un'allocazione per volta e la campagna passa da ore a giorni.
+
+Il pinning è una promessa, non un dato: ogni run scrive il proprio hostname in `.node`, e
+`5_evaluate_hpc.sh` li aggrega in `<output>/nodes_used.txt`. È quel file — non l'intenzione —
+che autorizza a scrivere in tesi su che hardware ha girato la campagna.
+
+| Variabile | Effetto |
+|---|---|
+| `HPC_PARTITION` | partizione SLURM (default `kr`; era `kr,kr-big`) |
+| `HPC_NODES` | `AUTO` (default) rileva il gruppo omogeneo; un hostlist (`kr[01-06]`, `kr07`) lo impone; `ALL` disattiva il pinning |
+| `HPC_TARGET_REFRESH=1` | ricalcola il gruppo ignorando il lock (**non** a metà campagna: i run prima e dopo non sarebbero confrontabili) |
+
+Per vedere l'inventario dei nodi e il gruppo scelto senza lanciare niente:
+
+```bash
+bash test_folder/benchmark_folder_clingo/scripts/hpc_target.sh
+```
+
 ## Varianti degli encoding
 
 Ogni variante esiste sia in `encodings-native/` che in `encodings-prolog/` con lo stesso nome, e

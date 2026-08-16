@@ -66,6 +66,14 @@ function copyhpcgraphs() {
     # combinazione a VARIANT_EXCLUSIONS in tools/plot_results.py).
     "benchmark_folder_clingo/output/ground_counts.csv|ground_counts-full.csv"
     "benchmark_folder_clingo/output-short-hpc/ground_counts.csv|ground_counts-short-hpc.csv"
+    # Provenienza hardware della campagna: su quali nodi SLURM sono girati
+    # davvero i run (uno per run) e con che vincolo erano stati sottomessi.
+    # Serve in tesi: il capitolo Risultati puo' affermare l'omogeneita'
+    # dell'hardware solo se questo file la mostra, altrimenti resta il
+    # caveat sec:node-variance. V. scripts/hpc_target.sh.
+    "benchmark_folder_clingo/output/nodes_used.txt|nodes_used-full.txt"
+    "benchmark_folder_clingo/output-short-hpc/nodes_used.txt|nodes_used-short-hpc.txt"
+    "benchmark_folder_clingo/output/hpc_target.conf|hpc_target-full.conf"
   )
 
   echo "🔄 Avvio sincronizzazione grafici e log analitici da HPC..."

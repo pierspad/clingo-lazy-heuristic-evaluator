@@ -19,6 +19,12 @@ ok()   { printf "${_c_grn} ok${_c_off} %s\n" "$*"; }
 warn() { printf "${_c_yel}!! ${_c_off} %s\n" "$*" >&2; }
 die()  { printf "${_c_red}XX ${_c_off} %s\n" "$*" >&2; exit 1; }
 
+# --- pinning dei job di misura su nodi omogenei --------------
+# Sourcato DOPO le funzioni di logging qui sopra: hpc_target.sh definisce le
+# proprie solo se mancano, cosi' i suoi messaggi escono colorati come gli altri.
+# shellcheck disable=SC1091
+. "$(dirname "${BASH_SOURCE[0]:-$0}")/hpc_target.sh"
+
 # --- 0) guard: non ripulire l'output se ci sono ancora job dist attivi ---
 # I job generati da "btool gen" hanno nome dello script (start0000.dist,
 # troncato da squeue in "start000..."): un run precedente ancora R/PD su
@@ -181,18 +187,27 @@ $(echo "$probe" | tail -15)" ;;
 
 # --- 4) deriva un runscript dal canonico --------------------
 # uso: derive_runscript <in.xml> <out.xml> <timeout_sec> <output_attr> \
-#                       <bsp_folder> <pup_folder> <hrp_folder> <drop_hpc:0|1>
+#                       <bsp_folder> <pup_folder> <hrp_folder> <drop_hpc:0|1> \
+#                       [partition]
+# [partition] (opzionale): sovrascrive l'attributo partition dei <distjob>.
+# Serve perche' la partizione di misura ora vive in scripts/hpc_target.sh
+# (unica fonte di verita', condivisa con i guard srun e con compile_all.sh)
+# invece che duplicata nell'XML: passare "" lascia il valore del runscript.
 derive_runscript() {
   RS_IN="$1" RS_OUT="$2" RS_TIMEOUT="${3}s" RS_OUTPUT="$4" \
   RS_BSP="$5" RS_PUP="$6" RS_HRP="$7" RS_DROP_HPC="$8" \
+  RS_PARTITION="${9:-}" \
   python3 - <<'PY' || die "derivazione runscript fallita"
 import os, xml.etree.ElementTree as ET
 t = ET.parse(os.environ["RS_IN"]); r = t.getroot()
 r.set("output", os.environ["RS_OUTPUT"])
 for sj in r.findall("seqjob"):
     sj.set("timeout", os.environ["RS_TIMEOUT"])
+part = os.environ.get("RS_PARTITION", "")
 for dj in r.findall("distjob"):
     dj.set("timeout", os.environ["RS_TIMEOUT"])
+    if part:
+        dj.set("partition", part)
 folders = {"BSP": os.environ["RS_BSP"], "PUP": os.environ["RS_PUP"], "HRP": os.environ["RS_HRP"]}
 for b in r.findall("benchmark"):
     f = folders.get(b.get("name"))
@@ -260,6 +275,59 @@ run_btool_pipeline() {
   [ -f "$out_dir/ground_counts.csv" ] && gc_arg=(--ground-counts "$out_dir/ground_counts.csv")
   python3 tools/plot_results.py --results "$results" --machine "$machine" \
     --out-base "$out_base" "${gc_arg[@]}" || die "plot_results.py fallito"
+}
+
+# --- 5bis) su che nodi ha girato davvero la campagna ---------
+# Il pinning e' una PROMESSA; questa funzione e' la VERIFICA, e senza la
+# verifica il caveat in tesi non si puo' togliere: "ho passato --exclude"
+# non e' un dato, "tutti i 580 run sono usciti dallo stesso nodo" lo e'.
+# Ogni run scrive il proprio hostname in .node (v. templates/single.dist),
+# qui si contano e si scrive il riepilogo accanto ai risultati.
+#
+# uso: report_nodes_used <output_dir> [file_di_output]
+report_nodes_used() {
+  local out_dir="$1"
+  local dst="${2:-$out_dir/nodes_used.txt}"
+  [ -d "$out_dir" ] || { warn "report nodi: $out_dir non esiste, salto"; return 0; }
+
+  local tmp; tmp="$(mktemp)"
+  # -h: alcuni .node possono essere vuoti se il job e' stato ucciso tra la
+  # scrittura e il run; li si scarta invece di contarli come nodo "".
+  find "$out_dir" -name '.node' -type f -exec cat {} + 2>/dev/null \
+    | tr -d ' \t' | grep -v '^$' | sort | uniq -c | sort -rn > "$tmp" || true
+
+  local distinct total
+  distinct=$(wc -l < "$tmp" | tr -d ' ')
+  total=$(awk '{s += $1} END {print s + 0}' "$tmp")
+
+  {
+    echo "# Nodi su cui sono realmente girati i run di $out_dir"
+    echo "# (uno per run, scritto dal job SLURM stesso; v. templates/single.dist)"
+    echo "# generato il $(date -Is)"
+    echo "#"
+    echo "# run totali con nodo registrato: $total"
+    echo "# nodi distinti:                  $distinct"
+    if [ -f "${HPC_TARGET_LOCK:-}" ]; then
+      echo "#"
+      sed 's/^/# /' "$HPC_TARGET_LOCK"
+    fi
+    echo
+    echo "# run   nodo"
+    cat "$tmp"
+  } > "$dst"
+  rm -f "$tmp"
+
+  if [ "${total:-0}" = 0 ]; then
+    warn "report nodi: nessun file .node trovato sotto $out_dir.
+  I run sono precedenti all'introduzione del pinning, oppure gli *.dist sono
+  stati generati con un template vecchio. Rilancia 'btool gen -c' e la campagna."
+  elif [ "$distinct" = 1 ]; then
+    ok "report nodi: tutti i $total run su UN SOLO nodo ($(awk 'NR==1 {print $2}' "$dst" 2>/dev/null)) -> $dst"
+  else
+    ok "report nodi: $total run su $distinct nodi -> $dst"
+    log "    (nodi dello stesso gruppo omogeneo: e' il caso atteso. Se i tempi di"
+    log "     varianti same-encoding divergono ancora, stringi con HPC_NODES=<un nodo>.)"
+  fi
 }
 
 # --- 6) riepilogo finale -------------------------------------

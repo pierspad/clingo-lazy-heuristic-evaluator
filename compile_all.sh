@@ -22,6 +22,41 @@ set -euo pipefail
 # Uso: sbatch --export=CLEAN_BUILD=1 compile_all.sh
 CLEAN_BUILD="${CLEAN_BUILD:-0}"
 
+# ------------------------------------------------------------
+# PINNING: compilare sullo STESSO hardware su cui si misura.
+#
+# I binari prodotti qui (clingo native/prolog, SWI-Prolog, runlim, Alpha)
+# girano poi sui nodi della campagna. Compilarli su un nodo di hardware
+# diverso e' il modo piu' silenzioso di rimettere in circolo la varianza che
+# il pinning dei job toglie: cmake e gcc scelgono estensioni ISA e tuning in
+# base alla macchina che vedono, e un binario tarato su una microarchitettura
+# diversa da quella di esecuzione rende i tempi non confrontabili (nel caso
+# peggiore, con -march=native, non e' nemmeno eseguibile — e' la stessa
+# famiglia di problemi del "runlim compilato sul login node" gia' vista).
+#
+# Il #SBATCH --partition qui sopra e' solo il default statico: sbatch non
+# puo' leggere un file di configurazione. Se SLURM ci ha messo su un nodo
+# fuori dall'insieme di misura, ci risottomettiamo UNA volta con i vincoli
+# giusti. HPC_PIN_RESUBMITTED impedisce il ping-pong se il pinning non e'
+# soddisfacibile.
+# ------------------------------------------------------------
+_HPC_REPO="${SLURM_SUBMIT_DIR:-$HOME/clingo-lazy-heuristics}"
+[ -f "$_HPC_REPO/test_folder/benchmark_folder_clingo/scripts/hpc_target.sh" ] \
+  || _HPC_REPO="$HOME/clingo-lazy-heuristics"
+if [ -f "$_HPC_REPO/test_folder/benchmark_folder_clingo/scripts/hpc_target.sh" ]; then
+  # shellcheck disable=SC1091
+  . "$_HPC_REPO/test_folder/benchmark_folder_clingo/scripts/hpc_target.sh"
+  if [ -n "${SLURM_JOB_ID:-}" ] && [ "${HPC_PIN_RESUBMITTED:-0}" != "1" ] \
+     && ! hpc_node_in_target "$(hostname)"; then
+    hpc_pin_args
+    echo "==> Compilazione partita su $(hostname), fuori dall'insieme di misura."
+    echo "    Risottometto con: ${HPC_PIN_ARGS[*]}"
+    exec sbatch --export=ALL,HPC_PIN_RESUBMITTED=1 "${HPC_PIN_ARGS[@]}" \
+         "$_HPC_REPO/compile_all.sh"
+  fi
+  echo "==> Compilo su $(hostname) (partizione '${HPC_PARTITION}', insieme di misura: ${HPC_TARGET_NODES:-non vincolato})"
+fi
+
 _prep_build_dir() {
   local dir="$1"
   if [ "$CLEAN_BUILD" = 1 ]; then
