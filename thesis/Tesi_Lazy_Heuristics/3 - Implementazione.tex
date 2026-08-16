@@ -27,7 +27,7 @@ Under \textit{clingo} semantics, an aggregate is evaluated only after all its so
 \subsection{Evaluation and Decision}
 \label{sec:decision}
 
-A candidate is \emph{active} when its target is still free, all its positive body literals are true, and every negative body literal is satisfied according to the template's semantics --- the single place where the two readings of negation differ, and small enough to quote in full:
+A candidate is \emph{active} when its target literal remains unassigned, all its positive body literals evaluate to true, and every negative body literal is satisfied under the template's semantics. The two supported semantics differ only in how they treat negative literals:
 
 \begin{minted}{cpp}
 static bool negative_literal_is_satisfied(HeuristicSemantics s, Clingo::TruthValue v) {
@@ -36,24 +36,40 @@ static bool negative_literal_is_satisfied(HeuristicSemantics s, Clingo::TruthVal
 }
 \end{minted}
 
-An active candidate must also be able to build its variable environment, which for clingo-semantics templates includes the aggregate gating described above. Its effects are then folded per target into a \mintinline{text}|TargetHeuristicState|. The modifiers follow clingo's Domain heuristic: \mintinline{text}|level| sets the ranking value, \mintinline{text}|sign| the preferred polarity, \mintinline{text}|true| and \mintinline{text}|false| set both. \mintinline{text}|init| and \mintinline{text}|factor| are recognised but rejected, because they perturb solver-internal activity scores that the \mintinline{text}|decide| interface cannot reach; mapping them onto \mintinline{text}|level| would silently turn a nudge into an override, which is worse than refusing them.
 
-Because levels are flattened into the weight (Section~\ref{sec:flattening}), the resolution needs a single criterion and not a pair. A \mintinline{text}|TargetHeuristicState| holds one slot per channel, ranking value and sign, and each slot keeps the effect with the greatest weight among those that wrote to it, under either semantics. For the \mintinline{text}|sign| modifier the ranking criterion is the magnitude of the weight, since there the direction is carried by its sign. The resolved target then enters a global ordered set with that weight:
+Once a candidate satisfies its body conditions, the propagator computes its numerical weight by evaluating its weight AST over the current aggregate values and term arguments. The resulting effect is then applied to the target literal's \mintinline{text}|TargetHeuristicState|.
+
+The native propagator adopts four of clingo's domain heuristic modifiers:
+\begin{itemize}
+    \item \mintinline{text}|level|: sets the branching priority to $w$ (higher values are chosen first), leaving the truth polarity unchanged;
+    \item \mintinline{text}|sign|: sets the preferred truth polarity based on the arithmetic sign of $w$ (positive for \textit{true}, negative for \textit{false}), using $|w|$ to resolve precedence among conflicting sign directives;
+    \item \mintinline{text}|true|: sets the branching priority to $w$ and forces the truth polarity to \textit{true};
+    \item \mintinline{text}|false|: sets the branching priority to $w$ and forces the truth polarity to \textit{false}.
+\end{itemize}
+
+clingo's remaining modifiers, \mintinline{text}|init| and \mintinline{text}|factor|, are not supported because custom propagators cannot manipulate clasp's internal VSIDS score tables.
+
+If multiple heuristic rules target the same atom, their effects are combined into a \mintinline{text}|TargetHeuristicState| that tracks the \mintinline{text}|level| and \mintinline{text}|sign| across all active \mintinline{text}|RuntimeHeuristicCandidate| instances.
+
+Unassigned targets with an active \mintinline{text}|level| are stored in an ordered set:
 
 \begin{minted}{cpp}
 std::set<DecisionRankKey, DecisionRankGreater> active_decision_ranks_;
 \end{minted}
 
-ordered by decreasing weight, then by a deterministic literal tie-break, so that two runs of the same encoding take the same decisions. Since the ordering happens here and not in clasp's Domain table, the weight is a full machine integer and is not subject to the $16$-bit bound of Section~\ref{sec:flattening}. \mintinline{text}|decide| pops stale entries lazily, that is, targets that have since been assigned or whose state changed after they were ranked, and applies the resolved sign to the best valid target. If no target qualifies but the atom clasp proposes as fallback carries a resolved sign, that sign is applied to clasp's own choice; otherwise \mintinline{text}|decide| returns $0$ and leaves the decision untouched. \mintinline{text}|undo| uses \mintinline{text}|noexcept| refresh paths throughout, since an exception thrown while the solver is backtracking would leave it in a state it has no way to repair.
+Entries are sorted by decreasing weight. Because weights are stored as standard 32-bit integers, this avoids the 16-bit saturation limit of clasp's internal domain table (Section~\ref{sec:flattening}).
+
+When clasp calls \mintinline{text}|decide|, the propagator inspects \mintinline{text}|active_decision_ranks_| from the beginning, discarding any targets that are already assigned on the trail or whose weights have changed. It then branches on the first valid target using its stored \mintinline{text}|sign|. If the set is empty, the propagator checks whether clasp's fallback atom has a stored \mintinline{text}|sign|; otherwise, it returns $0$ to delegate the decision to clasp. During backtracking, \mintinline{text}|undo| restores aggregates and candidate states using \mintinline{text}|noexcept| functions to prevent state corruption during solver unwinding.
+
 
 \section{The Prolog Backend}
 
-The native backend buys its speed by compiling the heuristic language into C++ data structures, which fixes what the language can say. The Prolog backend takes the opposite position: it accepts an actual logic program as the heuristic and evaluates it with a general-purpose engine, so the expressiveness question disappears and the cost question takes its place. The two live in separate builds and are not interchangeable within one binary, but they plug into clasp at the same point, through the same four callbacks and the same registration, and they consume the same encodings up to the notation of the heuristic itself. What differs is the evaluation strategy, which is what the comparison in Section~\ref{sec:backend-summary} is about.
+While the native backend prioritizes evaluation speed through compiled C++ structures, the Prolog backend evaluates heuristics as arbitrary logic programs via an embedded engine, trading runtime overhead for unrestricted expressiveness. This section describes its runtime architecture and trail synchronization mechanisms (with a comprehensive performance comparison presented in Section~\ref{sec:backend-summary}).
 
 \subsection{Rule Strings and Normalisation}
 \label{sec:prolog-syntax}
 
-In the Prolog backend a heuristic is a rule string whose head is a four-argument term carrying target, weight, priority and modifier. The BSP heuristic of Section~\ref{sec:translation} reads:
+In the Prolog backend, a heuristic is defined as a rule string whose head is a four-argument term: \mintinline{text}|heuristic(Target, Weight, Priority, Modifier)|. The BSP heuristic from Section~\ref{sec:translation} is specified as follows:
 
 \begin{minted}{prolog}
 heuristic("heuristic(b(X), W, 0, true) :-
@@ -62,13 +78,13 @@ heuristic("heuristic(b(X), W, 0, true) :-
     W is Base*S+X.").
 \end{minted}
 
-The body is genuine Prolog, and the correspondence with the native fact is the one tabulated above: \mintinline{text}|holds/1| for a positive condition, \mintinline{text}|alpha_not/1| for a negative one, \mintinline{text}|aggregate_all/3| for the dynamic sum, an \mintinline{text}|is/2| for the weight, and \mintinline{text}|target_available/1| for the requirement that the target still be undecided --- which in the native backend is implicit in candidate selection but here has to be said, since a Prolog rule will happily propose an atom that has already been decided.
+The rule body uses standard Prolog syntax and maps directly to the native constructs: \mintinline{text}|holds/1| for positive conditions, \mintinline{text}|alpha_not/1| for negative conditions, \mintinline{text}|aggregate_all/3| for dynamic sums, and \mintinline{text}|is/2| for arithmetic evaluation of weights. Furthermore, \mintinline{text}|target_available/1| ensures the target atom is still unassigned. While the native backend checks this implicitly during candidate selection, the Prolog rule must state it explicitly to prevent proposing atoms that are already assigned on the trail.
 
-The propagator collects all \mintinline{text}|heuristic/1| facts (the alias \mintinline{text}|prolog_heuristic/1| is accepted for compatibility), normalises each string, and classifies its semantics syntactically: a rule containing \mintinline{text}|clingo_not(...)| is clingo-like, otherwise it is Alpha-like. To keep the synchronised state small it then extracts, statically, the predicate signatures that actually occur in the rules --- inside \mintinline{text}|holds|, \mintinline{text}|alpha_not|, \mintinline{text}|clingo_not|, \mintinline{text}|target_available|, and as rule targets --- and mirrors only atoms with those signatures. Without this filter the backend would assert the entire ground program into the Prolog database at every decision level, which on the larger instances dominates everything else.
+During initialization, the propagator collects all \mintinline{text}|heuristic/1| facts, normalizes the rule strings, and classifies their semantics: rules containing \mintinline{text}|clingo_not(...)| use clingo semantics, while all others use Alpha semantics. The propagator extracts the predicate signatures referenced in the rules (\mintinline{text}|holds|, \mintinline{text}|alpha_not|, \mintinline{text}|clingo_not|, \mintinline{text}|target_available|, and rule targets) and asserts into Prolog only solver atoms matching those signatures, avoiding unnecessary memory and synchronization overhead from irrelevant predicates.
 
 \subsection{The Runtime Program}
 
-At initialisation the backend boots the SWI-Prolog engine in-process \cite{wielemaker2012swipl} and consults a generated runtime program that defines the evaluation vocabulary:
+During initialization, the backend starts an embedded SWI-Prolog engine \cite{wielemaker2012swipl} and loads a set of base Prolog rules:
 
 \begin{minted}{prolog}
 holds(A) :- true_atom(A).
@@ -80,7 +96,8 @@ dyn_max(Goal, Template, Max) :-
     (aggregate_all(max(Template), Goal, R) -> Max = R ; Max = 0).
 \end{minted}
 
-These few clauses are the entire semantic bridge, and each of them is one of the conventions fixed earlier. The solver trail is mirrored by the dynamic predicates \mintinline{text}|true_atom/1| and \mintinline{text}|false_atom/1|, and a free atom is represented by absence from both --- so a three-valued assignment is encoded in two two-valued predicates, and \mintinline{text}|\+ holds(A)| means \enquote{false or undecided}, which is exactly Alpha's reading of negation. \mintinline{text}|clingo_not| instead demands explicit falsity. \mintinline{text}|aggregate_all| over \mintinline{text}|holds| computes an aggregate on the atoms currently true, which is Alpha's aggregate semantics obtained for free from Prolog's own evaluation order. \mintinline{text}|dyn_max| and \mintinline{text}|dyn_min| add the empty-set-is-zero convention of Section~\ref{sec:flattening}, and \mintinline{text}|target_available| enforces the requirement discussed above.
+As clasp makes decisions, the propagator mirrors the trail in the Prolog database by adding \mintinline{text}|true_atom(A)| when an atom is assigned to true and \mintinline{text}|false_atom(A)| when it is assigned to false, removing them upon backtracking. Undecided atoms simply do not exist in the database. Because of this, \mintinline{text}|alpha_not(A)| succeeds whenever an atom does not hold true. In contrast, \mintinline{text}|clingo_not(A)| requires an explicit \mintinline{text}|false_atom(A)| on the trail. In the same way, \mintinline{text}|aggregate_all| dynamically computes sums and counts over the atoms currently true on the trail. \mintinline{text}|target_available(A)| verifies that a target is neither true nor false before branching on it, and \mintinline{text}|dyn_max/3| defaults to $0$ when evaluating an empty set (Section~\ref{sec:flattening}).
+
 
 \subsection{Synchronisation and Decision}
 
