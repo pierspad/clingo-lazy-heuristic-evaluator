@@ -56,7 +56,10 @@ runlim_re = {
 
 # Riga di statistiche del solver, emessa da -st. Esempio:
 #   g=200, bt=0, bj=0, bt_within_bj=0, mbt=0, cac=0, del_ng=0
-# g   = chiamate al grounder (il lazy grounding ne fa una per "passo")
+# g   = GUESS (scelte del solver). Verificato sul sorgente di Alpha:
+#       SolverMaintainingStatistics.getStatisticsString() stampa
+#       "g=" + getNumberOfChoices(), e il test lo chiama expectedNumberOfGuesses.
+#       NON sono chiamate al grounder: quelle Alpha non le espone su questa riga.
 # bt  = backtrack, bj = backjump, mbt = must-be-true
 # cac = choices after conflict, del_ng = nogood cancellati
 SOLVER_STATS_RE = re.compile(

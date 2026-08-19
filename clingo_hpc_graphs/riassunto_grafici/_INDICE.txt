@@ -46,13 +46,23 @@ macroarea.
     2_PUP_verdetto.png
     3_HRP_verdetto.png
 
-4_clingo-vs-alpha/  — confronto col sistema esterno Alpha (solo BSP e PUP, v. ALPHA_FAMILIES)
+4_clingo-vs-alpha/  — confronto col sistema esterno Alpha (tutte le famiglie di ALPHA_FAMILIES)
     1_BSP_dashboard.png
     1_BSP_frontiera.png
     2_PUP_dashboard.png
     2_PUP_frontiera.png
+    3_HRP_dashboard.png
+    3_HRP_frontiera.png
 
-5_esplorativi/  — studi mirati sulle varianti fuori dal confronto principale
+5_alpha-vs-backend-prolog/  — costo del motore Prolog nei due sistemi che lo usano: Alpha Qh e il nostro backend
+    1_BSP_costo_consultazione.png
+    1_BSP_dashboard.png
+    2_PUP_costo_consultazione.png
+    2_PUP_dashboard.png
+    3_HRP_costo_consultazione.png
+    3_HRP_dashboard.png
+
+6_esplorativi/  — studi mirati sulle varianti fuori dal confronto principale
     ga_vs_ga_weak/1_BSP_native.png
     ga_vs_ga_weak/1_BSP_prolog.png
     la_aux_vs_gs/1_BSP_native.png

@@ -275,12 +275,17 @@ SCOPE_NOTES = {
 
 
 class Metric:
-    def __init__(self, key, title, ylabel, *, scope=SCOPE_ALL, fmt="auto"):
+    def __init__(self, key, title, ylabel, *, scope=SCOPE_ALL, fmt="auto", log=False):
         self.key = key
         self.title = title
         self.ylabel = ylabel
         self.scope = scope
         self.fmt = fmt
+        # asse y logaritmico: da usare SOLO dove le curve stanno su ordini di
+        # grandezza diversi e la piu' alta schiaccerebbe le altre sullo zero
+        # (v. le consultazioni nell'albero Alpha-vs-backend-prolog). Su una
+        # scala log il confronto e' fra RAPPORTI: va dichiarato in figura.
+        self.log = log
 
     @property
     def lazy_only(self) -> bool:
@@ -552,6 +557,15 @@ class _GBLocator(MaxNLocator):
 
 
 def _apply_fmt(ax, metric: Metric):
+    if metric.log:
+        # la scala log rimpiazza il LOCATOR (MaxNLocator qui darebbe tick
+        # equispaziati in valore su un asse equispaziato in decadi) ma non il
+        # formatter: un asse in MB resta da etichettare in GB anche in log.
+        ax.set_yscale("log")
+        ax.yaxis.set_major_formatter(FuncFormatter(
+            _fmt_gb_from_mb if metric.fmt == "gb" else _fmt_compact))
+        ax.yaxis.offsetText.set_visible(False)
+        return
     if metric.fmt == "gb":
         ax.yaxis.set_major_locator(_GBLocator(nbins=6))
         ax.yaxis.set_major_formatter(FuncFormatter(_fmt_gb_from_mb))
@@ -1436,10 +1450,30 @@ ALPHA_OWN_VARIANTS = ["alpha", "alpha_dom", "alpha_noheur"]
 # Metriche misurate da runlim: le uniche confrontabili fra i due sistemi.
 ALPHA_SHARED_METRICS = ["time", "mem"]
 
+# {famiglia: metriche da disegnare in scala LOG}. Su HRP i TEMPI dei sistemi in
+# campo stanno su quattro ordini di grandezza (0.2 s per le varianti ground di
+# clingo, 14.7 s per Alpha Qh, 441 s per `lc`): in lineare la curva piu' alta
+# appiattisce tutte le altre sull'asse e la figura non mostra proprio il
+# confronto per cui esiste. La memoria della stessa famiglia resta LINEARE
+# (2.4 GB il massimo: si legge benissimo, e in log i pochi MB delle varianti
+# clingo diventano un pettine di picchi verso il fondo scala). BSP e PUP sono
+# lineari su entrambe: sono le figure gia' in tesi e li' le curve sono dello
+# stesso ordine.
+ALPHA_LOG_METRICS = {"HRP": {"time"}}
+
+
+def _as_log(metric: Metric) -> Metric:
+    """Copia della metrica con asse y logaritmico (i Metric sono globali e
+    condivisi: mutarli qui cambierebbe anche gli altri alberi)."""
+    return Metric(metric.key, metric.title, metric.ylabel,
+                  scope=metric.scope, fmt=metric.fmt, log=True)
+
 # Contatori interni di Alpha. Vivono in un pannello separato e NON sono
 # affiancati a choices/conflicts di clasp.
 ALPHA_INTERNAL_METRICS = [
-    Metric("alpha_g", "Alpha: Grounder Calls", "g", fmt="compact"),
+    # g = guess del solver, non chiamate al grounder: v. il commento in
+    # resultparsers/alpha.py, verificato sul sorgente di Alpha.
+    Metric("alpha_g", "Alpha: Guesses", "guesses", fmt="compact"),
     Metric("alpha_bt", "Alpha: Backtracks", "bt", fmt="compact"),
     Metric("alpha_prolog_query_ms", "Alpha: Heuristic Query Time", "Time (ms)", fmt="compact"),
     Metric("alpha_ms_per_query", "Alpha: Cost per Heuristic Query", "ms / query"),
@@ -1539,14 +1573,25 @@ def render_alpha_tree(agg: pd.DataFrame, base: Path,
         present = [v for v in ALPHA_VS_CLINGO_VARIANTS + ALPHA_OWN_VARIANTS
                    if v in set(agg_f["setting"].unique())]
 
-        for key in ALPHA_SHARED_METRICS:
-            metric = METRIC_BY_KEY[key]
+        log_keys = ALPHA_LOG_METRICS.get(family, set())
+        shared = [_as_log(METRIC_BY_KEY[k]) if k in log_keys else METRIC_BY_KEY[k]
+                  for k in ALPHA_SHARED_METRICS]
+        log_scale = bool(log_keys)
+        log_note = ("logarithmic y axis where the panel needs it: on this family the systems "
+                    "span four orders of magnitude and a linear axis would flatten all but the largest.")
+
+        for metric in shared:
+            key = metric.key
             fig, ax = plt.subplots(figsize=(8.8, 5.4))
             drew = _plot_metric_axis(ax, agg_f, metric, family, variants=present,
                                      title=f"{family} — {metric.title}: clingo vs Alpha")
-            if key == "mem" and drew:
-                _figure_note(fig, _ALPHA_MEM_NOTE)
             if drew:
+                # una sola nota per figura: due _figure_note si scriverebbero
+                # alla stessa y, una sopra l'altra.
+                notes = ([_ALPHA_MEM_NOTE] if key == "mem" else []) + \
+                        ([log_note] if metric.log else [])
+                if notes:
+                    _figure_note(fig, "  ".join(notes))
                 _save(fig, fam_dir / f"{key}.png")
                 n += 1
             else:
@@ -1576,11 +1621,155 @@ def render_alpha_tree(agg: pd.DataFrame, base: Path,
         # Dashboard: le due metriche condivise affiancate, che e' la figura
         # che serve in tesi.
         n += _dashboard_grid(
-            agg_f, family, [METRIC_BY_KEY[k] for k in ALPHA_SHARED_METRICS],
+            agg_f, family, shared,
             variants=present, lazy_variants=present,
             suptitle=f"{family} — clingo vs Alpha (runlim measures, the only comparable ones)",
             path=fam_dir / "_dashboard.png", ncol=len(ALPHA_SHARED_METRICS),
-            panel=(6.4, 4.9), extra_notes=[_ALPHA_MEM_NOTE])
+            panel=(6.4, 4.9),
+            extra_notes=[_ALPHA_MEM_NOTE] + ([log_note] if log_scale else []))
+    return n
+
+
+# ===========================================================================
+# Albero MOTORE PROLOG: Alpha Qh vs il backend Prolog di questa tesi
+# (graphs-comparison-alpha-prolog/)
+#
+# Domanda a cui risponde: due sistemi diversi hanno risolto lo STESSO problema
+# — valutare un'euristica dichiarativa interrogando un motore Prolog su
+# un'immagine dell'assegnamento parziale — con due implementazioni indipendenti.
+# Quanto costa l'una e quanto l'altra?
+#
+# PERCHE' QUESTO CONFRONTO E' LECITO E QUELLO SUI CONTATORI DI RICERCA NO
+# Nell'albero clingo-vs-Alpha (sopra) sono confrontabili solo le misure di
+# runlim, perche' guesses/backtracks e choices/conflicts contano fenomeni
+# diversi. Qui la situazione e' l'opposto e va detta esplicitamente: Alpha Qh e
+# il backend Prolog implementano lo stesso meccanismo, quindi il COSTO DI UNA
+# CONSULTAZIONE e la QUOTA DI RUN passata dentro il motore misurano la stessa
+# cosa nei due sistemi e si confrontano direttamente. Restano invece NON
+# confrontabili i CONTEGGI: Alpha interroga intorno ai propri guess, il
+# propagatore una volta per decisione di clasp. Il numero e' disegnato lo
+# stesso — serve a spiegare i totali — ma la nota in calce dichiara che sono
+# eventi diversi.
+#
+# Tutte e tre le famiglie hanno i dati: sono gli stessi run della campagna
+# (system alpha-qh + system clingo-prolog), nessuna misura aggiuntiva.
+# ===========================================================================
+ENGINE_TREE_NAME = "graphs-comparison-alpha-prolog"
+
+# Lato Alpha solo il setting "alpha": e' l'unico con -uqh, cioe' l'unico che
+# usa davvero il bridge Prolog. alpha_dom (HRP) valuta le euristiche nello
+# store nativo e infatti non emette alcuna metrica di query: sparisce da solo.
+ENGINE_ALPHA_VARIANT = "alpha"
+# Lato nostro le due varianti lazy del confronto principale, entrambe sul
+# backend prolog: `la` e' il regime "poche consultazioni ben guidate", `lc`
+# quello "tante consultazioni inutili", e insieme coprono le due estremita' del
+# costo che Alpha si trova nel mezzo.
+ENGINE_PROLOG_VARIANTS = ["la", "lc"]
+
+ENGINE_METRICS = [
+    # conteggi e tempi cumulati: `lc` ne fa fino a tre ordini di grandezza piu'
+    # degli altri (73.143 consultazioni su HRP-14 contro 106 di `la`), e su
+    # scala lineare schiaccerebbe le altre due curve sull'asse. Log.
+    Metric("engine_consultations", "Consultations of the Prolog Engine",
+           "consultations", fmt="compact", log=True),
+    Metric("engine_ms_per_consultation", "Cost of One Consultation", "ms / consultation"),
+    Metric("engine_total_s", "Cumulative Time Inside the Prolog Engine",
+           "Time (s)", log=True),
+    Metric("engine_share_pct", "Share of the Run Spent in the Prolog Engine", "% of wall time"),
+]
+
+_ENGINE_NOTES = [
+    "clingo curves (la/lc) are the PROLOG backend; the native backend has no query phase and does not appear here.",
+    "counts are NOT commensurable: Alpha queries around its own guesses, the propagator once per clasp decision. "
+    "The commensurable measures are the cost of one consultation and the share of the run spent inside the engine.",
+    "share = cumulative query time / runlim wall time, same definition for both systems: for the clingo variants "
+    "the denominator includes the grounding of the base program, which Alpha never performs.",
+    "counts and cumulative times are on a LOGARITHMIC axis: the curves differ by up to three orders of magnitude.",
+]
+
+
+def _engine_frame(agg: pd.DataFrame, family: str) -> pd.DataFrame:
+    """Righe (setting, size) con le quattro metriche del motore, prese dalle
+    colonne dei due sistemi e riportate a chiavi comuni: Alpha le emette come
+    alpha_prolog_*, il propagatore come total_prolog_query_time_ms/decide_calls.
+    Senza questa normalizzazione le due serie non finirebbero mai sullo stesso
+    asse, che e' esattamente il confronto che serve."""
+    fam = agg[agg["family"] == family]
+    rows = []
+
+    def _add(setting: str, size, count, ms, total_ms, wall):
+        if pd.isna(count) or pd.isna(total_ms):
+            return
+        rows.append({
+            "setting": setting, "family": family, "size": size,
+            "engine_consultations": count,
+            "engine_ms_per_consultation": ms if not pd.isna(ms) else (
+                total_ms / count if count else float("nan")),
+            "engine_total_s": total_ms / 1000.0,
+            "engine_share_pct": (100.0 * total_ms / 1000.0 / wall
+                                 if wall and not pd.isna(wall) and wall > 0 else float("nan")),
+        })
+
+    for _, r in fam[(fam["backend"] == ALPHA_BACKEND)
+                    & (fam["setting"] == ENGINE_ALPHA_VARIANT)].iterrows():
+        _add(ENGINE_ALPHA_VARIANT, r["size"], r.get("alpha_prolog_queries"),
+             r.get("alpha_ms_per_query"), r.get("alpha_prolog_query_ms"), r.get("time"))
+
+    for _, r in fam[(fam["backend"] == "prolog")
+                    & (fam["setting"].isin(ENGINE_PROLOG_VARIANTS))].iterrows():
+        _add(r["setting"], r["size"], r.get("decide_calls"),
+             r.get("prolog_ms_per_decide"), r.get("total_prolog_query_time_ms"), r.get("time"))
+
+    return pd.DataFrame(rows)
+
+
+def render_engine_tree(agg: pd.DataFrame, base: Path) -> int:
+    """graphs-comparison-alpha-prolog/<FAM>/{<metrica>.png, _dashboard.png}"""
+    if ALPHA_BACKEND not in set(agg["backend"].unique()):
+        print(f"  [info] nessun run '{ALPHA_BACKEND}' in results.xml: "
+              f"albero {ENGINE_TREE_NAME} saltato")
+        return 0
+    if "prolog" not in set(agg["backend"].unique()):
+        print(f"  [info] nessun run sul backend prolog: albero {ENGINE_TREE_NAME} saltato")
+        return 0
+
+    tree = base / ENGINE_TREE_NAME
+    n = 0
+    for family in ALPHA_FAMILIES:
+        frame = _engine_frame(agg, family)
+        if frame.empty:
+            print(f"  [info] {family}: nessuna metrica di query nei due sistemi, "
+                  f"cartella saltata in {ENGINE_TREE_NAME}")
+            continue
+        present = [v for v in [ENGINE_ALPHA_VARIANT] + ENGINE_PROLOG_VARIANTS
+                   if v in set(frame["setting"].unique())]
+        if len(present) < 2:
+            print(f"  [info] {family}: un solo sistema con dati di query "
+                  f"({present}), non c'e' un confronto da disegnare")
+            continue
+
+        fam_dir = tree / FAM_SUBDIR[family]
+        shutil.rmtree(fam_dir, ignore_errors=True)
+
+        for metric in ENGINE_METRICS:
+            fig, ax = plt.subplots(figsize=(8.8, 5.4))
+            drew = _plot_metric_axis(
+                ax, frame, metric, family, variants=present, note=False,
+                title=f"{family} — {metric.title}: Alpha Qh vs Prolog backend")
+            if drew:
+                _figure_note(fig, _ENGINE_NOTES[1])
+                _save(fig, fam_dir / f"{metric.key.replace('engine_', '')}.png")
+                n += 1
+            else:
+                plt.close(fig)
+
+        n += _dashboard_grid(
+            frame, family, ENGINE_METRICS,
+            variants=present, lazy_variants=present,
+            suptitle=f"{family} — two implementations of the same idea: "
+                     f"Alpha's Qh bridge vs this thesis's Prolog backend",
+            path=fam_dir / "_dashboard.png", ncol=2, panel=(6.4, 4.6),
+            extra_notes=_ENGINE_NOTES)
     return n
 
 
@@ -1618,15 +1807,17 @@ SUMMARY_AREAS = {
     "prolog": "2_varianti-prolog",
     "comparison": "3_native-vs-prolog",
     "alpha": "4_clingo-vs-alpha",
-    "exploratory": "5_esplorativi",
+    "engine": "5_alpha-vs-backend-prolog",
+    "exploratory": "6_esplorativi",
 }
 
 SUMMARY_AREA_DESC = {
     "1_varianti-native": "le 5 varianti a confronto sul backend native, una cartella per famiglia",
     "2_varianti-prolog": "le 5 varianti a confronto sul backend prolog, una cartella per famiglia",
     "3_native-vs-prolog": "verdetto per area: quale backend vince, all'ultima taglia comune",
-    "4_clingo-vs-alpha": "confronto col sistema esterno Alpha (solo BSP e PUP, v. ALPHA_FAMILIES)",
-    "5_esplorativi": "studi mirati sulle varianti fuori dal confronto principale",
+    "4_clingo-vs-alpha": "confronto col sistema esterno Alpha (tutte le famiglie di ALPHA_FAMILIES)",
+    "5_alpha-vs-backend-prolog": "costo del motore Prolog nei due sistemi che lo usano: Alpha Qh e il nostro backend",
+    "6_esplorativi": "studi mirati sulle varianti fuori dal confronto principale",
 }
 
 
@@ -1669,6 +1860,13 @@ def _summary_sources(base: Path) -> list[tuple[Path, Path]]:
                         base / ALPHA_TREE_NAME / fam_dir / "_dashboard.png"))
         sources.append((alpha_area / f"{fam_dir}_frontiera.png",
                         base / ALPHA_TREE_NAME / fam_dir / "frontier.png"))
+    engine_area = Path(SUMMARY_AREAS["engine"])
+    for family in ALPHA_FAMILIES:
+        fam_dir = FAM_SUBDIR[family]
+        sources.append((engine_area / f"{fam_dir}_dashboard.png",
+                        base / ENGINE_TREE_NAME / fam_dir / "_dashboard.png"))
+        sources.append((engine_area / f"{fam_dir}_costo_consultazione.png",
+                        base / ENGINE_TREE_NAME / fam_dir / "ms_per_consultation.png"))
     return sources
 
 
@@ -1784,6 +1982,11 @@ def build_jobs(agg: pd.DataFrame, base: Path, ground: pd.DataFrame | None,
     # funzionare senza modifiche.
     jobs["alpha-comparison"] = lambda: render_alpha_tree(agg, base, attempted)
     order.append("alpha-comparison")
+
+    # Stessa logica: senza run Alpha (o senza backend prolog) stampa un [info]
+    # e non disegna niente, cosi' i results.xml vecchi restano validi.
+    jobs["alpha-prolog-engines"] = lambda: render_engine_tree(agg, base)
+    order.append("alpha-prolog-engines")
 
     jobs["summary"] = lambda: render_summary(base)
     order.append("summary")

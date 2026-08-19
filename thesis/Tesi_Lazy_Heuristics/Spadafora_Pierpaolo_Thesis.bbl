@@ -743,6 +743,28 @@
       \field{pages}{17\bibrangedash 24}
       \range{pages}{8}
     \endentry
+    \entry{benchmarkTool}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=6d1280f98eefa99bcc5d4a7d74f44c6a}{%
+           family={{Potassco Group}},
+           familyi={P\bibinitperiod}}}%
+      }
+      \strng{namehash}{6d1280f98eefa99bcc5d4a7d74f44c6a}
+      \strng{fullhash}{6d1280f98eefa99bcc5d4a7d74f44c6a}
+      \strng{fullhashraw}{6d1280f98eefa99bcc5d4a7d74f44c6a}
+      \strng{bibnamehash}{6d1280f98eefa99bcc5d4a7d74f44c6a}
+      \strng{authorbibnamehash}{6d1280f98eefa99bcc5d4a7d74f44c6a}
+      \strng{authornamehash}{6d1280f98eefa99bcc5d4a7d74f44c6a}
+      \strng{authorfullhash}{6d1280f98eefa99bcc5d4a7d74f44c6a}
+      \strng{authorfullhashraw}{6d1280f98eefa99bcc5d4a7d74f44c6a}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{\url{https://potassco.org/benchmark-tool/}}
+      \field{note}{Accessed 2026}
+      \field{title}{benchmark-tool: A tool for benchmarking solvers and orchestrating cluster runs}
+    \endentry
     \entry{runlim}{misc}{}{}
       \name{author}{1}{}{%
         {{hash=22081d00e30965a89f413e528510617e}{%
@@ -766,77 +788,6 @@
       \field{howpublished}{\url{https://github.com/arminbiere/runlim}}
       \field{note}{Accessed 2026}
       \field{title}{runlim: a tool for sampling time and memory usage of a process}
-    \endentry
-    \entry{biere2015scoring}{inproceedings}{}{}
-      \name{author}{2}{}{%
-        {{hash=22081d00e30965a89f413e528510617e}{%
-           family={Biere},
-           familyi={B\bibinitperiod},
-           given={Armin},
-           giveni={A\bibinitperiod}}}%
-        {{hash=00cba42bd010c829a401a390bbaece9c}{%
-           family={Fröhlich},
-           familyi={F\bibinitperiod},
-           given={Andreas},
-           giveni={A\bibinitperiod}}}%
-      }
-      \list{publisher}{1}{%
-        {Springer}%
-      }
-      \strng{namehash}{637824bc93b3324e60f9d2a2b6e1c9de}
-      \strng{fullhash}{637824bc93b3324e60f9d2a2b6e1c9de}
-      \strng{fullhashraw}{637824bc93b3324e60f9d2a2b6e1c9de}
-      \strng{bibnamehash}{637824bc93b3324e60f9d2a2b6e1c9de}
-      \strng{authorbibnamehash}{637824bc93b3324e60f9d2a2b6e1c9de}
-      \strng{authornamehash}{637824bc93b3324e60f9d2a2b6e1c9de}
-      \strng{authorfullhash}{637824bc93b3324e60f9d2a2b6e1c9de}
-      \strng{authorfullhashraw}{637824bc93b3324e60f9d2a2b6e1c9de}
-      \field{sortinit}{2}
-      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{booktitle}{Theory and Applications of Satisfiability Testing ({SAT} 2015)}
-      \field{series}{Lecture Notes in Computer Science}
-      \field{title}{Evaluating {CDCL} Variable Scoring Schemes}
-      \field{volume}{9340}
-      \field{year}{2015}
-      \true{nocite}
-      \field{pages}{405\bibrangedash 422}
-      \range{pages}{18}
-    \endentry
-    \entry{dodaro2020wasp}{article}{}{}
-      \name{author}{2}{}{%
-        {{hash=5dab82e1316a61875fa864346d121e08}{%
-           family={Dodaro},
-           familyi={D\bibinitperiod},
-           given={Carmine},
-           giveni={C\bibinitperiod}}}%
-        {{hash=d50b8c03eb60f0c7de0df2462c97c37c}{%
-           family={Ricca},
-           familyi={R\bibinitperiod},
-           given={Francesco},
-           giveni={F\bibinitperiod}}}%
-      }
-      \strng{namehash}{fbec77ab7f3230b764da577e78e49679}
-      \strng{fullhash}{fbec77ab7f3230b764da577e78e49679}
-      \strng{fullhashraw}{fbec77ab7f3230b764da577e78e49679}
-      \strng{bibnamehash}{fbec77ab7f3230b764da577e78e49679}
-      \strng{authorbibnamehash}{fbec77ab7f3230b764da577e78e49679}
-      \strng{authornamehash}{fbec77ab7f3230b764da577e78e49679}
-      \strng{authorfullhash}{fbec77ab7f3230b764da577e78e49679}
-      \strng{authorfullhashraw}{fbec77ab7f3230b764da577e78e49679}
-      \field{sortinit}{2}
-      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{journaltitle}{Theory and Practice of Logic Programming}
-      \field{number}{2}
-      \field{title}{The External Interface for Extending {WASP}}
-      \field{volume}{20}
-      \field{year}{2020}
-      \true{nocite}
-      \field{pages}{225\bibrangedash 248}
-      \range{pages}{24}
     \endentry
   \enddatalist
 \endrefsection
