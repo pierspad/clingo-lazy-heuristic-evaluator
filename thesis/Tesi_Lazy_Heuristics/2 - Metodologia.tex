@@ -89,7 +89,7 @@ In both builds, the class implements \mintinline{text}|Clingo::Heuristic|---the 
 \end{itemize}
 To activate this mechanism, runs are launched with the flag \mintinline{text}|--heuristic=Domain|. A detailed discussion of the architectural differences between the two backends is provided in Chapter~\ref{sec:implementation}.
 
-The propagator never adds a constraint, never derives a literal, and never refuses one. It only reorders the decisions Clasp would have taken anyway, so the answer sets are untouched, and a heuristic can make a run slower or faster but cannot change the meaning of the encoding. This is expanded in Section~\ref{sec:validation}.
+The propagator never adds a constraint, never derives a literal, and never refuses one. It only reorders the decisions Clasp would have taken anyway, so the answer sets are untouched, and a heuristic can make a run slower or faster but cannot change the meaning of the encoding (detailed in Section~\ref{sec:decision}).
 
 \section{Translation of the Heuristic Directives}
 \label{sec:dsl}
