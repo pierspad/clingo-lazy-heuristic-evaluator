@@ -20,7 +20,8 @@ On BSP, search trajectories between C++ and Prolog coincide identically across a
 \subsection{Measurement Reliability and Timing Variation}
 \label{sec:time-reliability}
 
-Tables~\ref{tab:overview-bsp}--\ref{tab:overview-hrp} summarize the outcome of every cell in the experimental matrix, reporting solved instance counts and the first failure point.
+Tables~\ref{tab:overview-bsp}--\ref{tab:overview-hrp} report the outcome of every testcase: instances solved and the size of the first failure. 
+In the BSP benchmark, solver failures scale predictably with instance size: once a variant fails at a given size, it fails for all subsequent sizes, with timeouts representing the first point of failure in all cases (between $n=70$ and $n=170$). On PUP, however, difficulty does not scale consistently with size: \mintinline{text}|lc| times out on \texttt{double-80} yet successfully solves the larger \texttt{double-100}. This discrepancy arises because each size consists of a distinct benchmark instance, with hardness fluctuating considerably between the specific neighboring sizes; In section~\ref{sec:pup} there is a deeper detail on choice counts instead of runtimes to analyze this better.
 
 \begin{table}[H]
 \centering
@@ -41,7 +42,7 @@ Tables~\ref{tab:overview-bsp}--\ref{tab:overview-hrp} summarize the outcome of e
 \mintinline{text}|la_co|     & 20/20 & --- & 20/20 & ---\\
 \bottomrule
 \end{tabular}
-\caption{BSP campaign overview ($n=10..200$, 600\,s / 30\,GB per run). Every cell is monotone in $n$. At $n=180$ five of the eight variants fail with both flags set (\emph{T} and \emph{M} simultaneously) on both backends, the size at which the base program's own growth exhausts the memory budget at about the point where it would also time out. The two backends agree on six of the eight frontiers; where they differ, the Prolog backend is the one that stops earlier, by one size for \texttt{la} and \texttt{lc} and by three for \texttt{la\_aux}. The \texttt{la} and \texttt{lc} cells are the two the campaign cannot separate cleanly, because the native runs that decide them finish at $585.7$ and $595.0$ seconds against a $600$-second limit (Section~\ref{sec:time-reliability}); the \texttt{la\_aux} gap is a real per-decision cost, analysed in Section~\ref{sec:aux-form}. The separations that no measurement margin can touch are \texttt{ga} and \texttt{la\_aux} at one end and \texttt{la\_co} at the other.}
+\caption{BSP campaign overview ($n=10..200$, 600\,s / 30\,GB per run).}
 \label{tab:overview-bsp}
 \end{table}
 
@@ -61,7 +62,7 @@ Tables~\ref{tab:overview-bsp}--\ref{tab:overview-hrp} summarize the outcome of e
 \mintinline{text}|lc|        & 4/10  & T@80 (non-mon.) & 2/10 & T@60\\
 \bottomrule
 \end{tabular}
-\caption{PUP campaign overview (\texttt{double-$N$}, $N=20..200$, 600\,s / 30\,GB per run). Under this budget neither \texttt{ga} nor \texttt{la} fails anywhere in the tested range; the two variants whose heuristic carries no dynamic aggregate (\texttt{gc\_noheur}, \texttt{gc}) stall by timeout well inside it. One native cell is not monotone in $N$: \texttt{lc} fails on \texttt{double-80} but solves \texttt{double-100}. This is a property of the family --- one instance per size, with neighbouring sizes of very different hardness --- and Section~\ref{sec:pup} reads it through the choice counts rather than the times.}
+\caption{PUP campaign overview (\texttt{double-$N$}, $N=20..200$, 600\,s / 30\,GB per run).}
 \label{tab:overview-pup}
 \end{table}
 
@@ -85,9 +86,9 @@ Tables~\ref{tab:overview-bsp}--\ref{tab:overview-hrp} summarize the outcome of e
 \label{tab:overview-hrp}
 \end{table}
 
-Three headline facts are visible at this granularity and are unpacked in the following subsections. The first is that the three families put the frontier in three different places, and only two of them are informative. On PUP the frontier separates the variants by more than a factor of two in reach and is set by the heuristic's own grounding, which makes it the family where the comparison is decided. On HRP no variant except \mintinline{text}|lc| is ever in difficulty, so the frontier says nothing and the guidance quality says everything. On BSP the frontier of every same-encoding variant is set by the grounding of the base program, which the heuristic representation does not touch: \mintinline{text}|gc_noheur| stops after $n=150$ on both backends, \mintinline{text}|la| after $160$ and $150$, \mintinline{text}|lc| after $150$ and $140$, a band two sizes wide. What separates them there is not reach but cost: \mintinline{text}|la| arrives at that wall having performed $n$ choices and zero conflicts at every size, with the search cost removed rather than reduced.
+Read against the resolution just established, the matrix separates into what the frontier alone can decide and what it cannot. On BSP it cannot: every same-encoding variant stops within a band two sizes wide --- \mintinline{text}|gc_noheur| after $n=150$ on both backends, \mintinline{text}|la| after $160$ and $150$, \mintinline{text}|lc| after $150$ and $140$ --- because the frontier is set by the grounding of the base program, which the heuristic representation does not touch, and the runs that order the band are the ones that finish within $2.5\%$ of the limit. What distinguishes those variants is the cost at which they reach the same wall, and Sections~\ref{sec:bsp-runtime} and~\ref{sec:per-decision-cost} measure it. On PUP the frontier does decide the comparison: it is set by the heuristic's own grounding, and it separates the variants by more than a factor of two in reach. On HRP it says nothing at all, since only \mintinline{text}|lc| is ever in difficulty, and the guidance quality carries the whole analysis.
 
-The second fact is that two variants separate themselves from that band by margins no measurement can blur, in opposite directions. The ground Alpha simulation \mintinline{text}|ga| collapses on BSP because of the static unrolling that makes it faithful, failing from $n=70$, nine sizes before the heuristic-free baseline; \mintinline{text}|la_co| solves the entire range in milliseconds. Third, the clingo-like lazy variant \mintinline{text}|lc| shows two distinct failure modes, inertness on BSP and active misguidance on HRP, both of which the per-decision instrumentation measures directly. It is also the variant whose frontier moves most between the two backends on the families where the propagator is consulted tens of thousands of times (PUP and HRP), since it is the one whose cost is dominated by the per-decision machinery.
+Three separations in the matrix are wide enough that no measurement margin can touch them, and each is the subject of a later section. The ground Alpha simulation \mintinline{text}|ga| fails on BSP from $n=70$, nine sizes before the heuristic-free baseline, as a direct consequence of the static unrolling that makes it faithful; \mintinline{text}|la_co| solves the entire range in milliseconds; \mintinline{text}|la_aux| loses three sizes on the Prolog backend to a per-decision cost analysed in Section~\ref{sec:aux-form}. The last of these is one instance of a pattern visible throughout the matrix: the two backends agree wherever the propagator is cheap, and where they differ it is always the Prolog side that stops earlier, most markedly for \mintinline{text}|lc| on the families where the propagator is consulted tens of thousands of times. Section~\ref{sec:backend-summary} collects those five cells; \mintinline{text}|lc| itself shows two distinct failure modes, inertness on BSP and active misguidance on HRP, which the per-decision instrumentation measures directly.
 
 \section{Reduction of the Ground Heuristic Component}
 

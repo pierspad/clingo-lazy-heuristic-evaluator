@@ -40,22 +40,22 @@
 \contentsline {section}{\numberline {4.1}Experimental Setup and Dataset}{22}{section.4.1}%
 \contentsline {subsection}{\numberline {4.1.1}Measurement Reliability and Timing Variation}{22}{subsection.4.1.1}%
 \contentsline {section}{\numberline {4.2}Reduction of the Ground Heuristic Component}{24}{section.4.2}%
-\contentsline {section}{\numberline {4.3}BSP: Runtime Behaviour}{26}{section.4.3}%
-\contentsline {section}{\numberline {4.4}BSP: the Two Semantics Under the Microscope}{29}{section.4.4}%
-\contentsline {section}{\numberline {4.5}BSP: Rules, Variables, and Memory}{30}{section.4.5}%
-\contentsline {section}{\numberline {4.6}The Price of Laziness: Per-Decision Cost}{32}{section.4.6}%
-\contentsline {section}{\numberline {4.7}Two Ground Simulations of Alpha: \texttt {ga} versus \texttt {ga\_weak}}{34}{section.4.7}%
-\contentsline {section}{\numberline {4.8}Direct and Auxiliary Forms}{36}{section.4.8}%
-\contentsline {section}{\numberline {4.9}Effect of the Constraint Formulation}{37}{section.4.9}%
-\contentsline {section}{\numberline {4.10}PUP: the Grounding Bottleneck at Scale}{38}{section.4.10}%
-\contentsline {section}{\numberline {4.11}HRP: Semantics Without Aggregates}{42}{section.4.11}%
-\contentsline {section}{\numberline {4.12}An External Reference: Alpha}{43}{section.4.12}%
-\contentsline {section}{\numberline {4.13}Native versus Prolog: Summary}{47}{section.4.13}%
-\contentsline {section}{\numberline {4.14}Summary of Results}{48}{section.4.14}%
-\contentsline {chapter}{\numberline {5}Discussion and Conclusions}{50}{chapter.5}%
-\contentsline {section}{\numberline {5.1}Discussion of the Results}{50}{section.5.1}%
-\contentsline {section}{\numberline {5.2}Limitations}{53}{section.5.2}%
-\contentsline {section}{\numberline {5.3}Implications}{54}{section.5.3}%
-\contentsline {section}{\numberline {5.4}Future Work}{55}{section.5.4}%
-\contentsline {section}{\numberline {5.5}Conclusions}{55}{section.5.5}%
-\contentsline {chapter}{Bibliography}{57}{chapter*.10}%
+\contentsline {section}{\numberline {4.3}BSP: Runtime Behaviour}{25}{section.4.3}%
+\contentsline {section}{\numberline {4.4}BSP: the Two Semantics Under the Microscope}{28}{section.4.4}%
+\contentsline {section}{\numberline {4.5}BSP: Rules, Variables, and Memory}{29}{section.4.5}%
+\contentsline {section}{\numberline {4.6}The Price of Laziness: Per-Decision Cost}{31}{section.4.6}%
+\contentsline {section}{\numberline {4.7}Two Ground Simulations of Alpha: \texttt {ga} versus \texttt {ga\_weak}}{33}{section.4.7}%
+\contentsline {section}{\numberline {4.8}Direct and Auxiliary Forms}{35}{section.4.8}%
+\contentsline {section}{\numberline {4.9}Effect of the Constraint Formulation}{36}{section.4.9}%
+\contentsline {section}{\numberline {4.10}PUP: the Grounding Bottleneck at Scale}{37}{section.4.10}%
+\contentsline {section}{\numberline {4.11}HRP: Semantics Without Aggregates}{41}{section.4.11}%
+\contentsline {section}{\numberline {4.12}An External Reference: Alpha}{42}{section.4.12}%
+\contentsline {section}{\numberline {4.13}Native versus Prolog: Summary}{46}{section.4.13}%
+\contentsline {section}{\numberline {4.14}Summary of Results}{47}{section.4.14}%
+\contentsline {chapter}{\numberline {5}Discussion and Conclusions}{49}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Discussion of the Results}{49}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Limitations}{52}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Implications}{53}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Future Work}{54}{section.5.4}%
+\contentsline {section}{\numberline {5.5}Conclusions}{54}{section.5.5}%
+\contentsline {chapter}{Bibliography}{56}{chapter*.10}%
