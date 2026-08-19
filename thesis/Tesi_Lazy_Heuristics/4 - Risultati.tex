@@ -20,8 +20,8 @@ On BSP, search trajectories between C++ and Prolog coincide identically across a
 \subsection{Measurement Reliability and Timing Variation}
 \label{sec:time-reliability}
 
-Tables~\ref{tab:overview-bsp}--\ref{tab:overview-hrp} report the outcome of every testcase: instances solved and the size of the first failure. 
-In the BSP benchmark, solver failures scale predictably with instance size: once a variant fails at a given size, it fails for all subsequent sizes, with timeouts representing the first point of failure in all cases (between $n=70$ and $n=170$). On PUP, however, difficulty does not scale consistently with size: \mintinline{text}|lc| times out on \texttt{double-80} yet successfully solves the larger \texttt{double-100}. This discrepancy arises because each size consists of a distinct benchmark instance, with hardness fluctuating considerably between the specific neighboring sizes; In section~\ref{sec:pup} there is a deeper detail on choice counts instead of runtimes to analyze this better.
+Tables~\ref{tab:overview-bsp}--\ref{tab:overview-hrp} summarize the outcome of the benchmark campaign, reporting the number of solved instances and the first failure point for each variant.
+In the BSP benchmark, solver failures scale predictably with instance size: once a variant fails at a given size, it also fails for all subsequent sizes, with timeouts representing the first failure mode in all cases (between $n=70$ and $n=170$). On PUP, however, difficulty does not scale monotonically with size: \mintinline{text}|lc| times out on \texttt{double-80} yet successfully solves \texttt{double-100}. This behavior stems from the benchmark design, which provides only a single instance per size with significant variations in hardness between neighboring sizes; Section~\ref{sec:pup} analyzes this effect in detail using choice counts rather than runtimes.
 
 \begin{table}[H]
 \centering
@@ -36,13 +36,14 @@ In the BSP benchmark, solver failures scale predictably with instance size: once
 \mintinline{text}|gc|        & 13/20 & T@140 & 13/20 & T@140\\
 \mintinline{text}|ga|        & 6/20  & T@70  & 6/20  & T@70\\
 \mintinline{text}|ga_weak|   & 14/20 & T@150 & 14/20 & T@150\\
-\mintinline{text}|la|        & 16/20 & T@170 & 15/20 & T@160\\
+\mintinline{text}|la|        & \textbf{16/20} & \textbf{T@170} & \textbf{15/20} & \textbf{T@160}\\
 \mintinline{text}|lc|        & 15/20 & T@160 & 14/20 & T@150\\
-\mintinline{text}|la_aux|    & 6/20  & T@70 & 3/20 & T@40\\
-\mintinline{text}|la_co|     & 20/20 & --- & 20/20 & ---\\
+\midrule[\lightrulewidth]
+\mintinline{text}|la_aux|    & 6/20  & T@70  & 3/20  & T@40\\
+\mintinline{text}|la_co|     & \textbf{20/20} & \textbf{---} & \textbf{20/20} & \textbf{---}\\
 \bottomrule
 \end{tabular}
-\caption{BSP campaign overview ($n=10..200$, 600\,s / 30\,GB per run).}
+\caption{BSP campaign overview ($n=10..200$, 600\,s / 30\,GB per run). Best results in bold; bottom block shows exploratory and reformulated variants.}
 \label{tab:overview-bsp}
 \end{table}
 
@@ -56,13 +57,13 @@ In the BSP benchmark, solver failures scale predictably with instance size: once
 \textbf{Variant} & \textbf{solved} & \textbf{first failure} & \textbf{solved} & \textbf{first failure}\\
 \midrule
 \mintinline{text}|gc_noheur| & 4/10  & T@100 & 4/10  & T@100\\
-\mintinline{text}|gc|        & 3/10  & T@80 & 3/10  & T@80\\
-\mintinline{text}|ga|        & 10/10 & --- & 10/10 & ---\\
-\mintinline{text}|la|        & 10/10 & --- & 10/10 & ---\\
+\mintinline{text}|gc|        & 3/10  & T@80  & 3/10  & T@80\\
+\mintinline{text}|ga|        & \textbf{10/10} & \textbf{---} & \textbf{10/10} & \textbf{---}\\
+\mintinline{text}|la|        & \textbf{10/10} & \textbf{---} & \textbf{10/10} & \textbf{---}\\
 \mintinline{text}|lc|        & 4/10  & T@80 (non-mon.) & 2/10 & T@60\\
 \bottomrule
 \end{tabular}
-\caption{PUP campaign overview (\texttt{double-$N$}, $N=20..200$, 600\,s / 30\,GB per run).}
+\caption{PUP campaign overview (\texttt{double-$N$}, $N=20..200$, 600\,s / 30\,GB per run). Best results in bold.}
 \label{tab:overview-pup}
 \end{table}
 
@@ -79,16 +80,21 @@ In the BSP benchmark, solver failures scale predictably with instance size: once
 \mintinline{text}|gc|        & 10/10 & --- & 10/10 & ---\\
 \mintinline{text}|ga|        & 10/10 & --- & 10/10 & ---\\
 \mintinline{text}|la|        & 10/10 & --- & 10/10 & ---\\
-\mintinline{text}|lc|        & 8/10  & T@18 & 7/10 & T@16\\
+\mintinline{text}|lc|        & 8/10  & T@18 & 7/10  & T@16\\
 \bottomrule
 \end{tabular}
 \caption{HRP campaign overview (\texttt{house-$N$}, $N=2..20$ persons, 600\,s / 30\,GB per run).}
 \label{tab:overview-hrp}
 \end{table}
 
-Read against the resolution just established, the matrix separates into what the frontier alone can decide and what it cannot. On BSP it cannot: every same-encoding variant stops within a band two sizes wide --- \mintinline{text}|gc_noheur| after $n=150$ on both backends, \mintinline{text}|la| after $160$ and $150$, \mintinline{text}|lc| after $150$ and $140$ --- because the frontier is set by the grounding of the base program, which the heuristic representation does not touch, and the runs that order the band are the ones that finish within $2.5\%$ of the limit. What distinguishes those variants is the cost at which they reach the same wall, and Sections~\ref{sec:bsp-runtime} and~\ref{sec:per-decision-cost} measure it. On PUP the frontier does decide the comparison: it is set by the heuristic's own grounding, and it separates the variants by more than a factor of two in reach. On HRP it says nothing at all, since only \mintinline{text}|lc| is ever in difficulty, and the guidance quality carries the whole analysis.
+Evaluating these summary tables reveals that the maximum instance size solved provides different insights depending on the problem of choice. 
+\begin{itemize}
+    \item \textbf{On BSP}, the solvability frontier alone is insufficient to differentiate the approaches. Variants sharing the same base encoding (\mintinline{text}|gc_noheur|, \mintinline{text}|la|, and \mintinline{text}|lc|) all stop between $n=140$ and $n=160$, constrained by the heavy grounding of the base program. What distinguishes these variants is their internal search efficiency: \mintinline{text}|la| virtually eliminates solving time and conflicts (Sections~\ref{sec:bsp-runtime} and~\ref{sec:per-decision-cost}).
+    \item \textbf{On PUP}, the "alpha semantic"-like dynamic guidance enables both \mintinline{text}|ga| and \mintinline{text}|la| to solve the entire range up to $N=200$, whereas the other stalls around $N=80$ due to search space explosion. With search effectively solved, PUP isolates the cost of the heuristic representation itself: the lazy approach \mintinline{text}|la| cuts grounding time and peak memory in half compared to the static aggregate unrolling in \mintinline{text}|ga| (\textbf{12.7\,GB} vs \textbf{24.6\,GB} at $N=200$).
+    \item \textbf{On HRP}, the solvability frontier is uninformative because nearly all variants solve the entire benchmark suite; the evaluation centers instead on decision quality and the severe misguidance observed in \mintinline{text}|lc|.
+\end{itemize}
 
-Three separations in the matrix are wide enough that no measurement margin can touch them, and each is the subject of a later section. The ground Alpha simulation \mintinline{text}|ga| fails on BSP from $n=70$, nine sizes before the heuristic-free baseline, as a direct consequence of the static unrolling that makes it faithful; \mintinline{text}|la_co| solves the entire range in milliseconds; \mintinline{text}|la_aux| loses three sizes on the Prolog backend to a per-decision cost analysed in Section~\ref{sec:aux-form}. The last of these is one instance of a pattern visible throughout the matrix: the two backends agree wherever the propagator is cheap, and where they differ it is always the Prolog side that stops earlier, most markedly for \mintinline{text}|lc| on the families where the propagator is consulted tens of thousands of times. Section~\ref{sec:backend-summary} collects those five cells; \mintinline{text}|lc| itself shows two distinct failure modes, inertness on BSP and active misguidance on HRP, which the per-decision instrumentation measures directly.
+Some other trends emerge from the benchmarks. First, the static ground simulation (\mintinline{text}|ga|) fails prematurely on BSP at $n=70$, nine sizes earlier than the baseline, due to the combinatorial explosion of static unrolling. Second, the native C++ and Prolog backends yield identical frontiers whenever propagator queries remain cheap; where they diverge, the Prolog backend consistently fails earlier due to evaluation overhead, particularly for \mintinline{text}|lc| where the propagator is queried tens of thousands of times. Finally, \mintinline{text}|lc| illustrates two distinct failure modes caused by clingo-style aggregate evaluation over the partial assignments: on BSP, the heuristic is completely inactive because its aggregate conditions are never satisfied during search (producing zero candidates), whereas on HRP, delayed evaluation yields misleading suggestions that severely degrade search performance (both detailed in Section~\ref{sec:backend-summary}).
 
 \section{Reduction of the Ground Heuristic Component}
 

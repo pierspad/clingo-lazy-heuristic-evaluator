@@ -1,9 +1,10 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Arch Linux) (preloaded format=pdflatex 2026.6.1)  19 AUG 2026 20:52
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Arch Linux) (preloaded format=pdflatex 2026.6.1)  19 AUG 2026 21:38
 entering extended mode
- restricted \write18 enabled.
+ \write18 enabled.
+ file:line:error style messages enabled.
  %&-line parsing enabled.
-**Spadafora_Pierpaolo_Thesis.tex
-(./Spadafora_Pierpaolo_Thesis.tex
+**/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/thesis/Tesi_Lazy_Heuristics/Spadafora_Pierpaolo_Thesis.tex
+(/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/thesis/Tesi_Lazy_Heuristics/Spadafora_Pierpaolo_Thesis.tex
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
 (/usr/share/texmf-dist/tex/latex/base/report.cls
@@ -23,18 +24,14 @@ File: size12.clo 2025/01/22 v1.4n Standard LaTeX file (size option)
 \abovecaptionskip=\skip49
 \belowcaptionskip=\skip50
 \bibindent=\dimen148
-)
-(/usr/share/texmf-dist/tex/latex/geometry/geometry.sty
+) (/usr/share/texmf-dist/tex/latex/geometry/geometry.sty
 Package: geometry 2020/01/02 v5.9 Page Geometry
-
-(/usr/share/texmf-dist/tex/latex/graphics/keyval.sty
+ (/usr/share/texmf-dist/tex/latex/graphics/keyval.sty
 Package: keyval 2022/05/29 v1.15 key=value parser (DPC)
 \KV@toks@=\toks17
-)
-(/usr/share/texmf-dist/tex/generic/iftex/ifvtex.sty
+) (/usr/share/texmf-dist/tex/generic/iftex/ifvtex.sty
 Package: ifvtex 2019/10/25 v1.7 ifvtex legacy package. Use iftex instead.
-
-(/usr/share/texmf-dist/tex/generic/iftex/iftex.sty
+ (/usr/share/texmf-dist/tex/generic/iftex/iftex.sty
 Package: iftex 2024/12/12 v1.0g TeX engine tests
 ))
 \Gm@cnth=\count284
@@ -49,51 +46,36 @@ Package: iftex 2024/12/12 v1.0g TeX engine tests
 \Gm@layouthoffset=\dimen155
 \Gm@layoutvoffset=\dimen156
 \Gm@dimlist=\toks18
-)
-(/usr/share/texmf-dist/tex/latex/titling/titling.sty
+) (/usr/share/texmf-dist/tex/latex/titling/titling.sty
 Package: titling 2009/09/04 v2.1d maketitle typesetting
 \thanksmarkwidth=\skip51
 \thanksmargin=\skip52
 \droptitle=\skip53
-)
-(/usr/share/texmf-dist/tex/latex/base/inputenc.sty
+) (/usr/share/texmf-dist/tex/latex/base/inputenc.sty
 Package: inputenc 2024/02/08 v1.3d Input encoding file
 \inpenc@prehook=\toks19
 \inpenc@posthook=\toks20
-)
-(/usr/share/texmf-dist/tex/latex/base/fontenc.sty
+) (/usr/share/texmf-dist/tex/latex/base/fontenc.sty
 Package: fontenc 2025/07/18 v2.1d Standard LaTeX package
-)
-(/usr/share/texmf-dist/tex/generic/babel/babel.sty
-Package: babel 2026/02/14 v26.3 The multilingual framework for LuaLaTeX, pdfLaT
-eX and XeLaTeX
+) (/usr/share/texmf-dist/tex/generic/babel/babel.sty
+Package: babel 2026/02/14 v26.3 The multilingual framework for LuaLaTeX, pdfLaTeX and XeLaTeX
 \babel@savecnt=\count287
-LaTeX Encoding Info:    Redeclaring text command \ij (encoding OT1) on input li
-ne 2078.
-LaTeX Encoding Info:    Redeclaring text command \IJ (encoding OT1) on input li
-ne 2080.
-LaTeX Encoding Info:    Redeclaring text command \ij (encoding T1) on input lin
-e 2082.
-LaTeX Encoding Info:    Redeclaring text command \IJ (encoding T1) on input lin
-e 2083.
-LaTeX Encoding Info:    Ignoring declaration for text command \ij (encoding ?) 
-on input line 2084.
-LaTeX Encoding Info:    Ignoring declaration for text command \IJ (encoding ?) 
-on input line 2086.
-LaTeX Encoding Info:    Ignoring declaration for text command \SS (encoding ?) 
-on input line 2111.
+LaTeX Encoding Info:    Redeclaring text command \ij (encoding OT1) on input line 2078.
+LaTeX Encoding Info:    Redeclaring text command \IJ (encoding OT1) on input line 2080.
+LaTeX Encoding Info:    Redeclaring text command \ij (encoding T1) on input line 2082.
+LaTeX Encoding Info:    Redeclaring text command \IJ (encoding T1) on input line 2083.
+LaTeX Encoding Info:    Ignoring declaration for text command \ij (encoding ?) on input line 2084.
+LaTeX Encoding Info:    Ignoring declaration for text command \IJ (encoding ?) on input line 2086.
+LaTeX Encoding Info:    Ignoring declaration for text command \SS (encoding ?) on input line 2111.
 \U@D=\dimen157
 \l@unhyphenated=\language3
-
-(/usr/share/texmf-dist/tex/generic/babel/txtbabel.def)
+ (/usr/share/texmf-dist/tex/generic/babel/txtbabel.def)
 \bbl@readstream=\read2
 \bbl@dirlevel=\count288
-
-(/usr/share/texmf-dist/tex/generic/babel/locale/en/babel-english.tex)
+ (/usr/share/texmf-dist/tex/generic/babel/locale/en/babel-english.tex)
 Package babel Info: Importing font and identification data for english
 (babel)             from babel-en.ini. Reported on input line 4330.
-
-(/usr/share/texmf-dist/tex/generic/babel-english/english.ldf
+ (/usr/share/texmf-dist/tex/generic/babel-english/english.ldf
 Language: english 2017/06/06 v3.3r English support from the babel system
 Package babel Info: Hyphen rules for 'british' set to \l@english
 (babel)             (\language0). Reported on input line 82.
@@ -105,25 +87,21 @@ Package babel Info: Hyphen rules for 'australian' set to \l@english
 (babel)             (\language0). Reported on input line 105.
 Package babel Info: Hyphen rules for 'newzealand' set to \l@english
 (babel)             (\language0). Reported on input line 108.
-))
-(/usr/share/texmf-dist/tex/latex/amsmath/amsmath.sty
+)) (/usr/share/texmf-dist/tex/latex/amsmath/amsmath.sty
 Package: amsmath 2025/07/09 v2.17z AMS math features
 \@mathmargin=\skip54
 
 For additional information on amsmath, use the `?' option.
 (/usr/share/texmf-dist/tex/latex/amsmath/amstext.sty
 Package: amstext 2024/11/17 v2.01 AMS text
-
-(/usr/share/texmf-dist/tex/latex/amsmath/amsgen.sty
+ (/usr/share/texmf-dist/tex/latex/amsmath/amsgen.sty
 File: amsgen.sty 1999/11/30 v2.0 generic functions
 \@emptytoks=\toks21
 \ex@=\dimen158
-))
-(/usr/share/texmf-dist/tex/latex/amsmath/amsbsy.sty
+)) (/usr/share/texmf-dist/tex/latex/amsmath/amsbsy.sty
 Package: amsbsy 1999/11/29 v1.2d Bold Symbols
 \pmbraise@=\dimen159
-)
-(/usr/share/texmf-dist/tex/latex/amsmath/amsopn.sty
+) (/usr/share/texmf-dist/tex/latex/amsmath/amsopn.sty
 Package: amsopn 2022/04/08 v2.04 operator names
 )
 \inf@bad=\count289
@@ -173,19 +151,16 @@ LaTeX Info: Redefining \Relbar on input line 970.
 \mathdisplay@stack=\toks25
 LaTeX Info: Redefining \[ on input line 2950.
 LaTeX Info: Redefining \] on input line 2951.
-)
-(/usr/share/texmf-dist/tex/latex/amsfonts/amssymb.sty
+) (/usr/share/texmf-dist/tex/latex/amsfonts/amssymb.sty
 Package: amssymb 2013/01/14 v3.01 AMS font symbols
-
-(/usr/share/texmf-dist/tex/latex/amsfonts/amsfonts.sty
+ (/usr/share/texmf-dist/tex/latex/amsfonts/amsfonts.sty
 Package: amsfonts 2013/01/14 v3.01 Basic AMSFonts support
 \symAMSa=\mathgroup4
 \symAMSb=\mathgroup5
 LaTeX Font Info:    Redeclaring math symbol \hbar on input line 98.
 LaTeX Font Info:    Overwriting math alphabet `\mathfrak' in version `bold'
 (Font)                  U/euf/m/n --> U/euf/b/n on input line 106.
-))
-(/usr/share/texmf-dist/tex/latex/tools/array.sty
+)) (/usr/share/texmf-dist/tex/latex/tools/array.sty
 Package: array 2025/09/25 v2.6n Tabular extension package (FMi)
 \col@sep=\dimen167
 \ar@mcellbox=\box55
@@ -194,8 +169,7 @@ Package: array 2025/09/25 v2.6n Tabular extension package (FMi)
 \extratabsurround=\skip57
 \backup@length=\skip58
 \ar@cellbox=\box56
-)
-(/usr/share/texmf-dist/tex/latex/booktabs/booktabs.sty
+) (/usr/share/texmf-dist/tex/latex/booktabs/booktabs.sty
 Package: booktabs 2020/01/12 v1.61803398 Publication quality tables
 \heavyrulewidth=\dimen169
 \lightrulewidth=\dimen170
@@ -214,8 +188,7 @@ Package: booktabs 2020/01/12 v1.61803398 Publication quality tables
 \@thisruleclass=\count303
 \@lastruleclass=\count304
 \@thisrulewidth=\dimen181
-)
-(/usr/share/texmf-dist/tex/latex/enumitem/enumitem.sty
+) (/usr/share/texmf-dist/tex/latex/enumitem/enumitem.sty
 Package: enumitem 2025/02/06 v3.11 Customized lists
 \labelindent=\skip59
 \enit@outerparindent=\dimen182
@@ -223,44 +196,35 @@ Package: enumitem 2025/02/06 v3.11 Customized lists
 \enit@inbox=\box57
 \enit@count@id=\count305
 \enitdp@description=\count306
-)
-(/usr/share/texmf-dist/tex/latex/float/float.sty
+) (/usr/share/texmf-dist/tex/latex/float/float.sty
 Package: float 2001/11/08 v1.3d Float enhancements (AL)
 \c@float@type=\count307
 \float@exts=\toks28
 \float@box=\box58
 \@float@everytoks=\toks29
 \@floatcapt=\box59
-)
-(/usr/share/texmf-dist/tex/latex/graphics/graphicx.sty
+) (/usr/share/texmf-dist/tex/latex/graphics/graphicx.sty
 Package: graphicx 2024/12/31 v1.2e Enhanced LaTeX Graphics (DPC,SPQR)
-
-(/usr/share/texmf-dist/tex/latex/graphics/graphics.sty
+ (/usr/share/texmf-dist/tex/latex/graphics/graphics.sty
 Package: graphics 2024/08/06 v1.4g Standard LaTeX Graphics (DPC,SPQR)
-
-(/usr/share/texmf-dist/tex/latex/graphics/trig.sty
+ (/usr/share/texmf-dist/tex/latex/graphics/trig.sty
 Package: trig 2023/12/02 v1.11 sin cos tan (DPC)
-)
-(/usr/share/texmf-dist/tex/latex/graphics-cfg/graphics.cfg
+) (/usr/share/texmf-dist/tex/latex/graphics-cfg/graphics.cfg
 File: graphics.cfg 2016/06/04 v1.11 sample graphics configuration
 )
 Package graphics Info: Driver file: pdftex.def on input line 106.
-
-(/usr/share/texmf-dist/tex/latex/graphics-def/pdftex.def
+ (/usr/share/texmf-dist/tex/latex/graphics-def/pdftex.def
 File: pdftex.def 2025/09/29 v1.2d Graphics/color driver for pdftex
 ))
 \Gin@req@height=\dimen183
 \Gin@req@width=\dimen184
-)
-(/usr/share/texmf-dist/tex/latex/xcolor/xcolor.sty
+) (/usr/share/texmf-dist/tex/latex/xcolor/xcolor.sty
 Package: xcolor 2024/09/29 v3.02 LaTeX color extensions (UK)
-
-(/usr/share/texmf-dist/tex/latex/graphics-cfg/color.cfg
+ (/usr/share/texmf-dist/tex/latex/graphics-cfg/color.cfg
 File: color.cfg 2016/01/02 v1.6 sample color configuration
 )
 Package xcolor Info: Driver file: pdftex.def on input line 274.
-
-(/usr/share/texmf-dist/tex/latex/graphics/mathcolor.ltx)
+ (/usr/share/texmf-dist/tex/latex/graphics/mathcolor.ltx)
 Package xcolor Info: Model `cmy' substituted by `cmy0' on input line 1349.
 Package xcolor Info: Model `hsb' substituted by `rgb' on input line 1353.
 Package xcolor Info: Model `RGB' extended on input line 1365.
@@ -270,31 +234,22 @@ Package xcolor Info: Model `tHsb' substituted by `hsb' on input line 1369.
 Package xcolor Info: Model `HSB' substituted by `hsb' on input line 1370.
 Package xcolor Info: Model `Gray' substituted by `gray' on input line 1371.
 Package xcolor Info: Model `wave' substituted by `hsb' on input line 1372.
-)
-(/usr/share/texmf-dist/tex/latex/minted/minted.sty
+) (/usr/share/texmf-dist/tex/latex/minted/minted.sty
 Package: minted 2026/03/03 v3.8.0 Yet another Pygments shim for LaTeX
-
-(/usr/share/texmf-dist/tex/generic/catchfile/catchfile.sty
+ (/usr/share/texmf-dist/tex/generic/catchfile/catchfile.sty
 Package: catchfile 2019/12/09 v1.8 Catch the contents of a file (HO)
-
-(/usr/share/texmf-dist/tex/generic/infwarerr/infwarerr.sty
+ (/usr/share/texmf-dist/tex/generic/infwarerr/infwarerr.sty
 Package: infwarerr 2019/12/03 v1.5 Providing info/warning/error messages (HO)
-)
-(/usr/share/texmf-dist/tex/generic/ltxcmds/ltxcmds.sty
+) (/usr/share/texmf-dist/tex/generic/ltxcmds/ltxcmds.sty
 Package: ltxcmds 2023-12-04 v1.26 LaTeX kernel commands for general use (HO)
-)
-(/usr/share/texmf-dist/tex/generic/etexcmds/etexcmds.sty
+) (/usr/share/texmf-dist/tex/generic/etexcmds/etexcmds.sty
 Package: etexcmds 2019/12/15 v1.7 Avoid name clashes with e-TeX commands (HO)
-))
-(/usr/share/texmf-dist/tex/latex/etoolbox/etoolbox.sty
+)) (/usr/share/texmf-dist/tex/latex/etoolbox/etoolbox.sty
 Package: etoolbox 2025/10/02 v2.5m e-TeX tools for LaTeX (JAW)
 \etb@tempcnta=\count308
-)
-(/usr/share/texmf-dist/tex/latex/fvextra/fvextra.sty
-Package: fvextra 2026/02/25 v1.14.0 fvextra - extensions and patches for fancyv
-rb
-
-(/usr/share/texmf-dist/tex/latex/fancyvrb/fancyvrb.sty
+) (/usr/share/texmf-dist/tex/latex/fvextra/fvextra.sty
+Package: fvextra 2026/02/25 v1.14.0 fvextra - extensions and patches for fancyvrb
+ (/usr/share/texmf-dist/tex/latex/fancyvrb/fancyvrb.sty
 Package: fancyvrb 2025/07/28 4.6 verbatim text (tvz,hv)
 \FV@CodeLineNo=\count309
 \FV@InFile=\read3
@@ -302,21 +257,15 @@ Package: fancyvrb 2025/07/28 4.6 verbatim text (tvz,hv)
 \c@FancyVerbLine=\count310
 \FV@StepNumber=\count311
 \FV@OutFile=\write3
-)
-(/usr/share/texmf-dist/tex/latex/upquote/upquote.sty
-Package: upquote 2012/04/19 v1.3 upright-quote and grave-accent glyphs in verba
-tim
-
-(/usr/share/texmf-dist/tex/latex/base/textcomp.sty
+) (/usr/share/texmf-dist/tex/latex/upquote/upquote.sty
+Package: upquote 2012/04/19 v1.3 upright-quote and grave-accent glyphs in verbatim
+ (/usr/share/texmf-dist/tex/latex/base/textcomp.sty
 Package: textcomp 2024/04/24 v2.1b Standard LaTeX package
-))
-(/usr/share/texmf-dist/tex/latex/lineno/lineno.sty
+)) (/usr/share/texmf-dist/tex/latex/lineno/lineno.sty
 Package: lineno 2026/02/16 line numbers on paragraphs v5.7
-
-(/usr/share/texmf-dist/tex/latex/kvoptions/kvoptions.sty
+ (/usr/share/texmf-dist/tex/latex/kvoptions/kvoptions.sty
 Package: kvoptions 2022-06-15 v3.15 Key value format for package options (HO)
-
-(/usr/share/texmf-dist/tex/latex/kvsetkeys/kvsetkeys.sty
+ (/usr/share/texmf-dist/tex/latex/kvsetkeys/kvsetkeys.sty
 Package: kvsetkeys 2022-10-05 v1.19 Key value parser (HO)
 ))
 \linenopenalty=\count312
@@ -361,33 +310,25 @@ Package: kvsetkeys 2022-10-05 v1.19 Key value parser (HO)
 \FV@LineIndentBox=\box66
 \c@FV@BreakBufferDepth=\count333
 \FV@LineWidth=\dimen195
-)
-(/usr/share/texmf-dist/tex/latex/latex2pydata/latex2pydata.sty
-Package: latex2pydata 2026/02/25 v0.7.0 latex2pydata - write data to file in Py
-thon literal format
-)
-(/usr/share/texmf-dist/tex/latex/pgf/utilities/pgfkeys.sty
-(/usr/share/texmf-dist/tex/generic/pgf/utilities/pgfkeys.code.tex
+) (/usr/share/texmf-dist/tex/latex/latex2pydata/latex2pydata.sty
+Package: latex2pydata 2026/02/25 v0.7.0 latex2pydata - write data to file in Python literal format
+) (/usr/share/texmf-dist/tex/latex/pgf/utilities/pgfkeys.sty (/usr/share/texmf-dist/tex/generic/pgf/utilities/pgfkeys.code.tex
 \pgfkeys@pathtoks=\toks31
 \pgfkeys@temptoks=\toks32
-
-(/usr/share/texmf-dist/tex/generic/pgf/utilities/pgfkeyslibraryfiltered.code.te
-x
+ (/usr/share/texmf-dist/tex/generic/pgf/utilities/pgfkeyslibraryfiltered.code.tex
 \pgfkeys@tmptoks=\toks33
 ))) (/usr/share/texmf-dist/tex/latex/pgfopts/pgfopts.sty
 Package: pgfopts 2014/07/10 v2.1a LaTeX package options with pgfkeys
 \pgfopts@list@add@a@toks=\toks34
 \pgfopts@list@add@b@toks=\toks35
-)
-(/usr/share/texmf-dist/tex/latex/tools/shellesc.sty
+) (/usr/share/texmf-dist/tex/latex/tools/shellesc.sty
 Package: shellesc 2023/07/08 v1.0d unified shell escape interface for LaTeX
-Package shellesc Info: Restricted shell escape enabled on input line 77.
+Package shellesc Info: Unrestricted shell escape enabled on input line 75.
 )
 \c@minted@FancyVerbLineTemp=\count334
 \@float@every@listing=\toks36
 \c@listing=\count335
-)
-(/usr/share/texmf-dist/tex/latex/csquotes/csquotes.sty
+) (/usr/share/texmf-dist/tex/latex/csquotes/csquotes.sty
 Package: csquotes 2024-04-04 v5.2o context-sensitive quotations (JAW)
 \csq@reset=\count336
 \csq@gtype=\count337
@@ -396,65 +337,49 @@ Package: csquotes 2024-04-04 v5.2o context-sensitive quotations (JAW)
 \csq@maxlvl=\count340
 \csq@tshold=\count341
 \csq@ltx@everypar=\toks37
-
-(/usr/share/texmf-dist/tex/latex/csquotes/csquotes.def
+ (/usr/share/texmf-dist/tex/latex/csquotes/csquotes.def
 File: csquotes.def 2024-04-04 v5.2o csquotes generic definitions (JAW)
 )
 Package csquotes Info: Trying to load configuration file 'csquotes.cfg'...
 Package csquotes Info: ... configuration file loaded successfully.
-
-(/usr/share/texmf-dist/tex/latex/csquotes/csquotes.cfg
+ (/usr/share/texmf-dist/tex/latex/csquotes/csquotes.cfg
 File: csquotes.cfg 
-))
-(/usr/share/texmf-dist/tex/latex/hyperref/hyperref.sty
+)) (/usr/share/texmf-dist/tex/latex/hyperref/hyperref.sty
 Package: hyperref 2026-01-29 v7.01p Hypertext links for LaTeX
-
-(/usr/share/texmf-dist/tex/generic/kvdefinekeys/kvdefinekeys.sty
+ (/usr/share/texmf-dist/tex/generic/kvdefinekeys/kvdefinekeys.sty
 Package: kvdefinekeys 2019-12-19 v1.6 Define keys (HO)
-)
-(/usr/share/texmf-dist/tex/generic/pdfescape/pdfescape.sty
+) (/usr/share/texmf-dist/tex/generic/pdfescape/pdfescape.sty
 Package: pdfescape 2019/12/09 v1.15 Implements pdfTeX's escape features (HO)
-
-(/usr/share/texmf-dist/tex/generic/pdftexcmds/pdftexcmds.sty
-Package: pdftexcmds 2020-06-27 v0.33 Utility functions of pdfTeX for LuaTeX (HO
-)
+ (/usr/share/texmf-dist/tex/generic/pdftexcmds/pdftexcmds.sty
+Package: pdftexcmds 2020-06-27 v0.33 Utility functions of pdfTeX for LuaTeX (HO)
 Package pdftexcmds Info: \pdf@primitive is available.
 Package pdftexcmds Info: \pdf@ifprimitive is available.
 Package pdftexcmds Info: \pdfdraftmode found.
-))
-(/usr/share/texmf-dist/tex/latex/hycolor/hycolor.sty
+)) (/usr/share/texmf-dist/tex/latex/hycolor/hycolor.sty
 Package: hycolor 2020-01-27 v1.10 Color options for hyperref/bookmark (HO)
-)
-(/usr/share/texmf-dist/tex/latex/hyperref/nameref.sty
+) (/usr/share/texmf-dist/tex/latex/hyperref/nameref.sty
 Package: nameref 2026-01-29 v2.58 Cross-referencing by name of section
-
-(/usr/share/texmf-dist/tex/latex/refcount/refcount.sty
+ (/usr/share/texmf-dist/tex/latex/refcount/refcount.sty
 Package: refcount 2019/12/15 v3.6 Data extraction from label references (HO)
-)
-(/usr/share/texmf-dist/tex/generic/gettitlestring/gettitlestring.sty
+) (/usr/share/texmf-dist/tex/generic/gettitlestring/gettitlestring.sty
 Package: gettitlestring 2019/12/15 v1.6 Cleanup title references (HO)
 )
 \c@section@level=\count342
-)
-(/usr/share/texmf-dist/tex/generic/stringenc/stringenc.sty
-Package: stringenc 2019/11/29 v1.12 Convert strings between diff. encodings (HO
-)
+) (/usr/share/texmf-dist/tex/generic/stringenc/stringenc.sty
+Package: stringenc 2019/11/29 v1.12 Convert strings between diff. encodings (HO)
 )
 \@linkdim=\dimen196
 \Hy@linkcounter=\count343
 \Hy@pagecounter=\count344
-
-(/usr/share/texmf-dist/tex/latex/hyperref/pd1enc.def
+ (/usr/share/texmf-dist/tex/latex/hyperref/pd1enc.def
 File: pd1enc.def 2026-01-29 v7.01p Hyperref: PDFDocEncoding definition (HO)
 Now handling font encoding PD1 ...
 ... no UTF-8 mapping file for font encoding PD1
-)
-(/usr/share/texmf-dist/tex/generic/intcalc/intcalc.sty
+) (/usr/share/texmf-dist/tex/generic/intcalc/intcalc.sty
 Package: intcalc 2019/12/15 v1.3 Expandable calculations with integers (HO)
 )
 \Hy@SavedSpaceFactor=\count345
-
-(/usr/share/texmf-dist/tex/latex/hyperref/puenc.def
+ (/usr/share/texmf-dist/tex/latex/hyperref/puenc.def
 File: puenc.def 2026-01-29 v7.01p Hyperref: PDF Unicode definition (HO)
 Now handling font encoding PU ...
 ... no UTF-8 mapping file for font encoding PU
@@ -467,20 +392,16 @@ Package hyperref Info: Backreferencing OFF on input line 4221.
 Package hyperref Info: Implicit mode ON; LaTeX internals redefined.
 Package hyperref Info: Bookmarks ON on input line 4468.
 \c@Hy@tempcnt=\count346
-
-(/usr/share/texmf-dist/tex/latex/url/url.sty
+ (/usr/share/texmf-dist/tex/latex/url/url.sty
 \Urlmuskip=\muskip18
 Package: url 2013/09/16  ver 3.4  Verb mode for urls, etc.
 )
 LaTeX Info: Redefining \url on input line 4807.
 \XeTeXLinkMargin=\dimen197
-
-(/usr/share/texmf-dist/tex/generic/bitset/bitset.sty
+ (/usr/share/texmf-dist/tex/generic/bitset/bitset.sty
 Package: bitset 2019/12/09 v1.3 Handle bit-vector datatype (HO)
-
-(/usr/share/texmf-dist/tex/generic/bigintcalc/bigintcalc.sty
-Package: bigintcalc 2019/12/15 v1.5 Expandable calculations on big integers (HO
-)
+ (/usr/share/texmf-dist/tex/generic/bigintcalc/bigintcalc.sty
+Package: bigintcalc 2019/12/15 v1.5 Expandable calculations on big integers (HO)
 ))
 \Fld@menulength=\count347
 \Field@Width=\dimen198
@@ -497,34 +418,26 @@ Package hyperref Info: PDF/A mode OFF on input line 6114.
 \c@Hfootnote=\count350
 )
 Package hyperref Info: Driver (autodetected): hpdftex.
-
-(/usr/share/texmf-dist/tex/latex/hyperref/hpdftex.def
+ (/usr/share/texmf-dist/tex/latex/hyperref/hpdftex.def
 File: hpdftex.def 2026-01-29 v7.01p Hyperref driver for pdfTeX
 \Fld@listcount=\count351
 \c@bookmark@seq@number=\count352
-
-(/usr/share/texmf-dist/tex/latex/rerunfilecheck/rerunfilecheck.sty
+ (/usr/share/texmf-dist/tex/latex/rerunfilecheck/rerunfilecheck.sty
 Package: rerunfilecheck 2025-06-21 v1.11 Rerun checks for auxiliary files (HO)
-
-(/usr/share/texmf-dist/tex/generic/uniquecounter/uniquecounter.sty
+ (/usr/share/texmf-dist/tex/generic/uniquecounter/uniquecounter.sty
 Package: uniquecounter 2019/12/15 v1.4 Provide unlimited unique counter (HO)
 )
-Package uniquecounter Info: New unique counter `rerunfilecheck' on input line 2
-84.
+Package uniquecounter Info: New unique counter `rerunfilecheck' on input line 284.
 )
 \Hy@SectionHShift=\skip61
-)
-(/usr/share/texmf-dist/tex/latex/biblatex/biblatex.sty
+) (/usr/share/texmf-dist/tex/latex/biblatex/biblatex.sty
 Package: biblatex 2025/07/10 v3.21 programmable bibliographies (PK/MW)
-
-(/usr/share/texmf-dist/tex/latex/logreq/logreq.sty
+ (/usr/share/texmf-dist/tex/latex/logreq/logreq.sty
 Package: logreq 2010/08/04 v1.0 xml request logger
 \lrq@indent=\count353
-
-(/usr/share/texmf-dist/tex/latex/logreq/logreq.def
+ (/usr/share/texmf-dist/tex/latex/logreq/logreq.def
 File: logreq.def 2010/08/04 v1.0 logreq spec v1.0
-))
-(/usr/share/texmf-dist/tex/latex/base/ifthen.sty
+)) (/usr/share/texmf-dist/tex/latex/base/ifthen.sty
 Package: ifthen 2024/03/16 v1.1e Standard LaTeX ifthen package (DPC)
 )
 \c@tabx@nest=\count354
@@ -586,8 +499,7 @@ Package: ifthen 2024/03/16 v1.1e Standard LaTeX ifthen package (DPC)
 \c@mincompwidth=\count399
 Package biblatex Info: Trying to load biblatex default data model...
 Package biblatex Info: ... file 'blx-dm.def' found.
-
-(/usr/share/texmf-dist/tex/latex/biblatex/blx-dm.def
+ (/usr/share/texmf-dist/tex/latex/biblatex/blx-dm.def
 File: blx-dm.def 2025/07/10 v3.21 biblatex datamodel (PK/MW)
 )
 Package biblatex Info: Trying to load biblatex style data model...
@@ -678,14 +590,12 @@ Package biblatex Info: ... file 'biblatex-dm.cfg' not found.
 \localshorteditorwidth=\skip83
 Package biblatex Info: Trying to load compatibility code...
 Package biblatex Info: ... file 'blx-compat.def' found.
-
-(/usr/share/texmf-dist/tex/latex/biblatex/blx-compat.def
+ (/usr/share/texmf-dist/tex/latex/biblatex/blx-compat.def
 File: blx-compat.def 2025/07/10 v3.21 biblatex compatibility (PK/MW)
 )
 Package biblatex Info: Trying to load generic definitions...
 Package biblatex Info: ... file 'biblatex.def' found.
-
-(/usr/share/texmf-dist/tex/latex/biblatex/biblatex.def
+ (/usr/share/texmf-dist/tex/latex/biblatex/biblatex.def
 File: biblatex.def 2025/07/10 v3.21 biblatex compatibility (PK/MW)
 \c@textcitecount=\count468
 \c@textcitetotal=\count469
@@ -703,21 +613,18 @@ File: biblatex.def 2025/07/10 v3.21 biblatex compatibility (PK/MW)
 )
 Package biblatex Info: Trying to load bibliography style 'numeric'...
 Package biblatex Info: ... file 'numeric.bbx' found.
-
-(/usr/share/texmf-dist/tex/latex/biblatex/bbx/numeric.bbx
+ (/usr/share/texmf-dist/tex/latex/biblatex/bbx/numeric.bbx
 File: numeric.bbx 2025/07/10 v3.21 biblatex bibliography style (PK/MW)
 Package biblatex Info: Trying to load bibliography style 'standard'...
 Package biblatex Info: ... file 'standard.bbx' found.
-
-(/usr/share/texmf-dist/tex/latex/biblatex/bbx/standard.bbx
+ (/usr/share/texmf-dist/tex/latex/biblatex/bbx/standard.bbx
 File: standard.bbx 2025/07/10 v3.21 biblatex bibliography style (PK/MW)
 \c@bbx:relatedcount=\count477
 \c@bbx:relatedtotal=\count478
 ))
 Package biblatex Info: Trying to load citation style 'numeric'...
 Package biblatex Info: ... file 'numeric.cbx' found.
-
-(/usr/share/texmf-dist/tex/latex/biblatex/cbx/numeric.cbx
+ (/usr/share/texmf-dist/tex/latex/biblatex/cbx/numeric.cbx
 File: numeric.cbx 2025/07/10 v3.21 biblatex citation style (PK/MW)
 Package biblatex Info: Redefining '\cite'.
 Package biblatex Info: Redefining '\parencite'.
@@ -733,17 +640,14 @@ Package biblatex Info: Redefining '\smartcites'.
 )
 Package biblatex Info: Trying to load configuration file...
 Package biblatex Info: ... file 'biblatex.cfg' found.
-
-(/usr/share/texmf-dist/tex/latex/biblatex/biblatex.cfg
+ (/usr/share/texmf-dist/tex/latex/biblatex/biblatex.cfg
 File: biblatex.cfg 
 )
 Package biblatex Info: Input encoding 'utf8' detected.
 Package biblatex Info: Document encoding is UTF8 ....
-
-(/usr/share/texmf-dist/tex/latex/l3kernel/expl3.sty
+ (/usr/share/texmf-dist/tex/latex/l3kernel/expl3.sty
 Package: expl3 2026-01-19 L3 programming layer (loader) 
-
-(/usr/share/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
+ (/usr/share/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
 File: l3backend-pdftex.def 2025-10-09 L3 backend support: PDF output (pdfTeX)
 \l__color_backend_stack_int=\count479
 ))
@@ -751,9 +655,7 @@ Package biblatex Info: ... and expl3
 (biblatex)             2026-01-19 L3 programming layer (loader) 
 (biblatex)             is new enough (at least 2020/04/06),
 (biblatex)             setting 'casechanger=expl3'.
-
-(/usr/share/texmf-dist/tex/latex/biblatex/blx-case-expl3.sty
-(/usr/share/texmf-dist/tex/latex/l3packages/xparse/xparse.sty
+ (/usr/share/texmf-dist/tex/latex/biblatex/blx-case-expl3.sty (/usr/share/texmf-dist/tex/latex/l3packages/xparse/xparse.sty
 Package: xparse 2025-10-09 L3 Experimental document command parser
 )
 Package: blx-case-expl3 2025/07/10 v3.21 expl3 case changing code for biblatex
@@ -762,11 +664,7 @@ Package csquotes Info: Checking for multilingual support...
 Package csquotes Info: ... found 'babel' package.
 Package csquotes Info: Adjusting default style.
 Package csquotes Info: Redefining alias 'default' -> 'english'.
-
-(./Spadafora_Pierpaolo_Thesis.aux (./0.2 - abstract.aux)
-(./1 - Introduzione.aux) (./2 - Metodologia.aux) (./3 - Implementazione.aux)
-(./4 - Risultati.aux) (./5 - Discussione-e-Conclusione.aux)
-(./6 - Ringraziamenti.aux))
+ (./Spadafora_Pierpaolo_Thesis.aux (./0.2 - abstract.aux) (./1 - Introduzione.aux) (./2 - Metodologia.aux) (./3 - Implementazione.aux) (./4 - Risultati.aux) (./5 - Discussione-e-Conclusione.aux) (./6 - Ringraziamenti.aux))
 \openout1 = `Spadafora_Pierpaolo_Thesis.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 70.
@@ -837,23 +735,18 @@ LaTeX Font Info:    ... okay on input line 70.
 \everyMPtoPDFconversion=\toks39
 ) (/usr/share/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
 Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
-Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
-85.
-
-(/usr/share/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
-File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
-e
+Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 485.
+ (/usr/share/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
+File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Live
 ))
 Package hyperref Info: Link coloring OFF on input line 70.
-
-(./Spadafora_Pierpaolo_Thesis.out) (./Spadafora_Pierpaolo_Thesis.out)
+ (./Spadafora_Pierpaolo_Thesis.out) (./Spadafora_Pierpaolo_Thesis.out)
 \@outlinefile=\write5
 \openout5 = `Spadafora_Pierpaolo_Thesis.out'.
 
 Package biblatex Info: Trying to load language 'english'...
 Package biblatex Info: ... file 'english.lbx' found.
-
-(/usr/share/texmf-dist/tex/latex/biblatex/lbx/english.lbx
+ (/usr/share/texmf-dist/tex/latex/biblatex/lbx/english.lbx
 File: english.lbx 2025/07/10 v3.21 biblatex localization (PK/MW)
 )
 Package biblatex Info: Input encoding 'utf8' detected.
@@ -863,8 +756,7 @@ Package biblatex Info: Automatic encoding selection.
 
 Package biblatex Info: Trying to load bibliographic data...
 Package biblatex Info: ... file 'Spadafora_Pierpaolo_Thesis.bbl' found.
-
-(./Spadafora_Pierpaolo_Thesis.bbl)
+ (./Spadafora_Pierpaolo_Thesis.bbl)
 Package biblatex Info: Reference section=0 on input line 70.
 Package biblatex Info: Reference segment=0 on input line 70.
  (./0.1 - frontespizio.tex
@@ -874,29 +766,22 @@ File: figures/logo.png Graphic file (type png)
 Package pdftex.def Info: figures/logo.png  used on input line 8.
 (pdftex.def)             Requested size: 79.6678pt x 50.8028pt.
 LaTeX Font Info:    Trying to load font information for U+msa on input line 19.
-
-
-(/usr/share/texmf-dist/tex/latex/amsfonts/umsa.fd
+ (/usr/share/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
 LaTeX Font Info:    Trying to load font information for U+msb on input line 19.
-
-
-(/usr/share/texmf-dist/tex/latex/amsfonts/umsb.fd
+ (/usr/share/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 ) [1
 
-{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}{/usr/share/texmf-dist/fonts
-/enc/dvips/cm-super/cm-super-t1.enc} <./figures/logo.png>]) (./Spadafora_Pierpa
-olo_Thesis.toc [1
+{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}{/usr/share/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc} <./figures/logo.png>]) (./Spadafora_Pierpaolo_Thesis.toc [1
 
 
 ])
 \tf@toc=\write6
 \openout6 = `Spadafora_Pierpaolo_Thesis.toc'.
 
-
-[2]
+ [2]
 \openout2 = `"0.2 - abstract.aux"'.
 
  (./0.2 - abstract.tex) [3
@@ -910,61 +795,33 @@ Chapter 1.
 \pydata@fh@0=\write7
 \openout7 = `_2AE2944559263F6456DC6AA53993E271.data.minted'.
 
-runsystem(latexminted config  --timestamp 20260819205232 2AE2944559263F6456DC6A
-A53993E271)...executed safely (allowed).
+runsystem(latexminted config  --timestamp 20260819213851 2AE2944559263F6456DC6AA53993E271)...executed.
 
 (./_2AE2944559263F6456DC6AA53993E271.config.minted)
-runsystem(latexminted cleanconfig  --timestamp 20260819205232 2AE2944559263F645
-6DC6AA53993E271)...executed safely (allowed).
+runsystem(latexminted cleanconfig  --timestamp 20260819213851 2AE2944559263F6456DC6AA53993E271)...executed.
 
-
-(./_minted/friendly.style.minted)
-(./_minted/3271E6AF8665D3DABD7B2BFDA9AAF86A.highlight.minted)
-(./_minted/6757C5633C44EDA9A5DDB3612961F753.highlight.minted) [1
+ (./_minted/friendly.style.minted) (./_minted/3271E6AF8665D3DABD7B2BFDA9AAF86A.highlight.minted) (./_minted/6757C5633C44EDA9A5DDB3612961F753.highlight.minted) [1
 
 
 
 
-]
-(./_minted/E1D5B53048E1E5BC0486921A57CBCDE1.highlight.minted)
-(./_minted/9DB9EAD10EB9116F05F8B3A01F42ACE3.highlight.minted)
+] (./_minted/E1D5B53048E1E5BC0486921A57CBCDE1.highlight.minted) (./_minted/9DB9EAD10EB9116F05F8B3A01F42ACE3.highlight.minted)
 <figures/diagrams/png/pipelines.png, id=314, 466.3824pt x 260.53336pt>
 File: figures/diagrams/png/pipelines.png Graphic file (type png)
 <use figures/diagrams/png/pipelines.png>
-Package pdftex.def Info: figures/diagrams/png/pipelines.png  used on input line
- 30.
+Package pdftex.def Info: figures/diagrams/png/pipelines.png  used on input line 30.
 (pdftex.def)             Requested size: 426.79135pt x 238.41748pt.
- [2 <./figures/diagrams/png/pipelines.png (PNG copy)>]
-(./_minted/E5BBF534195CAADF067719C12EAAAE13.highlight.minted)
-(./_minted/D5C627CB8FDF61CF170C78E76411713F.highlight.minted)
-(./_minted/2BD74DF5C42844FBAD2DD4298CB7FBE9.highlight.minted)
-(./_minted/3AB459A27959C843F5DF2D368536F469.highlight.minted)
-(./_minted/E7D943591C412407B62A0B8A7383E18C.highlight.minted)
-(./_minted/3F1BF3DD5DB18C05411C89173036C967.highlight.minted)
+ [2 <./figures/diagrams/png/pipelines.png (PNG copy)>] (./_minted/E5BBF534195CAADF067719C12EAAAE13.highlight.minted) (./_minted/D5C627CB8FDF61CF170C78E76411713F.highlight.minted) (./_minted/2BD74DF5C42844FBAD2DD4298CB7FBE9.highlight.minted) (./_minted/3AB459A27959C843F5DF2D368536F469.highlight.minted) (./_minted/E7D943591C412407B62A0B8A7383E18C.highlight.minted) (./_minted/3F1BF3DD5DB18C05411C89173036C967.highlight.minted)
 Overfull \hbox (1.88765pt too wide) in paragraph at lines 64--64
 []\T1/cmr/bx/n/17.28 Ground-and-Solve: Gringo, Clasp, and Conflict-
  []
 
-[3] (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted)
-(./_minted/5DC66B8353F73A33D34A73C2623CED6D.highlight.minted) [4]
-(./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted)
-(./_minted/3630033852197DCEBB46382510B8DB64.highlight.minted)
-(./_minted/A4DC9657ECB27A08E0AACED5BA0D3B7C.highlight.minted)
-(./_minted/B533FC7EA96679D1DDB3B29F543067FE.highlight.minted)
-(./_minted/8C0C6AE80ABF9EE0A07BF4E27B2C99C7.highlight.minted)
-(./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted)
-(./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted)
-(./_minted/8C0C6AE80ABF9EE0A07BF4E27B2C99C7.highlight.minted) [5]) [6]
+[3] (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/5DC66B8353F73A33D34A73C2623CED6D.highlight.minted) [4] (./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted) (./_minted/3630033852197DCEBB46382510B8DB64.highlight.minted) (./_minted/A4DC9657ECB27A08E0AACED5BA0D3B7C.highlight.minted) (./_minted/B533FC7EA96679D1DDB3B29F543067FE.highlight.minted) (./_minted/8C0C6AE80ABF9EE0A07BF4E27B2C99C7.highlight.minted) (./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted) (./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted) (./_minted/8C0C6AE80ABF9EE0A07BF4E27B2C99C7.highlight.minted) [5]) [6]
 \openout2 = `"2 - Metodologia.aux"'.
 
-
-(./2 - Metodologia.tex
+ (./2 - Metodologia.tex
 Chapter 2.
-(./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted)
-(./_minted/FAEF8EDF2E48A2A65DF7943EB6B9C9F4.highlight.minted)
-(./_minted/B9AAB00C6787A8AF8A433BA4FF1D93B3.highlight.minted)
-(./_minted/DCA53EA453A86F0F3B5CF3166A3012B4.highlight.minted)
-(./_minted/DCA53EA453A86F0F3B5CF3166A3012B4.highlight.minted)
+(./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/FAEF8EDF2E48A2A65DF7943EB6B9C9F4.highlight.minted) (./_minted/B9AAB00C6787A8AF8A433BA4FF1D93B3.highlight.minted) (./_minted/DCA53EA453A86F0F3B5CF3166A3012B4.highlight.minted) (./_minted/DCA53EA453A86F0F3B5CF3166A3012B4.highlight.minted)
 <figures/diagrams/png/axes.png, id=387, 433.01775pt x 242.5863pt>
 File: figures/diagrams/png/axes.png Graphic file (type png)
 <use figures/diagrams/png/axes.png>
@@ -975,625 +832,247 @@ Package pdftex.def Info: figures/diagrams/png/axes.png  used on input line 14.
 
 
 
-]
-(./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted)
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-(./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted)
-(./_minted/796DE5BF0DC65FACFFF5B4150D9A0456.highlight.minted)
-(./_minted/4B708799818C421022335E1BCF0D6379.highlight.minted)
-(./_minted/5897657D5068492A64BFF2A08FD1E05C.highlight.minted)
-(./_minted/52CEC1A831089BB009114D25A931146F.highlight.minted [8 <./figures/diag
-rams/png/axes.png (PNG copy)>])
-(./_minted/5410156B9D3E766F33B33328A06364C6.highlight.minted)
-(./_minted/244C3493D7D3E2BD1596C352EC8B6183.highlight.minted) [9]
-(./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted)
-(./_minted/3F1BF3DD5DB18C05411C89173036C967.highlight.minted)
-(./_minted/FF1210C1C3A04D3FF9D39EA1DAAE401A.highlight.minted)
-(./_minted/5D5C8B2261515407F1913D87CBB56743.highlight.minted)
-(./_minted/1C01BEDEC4154B517903332A506C0605.highlight.minted)
-(./_minted/0CF7B4347A78D03140D3273C80C05279.highlight.minted)
-(./_minted/E1F499432EAB2C79FC72D0C44DE604B7.highlight.minted)
-(./_minted/A2D513347769D5B93E99CAB1E88AB60B.highlight.minted)
-(./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted)
-(./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted)
-(./_minted/D1D4E1B37195441A63C1012BD4A19126.highlight.minted)
+] (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/796DE5BF0DC65FACFFF5B4150D9A0456.highlight.minted) (./_minted/4B708799818C421022335E1BCF0D6379.highlight.minted) (./_minted/5897657D5068492A64BFF2A08FD1E05C.highlight.minted) (./_minted/52CEC1A831089BB009114D25A931146F.highlight.minted [8 <./figures/diagrams/png/axes.png (PNG copy)>]) (./_minted/5410156B9D3E766F33B33328A06364C6.highlight.minted) (./_minted/244C3493D7D3E2BD1596C352EC8B6183.highlight.minted) [9] (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/3F1BF3DD5DB18C05411C89173036C967.highlight.minted) (./_minted/FF1210C1C3A04D3FF9D39EA1DAAE401A.highlight.minted) (./_minted/5D5C8B2261515407F1913D87CBB56743.highlight.minted) (./_minted/1C01BEDEC4154B517903332A506C0605.highlight.minted) (./_minted/0CF7B4347A78D03140D3273C80C05279.highlight.minted) (./_minted/E1F499432EAB2C79FC72D0C44DE604B7.highlight.minted) (./_minted/A2D513347769D5B93E99CAB1E88AB60B.highlight.minted) (./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted) (./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted) (./_minted/D1D4E1B37195441A63C1012BD4A19126.highlight.minted)
 <figures/diagrams/png/architecture.png, id=417, 587.3142pt x 505.89pt>
 File: figures/diagrams/png/architecture.png Graphic file (type png)
 <use figures/diagrams/png/architecture.png>
-Package pdftex.def Info: figures/diagrams/png/architecture.png  used on input l
-ine 78.
+Package pdftex.def Info: figures/diagrams/png/architecture.png  used on input line 78.
 (pdftex.def)             Requested size: 426.79135pt x 367.62154pt.
- [10]
-(./_minted/8C0C6AE80ABF9EE0A07BF4E27B2C99C7.highlight.minted)
-(./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted)
-(./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted)
-(./_minted/FAEF8EDF2E48A2A65DF7943EB6B9C9F4.highlight.minted)
-(./_minted/B9AAB00C6787A8AF8A433BA4FF1D93B3.highlight.minted)
-(./_minted/3630033852197DCEBB46382510B8DB64.highlight.minted)
-(./_minted/A4DC9657ECB27A08E0AACED5BA0D3B7C.highlight.minted)
-(./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted)
-(./_minted/C4519D22343BE1BA67904D904833F13F.highlight.minted) [11{/usr/share/te
-xmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc} <./figures/diagrams/png/arc
-hitecture.png (PNG copy)>]
-(./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted)
-(./_minted/E1D5B53048E1E5BC0486921A57CBCDE1.highlight.minted)
-(./_minted/CE1D022A1D87FED7D01095382DBE39E5.highlight.minted)
-(./_minted/937F49197B301EE49845F557F1B3CD00.highlight.minted)
-(./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted)
-(./_minted/7C86E61DFDFC2588AB26502A21D25FEB.highlight.minted)
-(./_minted/410C7988532CCA58281982FA506AEFBC.highlight.minted)
-(./_minted/084D5780E67EBCC5028331B36BB329F5.highlight.minted)
-(./_minted/01ED3D3B33C8E0310DEA99CEA3CFD96F.highlight.minted)
-(./_minted/C96EE0A8FE0923EF439FF922A9698299.highlight.minted)
-(./_minted/4E331156494B2F970489241DBFE0C4D4.highlight.minted
+ [10] (./_minted/8C0C6AE80ABF9EE0A07BF4E27B2C99C7.highlight.minted) (./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted) (./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted) (./_minted/FAEF8EDF2E48A2A65DF7943EB6B9C9F4.highlight.minted) (./_minted/B9AAB00C6787A8AF8A433BA4FF1D93B3.highlight.minted) (./_minted/3630033852197DCEBB46382510B8DB64.highlight.minted) (./_minted/A4DC9657ECB27A08E0AACED5BA0D3B7C.highlight.minted) (./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted) (./_minted/C4519D22343BE1BA67904D904833F13F.highlight.minted) [11{/usr/share/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc} <./figures/diagrams/png/architecture.png (PNG copy)>] (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/E1D5B53048E1E5BC0486921A57CBCDE1.highlight.minted) (./_minted/CE1D022A1D87FED7D01095382DBE39E5.highlight.minted) (./_minted/937F49197B301EE49845F557F1B3CD00.highlight.minted) (./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted) (./_minted/7C86E61DFDFC2588AB26502A21D25FEB.highlight.minted) (./_minted/410C7988532CCA58281982FA506AEFBC.highlight.minted) (./_minted/084D5780E67EBCC5028331B36BB329F5.highlight.minted) (./_minted/01ED3D3B33C8E0310DEA99CEA3CFD96F.highlight.minted) (./_minted/C96EE0A8FE0923EF439FF922A9698299.highlight.minted) (./_minted/4E331156494B2F970489241DBFE0C4D4.highlight.minted
 LaTeX Font Info:    Font shape `T1/cmtt/bx/n' in size <10> not available
 (Font)              Font shape `T1/cmtt/m/n' tried instead on input line 2.
-)
-(./_minted/7772632B7C4CE96AB03F141085FFD794.highlight.minted)
-(./_minted/4969AC462D68579FDD8476D393545AB3.highlight.minted)
-(./_minted/73B37040560572516332E47CC8570704.highlight.minted)
-(./_minted/4969AC462D68579FDD8476D393545AB3.highlight.minted)
-(./_minted/73B37040560572516332E47CC8570704.highlight.minted)
-(./_minted/DD880F3ACF4109B18894DA6CE5812CA0.highlight.minted)
-(./_minted/C7741535198B9CA966A331CBCFB4A11F.highlight.minted)
-(./_minted/E7000F0DC82799B0F3ED85F59F6FECF5.highlight.minted)
-(./_minted/08F9AF0B320D10091C79577D393C8F0A.highlight.minted)
-(./_minted/995546C303A89CE9D543995C3FC6D7EE.highlight.minted)
-(./_minted/E6716F8359FE71EE0C42E63B70D87EA9.highlight.minted [12])
-(./_minted/8E5FA543E39E232E2B524CBD20CF7987.highlight.minted)
-(./_minted/E4CBEF28A8B7EA164D576E312D257D20.highlight.minted)
-(./_minted/758D89E0165B79128102BEA2D53D9599.highlight.minted)
-(./_minted/BF6FEFE011D151391D17544D61A8645E.highlight.minted)
-(./_minted/796DE5BF0DC65FACFFF5B4150D9A0456.highlight.minted)
-(./_minted/04049E66F805A06A3F89BEA25A2A8DDD.highlight.minted)
-(./_minted/F8DE5B5980F64C8F4526DCB75FADAB15.highlight.minted)
-(./_minted/BA891DC8E141E0B0812D557D514576B1.highlight.minted)
-(./_minted/10A1C371F2BC162BEAF08FA72A9A6AA9.highlight.minted)
-(./_minted/10A1C371F2BC162BEAF08FA72A9A6AA9.highlight.minted)
-(./_minted/D45882165FABF467EDD8460D3953EC59.highlight.minted)
-(./_minted/C3D7D422CA28C926E180CE46E2F39ED3.highlight.minted)
-(./_minted/C3D7D422CA28C926E180CE46E2F39ED3.highlight.minted)
-(./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted)
-(./_minted/FCA5BCC5260690731767466E8CCA41C8.highlight.minted)
-(./_minted/948C7CDD2A34D8067E883B681D2E01BC.highlight.minted)
-(./_minted/1BE62CFAED29ABC0260608A9865025B5.highlight.minted)
-(./_minted/71E24B4CD05451409002558F4828E9E3.highlight.minted)
-(./_minted/46DBB93C35FEFA6B7735E3417DAEA8EC.highlight.minted)
-(./_minted/EE4938968F454A225403C64C0F09CB9C.highlight.minted)
-(./_minted/C577BFC0576C6EE19A17E21B39F31FD1.highlight.minted)
-(./_minted/B16893211484A5EB74ACEA7D22C1085A.highlight.minted)
-(./_minted/7B1C107204227401291CC56FE883CF7F.highlight.minted)
-(./_minted/B4A00F80509AF7F6E0FA9EC8A09BC38F.highlight.minted)
-(./_minted/33A2CF0B629A6A0B93F04F91BAFEF50B.highlight.minted)
-(./_minted/FD4285D72B9CE6AC644C60C3BC50ACC8.highlight.minted
+) (./_minted/7772632B7C4CE96AB03F141085FFD794.highlight.minted) (./_minted/4969AC462D68579FDD8476D393545AB3.highlight.minted) (./_minted/73B37040560572516332E47CC8570704.highlight.minted) (./_minted/4969AC462D68579FDD8476D393545AB3.highlight.minted) (./_minted/73B37040560572516332E47CC8570704.highlight.minted) (./_minted/DD880F3ACF4109B18894DA6CE5812CA0.highlight.minted) (./_minted/C7741535198B9CA966A331CBCFB4A11F.highlight.minted) (./_minted/E7000F0DC82799B0F3ED85F59F6FECF5.highlight.minted) (./_minted/08F9AF0B320D10091C79577D393C8F0A.highlight.minted) (./_minted/995546C303A89CE9D543995C3FC6D7EE.highlight.minted) (./_minted/E6716F8359FE71EE0C42E63B70D87EA9.highlight.minted [12]) (./_minted/8E5FA543E39E232E2B524CBD20CF7987.highlight.minted) (./_minted/E4CBEF28A8B7EA164D576E312D257D20.highlight.minted) (./_minted/758D89E0165B79128102BEA2D53D9599.highlight.minted) (./_minted/BF6FEFE011D151391D17544D61A8645E.highlight.minted) (./_minted/796DE5BF0DC65FACFFF5B4150D9A0456.highlight.minted) (./_minted/04049E66F805A06A3F89BEA25A2A8DDD.highlight.minted) (./_minted/F8DE5B5980F64C8F4526DCB75FADAB15.highlight.minted) (./_minted/BA891DC8E141E0B0812D557D514576B1.highlight.minted) (./_minted/10A1C371F2BC162BEAF08FA72A9A6AA9.highlight.minted) (./_minted/10A1C371F2BC162BEAF08FA72A9A6AA9.highlight.minted) (./_minted/D45882165FABF467EDD8460D3953EC59.highlight.minted) (./_minted/C3D7D422CA28C926E180CE46E2F39ED3.highlight.minted) (./_minted/C3D7D422CA28C926E180CE46E2F39ED3.highlight.minted) (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/FCA5BCC5260690731767466E8CCA41C8.highlight.minted) (./_minted/948C7CDD2A34D8067E883B681D2E01BC.highlight.minted) (./_minted/1BE62CFAED29ABC0260608A9865025B5.highlight.minted) (./_minted/71E24B4CD05451409002558F4828E9E3.highlight.minted) (./_minted/46DBB93C35FEFA6B7735E3417DAEA8EC.highlight.minted) (./_minted/EE4938968F454A225403C64C0F09CB9C.highlight.minted) (./_minted/C577BFC0576C6EE19A17E21B39F31FD1.highlight.minted) (./_minted/B16893211484A5EB74ACEA7D22C1085A.highlight.minted) (./_minted/7B1C107204227401291CC56FE883CF7F.highlight.minted) (./_minted/B4A00F80509AF7F6E0FA9EC8A09BC38F.highlight.minted) (./_minted/33A2CF0B629A6A0B93F04F91BAFEF50B.highlight.minted) (./_minted/FD4285D72B9CE6AC644C60C3BC50ACC8.highlight.minted
 Overfull \hbox (8.81062pt too wide) in paragraph at lines 142--1
-[]\T1/cmr/m/n/12 An ag-gre-gate can be re-stricted \T1/cmr/m/it/12 per tar-get 
-\T1/cmr/m/n/12 us-ing [][][][][][],
+[]\T1/cmr/m/n/12 An ag-gre-gate can be re-stricted \T1/cmr/m/it/12 per tar-get \T1/cmr/m/n/12 us-ing [][][][][][],
  []
 
-) (./_minted/A2CC52821467F6F68C723596C177AE17.highlight.minted)
-(./_minted/EFA345FF8344ADDA10C160753F252CA1.highlight.minted)
-(./_minted/06EE43AE3397C0B5EB27EFB9D13C857B.highlight.minted)
-(./_minted/EA3A7780B3B47D117C347C1FB96592E4.highlight.minted)
-(./_minted/5979E21D731E1D60D4E3777C41A40EE7.highlight.minted)
-(./_minted/B23E0D2D36B9EFEF39FB316A80E672A8.highlight.minted)
-(./_minted/185A7CCFE3EF8C63A971CFF7EF128CAC.highlight.minted)
-(./_minted/EA3A7780B3B47D117C347C1FB96592E4.highlight.minted)
-(./_minted/2A21C20B4EAB1198D8CA3102B2A85C27.highlight.minted)
-(./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted)
-(./_minted/0855E459795B54826E03A75CED49A845.highlight.minted)
-(./_minted/07AF35E2B47CFAD4B5F2DC7E28908A14.highlight.minted)
-(./_minted/E57A565D848CFF916C9608AC888E1EED.highlight.minted)
-(./_minted/D1D4E1B37195441A63C1012BD4A19126.highlight.minted)
-(./_minted/89C44729B7479D48DA1320CFE57B842C.highlight.minted) [13]
-(./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted)
-(./_minted/D1D4E1B37195441A63C1012BD4A19126.highlight.minted)
-(./_minted/89C44729B7479D48DA1320CFE57B842C.highlight.minted)
-(./_minted/83BB8BBFA2D40411B7337A2EEE543757.highlight.minted)) [14] [15]
+) (./_minted/A2CC52821467F6F68C723596C177AE17.highlight.minted) (./_minted/EFA345FF8344ADDA10C160753F252CA1.highlight.minted) (./_minted/06EE43AE3397C0B5EB27EFB9D13C857B.highlight.minted) (./_minted/EA3A7780B3B47D117C347C1FB96592E4.highlight.minted) (./_minted/5979E21D731E1D60D4E3777C41A40EE7.highlight.minted) (./_minted/B23E0D2D36B9EFEF39FB316A80E672A8.highlight.minted) (./_minted/185A7CCFE3EF8C63A971CFF7EF128CAC.highlight.minted) (./_minted/EA3A7780B3B47D117C347C1FB96592E4.highlight.minted) (./_minted/2A21C20B4EAB1198D8CA3102B2A85C27.highlight.minted) (./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted) (./_minted/0855E459795B54826E03A75CED49A845.highlight.minted) (./_minted/07AF35E2B47CFAD4B5F2DC7E28908A14.highlight.minted) (./_minted/E57A565D848CFF916C9608AC888E1EED.highlight.minted) (./_minted/D1D4E1B37195441A63C1012BD4A19126.highlight.minted) (./_minted/89C44729B7479D48DA1320CFE57B842C.highlight.minted) [13] (./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted) (./_minted/D1D4E1B37195441A63C1012BD4A19126.highlight.minted) (./_minted/89C44729B7479D48DA1320CFE57B842C.highlight.minted) (./_minted/83BB8BBFA2D40411B7337A2EEE543757.highlight.minted)) [14] [15]
 \openout2 = `"3 - Implementazione.aux"'.
 
-
-(./3 - Implementazione.tex
+ (./3 - Implementazione.tex
 Chapter 3.
-(./_minted/F379BE75050488FD4CA7092ADE6F4A36.highlight.minted)
-(./_minted/04BBE9B1260A8D3B00C1B032D10BB3FC.highlight.minted)
-(./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted)
-(./_minted/50B969CEE44403E11B6DC44C91FD597B.highlight.minted)
-(./_minted/CE1D022A1D87FED7D01095382DBE39E5.highlight.minted)
-(./_minted/E3F7E9206BAF39D58F1BB36AFB0BD342.highlight.minted)
-(./_minted/D250CE9047C42E5EA58C068446C1C145.highlight.minted)
-(./_minted/4FE63E5009FD0D0EEAAEC2FF021C9C3F.highlight.minted)
-(./_minted/53C86850228D85963F5D6EA96A6C5720.highlight.minted)
-(./_minted/22807BDD4A2FA1A31333ADB15BAE7B4E.highlight.minted)
-(./_minted/09E797711001772ACD0A16F76684625C.highlight.minted)
-(./_minted/A0C72D42CB8CDBFF8918D4ABCE2892C2.highlight.minted)
-(./_minted/1C01BEDEC4154B517903332A506C0605.highlight.minted)
-(./_minted/E5A19128645C93A43D5489D387605127.highlight.minted) [16
+(./_minted/F379BE75050488FD4CA7092ADE6F4A36.highlight.minted) (./_minted/04BBE9B1260A8D3B00C1B032D10BB3FC.highlight.minted) (./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted) (./_minted/50B969CEE44403E11B6DC44C91FD597B.highlight.minted) (./_minted/CE1D022A1D87FED7D01095382DBE39E5.highlight.minted) (./_minted/E3F7E9206BAF39D58F1BB36AFB0BD342.highlight.minted) (./_minted/D250CE9047C42E5EA58C068446C1C145.highlight.minted) (./_minted/4FE63E5009FD0D0EEAAEC2FF021C9C3F.highlight.minted) (./_minted/53C86850228D85963F5D6EA96A6C5720.highlight.minted) (./_minted/22807BDD4A2FA1A31333ADB15BAE7B4E.highlight.minted) (./_minted/09E797711001772ACD0A16F76684625C.highlight.minted) (./_minted/A0C72D42CB8CDBFF8918D4ABCE2892C2.highlight.minted) (./_minted/1C01BEDEC4154B517903332A506C0605.highlight.minted) (./_minted/E5A19128645C93A43D5489D387605127.highlight.minted) [16
 
 
 
 
-]
-(./_minted/B936E1190F2CA3D1036DB9F4B9BB9A68.highlight.minted)
-(./_minted/2500C6D0A8FBEDFB147CB8C9F898E95F.highlight.minted)
-(./_minted/3630033852197DCEBB46382510B8DB64.highlight.minted)
-(./_minted/A4DC9657ECB27A08E0AACED5BA0D3B7C.highlight.minted)
-(./_minted/B9CB3E6D919149B020B896A584BC9182.highlight.minted)
-(./_minted/7586FB7195809AF8BD62FC6F6EC62127.highlight.minted)
-(./_minted/07AF35E2B47CFAD4B5F2DC7E28908A14.highlight.minted)
-(./_minted/E57A565D848CFF916C9608AC888E1EED.highlight.minted)
-(./_minted/D1D4E1B37195441A63C1012BD4A19126.highlight.minted)
-(./_minted/89C44729B7479D48DA1320CFE57B842C.highlight.minted)
-(./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted)
-(./_minted/3A07AD292FC145EF328B038BB3F77238.highlight.minted)
-(./_minted/7586FB7195809AF8BD62FC6F6EC62127.highlight.minted)
-(./_minted/07AF35E2B47CFAD4B5F2DC7E28908A14.highlight.minted)
-(./_minted/E57A565D848CFF916C9608AC888E1EED.highlight.minted)
-(./_minted/50B969CEE44403E11B6DC44C91FD597B.highlight.minted)
-(./_minted/07AF35E2B47CFAD4B5F2DC7E28908A14.highlight.minted)
-(./_minted/28D766099570CA483739284393578E06.highlight.minted)
-(./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted)
-(./_minted/3998BD6FE53F0768EE09DE8EF1CEDE33.highlight.minted)
-(./_minted/E57A565D848CFF916C9608AC888E1EED.highlight.minted)
-(./_minted/E57A565D848CFF916C9608AC888E1EED.highlight.minted)
-(./_minted/A4DC9657ECB27A08E0AACED5BA0D3B7C.highlight.minted)
-(./_minted/CCD03C2CEE7BFBA4E0B4625F1AEA198D.highlight.minted) [17]
-(./_minted/08A2EA52740AD58C3904D139957C71E5.highlight.minted)
-(./_minted/FE762A2D2A03C235899964B790C087BE.highlight.minted)
-(./_minted/20259B13BE587567BFA60300E8248659.highlight.minted)
-(./_minted/102CC375E9996868E634C9949EEDED00.highlight.minted)
-(./_minted/C6F0CAEA20DE6EAAE5F5AAB48194B4DE.highlight.minted)
-(./_minted/9510204A4B4742902396FFD75E4E8BB6.highlight.minted)
-(./_minted/E85F06C2F487C0395637BA6F3477DCFD.highlight.minted)
-(./_minted/84FF1B774D9BC44D18F3B2EEE911E337.highlight.minted)
-(./_minted/976628591801A4DF31FBE24E4BAC7CAF.highlight.minted)
-(./_minted/96F49EF2C09405C15EE32319605F6CFA.highlight.minted)
-(./_minted/FCF75B959469E11F7EACBD63AA36BFF6.highlight.minted)
-(./_minted/94A9C6F050F6019A1D27151C522CB376.highlight.minted)
-(./_minted/972EAE722AACDB599BCB49507C7D872B.highlight.minted)
-(./_minted/7A18A8BCFFB9F822260A1AA1B9ECCA00.highlight.minted [18])
-(./_minted/018A5885D0B8E38F406A55778BFBC07C.highlight.minted)
-(./_minted/85806575D7F900B504BAC13364CEC12B.highlight.minted)
-(./_minted/314FDB61AD2BC059B0BFBCD0C45ABC69.highlight.minted)
-(./_minted/EA206B2A758E221B28E0FA42E920EA98.highlight.minted)
-(./_minted/85806575D7F900B504BAC13364CEC12B.highlight.minted)
-(./_minted/1AEE91B85F76C7D54846913521F111FE.highlight.minted)
-(./_minted/01C7CE607C211B7BCB83C525DDCBF7FA.highlight.minted)
-(./_minted/5921520A6CAC3ACED1342B343DA55C71.highlight.minted)
-(./_minted/3630033852197DCEBB46382510B8DB64.highlight.minted)
-(./_minted/A4DC9657ECB27A08E0AACED5BA0D3B7C.highlight.minted)
-(./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted)
-(./_minted/E499274346FF1C02CD8DEEB9A82E07F3.highlight.minted)
+] (./_minted/B936E1190F2CA3D1036DB9F4B9BB9A68.highlight.minted) (./_minted/2500C6D0A8FBEDFB147CB8C9F898E95F.highlight.minted) (./_minted/3630033852197DCEBB46382510B8DB64.highlight.minted) (./_minted/A4DC9657ECB27A08E0AACED5BA0D3B7C.highlight.minted) (./_minted/B9CB3E6D919149B020B896A584BC9182.highlight.minted) (./_minted/7586FB7195809AF8BD62FC6F6EC62127.highlight.minted) (./_minted/07AF35E2B47CFAD4B5F2DC7E28908A14.highlight.minted) (./_minted/E57A565D848CFF916C9608AC888E1EED.highlight.minted) (./_minted/D1D4E1B37195441A63C1012BD4A19126.highlight.minted) (./_minted/89C44729B7479D48DA1320CFE57B842C.highlight.minted) (./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted) (./_minted/3A07AD292FC145EF328B038BB3F77238.highlight.minted) (./_minted/7586FB7195809AF8BD62FC6F6EC62127.highlight.minted) (./_minted/07AF35E2B47CFAD4B5F2DC7E28908A14.highlight.minted) (./_minted/E57A565D848CFF916C9608AC888E1EED.highlight.minted) (./_minted/50B969CEE44403E11B6DC44C91FD597B.highlight.minted) (./_minted/07AF35E2B47CFAD4B5F2DC7E28908A14.highlight.minted) (./_minted/28D766099570CA483739284393578E06.highlight.minted) (./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted) (./_minted/3998BD6FE53F0768EE09DE8EF1CEDE33.highlight.minted) (./_minted/E57A565D848CFF916C9608AC888E1EED.highlight.minted) (./_minted/E57A565D848CFF916C9608AC888E1EED.highlight.minted) (./_minted/A4DC9657ECB27A08E0AACED5BA0D3B7C.highlight.minted) (./_minted/CCD03C2CEE7BFBA4E0B4625F1AEA198D.highlight.minted) [17] (./_minted/08A2EA52740AD58C3904D139957C71E5.highlight.minted) (./_minted/FE762A2D2A03C235899964B790C087BE.highlight.minted) (./_minted/20259B13BE587567BFA60300E8248659.highlight.minted) (./_minted/102CC375E9996868E634C9949EEDED00.highlight.minted) (./_minted/C6F0CAEA20DE6EAAE5F5AAB48194B4DE.highlight.minted) (./_minted/9510204A4B4742902396FFD75E4E8BB6.highlight.minted) (./_minted/E85F06C2F487C0395637BA6F3477DCFD.highlight.minted) (./_minted/84FF1B774D9BC44D18F3B2EEE911E337.highlight.minted) (./_minted/976628591801A4DF31FBE24E4BAC7CAF.highlight.minted) (./_minted/96F49EF2C09405C15EE32319605F6CFA.highlight.minted) (./_minted/FCF75B959469E11F7EACBD63AA36BFF6.highlight.minted) (./_minted/94A9C6F050F6019A1D27151C522CB376.highlight.minted) (./_minted/972EAE722AACDB599BCB49507C7D872B.highlight.minted) (./_minted/7A18A8BCFFB9F822260A1AA1B9ECCA00.highlight.minted [18]) (./_minted/018A5885D0B8E38F406A55778BFBC07C.highlight.minted) (./_minted/85806575D7F900B504BAC13364CEC12B.highlight.minted) (./_minted/314FDB61AD2BC059B0BFBCD0C45ABC69.highlight.minted) (./_minted/EA206B2A758E221B28E0FA42E920EA98.highlight.minted) (./_minted/85806575D7F900B504BAC13364CEC12B.highlight.minted) (./_minted/1AEE91B85F76C7D54846913521F111FE.highlight.minted) (./_minted/01C7CE607C211B7BCB83C525DDCBF7FA.highlight.minted) (./_minted/5921520A6CAC3ACED1342B343DA55C71.highlight.minted) (./_minted/3630033852197DCEBB46382510B8DB64.highlight.minted) (./_minted/A4DC9657ECB27A08E0AACED5BA0D3B7C.highlight.minted) (./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted) (./_minted/E499274346FF1C02CD8DEEB9A82E07F3.highlight.minted)
 Underfull \hbox (badness 2922) in paragraph at lines 106--107
-[]\T1/cmr/m/n/12 At each de-ci-sion point ([][][][][][]), the back-end queries 
-all so-lu-tions to
+[]\T1/cmr/m/n/12 At each de-ci-sion point ([][][][][][]), the back-end queries all so-lu-tions to
  []
 
 
 Underfull \hbox (badness 2229) in paragraph at lines 106--107
-[][][][][][]\T1/cmr/m/n/12 , fil-ters out tar-gets that are al-ready as-signed 
-on the
+[][][][][][]\T1/cmr/m/n/12 , fil-ters out tar-gets that are al-ready as-signed on the
  []
 
-(./_minted/3271E6AF8665D3DABD7B2BFDA9AAF86A.highlight.minted)
-(./_minted/6757C5633C44EDA9A5DDB3612961F753.highlight.minted)
-(./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted)
-(./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted)
-(./_minted/1E2803973C564A4B71FB0EC597B76CA1.highlight.minted)
-(./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) [19]
-(./_minted/3AB459A27959C843F5DF2D368536F469.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-(./_minted/767A5CC0A5979AD1B191DDFD15795123.highlight.minted)
-(./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted)
-(./_minted/D45882165FABF467EDD8460D3953EC59.highlight.minted)
-(./_minted/767A5CC0A5979AD1B191DDFD15795123.highlight.minted)
-(./_minted/8599BB2783BBF146BE3389038824B501.highlight.minted)
-(./_minted/9744E5F7FE464FC34D5F71E06AED357D.highlight.minted)
-(./_minted/32997EA48792E39B42EBA4DB7BDDCE2D.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-(./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted)
-(./_minted/57F7C4DB071ABD3C9FF3721021D150E7.highlight.minted)
-(./_minted/F31282AAB04345557BCCC1BC787F19E1.highlight.minted) [20]
-(./_minted/9FFB83F95A9C3F9A947C3CBF8634250D.highlight.minted)
-(./_minted/57F7C4DB071ABD3C9FF3721021D150E7.highlight.minted)
-(./_minted/C4519D22343BE1BA67904D904833F13F.highlight.minted)
-(./_minted/1A98F9D94277DAD3A25C4C4F5CD280FC.highlight.minted)) [21]
+(./_minted/3271E6AF8665D3DABD7B2BFDA9AAF86A.highlight.minted) (./_minted/6757C5633C44EDA9A5DDB3612961F753.highlight.minted) (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted) (./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted) (./_minted/1E2803973C564A4B71FB0EC597B76CA1.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) [19] (./_minted/3AB459A27959C843F5DF2D368536F469.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/767A5CC0A5979AD1B191DDFD15795123.highlight.minted) (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/D45882165FABF467EDD8460D3953EC59.highlight.minted) (./_minted/767A5CC0A5979AD1B191DDFD15795123.highlight.minted) (./_minted/8599BB2783BBF146BE3389038824B501.highlight.minted) (./_minted/9744E5F7FE464FC34D5F71E06AED357D.highlight.minted) (./_minted/32997EA48792E39B42EBA4DB7BDDCE2D.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/57F7C4DB071ABD3C9FF3721021D150E7.highlight.minted) (./_minted/F31282AAB04345557BCCC1BC787F19E1.highlight.minted) [20] (./_minted/9FFB83F95A9C3F9A947C3CBF8634250D.highlight.minted) (./_minted/57F7C4DB071ABD3C9FF3721021D150E7.highlight.minted) (./_minted/C4519D22343BE1BA67904D904833F13F.highlight.minted) (./_minted/1A98F9D94277DAD3A25C4C4F5CD280FC.highlight.minted)) [21]
 \openout2 = `"4 - Risultati.aux"'.
 
-
-(./4 - Risultati.tex
+ (./4 - Risultati.tex
 Chapter 4.
-(./_minted/57F7C4DB071ABD3C9FF3721021D150E7.highlight.minted)
-(./_minted/A5EA68436EB85F5A48B27CD4543EFC68.highlight.minted)
-(./_minted/E1C8C04BC32B4C70FFA159EDFAFD3A06.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-(./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted)
-(./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted)
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-(./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-(./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted)
-(./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) [22
+(./_minted/57F7C4DB071ABD3C9FF3721021D150E7.highlight.minted) (./_minted/A5EA68436EB85F5A48B27CD4543EFC68.highlight.minted) (./_minted/E1C8C04BC32B4C70FFA159EDFAFD3A06.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) [22
 
 
 
 
-]
-(./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted)
-(./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted)
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-(./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted)
-(./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted)
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-(./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) [23]
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-(./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted)
-(./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-(./_minted/B1D5340E61EE6B696B1348969C512CD4.highlight.minted)
-(./_minted/9DB9EAD10EB9116F05F8B3A01F42ACE3.highlight.minted)
-(./_minted/8A3191B8D37FAACF0B2C4632FFC62078.highlight.minted)
-(./_minted/1BE62CFAED29ABC0260608A9865025B5.highlight.minted)
-(./_minted/51BC9B2B0AB9927683B8FBEFF0005881.highlight.minted)
-(./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted)
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-<figures/bsp/SD/standard/combined_heuristics.png, id=531, 325.215pt x 183.5658p
-t>
+] (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) [23] (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) (./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/B1D5340E61EE6B696B1348969C512CD4.highlight.minted) (./_minted/9DB9EAD10EB9116F05F8B3A01F42ACE3.highlight.minted) (./_minted/8A3191B8D37FAACF0B2C4632FFC62078.highlight.minted) (./_minted/1BE62CFAED29ABC0260608A9865025B5.highlight.minted) (./_minted/51BC9B2B0AB9927683B8FBEFF0005881.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
+<figures/bsp/SD/standard/combined_heuristics.png, id=531, 325.215pt x 183.5658pt>
 File: figures/bsp/SD/standard/combined_heuristics.png Graphic file (type png)
 <use figures/bsp/SD/standard/combined_heuristics.png>
-Package pdftex.def Info: figures/bsp/SD/standard/combined_heuristics.png  used 
-on input line 110.
+Package pdftex.def Info: figures/bsp/SD/standard/combined_heuristics.png  used on input line 116.
 (pdftex.def)             Requested size: 426.79135pt x 240.91829pt.
- [24]
-(./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-(./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) [25 <./figures/bs
-p/SD/standard/combined_heuristics.png>]
+ [24] (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) [25 <./figures/bsp/SD/standard/combined_heuristics.png>]
 <figures/hpc/SD/bsp/native_clingo_total.png, id=551, 903.375pt x 628.3475pt>
 File: figures/hpc/SD/bsp/native_clingo_total.png Graphic file (type png)
 <use figures/hpc/SD/bsp/native_clingo_total.png>
-Package pdftex.def Info: figures/hpc/SD/bsp/native_clingo_total.png  used on in
-put line 141.
+Package pdftex.def Info: figures/hpc/SD/bsp/native_clingo_total.png  used on input line 147.
 (pdftex.def)             Requested size: 426.79135pt x 296.8574pt.
 <figures/hpc/SD/bsp/native_solving.png, id=554, 903.375pt x 628.3475pt>
 File: figures/hpc/SD/bsp/native_solving.png Graphic file (type png)
 <use figures/hpc/SD/bsp/native_solving.png>
-Package pdftex.def Info: figures/hpc/SD/bsp/native_solving.png  used on input l
-ine 148.
+Package pdftex.def Info: figures/hpc/SD/bsp/native_solving.png  used on input line 154.
 (pdftex.def)             Requested size: 426.79135pt x 296.8574pt.
- [26 <./figures/hpc/SD/bsp/native_clingo_total.png>] (./_minted/5E51E4E57D6B206
-D81721DBC669EC94F.highlight.minted)
-(./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted)
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-(./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-(./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) [27 <./figures/hp
-c/SD/bsp/native_solving.png>]
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-(./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-(./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted)
-(./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted)
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-(./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-(./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted)
+ [26 <./figures/hpc/SD/bsp/native_clingo_total.png>] (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) [27 <./figures/hpc/SD/bsp/native_solving.png>] (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted) (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted)
 <figures/hpc/SD/bsp/native_choices.png, id=579, 903.375pt x 620.3175pt>
 File: figures/hpc/SD/bsp/native_choices.png Graphic file (type png)
 <use figures/hpc/SD/bsp/native_choices.png>
-Package pdftex.def Info: figures/hpc/SD/bsp/native_choices.png  used on input l
-ine 188.
+Package pdftex.def Info: figures/hpc/SD/bsp/native_choices.png  used on input line 194.
 (pdftex.def)             Requested size: 209.1301pt x 143.59761pt.
 <figures/hpc/SD/bsp/native_conflicts.png, id=580, 903.375pt x 620.3175pt>
 File: figures/hpc/SD/bsp/native_conflicts.png Graphic file (type png)
 <use figures/hpc/SD/bsp/native_conflicts.png>
-Package pdftex.def Info: figures/hpc/SD/bsp/native_conflicts.png  used on input
- line 190.
+Package pdftex.def Info: figures/hpc/SD/bsp/native_conflicts.png  used on input line 196.
 (pdftex.def)             Requested size: 209.1301pt x 143.59761pt.
- [28]
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-(./_minted/6757C5633C44EDA9A5DDB3612961F753.highlight.minted)
-(./_minted/1BE62CFAED29ABC0260608A9865025B5.highlight.minted)
-(./_minted/32DDA7EBEB001C84E3E0C3BC83E58528.highlight.minted)
-(./_minted/059D9D3A4D88BAE52B736CC7F8920C40.highlight.minted)
-(./_minted/5568079A5799CC00169EA695E8751B37.highlight.minted)
-(./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted)
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-(./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted)
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-(./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) [29 <./figures/hp
-c/SD/bsp/native_choices.png> <./figures/hpc/SD/bsp/native_conflicts.png>]
+ [28] (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/6757C5633C44EDA9A5DDB3612961F753.highlight.minted) (./_minted/1BE62CFAED29ABC0260608A9865025B5.highlight.minted) (./_minted/32DDA7EBEB001C84E3E0C3BC83E58528.highlight.minted) (./_minted/059D9D3A4D88BAE52B736CC7F8920C40.highlight.minted) (./_minted/5568079A5799CC00169EA695E8751B37.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) [29 <./figures/hpc/SD/bsp/native_choices.png> <./figures/hpc/SD/bsp/native_conflicts.png>]
 <figures/hpc/SD/bsp/native_mem.png, id=593, 903.375pt x 635.37375pt>
 File: figures/hpc/SD/bsp/native_mem.png Graphic file (type png)
 <use figures/hpc/SD/bsp/native_mem.png>
-Package pdftex.def Info: figures/hpc/SD/bsp/native_mem.png  used on input line 
-222.
+Package pdftex.def Info: figures/hpc/SD/bsp/native_mem.png  used on input line 228.
 (pdftex.def)             Requested size: 426.79135pt x 300.1769pt.
-
-(./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-(./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted)
-(./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted)
-(./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted)
-(./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) [30 <./figures/hp
-c/SD/bsp/native_mem.png>]
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-Overfull \hbox (50.83957pt too wide) in paragraph at lines 237--251
+ (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) [30 <./figures/hpc/SD/bsp/native_mem.png>] (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
+Overfull \hbox (50.83957pt too wide) in paragraph at lines 243--257
  [][] 
  []
 
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) [31]
+(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) [31]
 <figures/hpc/SD/bsp/prolog_decide_calls.png, id=613, 903.375pt x 604.2575pt>
 File: figures/hpc/SD/bsp/prolog_decide_calls.png Graphic file (type png)
 <use figures/hpc/SD/bsp/prolog_decide_calls.png>
-Package pdftex.def Info: figures/hpc/SD/bsp/prolog_decide_calls.png  used on in
-put line 261.
+Package pdftex.def Info: figures/hpc/SD/bsp/prolog_decide_calls.png  used on input line 267.
 (pdftex.def)             Requested size: 209.1301pt x 139.87988pt.
 <figures/hpc/SD/bsp/prolog_ms_per_decide.png, id=614, 903.375pt x 604.2575pt>
 File: figures/hpc/SD/bsp/prolog_ms_per_decide.png Graphic file (type png)
 <use figures/hpc/SD/bsp/prolog_ms_per_decide.png>
-Package pdftex.def Info: figures/hpc/SD/bsp/prolog_ms_per_decide.png  used on i
-nput line 263.
+Package pdftex.def Info: figures/hpc/SD/bsp/prolog_ms_per_decide.png  used on input line 269.
 (pdftex.def)             Requested size: 209.1301pt x 139.87988pt.
 <figures/hpc/SD/bsp/comparison_solving.png, id=615, 903.375pt x 703.62875pt>
 File: figures/hpc/SD/bsp/comparison_solving.png Graphic file (type png)
 <use figures/hpc/SD/bsp/comparison_solving.png>
-Package pdftex.def Info: figures/hpc/SD/bsp/comparison_solving.png  used on inp
-ut line 270.
+Package pdftex.def Info: figures/hpc/SD/bsp/comparison_solving.png  used on input line 276.
 (pdftex.def)             Requested size: 426.79135pt x 332.4234pt.
- [32 <./figures/hpc/SD/bsp/prolog_decide_calls.png> <./figures/hpc/SD/bsp/prolo
-g_ms_per_decide.png>]
+ [32 <./figures/hpc/SD/bsp/prolog_decide_calls.png> <./figures/hpc/SD/bsp/prolog_ms_per_decide.png>]
 LaTeX Font Info:    Font shape `T1/cmtt/bx/n' in size <17.28> not available
-(Font)              Font shape `T1/cmtt/m/n' tried instead on input line 277.
- (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted)
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) [33 <./figures/hp
-c/SD/bsp/comparison_solving.png>]
-(./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted)
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-(./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted)
+(Font)              Font shape `T1/cmtt/m/n' tried instead on input line 283.
+ (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) [33 <./figures/hpc/SD/bsp/comparison_solving.png>] (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted)
 <figures/hpc/SD/bsp/expl_gaweak_solving.png, id=632, 903.375pt x 654.445pt>
 File: figures/hpc/SD/bsp/expl_gaweak_solving.png Graphic file (type png)
 <use figures/hpc/SD/bsp/expl_gaweak_solving.png>
-Package pdftex.def Info: figures/hpc/SD/bsp/expl_gaweak_solving.png  used on in
-put line 288.
+Package pdftex.def Info: figures/hpc/SD/bsp/expl_gaweak_solving.png  used on input line 294.
 (pdftex.def)             Requested size: 209.1301pt x 151.4978pt.
 <figures/hpc/SD/bsp/expl_gaweak_choices.png, id=633, 903.375pt x 646.415pt>
 File: figures/hpc/SD/bsp/expl_gaweak_choices.png Graphic file (type png)
 <use figures/hpc/SD/bsp/expl_gaweak_choices.png>
-Package pdftex.def Info: figures/hpc/SD/bsp/expl_gaweak_choices.png  used on in
-put line 290.
+Package pdftex.def Info: figures/hpc/SD/bsp/expl_gaweak_choices.png  used on input line 296.
 (pdftex.def)             Requested size: 209.1301pt x 149.63895pt.
-
-(./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted)
-(./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted)
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) [34 <./figures/hp
-c/SD/bsp/expl_gaweak_solving.png> <./figures/hpc/SD/bsp/expl_gaweak_choices.png
->] (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted)
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-(./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted)
-(./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted)
-(./_minted/F379BE75050488FD4CA7092ADE6F4A36.highlight.minted)
-(./_minted/1E2803973C564A4B71FB0EC597B76CA1.highlight.minted)
-(./_minted/CB0B4559CA9B64134246525C5178F160.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) [35]
+ (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) [34 <./figures/hpc/SD/bsp/expl_gaweak_solving.png> <./figures/hpc/SD/bsp/expl_gaweak_choices.png>] (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted) (./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted) (./_minted/F379BE75050488FD4CA7092ADE6F4A36.highlight.minted) (./_minted/1E2803973C564A4B71FB0EC597B76CA1.highlight.minted) (./_minted/CB0B4559CA9B64134246525C5178F160.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) [35]
 <figures/hpc/SD/bsp/expl_laaux_solving.png, id=647, 903.375pt x 654.445pt>
 File: figures/hpc/SD/bsp/expl_laaux_solving.png Graphic file (type png)
 <use figures/hpc/SD/bsp/expl_laaux_solving.png>
-Package pdftex.def Info: figures/hpc/SD/bsp/expl_laaux_solving.png  used on inp
-ut line 308.
+Package pdftex.def Info: figures/hpc/SD/bsp/expl_laaux_solving.png  used on input line 314.
 (pdftex.def)             Requested size: 209.1301pt x 151.4978pt.
-<figures/hpc/SD/bsp/expl_laaux_decide_calls.png, id=648, 903.375pt x 629.35126p
-t>
+<figures/hpc/SD/bsp/expl_laaux_decide_calls.png, id=648, 903.375pt x 629.35126pt>
 File: figures/hpc/SD/bsp/expl_laaux_decide_calls.png Graphic file (type png)
 <use figures/hpc/SD/bsp/expl_laaux_decide_calls.png>
-Package pdftex.def Info: figures/hpc/SD/bsp/expl_laaux_decide_calls.png  used o
-n input line 310.
+Package pdftex.def Info: figures/hpc/SD/bsp/expl_laaux_decide_calls.png  used on input line 316.
 (pdftex.def)             Requested size: 209.1301pt x 145.68884pt.
-
-(./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted)
-(./_minted/E5269852EDC744B6384C67E623E5A239.highlight.minted)
-(./_minted/1456F2B2132563CA680A69A5C5A0FF90.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted)
-(./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
+ (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) (./_minted/E5269852EDC744B6384C67E623E5A239.highlight.minted) (./_minted/1456F2B2132563CA680A69A5C5A0FF90.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
 <figures/hpc/SD/bsp/expl_laco_grounding.png, id=650, 903.375pt x 654.445pt>
 File: figures/hpc/SD/bsp/expl_laco_grounding.png Graphic file (type png)
 <use figures/hpc/SD/bsp/expl_laco_grounding.png>
-Package pdftex.def Info: figures/hpc/SD/bsp/expl_laco_grounding.png  used on in
-put line 322.
+Package pdftex.def Info: figures/hpc/SD/bsp/expl_laco_grounding.png  used on input line 328.
 (pdftex.def)             Requested size: 209.1301pt x 151.4978pt.
 <figures/hpc/SD/bsp/expl_laco_rules.png, id=651, 903.375pt x 643.40375pt>
 File: figures/hpc/SD/bsp/expl_laco_rules.png Graphic file (type png)
 <use figures/hpc/SD/bsp/expl_laco_rules.png>
-Package pdftex.def Info: figures/hpc/SD/bsp/expl_laco_rules.png  used on input 
-line 324.
+Package pdftex.def Info: figures/hpc/SD/bsp/expl_laco_rules.png  used on input line 330.
 (pdftex.def)             Requested size: 209.1301pt x 148.94186pt.
- [36 <./figures/hpc/SD/bsp/expl_laaux_solving.png> <./figures/hpc/SD/bsp/expl_l
-aaux_decide_calls.png>]
+ [36 <./figures/hpc/SD/bsp/expl_laaux_solving.png> <./figures/hpc/SD/bsp/expl_laaux_decide_calls.png>]
 <figures/hpc/SD/pup/native_clingo_total.png, id=661, 903.375pt x 628.3475pt>
 File: figures/hpc/SD/pup/native_clingo_total.png Graphic file (type png)
 <use figures/hpc/SD/pup/native_clingo_total.png>
-Package pdftex.def Info: figures/hpc/SD/pup/native_clingo_total.png  used on in
-put line 336.
+Package pdftex.def Info: figures/hpc/SD/pup/native_clingo_total.png  used on input line 342.
 (pdftex.def)             Requested size: 426.79135pt x 296.8574pt.
- [37 <./figures/hpc/SD/bsp/expl_laco_grounding.png> <./figures/hpc/SD/bsp/expl_
-laco_rules.png>]
-(./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted)
-(./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted)
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-Overfull \hbox (2.9333pt too wide) in paragraph at lines 344--355
+ [37 <./figures/hpc/SD/bsp/expl_laco_grounding.png> <./figures/hpc/SD/bsp/expl_laco_rules.png>] (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
+Overfull \hbox (2.9333pt too wide) in paragraph at lines 350--361
  [][] 
  []
 
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted)
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) [38 <./figures/hp
-c/SD/pup/native_clingo_total.png>]
+(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) [38 <./figures/hpc/SD/pup/native_clingo_total.png>]
 <figures/hpc/SD/pup/native_grounding.png, id=679, 903.375pt x 628.3475pt>
 File: figures/hpc/SD/pup/native_grounding.png Graphic file (type png)
 <use figures/hpc/SD/pup/native_grounding.png>
-Package pdftex.def Info: figures/hpc/SD/pup/native_grounding.png  used on input
- line 363.
+Package pdftex.def Info: figures/hpc/SD/pup/native_grounding.png  used on input line 369.
 (pdftex.def)             Requested size: 209.1301pt x 145.45648pt.
 <figures/hpc/SD/pup/native_mem.png, id=680, 903.375pt x 635.37375pt>
 File: figures/hpc/SD/pup/native_mem.png Graphic file (type png)
 <use figures/hpc/SD/pup/native_mem.png>
-Package pdftex.def Info: figures/hpc/SD/pup/native_mem.png  used on input line 
-365.
+Package pdftex.def Info: figures/hpc/SD/pup/native_mem.png  used on input line 371.
 (pdftex.def)             Requested size: 209.1301pt x 147.083pt.
-
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-(./_minted/5568079A5799CC00169EA695E8751B37.highlight.minted)
-(./_minted/F379BE75050488FD4CA7092ADE6F4A36.highlight.minted) [39 <./figures/hp
-c/SD/pup/native_grounding.png> <./figures/hpc/SD/pup/native_mem.png>]
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-(./_minted/5DE0702F1482C7686BD0363DE1CDD2AB.highlight.minted)
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-(./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
+ (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/5568079A5799CC00169EA695E8751B37.highlight.minted) (./_minted/F379BE75050488FD4CA7092ADE6F4A36.highlight.minted) [39 <./figures/hpc/SD/pup/native_grounding.png> <./figures/hpc/SD/pup/native_mem.png>] (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/5DE0702F1482C7686BD0363DE1CDD2AB.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
 <figures/hpc/SD/pup/comparison_solving.png, id=691, 903.375pt x 703.62875pt>
 File: figures/hpc/SD/pup/comparison_solving.png Graphic file (type png)
 <use figures/hpc/SD/pup/comparison_solving.png>
-Package pdftex.def Info: figures/hpc/SD/pup/comparison_solving.png  used on inp
-ut line 376.
+Package pdftex.def Info: figures/hpc/SD/pup/comparison_solving.png  used on input line 382.
 (pdftex.def)             Requested size: 209.1301pt x 162.88338pt.
 <figures/hpc/SD/pup/prolog_state_sync.png, id=692, 903.375pt x 604.2575pt>
 File: figures/hpc/SD/pup/prolog_state_sync.png Graphic file (type png)
 <use figures/hpc/SD/pup/prolog_state_sync.png>
-Package pdftex.def Info: figures/hpc/SD/pup/prolog_state_sync.png  used on inpu
-t line 378.
+Package pdftex.def Info: figures/hpc/SD/pup/prolog_state_sync.png  used on input line 384.
 (pdftex.def)             Requested size: 209.1301pt x 139.87988pt.
-
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) [40 <./figures/hp
-c/SD/pup/comparison_solving.png> <./figures/hpc/SD/pup/prolog_state_sync.png>]
+ (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) [40 <./figures/hpc/SD/pup/comparison_solving.png> <./figures/hpc/SD/pup/prolog_state_sync.png>]
 <figures/hpc/SD/hrp/native_choices.png, id=701, 903.375pt x 625.33624pt>
 File: figures/hpc/SD/hrp/native_choices.png Graphic file (type png)
 <use figures/hpc/SD/hrp/native_choices.png>
-Package pdftex.def Info: figures/hpc/SD/hrp/native_choices.png  used on input l
-ine 392.
+Package pdftex.def Info: figures/hpc/SD/hrp/native_choices.png  used on input line 398.
 (pdftex.def)             Requested size: 209.1301pt x 144.7594pt.
 <figures/hpc/SD/hrp/comparison_solving.png, id=702, 903.375pt x 703.62875pt>
 File: figures/hpc/SD/hrp/comparison_solving.png Graphic file (type png)
 <use figures/hpc/SD/hrp/comparison_solving.png>
-Package pdftex.def Info: figures/hpc/SD/hrp/comparison_solving.png  used on inp
-ut line 394.
+Package pdftex.def Info: figures/hpc/SD/hrp/comparison_solving.png  used on input line 400.
 (pdftex.def)             Requested size: 209.1301pt x 162.88338pt.
-
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-(./_minted/5897657D5068492A64BFF2A08FD1E05C.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) [41 <./figures/hp
-c/SD/hrp/native_choices.png> <./figures/hpc/SD/hrp/comparison_solving.png>]
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
+ (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/5897657D5068492A64BFF2A08FD1E05C.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) [41 <./figures/hpc/SD/hrp/native_choices.png> <./figures/hpc/SD/hrp/comparison_solving.png>] (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
 <figures/hpc/SD/alpha/bsp_dashboard.png, id=711, 903.375pt x 341.275pt>
 File: figures/hpc/SD/alpha/bsp_dashboard.png Graphic file (type png)
 <use figures/hpc/SD/alpha/bsp_dashboard.png>
-Package pdftex.def Info: figures/hpc/SD/alpha/bsp_dashboard.png  used on input 
-line 412.
+Package pdftex.def Info: figures/hpc/SD/alpha/bsp_dashboard.png  used on input line 418.
 (pdftex.def)             Requested size: 426.79135pt x 161.23245pt.
- [42]
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted)
-(./_minted/8599BB2783BBF146BE3389038824B501.highlight.minted) [43 <./figures/hp
-c/SD/alpha/bsp_dashboard.png>]
+ [42] (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) (./_minted/8599BB2783BBF146BE3389038824B501.highlight.minted) [43 <./figures/hpc/SD/alpha/bsp_dashboard.png>]
 <figures/hpc/SD/alpha/bsp_internals.png, id=724, 903.375pt x 590.205pt>
 File: figures/hpc/SD/alpha/bsp_internals.png Graphic file (type png)
 <use figures/hpc/SD/alpha/bsp_internals.png>
-Package pdftex.def Info: figures/hpc/SD/alpha/bsp_internals.png  used on input 
-line 425.
+Package pdftex.def Info: figures/hpc/SD/alpha/bsp_internals.png  used on input line 431.
 (pdftex.def)             Requested size: 426.79135pt x 278.83731pt.
 <figures/hpc/SD/alpha/pup_dashboard.png, id=727, 903.375pt x 341.275pt>
 File: figures/hpc/SD/alpha/pup_dashboard.png Graphic file (type png)
 <use figures/hpc/SD/alpha/pup_dashboard.png>
-Package pdftex.def Info: figures/hpc/SD/alpha/pup_dashboard.png  used on input 
-line 432.
+Package pdftex.def Info: figures/hpc/SD/alpha/pup_dashboard.png  used on input line 438.
 (pdftex.def)             Requested size: 426.79135pt x 161.23245pt.
- [44 <./figures/hpc/SD/alpha/bsp_internals.png>]
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/F31282AAB04345557BCCC1BC787F19E1.highlight.minted)
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/8599BB2783BBF146BE3389038824B501.highlight.minted)
-(./_minted/8599BB2783BBF146BE3389038824B501.highlight.minted)
-(./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/D45882165FABF467EDD8460D3953EC59.highlight.minted)
-(./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted)
-(./_minted/8599BB2783BBF146BE3389038824B501.highlight.minted)
-(./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted)
-(./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted)
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/D45882165FABF467EDD8460D3953EC59.highlight.minted) [45 <./figures/hp
-c/SD/alpha/pup_dashboard.png>]
-(./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted)
-(./_minted/77014A733A2C1A4C7D373CD1C
+ [44 <./figures/hpc/SD/alpha/bsp_internals.png>] (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/F31282AAB04345557BCCC1BC787F19E1.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/8599BB2783BBF146BE3389038824B501.highlight.minted) (./_minted/8599BB2783BBF146BE3389038824B501.highlight.minted) (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/D45882165FABF467EDD8460D3953EC59.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) (./_minted/8599BB2783BBF146BE3389038824B501.highlight.minted) (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/D45882165FABF467EDD8460D3953EC59.highlight.minted) [45 <./figures/hpc/SD/alpha/pup_dashboard.png>] (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) [46] (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/5E51E4E57D6B206D81721DBC669EC94F.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) [47] (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/9F1930958206A04A894CDD188ED05AA9.highlight.minted) (./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted) (./_minted/4510260327931A075F4E0B5E895D9EC7.highlight.minted)) [48]
+\openout2 = `"5 - Discussione-e-Conclusione.aux"'.
+
+ (./5 - Discussione-e-Conclusione.tex
+Chapter 5.
+(./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) [49
+
+
+
+
+] (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) [50] (./_minted/8CAA4AFCDA5BE94D1144DB5D41F3F3A9.highlight.minted) [51] (./_minted/451B0181A46BFFFDEDC34AE8C296B643.highlight.minted) (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/46F436235B2CBB05ADC6F2915FCC70BA.highlight.minted) (./_minted/3A07AD292FC145EF328B038BB3F77238.highlight.minted) (./_minted/84640EBE8EC6C58AEAA94E3DE825E3FC.highlight.minted) (./_minted/07AF35E2B47CFAD4B5F2DC7E28908A14.highlight.minted) (./_minted/A5C9D994BB1DE765993D52969FD5D6E1.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/3D93D1C6C98BEC9A64374DD08BF5ED96.highlight.minted) (./_minted/0F7D779FA68AFE58B08A243135F1315B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/1A72613F2524729D953C838E4F2DB28B.highlight.minted) (./_minted/77014A733A2C1A4C7D373CD1C3E420A8.highlight.minted) (./_minted/57F7C4DB071ABD3C9FF3721021D150E7.highlight.minted) (./_minted/F31282AAB04345557BCCC1BC787F19E1.highlight.minted) [52] (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/8C0C6AE80ABF9EE0A07BF4E27B2C99C7.highlight.minted) [53] (./_minted/47B4EC9876396BE458FF716560FD6143.highlight.minted) (./_minted/FA36249F37F024D162B2A9C617233693.highlight.minted) (./_minted/55F7D8148DAC15495AE6A3D98A43697D.highlight.minted) (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/F379BE75050488FD4CA7092ADE6F4A36.highlight.minted) [54]) [55] [56
+\def\@LN@column{1}
+
+
+
+] [57]
+\openout2 = `"6 - Ringraziamenti.aux"'.
+
+ (./6 - Ringraziamenti.tex) [58
+
+
+] (./Spadafora_Pierpaolo_Thesis.aux (./0.2 - abstract.aux) (./1 - Introduzione.aux) (./2 - Metodologia.aux) (./3 - Implementazione.aux) (./4 - Risultati.aux) (./5 - Discussione-e-Conclusione.aux) (./6 - Ringraziamenti.aux))
+ ***********
+LaTeX2e <2025-11-01>
+L3 programming layer <2026-01-19>
+ ***********
+Package rerunfilecheck Info: File `Spadafora_Pierpaolo_Thesis.out' has not changed.
+(rerunfilecheck)             Checksum: AC253893EEE808982630996FE23B7402;11214.
+Package logreq Info: Writing requests to 'Spadafora_Pierpaolo_Thesis.run.xml'.
+\openout1 = `Spadafora_Pierpaolo_Thesis.run.xml'.
+
+ ) 
+Here is how much of TeX's memory you used:
+ 28108 strings out of 469515
+ 607452 string characters out of 5470808
+ 1495279 words of memory out of 5000000
+ 55123 multiletter control sequences out of 15000+600000
+ 657562 words of font info for 114 fonts, out of 8000000 for 9000
+ 14 hyphenation exceptions out of 8191
+ 86i,10n,93p,2664b,2321s stack positions out of 10000i,1000n,20000p,200000b,200000s
+</usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmti8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1000.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx2074.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx2488.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfcc1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm0600.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm0700.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfti1000.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfti1095.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sftt1000.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sftt1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sftt1728.pfb>
+Output written on Spadafora_Pierpaolo_Thesis.pdf (62 pages, 4096611 bytes).
+PDF statistics:
+ 1011 PDF objects out of 1200 (max. 8388607)
+ 805 compressed objects within 9 object streams
+ 178 named destinations out of 1000 (max. 500000)
+ 570 words of extra memory for PDF output out of 10000 (max. 10000000)
+
