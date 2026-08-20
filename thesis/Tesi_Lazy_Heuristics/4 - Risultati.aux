@@ -31,17 +31,17 @@
 \def\@LN@column{1}
 \@writefile{lof}{\contentsline {figure}{\numberline {4.3}{\ignorespaces \texttt  {la} solving time is close to zero across all sizes, whereas \texttt  {ga} degrades sharply at $n=60$ and times out from $n=70$ due to clasp's 16-bit weight saturation ($>32{,}767$).}}{27}{figure.4.3}\protected@file@percent }
 \newlabel{fig:bsp-solving}{{4.3}{27}{\texttt {la} solving time is close to zero across all sizes, whereas \texttt {ga} degrades sharply at $n=60$ and times out from $n=70$ due to clasp's 16-bit weight saturation ($>32{,}767$)}{figure.4.3}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {4.5}{\ignorespaces Execution time and solver statistics on BSP at $n=120$. For \texttt  {ga}, solving time and search counts represent lower bounds recorded before timing out.}}{27}{table.4.5}\protected@file@percent }
-\newlabel{tab:bsp-n120}{{4.5}{27}{Execution time and solver statistics on BSP at $n=120$. For \texttt {ga}, solving time and search counts represent lower bounds recorded before timing out}{table.4.5}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4.5}{\ignorespaces Execution time and solver statistics on BSP at $n=120$. For \texttt  {ga}, solving time represents the last value recorded before timing out.}}{27}{table.4.5}\protected@file@percent }
+\newlabel{tab:bsp-n120}{{4.5}{27}{Execution time and solver statistics on BSP at $n=120$. For \texttt {ga}, solving time represents the last value recorded before timing out}{table.4.5}{}}
 \def\@LN@column{1}
 \@writefile{toc}{\contentsline {section}{\numberline {4.4}BSP: the Two Semantics Under the Microscope}{28}{section.4.4}\protected@file@percent }
 \newlabel{sec:bsp-semantics}{{4.4}{28}{BSP: the Two Semantics Under the Microscope}{section.4.4}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.4}{\ignorespaces BSP, C++ backend: choices and conflicts. \texttt  {la} lies on the horizontal axis; \texttt  {lc} coincides with the baseline exactly, at every size both solve, so the two curves are superimposed; \texttt  {ga} leaves the chart after $n=60$. Unlike the time plots, these are exact structural counts.}}{28}{figure.4.4}\protected@file@percent }
-\newlabel{fig:bsp-search}{{4.4}{28}{BSP, C++ backend: choices and conflicts. \texttt {la} lies on the horizontal axis; \texttt {lc} coincides with the baseline exactly, at every size both solve, so the two curves are superimposed; \texttt {ga} leaves the chart after $n=60$. Unlike the time plots, these are exact structural counts}{figure.4.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.4}{\ignorespaces }}{28}{figure.4.4}\protected@file@percent }
+\newlabel{fig:bsp-search}{{4.4}{28}{}{figure.4.4}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {4.5}BSP: Rules, Variables, and Memory}{28}{section.4.5}\protected@file@percent }
 \def\@LN@column{1}
-\@writefile{lot}{\contentsline {table}{\numberline {4.6}{\ignorespaces Number of solver variables at $n=100$, C++ backend.}}{29}{table.4.6}\protected@file@percent }
-\newlabel{tab:n100-vars}{{4.6}{29}{Number of solver variables at $n=100$, C++ backend}{table.4.6}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4.6}{\ignorespaces Heuristic grounding footprint and propositional solver variables at $n=100$, C++ backend.}}{29}{table.4.6}\protected@file@percent }
+\newlabel{tab:n100-vars}{{4.6}{29}{Heuristic grounding footprint and propositional solver variables at $n=100$, C++ backend}{table.4.6}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {4.5}{\ignorespaces BSP, C++ backend: peak resident set size.}}{29}{figure.4.5}\protected@file@percent }
 \newlabel{fig:bsp-memory}{{4.5}{29}{BSP, C++ backend: peak resident set size}{figure.4.5}{}}
 \def\@LN@column{1}
@@ -52,22 +52,22 @@
 \def\@LN@column{1}
 \@writefile{lof}{\contentsline {figure}{\numberline {4.6}{\ignorespaces BSP, Prolog backend: decide calls and per-decision query cost. The \texttt  {lc} curve pairs tens of thousands of calls with a low unit cost; \texttt  {la} the opposite.}}{31}{figure.4.6}\protected@file@percent }
 \newlabel{fig:bsp-instrumentation}{{4.6}{31}{BSP, Prolog backend: decide calls and per-decision query cost. The \texttt {lc} curve pairs tens of thousands of calls with a low unit cost; \texttt {la} the opposite}{figure.4.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.7}{\ignorespaces BSP: solving time, native (solid) versus Prolog (dashed) backend, lazy variants and ground reference.}}{31}{figure.4.7}\protected@file@percent }
+\newlabel{fig:bsp-comparison}{{4.7}{31}{BSP: solving time, native (solid) versus Prolog (dashed) backend, lazy variants and ground reference}{figure.4.7}{}}
 \def\@LN@column{1}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.7}{\ignorespaces BSP: solving time, native (solid) versus Prolog (dashed) backend, lazy variants and ground reference.}}{32}{figure.4.7}\protected@file@percent }
-\newlabel{fig:bsp-comparison}{{4.7}{32}{BSP: solving time, native (solid) versus Prolog (dashed) backend, lazy variants and ground reference}{figure.4.7}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {4.7}Two Ground Simulations of Alpha: \texttt  {ga} versus \texttt  {ga\_weak}}{32}{section.4.7}\protected@file@percent }
 \newlabel{sec:ga-weak}{{4.7}{32}{Two Ground Simulations of Alpha: \texttt {ga} versus \texttt {ga\_weak}}{section.4.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.8}{\ignorespaces BSP, C++ backend, exploratory comparison: solving time (left) and solver choices (right) with both Alpha simulations alongside the main variants. \texttt  {ga} is exact up to $n=50$, degrades from $n=51$ once its weights leave the representable range, needs $1.7$ million choices and $137$ seconds of solving at $n=60$, and times out from $n=70$; \texttt  {ga\_weak} stays in the baseline's band over the whole range and reaches $n=140$ on both backends, two sizes short of the baseline.}}{32}{figure.4.8}\protected@file@percent }
+\newlabel{fig:gaweak}{{4.8}{32}{BSP, C++ backend, exploratory comparison: solving time (left) and solver choices (right) with both Alpha simulations alongside the main variants. \texttt {ga} is exact up to $n=50$, degrades from $n=51$ once its weights leave the representable range, needs $1.7$ million choices and $137$ seconds of solving at $n=60$, and times out from $n=70$; \texttt {ga\_weak} stays in the baseline's band over the whole range and reaches $n=140$ on both backends, two sizes short of the baseline}{figure.4.8}{}}
 \def\@LN@column{1}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.8}{\ignorespaces BSP, C++ backend, exploratory comparison: solving time (left) and solver choices (right) with both Alpha simulations alongside the main variants. \texttt  {ga} is exact up to $n=50$, degrades from $n=51$ once its weights leave the representable range, needs $1.7$ million choices and $137$ seconds of solving at $n=60$, and times out from $n=70$; \texttt  {ga\_weak} stays in the baseline's band over the whole range and reaches $n=140$ on both backends, two sizes short of the baseline.}}{33}{figure.4.8}\protected@file@percent }
-\newlabel{fig:gaweak}{{4.8}{33}{BSP, C++ backend, exploratory comparison: solving time (left) and solver choices (right) with both Alpha simulations alongside the main variants. \texttt {ga} is exact up to $n=50$, degrades from $n=51$ once its weights leave the representable range, needs $1.7$ million choices and $137$ seconds of solving at $n=60$, and times out from $n=70$; \texttt {ga\_weak} stays in the baseline's band over the whole range and reaches $n=140$ on both backends, two sizes short of the baseline}{figure.4.8}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.8}Direct and Auxiliary Forms}{33}{section.4.8}\protected@file@percent }
+\newlabel{sec:aux-form}{{4.8}{33}{Direct and Auxiliary Forms}{section.4.8}{}}
 \def\@LN@column{1}
-\@writefile{toc}{\contentsline {section}{\numberline {4.8}Direct and Auxiliary Forms}{34}{section.4.8}\protected@file@percent }
-\newlabel{sec:aux-form}{{4.8}{34}{Direct and Auxiliary Forms}{section.4.8}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {4.9}{\ignorespaces BSP, exploratory comparison of the auxiliary form. Left: C++ solving time; \texttt  {la\_aux} diverges from $n=40$ and leaves the chart after $n=60$, while the direct \texttt  {la} stays on the axis. Right: propagator decide calls on the Prolog backend; the auxiliary candidates multiply the consultations ($573$ at $n=20$ and $8{,}452$ at $n=30$, against the $n$ calls of the direct form), and the curve ends at $n=30$, the last size the variant solves on that backend.}}{34}{figure.4.9}\protected@file@percent }
 \newlabel{fig:laaux}{{4.9}{34}{BSP, exploratory comparison of the auxiliary form. Left: C++ solving time; \texttt {la\_aux} diverges from $n=40$ and leaves the chart after $n=60$, while the direct \texttt {la} stays on the axis. Right: propagator decide calls on the Prolog backend; the auxiliary candidates multiply the consultations ($573$ at $n=20$ and $8{,}452$ at $n=30$, against the $n$ calls of the direct form), and the curve ends at $n=30$, the last size the variant solves on that backend}{figure.4.9}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.9}Effect of the Constraint Formulation}{34}{section.4.9}\protected@file@percent }
+\newlabel{sec:constr-form}{{4.9}{34}{Effect of the Constraint Formulation}{section.4.9}{}}
 \def\@LN@column{1}
-\@writefile{toc}{\contentsline {section}{\numberline {4.9}Effect of the Constraint Formulation}{35}{section.4.9}\protected@file@percent }
-\newlabel{sec:constr-form}{{4.9}{35}{Effect of the Constraint Formulation}{section.4.9}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {4.10}{\ignorespaces BSP, C++ backend, exploratory comparison of the constraint reformulation: grounding time (left) and propositional rules (right). \texttt  {gc}, \texttt  {la}, and \texttt  {lc} overlap because they share the quadratic base encoding (some $52.8$ million rules and one to three minutes of grounding at $n=120$); \texttt  {la\_co} lies on the horizontal axis of both plots ($366$ rules, milliseconds of grounding), the visual form of the five-orders-of-magnitude gap discussed in the text.}}{35}{figure.4.10}\protected@file@percent }
 \newlabel{fig:laco}{{4.10}{35}{BSP, C++ backend, exploratory comparison of the constraint reformulation: grounding time (left) and propositional rules (right). \texttt {gc}, \texttt {la}, and \texttt {lc} overlap because they share the quadratic base encoding (some $52.8$ million rules and one to three minutes of grounding at $n=120$); \texttt {la\_co} lies on the horizontal axis of both plots ($366$ rules, milliseconds of grounding), the visual form of the five-orders-of-magnitude gap discussed in the text}{figure.4.10}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {4.10}PUP: the Grounding Bottleneck at Scale}{35}{section.4.10}\protected@file@percent }
@@ -127,7 +127,7 @@
 \setcounter{float@type}{8}
 \setcounter{FancyVerbLine}{1}
 \setcounter{linenumber}{1}
-\setcounter{LN@truepage}{46}
+\setcounter{LN@truepage}{47}
 \setcounter{FancyVerbWriteLine}{0}
 \setcounter{FancyVerbBufferLine}{1}
 \setcounter{FV@TrueTabGroupLevel}{0}

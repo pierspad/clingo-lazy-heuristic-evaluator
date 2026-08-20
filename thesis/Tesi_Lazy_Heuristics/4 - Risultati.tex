@@ -174,53 +174,56 @@ However here we can see a clear difference on the different semantics over the n
 \mintinline{text}|la_co|     & 0.009 & $<0.01$ & 0.01 & 117 & 0\\
 \bottomrule
 \end{tabular}
-\caption{Execution time and solver statistics on BSP at $n=120$. For \texttt{ga}, solving time and search counts represent lower bounds recorded before timing out.}
+\caption{Execution time and solver statistics on BSP at $n=120$. For \texttt{ga}, solving time represents the last value recorded before timing out.}
 \label{tab:bsp-n120}
 \end{table}
 
-Table~\ref{tab:bsp-n120} highlights three major findings:
+This highlights three major findings:
 \begin{enumerate}
-    \item \textbf{Search elimination in \mintinline{text}|la|:} the default negation and dynamic aggregate evaluation allows clingo make use of the perfect heuristic given making exactly 120 perfect choices at $n=120$.
-    \item \textbf{Collapse of static simulation (\mintinline{text}|ga|):} While \mintinline{text}|ga| matches \mintinline{text}|la| perfectly up to $n=50$, its performance degrades sharply at $n=60$ ($136.8$\,s solving, $1.67$ million choices) and times out from $n=70$ onward. This failure is not caused by grounding overhead ($14.9$\,s and $882$\,MB at $n=70$), but by the 16-bit integer weight limit in clasp ($32{,}767$), as explained in Section~\ref{sec:weight-problem}. When weights saturate beyond $n=50$, dynamic aggregate ranking breaks down entirely.
-    \item \textbf{Exploratory variants:} \mintinline{text}|ga_weak| (which approximates Alpha semantics in a G&S context) tracks close to the baseline and is discussed in Section~\ref{sec:ga-weak}, while \mintinline{text}|la_co| (which reformulates the problem constraints) is analyzed in Section~\ref{sec:constr-form}.
+    \item In \mintinline{text}|la| the default negation and dynamic aggregate evaluation allows clingo make use of the perfect heuristic given making exactly 120 perfect choices at $n=120$.
+    \item While \mintinline{text}|ga| matches \mintinline{text}|la| perfectly up to $n=50$, its performance degrades sharply at $n=60$ and times out from $n=70$ onward. This failure is caused by the 16-bit integer weight limit in clasp ($32{,}767$), as explained in Section~\ref{sec:weight-problem}. When weights saturate beyond $n=50$, dynamic aggregate ranking breaks down entirely.
+    \item \mintinline{text}|ga_weak| tracks close to the baseline and is discussed in Section~\ref{sec:ga-weak}, while \mintinline{text}|la_co| is analyzed in Section~\ref{sec:constr-form}.
 \end{enumerate}
 
 \section{BSP: the Two Semantics Under the Microscope}
 \label{sec:bsp-semantics}
 
-Detailed search statistics clearly illustrate the fundamental difference between the two semantic models. As shown in Figure~\ref{fig:bsp-search}, \mintinline{text}|la| requires exactly $n$ decisions with zero conflicts for every size $n$, executing a deterministic greedy balance strategy. In contrast, \mintinline{text}|lc| exhibits search statistics that are strictly identical to the heuristic-free baseline (\mintinline{text}|gc_noheur|), recording exactly $78{,}565$ choices and $49{,}993$ conflicts at $n=120$.
+As shown in Figure~\ref{fig:bsp-search} below, \mintinline{text}|la| requires exactly $n$ decisions with zero conflicts across every benchmarked size $n$. Under Alpha-like semantics, dynamic aggregate evaluation provides the propagator with usable guidance from the very first decision on an empty assignment, guiding the CDCL solver with perfect choices.
+
+In contrast, \mintinline{text}|lc| exhibits search statistics that are identical point-by-point to the heuristic-free baseline (\mintinline{text}|gc_noheur|), recording $78{,}565$ choices and $49{,}993$ conflicts at $n=120$. 
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.49\textwidth]{hpc/\ThesisGraphQuality/bsp/native_choices.png}
     \hfill
     \includegraphics[width=0.49\textwidth]{hpc/\ThesisGraphQuality/bsp/native_conflicts.png}
-    \caption{BSP, C++ backend: choices and conflicts. \texttt{la} lies on the horizontal axis; \texttt{lc} coincides with the baseline exactly, at every size both solve, so the two curves are superimposed; \texttt{ga} leaves the chart after $n=60$. Unlike the time plots, these are exact structural counts.}
+    \caption{}
     \label{fig:bsp-search}
 \end{figure}
 
-Propagator instrumentation reveals why \mintinline{text}|lc| reproduces the baseline trajectory. Under Clingo semantics, aggregate guards on \mintinline{text}|c/1| require all elements to be assigned before the sum can be evaluated, while \mintinline{text}|clingo_not(c(X))| requires explicit falsity. During search, these conditions are virtually never met at decision points. At $n=120$, although the propagator is consulted on every decision ($78{,}565$ calls), it yields zero applicable candidates across the entire run (\mintinline{text}|avg_candidates_per_decide| $= 0.0$, \mintinline{text}|max_candidates_seen| $= 0$). The solver therefore defaults to its standard heuristic at every step. Consequently, \mintinline{text}|lc| incurs the full runtime overhead of propagator callbacks without offering any guidance.
+Under Clingo semantics, aggregate guards on \mintinline{text}|c/1| require all elements to be assigned before the sum can be evaluated and an atom is considered "assigned false" only when clasp demonstrates that it cannot be true. During search, these conditions are virtually never met at decision points. At $n=120$, although the propagator is consulted on every decision ($78{,}565$ calls), it yields zero applicable candidates across the entire run. Because both variants run on the exact same native C++ propagator backend, this comparison proves that lazy evaluation alone is insufficient if the underlying semantics cannot evaluate partial information, causing the solver to fall back entirely on default CDCL branching.
 
 \section{BSP: Rules, Variables, and Memory}
 
-The reduction in heuristic footprint is also evident in the size of the propositional formula generated for the solver. As shown in Table~\ref{tab:n100-vars}, \mintinline{text}|gc| generates over one million solver variables at $n=100$ (a 50-fold increase over the baseline) because it materializes separate rules and aggregate bounds for every $(X,S)$ pair. In contrast, \mintinline{text}|ga| keeps the variable count low ($20{,}402$) by sharing aggregate structures, but incurs high grounding time instead. The lazy variants and the baseline maintain the minimal variable count ($20{,}300$).
+The reduction of the heuristic footprint is also evident in the size of the propositional formula generated for the solver. As shown in Table~\ref{tab:n100-vars}, \mintinline{text}|gc| generates over one million solver variables at $n=100$ because it materializes separate rules and aggregate bounds for every $(X,S)$ pair. In contrast, \mintinline{text}|ga| keeps the variable count low ($20{,}402$) by sharing aggregate structures, but incurs high grounding time instead. The lazy variants and the baseline maintain the minimal variable count ($20{,}300$).
 
 \begin{table}[H]
 \centering
 \small
-\begin{tabular}{lr}
+\begin{tabular}{lrr}
 \toprule
-\textbf{Variant} & \textbf{Variables at $n=100$}\\
+\textbf{Variant} & \textbf{Ground Directives / Facts} & \textbf{Solver Variables}\\
 \midrule
-\mintinline{text}|gc| & $1{,}030{,}606$\\
-\mintinline{text}|ga| & $20{,}402$\\
-\mintinline{text}|ga_weak| & $20{,}406$\\
-\mintinline{text}|lc| & $20{,}300$\\
-\mintinline{text}|la| & $20{,}300$\\
-\mintinline{text}|gc_noheur| & $20{,}300$\\
+\mintinline{text}|gc|        & $1{,}010{,}200$ & $1{,}030{,}606$\\
+\mintinline{text}|ga|        & $1{,}010{,}200$ & $20{,}402$\\
+\mintinline{text}|ga_weak|   & $200$           & $20{,}406$\\
+\mintinline{text}|lc|        & $2$             & $20{,}300$\\
+\mintinline{text}|la|        & $2$             & $20{,}300$\\
+\mintinline{text}|gc_noheur| & $0$             & $20{,}300$\\
+\mintinline{text}|la_co|     & $2$             & $101$\\
 \bottomrule
 \end{tabular}
-\caption{Number of solver variables at $n=100$, C++ backend.}
+\caption{Heuristic grounding footprint and propositional solver variables at $n=100$, C++ backend.}
 \label{tab:n100-vars}
 \end{table}
 

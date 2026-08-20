@@ -1,5 +1,5 @@
 \babel@toc {english}{}\relax 
-\contentsline {chapter}{Abstract}{ii}{chapter*.2}%
+\contentsline {chapter}{Abstract}{iii}{chapter*.2}%
 \contentsline {chapter}{\numberline {1}Introduction and Background}{1}{chapter.1}%
 \contentsline {section}{\numberline {1.1}The Cost of a Dynamic Heuristic}{1}{section.1.1}%
 \contentsline {section}{\numberline {1.2}Answer Set Programming}{3}{section.1.2}%
@@ -46,8 +46,8 @@
 \contentsline {section}{\numberline {4.5}BSP: Rules, Variables, and Memory}{28}{section.4.5}%
 \contentsline {section}{\numberline {4.6}The Price of Laziness: Per-Decision Cost}{30}{section.4.6}%
 \contentsline {section}{\numberline {4.7}Two Ground Simulations of Alpha: \texttt {ga} versus \texttt {ga\_weak}}{32}{section.4.7}%
-\contentsline {section}{\numberline {4.8}Direct and Auxiliary Forms}{34}{section.4.8}%
-\contentsline {section}{\numberline {4.9}Effect of the Constraint Formulation}{35}{section.4.9}%
+\contentsline {section}{\numberline {4.8}Direct and Auxiliary Forms}{33}{section.4.8}%
+\contentsline {section}{\numberline {4.9}Effect of the Constraint Formulation}{34}{section.4.9}%
 \contentsline {section}{\numberline {4.10}PUP: the Grounding Bottleneck at Scale}{35}{section.4.10}%
 \contentsline {section}{\numberline {4.11}HRP: Semantics Without Aggregates}{38}{section.4.11}%
 \contentsline {section}{\numberline {4.12}An External Reference: Alpha}{39}{section.4.12}%

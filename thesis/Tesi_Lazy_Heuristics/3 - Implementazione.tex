@@ -113,7 +113,12 @@ At each decision point (\mintinline{text}|decide|), the backend queries all solu
 
 The BSP divides the set of integers $\{1,\ldots,n\}$ into two disjoint sets, \mintinline{text}|b/1| and \mintinline{text}|c/1|, such that their sums differ by at most one. The heuristic greedily assigns unassigned integers to set $b$ with a priority proportional to the current sum of set $c$, driving the solver toward balanced partitions. Because all decisions share a single priority level, the current sum $S$ acts as the primary ranking term, with the element value $X$ resolving ties between equal sums.
 
-Beyond the core four-variant matrix, the BSP evaluation includes three exploratory settings: \mintinline{text}|ga_weak|, which tests the ground heuristic without unrolling dynamic sum bounds; \mintinline{text}|la_aux|, which implements lazy evaluation over pre-materialized auxiliary atoms \mintinline{text}|h_b(X,S)|; and \mintinline{text}|la_co|, which evaluates the lazy heuristic against an alternative linear formulation of the balance constraint.
+Beyond the core four-variant matrix, the BSP evaluation includes three exploratory settings:
+\begin{itemize}
+    \item \mintinline{text}|ga_weak| (Section~\ref{sec:ga-simulation}): evaluates the ground heuristic with default negation adapted but without unrolling dynamic sum bounds;
+    \item \mintinline{text}|la_aux|: implements lazy evaluation where heuristic conditions are pre-materialized into auxiliary atoms \mintinline{text}|h_b(X,S)| in the ground program;
+    \item \mintinline{text}|la_co| (Lazy Alpha + Constraint Optimization): combines the \mintinline{text}|la| lazy heuristic with a linear reformulation of the balance constraint (replacing the quadratic pairwise difference check between partition sums with a direct linear aggregate bound), evaluating performance when both heuristic and base constraint grounding bottlenecks are removed.
+\end{itemize}
 
 \subsection{Partner Units Problem (PUP)}
 \label{sec:pup-encoding}

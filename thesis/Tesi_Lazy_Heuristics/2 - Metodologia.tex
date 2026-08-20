@@ -18,12 +18,12 @@ The \emph{semantics} axis fixes how a heuristic condition reads partial informat
 
 Crossing the two axes yields the four variants that the rest of the thesis refers to by: \mintinline{text}|gc| and \mintinline{text}|ga| for the ground approach under the Clingo and the Alpha semantics, \mintinline{text}|lc| and \mintinline{text}|la| for the lazy evaluated one, the prefix naming the approach and the suffix the semantics. To them is added the heuristic-free baseline \mintinline{text}|gc_noheur|, which carries the same domain logic with no heuristic at all and measures what the solver does when it is left alone (Figure~\ref{fig:axes}).
 
-Ideally, changing the approach or semantics should modify only the heuristic representation. On BSP, this control is exact, as the lazy encodings simply add two facts to the baseline program. On PUP and HRP, however, lazy encodings require auxiliary predicates to expose aggregate sources and align negative conditions, yielding a ground program measurably larger than the baseline (Sections~\ref{sec:benchmarks} and~\ref{sec:pup-encoding}). Nevertheless, when comparing the lazy variants among themselves, such as \mintinline{text}|la| against \mintinline{text}|lc| across all three families, these auxiliary predicates are shared by both encodings; therefore, this difference disappears and variable isolation remains exact by construction.
+The evaluation also includes three targeted exploratory variants (detailed in Section~\ref{sec:bsp}): \mintinline{text}|ga_weak| (alpha-like semantics over the negation but not over the aggregates), \mintinline{text}|la_aux| (pre-materialized heuristic bodies in external auxiliary predicates), and \mintinline{text}|la_co| (lazy heuristic combined with a reformulation of the encoding).
 
 \subsection{Simulating Alpha in Ground Clingo}
 \label{sec:ga-simulation}
 
-The \mintinline{text}|ga| encodings apply two systematic transformations to \mintinline{text}|gc|.
+Simulating Alpha-like semantics within a ground-and-solve pipeline requires addressing two distinct semantic aspects: default negation over unassigned literals and dynamic aggregate evaluation.
 
 The first transformation drops negative literals that test the partial state (such as \mintinline{text}|not c(X)| in BSP, \mintinline{text}|not not_assigned_sensor(S)| in PUP, and guards like \mintinline{text}|not fullCabinet(C)| in HRP). 
 Under Alpha-like semantics, these literals are satisfied by unassigned atoms as well as false ones. Since a target atom is unassigned at the moment a decision is evaluated, dropping the negative literal altogether provides the closest approximation in ground Clingo; this is harmless in practice because the solver never re-decides an atom that is already assigned.
@@ -38,7 +38,13 @@ sum_value(0..tot).
 
 Instead of binding $S$ to the final value of the sum, the directive is unrolled over all candidate values \mintinline{text}|sum_value(S)| and guarded by the condition $S \le \#\mathtt{sum}\{Y : c(Y)\}$. During search, as soon as the partial sum reaches a bound $S$, every directive with that bound becomes applicable; among the applicable ground directives for the same atom, Clasp's Domain heuristic retains the one with the maximum weight, which corresponds exactly to the \emph{current} value of the aggregate. The max-weight selection thus reconstructs the dynamic aggregate at solving time. For aggregates whose contribution to the weight decreases rather than increases (such as the free-capacity terms $N_0,N_1,N_2$ in PUP) the same transformation is applied with the bound $V \ge \#\mathtt{max}\{\ldots\}$, so that the max-weight selection picks the smallest proven value.
 
-This simulation is faithful, but its price is exactly the combinatorial explosion that motivated the thesis: one ground directive per point of the product of the unrolled domains, measured in Chapter~\ref{sec:results}.
+To isolate the individual impact of each transformation, we distinguish two ground encodings:
+\begin{itemize}
+    \item \mintinline{text}|ga_weak| (partial simulation): applies only the first transformation (dropping negative literals) while retaining static aggregate equality ($S = \#\mathtt{sum}\{\ldots\}$) without unrolling. It serves as an experimental control to test whether adjusting default negation alone provides heuristic guidance without dynamic aggregate evaluation.
+    \item \mintinline{text}|ga| (full simulation): applies both transformations, enabling dynamic aggregate reconstruction during search at the cost of grounding all unrolled domain values.
+\end{itemize}
+
+This full simulation in \mintinline{text}|ga| is faithful, but its price is exactly the combinatorial explosion that motivated the thesis: one ground directive per point of the product of the unrolled domains, measured in Chapter~\ref{sec:results}.
 
 \subsection{Weights, Priorities, and Flattening}
 \label{sec:flattening}
