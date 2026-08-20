@@ -15,14 +15,14 @@ Because grounding precedes search, the grounder must enumerate every possible va
 Depending on its underlying architecture, an ASP solver can be seen as an engine that compiles or interprets a very convenient and elegant declarative language \cite{calimeri2020aspcore2} to search for a solution. The convenience of that language is paid for in control: the modeler states \emph{what} an admissible solution is, but not \emph{how} the engine should look for one. A pure backtracking approach behaves as an uninformed search, and on problems whose structure is known by construction, guiding the solver with that knowledge is extremely helpful.
 
 \emph{Domain-specific heuristics} are the means by which the modeler feeds that knowledge into the search. Syntactically they are declarative annotations that the grounder instantiates like ordinary rules, and their purpose is to tell the solver which atom to decide next, and with which polarity; their impact on solving is well documented \cite{gebser2013heuristics,dodaro2016combining}. They are, however, part of the program, and Clingo instantiates the program before search starts. A heuristic is therefore expanded, in full, before the first decision is taken.
-That expansion can be relatively harmless as long as the heuristic depends only on the input. It stops being harmless as soon as the heuristic depends on \emph{how the search is going}, which is precisely when a heuristic is most useful. Consider the directive used throughout this thesis to guide the Balanced Sum Problem (BSP), the problem of splitting $\{1,\ldots,n\}$ into two sets \mintinline{text}|b/1| and \mintinline{text}|c/1| of nearly equal sum:
+That expansion can be relatively harmless as long as the heuristic depends only on the input. It stops being harmless as soon as the heuristic depends on \emph{how the search is going}, which is precisely when a heuristic is most useful. Consider the directive used throughout this thesis to guide the Balanced Sum Problem (BSP), the problem of splitting $\{1,\ldots,n\}$ into two sets \texttt{b/1} and \texttt{c/1} of nearly equal sum:
 
 \begin{minted}{prolog}
 #heuristic b(X) : x(X), not c(X), S = #sum{Y : c(Y)}, W = ((n+1)*S)+X. [W, true]
 \end{minted}
 
 The rule reads: prefer to place the element $X$ into $b$, the more strongly the larger the sum $S$ of what is already in $c$.
-The aggregate value $S$ appears \emph{inside the weight}, and the atoms \mintinline{text}|c(Y)| it sums over are guessed during search rather than given as input facts. Since the grounder cannot know what $S$ will be at decision time, it must enumerate every potential value of the sum ($S \in \{0, \ldots, \frac{n(n+1)}{2}\}$) and instantiate a separate ground directive for every pair $(X,S)$. This yields $\Theta(n^{3})$ ground objects (over one million ($1{,}010{,}200$) directives at $n = 100$) for the symmetric rules of $b/1$ and $c/1$. All of them instantiate the same single rule the modeler wrote, and all but the one matching the current partial sum are inert at any given decision.
+The aggregate value $S$ appears \emph{inside the weight}, and the atoms \texttt{c(Y)} it sums over are guessed during search rather than given as input facts. Since the grounder cannot know what $S$ will be at decision time, it must enumerate every potential value of the sum ($S \in \{0, \ldots, \frac{n(n+1)}{2}\}$) and instantiate a separate ground directive for every pair $(X,S)$. This yields $\Theta(n^{3})$ ground objects (over one million ($1{,}010{,}200$) directives at $n = 100$) for the symmetric rules of $b/1$ and $c/1$. All of them instantiate the same single rule the modeler wrote, and all but the one matching the current partial sum are inert at any given decision.
 A domain-specific heuristic introduced to help the engine solve a problem quicker ends up putting the answer out of reach.
 
 \begin{figure}[H]
@@ -59,7 +59,7 @@ A stable model is then a set of atoms both closed under the rules and justified 
 In the \emph{guess-and-check} idiom a choice construct opens the solution space, integrity constraints prune the candidates that violate the specification, and the answer sets of the program correspond one-to-one to the solutions of the problem. ASP syntax extends normal rules with first-order variables, arithmetic, conditional literals, and three constructs this thesis uses throughout. 
 A \emph{choice rule} such as \mintinline{text}|{ b(X) } :- x(X)| leaves the truth of its head open, so its head atoms, called \emph{choice atoms} below, are exactly the ones the solver has to decide. 
 An \emph{integrity constraint} \mintinline{text}|:- Body.| is a rule with empty head and forbids every model that satisfies $Body$. 
-An \emph{aggregate atom} such as \mintinline{text}|#sum|, \mintinline{text}|#count|, \mintinline{text}|#min| or \mintinline{text}|#max| condenses a set of weighted contributions into a single comparable value \cite{clingoGuide}. Aggregates are central to this work: the heuristics under study rank decisions by expressions such as \enquote{the current sum of the elements already placed in a set}, and how and \emph{when} such an aggregate is evaluated is exactly what differentiates the systems compared here.
+An \emph{aggregate atom} such as \texttt{\#sum}, \texttt{\#count}, \texttt{\#min} or \texttt{\#max} condenses a set of weighted contributions into a single comparable value \cite{clingoGuide}. Aggregates are central to this work: the heuristics under study rank decisions by expressions such as \enquote{the current sum of the elements already placed in a set}, and how and \emph{when} such an aggregate is evaluated is exactly what differentiates the systems compared here.
 
 \section{Ground-and-Solve: Gringo, Clasp, and Conflict-Driven Search}
 \label{sec:bg-cdcl}
@@ -74,7 +74,7 @@ This approach entails that every atom and every rule Clasp will ever see must ex
 \section{Domain-Specific Heuristics in Clingo}
 \label{sec:bg-heuristics}
 
-Clasp allows the modeler to steer its decision heuristic using domain-specific knowledge through the \mintinline{text}|#heuristic| directive \cite{gebser2013heuristics}:
+Clasp allows the modeler to steer its decision heuristic using domain-specific knowledge through the \texttt{\#heuristic} directive \cite{gebser2013heuristics}:
 
 \begin{minted}{prolog}
 #heuristic A : Body. [W@P, M]
@@ -96,10 +96,10 @@ Specifically, Alpha evaluates negated body literals against unassigned atoms and
 
 Standard Clingo does not evaluate heuristic conditions dynamically at search time. However, it provides an extension mechanism: \emph{theory propagators}, user-defined components registered with the solver that participate directly in the search loop \cite{gebser2019multishot}. This thesis leverages that interface to provide search guidance computed dynamically on the trail rather than fully materialized before search.
 
-A propagator has four callbacks. During \mintinline{text}|init|, it inspects the symbolic atoms of the ground program, maps the atoms it cares about to solver literals, and registers \emph{watches} on them. During search, \mintinline{text}|propagate| is invoked when a watched literal becomes true, \mintinline{text}|undo| when backtracking retracts it, and \mintinline{text}|check| on total assignments. The propagator is invoked by Clasp only when a watched literal changes state.
+A propagator has four callbacks. During \texttt{init}, it inspects the symbolic atoms of the ground program, maps the atoms it cares about to solver literals, and registers \emph{watches} on them. During search, \texttt{propagate} is invoked when a watched literal becomes true, \texttt{undo} when backtracking retracts it, and \texttt{check} on total assignments. The propagator is invoked by Clasp only when a watched literal changes state.
 
-The \mintinline{text}|Clingo::Heuristic| interface inherits from Propagator and extends it with a \mintinline{text}|decide| callback, invoked at each decision step \emph{before} the solver's built-in heuristic. The Heuristic object receives the current assignment of the solver and either returns a signed literal, which becomes the next decision, or returns $0$, in which case Clasp falls back to its default activity-based heuristic (VSIDS \cite{moskewicz2001chaff}).
-This is the mechanism the rest of the thesis builds on. It keeps the declarative heuristic descriptions in memory, evaluates them incrementally against the trail, and answers each \mintinline{text}|decide| call with the best applicable target.
+The \texttt{Clingo::Heuristic} interface inherits from Propagator and extends it with a \texttt{decide} callback, invoked at each decision step \emph{before} the solver's built-in heuristic. The Heuristic object receives the current assignment of the solver and either returns a signed literal, which becomes the next decision, or returns $0$, in which case Clasp falls back to its default activity-based heuristic (VSIDS \cite{moskewicz2001chaff}).
+This is the mechanism the rest of the thesis builds on. It keeps the declarative heuristic descriptions in memory, evaluates them incrementally against the trail, and answers each \texttt{decide} call with the best applicable target.
 
 \section{Objective and Contributions}
 \label{sec:contributions}
@@ -109,7 +109,7 @@ This work asks whether the same effect of lazily evaluating heuristics can be ob
 The thesis makes the following contributions.
 
 \begin{enumerate}
-    \item \textbf{A lazy heuristic evaluator for Clingo.} A propagator, registered through the public \mintinline{text}|Clingo::Heuristic| interface, that keeps a declarative heuristic in memory as a compact description and evaluates it at every decision against the current partial assignment. 
+    \item \textbf{A lazy heuristic evaluator for Clingo.} A propagator, registered through the public \texttt{Clingo::Heuristic} interface, that keeps a declarative heuristic in memory as a compact description and evaluates it at every decision against the current partial assignment. 
     \item \textbf{Two backends.} A compiled C++ backend, which materializes one candidate per ground target and maintains incremental aggregate states, and an in-process SWI-Prolog backend, which evaluates the heuristic as an ordinary logic program against a mirrored image of the solver trail.
     \item \textbf{Separating representation from semantics.} Ground-and-Solve, Lazy, Clingo semantics and Alpha semantics combined give four variants of every encoding plus a heuristic-free baseline, so that no measured difference has to be attributed to two causes at once.
     \item \textbf{Flattening of the weights for Alpha-style heuristics.} Alpha's priority levels are global, while Clingo's are local to a single atom. Section~\ref{sec:flattening} presents the transformation that folds a level into the weight, the conditions under which it preserves the intended order and the weight field limit imposed by Clingo.

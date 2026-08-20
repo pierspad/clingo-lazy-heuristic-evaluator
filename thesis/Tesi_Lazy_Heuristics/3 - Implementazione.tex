@@ -7,20 +7,20 @@
 \subsection{Parser and Runtime Representation}
 \label{sec:runtime}
 
-The parser in \path{libclingo/src/heuristic_parser.cc} turns each \mintinline{text}|__heuristic| symbol into a \mintinline{text}|HeuristicRuleTemplate|: target atom, positive and negative body literals, variable bindings, modifier, semantics, and an arithmetic AST for the weight.
+The parser in \path{libclingo/src/heuristic_parser.cc} turns each \texttt{\_\_heuristic} symbol into a \texttt{HeuristicRuleTemplate}: target atom, positive and negative body literals, variable bindings, modifier, semantics, and an arithmetic AST for the weight.
 
-During \mintinline{text}|init|, the propagator inspects the ground symbolic atoms and builds an index mapping each predicate and its argument tuple to the corresponding solver literal. It then materializes candidates: for each ground target atom and matching combination of positive body atoms, it creates a \mintinline{text}|RuntimeHeuristicCandidate| storing the target literal, target tuple, body literals, bound variable values, and instantiated aggregate keys.
+During \texttt{init}, the propagator inspects the ground symbolic atoms and builds an index mapping each predicate and its argument tuple to the corresponding solver literal. It then materializes candidates: for each ground target atom and matching combination of positive body atoms, it creates a \texttt{RuntimeHeuristicCandidate} storing the target literal, target tuple, body literals, bound variable values, and instantiated aggregate keys.
 
-In BSP with $n = 100$, this yields only $100$ candidates for \mintinline{text}|b(X)| (and $200$ across both partitions), whereas the standard ground encoding generates $1{,}010{,}200$ directives ($2 \times 100 \times 5051$) to cover all possible discrete sums $S \in \{0, \ldots, 5050\}$. Thus, candidate materialization in the lazy propagator scales linearly with the number of ground targets rather than with the domain size of dynamic aggregates, eliminating exhaustive grounding. 
+In BSP with $n = 100$, this yields only $100$ candidates for \texttt{b(X)} (and $200$ across both partitions), whereas the standard ground encoding generates $1{,}010{,}200$ directives ($2 \times 100 \times 5051$) to cover all possible discrete sums $S \in \{0, \ldots, 5050\}$. Thus, candidate materialization in the lazy propagator scales linearly with the number of ground targets rather than with the domain size of dynamic aggregates, eliminating exhaustive grounding. 
 
 Finally, the propagator registers watches exclusively for literals that affect heuristic state: both polarities of target and negative body literals, positive body literals, and aggregate source literals.
 
 \subsection{Incremental Aggregates}
-Aggregate states implement three methods: \mintinline{text}|add|, \mintinline{text}|remove|, and \mintinline{text}|result|. 
+Aggregate states implement three methods: \texttt{add}, \texttt{remove}, and \texttt{result}. 
 
-Sums and counts (\mintinline{text}|SumState|, \mintinline{text}|CountState|) store a single \mintinline{text}|int|, because adding and removing values can be done with simple addition and subtraction. In contrast, min and max (\mintinline{text}|MinState|, \mintinline{text}|MaxState|) cannot be undone with arithmetic; when the current minimum or maximum is removed during backtracking, the state must know what the next best value was. They therefore use an \mintinline{text}|std::map<int, int>| that maps each active value to how many times it occurs.
+Sums and counts (\texttt{SumState}, \texttt{CountState}) store a single \texttt{int}, because adding and removing values can be done with simple addition and subtraction. In contrast, min and max (\texttt{MinState}, \texttt{MaxState}) cannot be undone with arithmetic; when the current minimum or maximum is removed during backtracking, the state must know what the next best value was. They therefore use an \texttt{std::map<int, int>} that maps each active value to how many times it occurs.
 
-Each source atom updates the \mintinline{text}|AggregateState| matched by its \mintinline{text}|RuntimeAggregateKey|: values are added in \mintinline{text}|propagate| and removed in \mintinline{text}|undo|.
+Each source atom updates the \texttt{AggregateState} matched by its \texttt{RuntimeAggregateKey}: values are added in \texttt{propagate} and removed in \texttt{undo}.
 
 Under \textit{Clingo} semantics, an aggregate is evaluated only after all its source literals are assigned, gating dependent candidates until then. Under \textit{Alpha} semantics, candidates directly read whatever partial aggregate value is currently available on the trail.
 
@@ -37,21 +37,21 @@ static bool negative_literal_is_satisfied(HeuristicSemantics s, Clingo::TruthVal
 \end{minted}
 
 
-Once a candidate satisfies its body conditions, the propagator computes its numerical weight by evaluating its weight AST over the current aggregate values and term arguments. The resulting effect is then applied to the target literal's \mintinline{text}|TargetHeuristicState|.
+Once a candidate satisfies its body conditions, the propagator computes its numerical weight by evaluating its weight AST over the current aggregate values and term arguments. The resulting effect is then applied to the target literal's \texttt{TargetHeuristicState}.
 
 The native propagator adopts four of Clingo's domain heuristic modifiers:
 \begin{itemize}
-    \item \mintinline{text}|level|: sets the branching priority to $w$ (higher values are chosen first), leaving the truth polarity unchanged;
-    \item \mintinline{text}|sign|: sets the preferred truth polarity based on the arithmetic sign of $w$ (positive for \textit{true}, negative for \textit{false}), using $|w|$ to resolve precedence among conflicting sign directives;
-    \item \mintinline{text}|true|: sets the branching priority to $w$ and forces the truth polarity to \textit{true};
-    \item \mintinline{text}|false|: sets the branching priority to $w$ and forces the truth polarity to \textit{false}.
+    \item \texttt{level}: sets the branching priority to $w$ (higher values are chosen first), leaving the truth polarity unchanged;
+    \item \texttt{sign}: sets the preferred truth polarity based on the arithmetic sign of $w$ (positive for \textit{true}, negative for \textit{false}), using $|w|$ to resolve precedence among conflicting sign directives;
+    \item \texttt{true}: sets the branching priority to $w$ and forces the truth polarity to \textit{true};
+    \item \texttt{false}: sets the branching priority to $w$ and forces the truth polarity to \textit{false}.
 \end{itemize}
 
-Clingo's remaining modifiers, \mintinline{text}|init| and \mintinline{text}|factor|, are not supported because custom propagators cannot manipulate Clasp's internal VSIDS score tables.
+Clingo's remaining modifiers, \texttt{init} and \texttt{factor}, are not supported because custom propagators cannot manipulate Clasp's internal VSIDS score tables.
 
-If multiple heuristic rules target the same atom, their effects are combined into a \mintinline{text}|TargetHeuristicState| that tracks the \mintinline{text}|level| and \mintinline{text}|sign| across all active \mintinline{text}|RuntimeHeuristicCandidate| instances.
+If multiple heuristic rules target the same atom, their effects are combined into a \texttt{TargetHeuristicState} that tracks the \texttt{level} and \texttt{sign} across all active \texttt{RuntimeHeuristicCandidate} instances.
 
-Unassigned targets with an active \mintinline{text}|level| are stored in an ordered set:
+Unassigned targets with an active \texttt{level} are stored in an ordered set:
 
 \begin{minted}{cpp}
 std::set<DecisionRankKey, DecisionRankGreater> active_decision_ranks_;
@@ -59,7 +59,7 @@ std::set<DecisionRankKey, DecisionRankGreater> active_decision_ranks_;
 
 Entries are sorted by decreasing weight. Because weights are stored as standard 32-bit integers, this avoids the 16-bit saturation limit of Clasp's internal domain table (Section~\ref{sec:flattening}).
 
-When Clasp calls \mintinline{text}|decide|, the propagator inspects \mintinline{text}|active_decision_ranks_| from the beginning, discarding any targets that are already assigned on the trail or whose weights have changed. It then branches on the first valid target using its stored \mintinline{text}|sign|. If the set is empty, the propagator checks whether Clasp's fallback atom has a stored \mintinline{text}|sign|; otherwise, it returns $0$ to delegate the decision to Clasp. During backtracking, \mintinline{text}|undo| restores aggregates and candidate states using \mintinline{text}|noexcept| functions to prevent state corruption during solver unwinding.
+When Clasp calls \texttt{decide}, the propagator inspects \texttt{active\_decision\_ranks\_} from the beginning, discarding any targets that are already assigned on the trail or whose weights have changed. It then branches on the first valid target using its stored \texttt{sign}. If the set is empty, the propagator checks whether Clasp's fallback atom has a stored \texttt{sign}; otherwise, it returns $0$ to delegate the decision to Clasp. During backtracking, \texttt{undo} restores aggregates and candidate states using \texttt{noexcept} functions to prevent state corruption during solver unwinding.
 
 
 \section{The Prolog Backend}
@@ -101,9 +101,9 @@ As Clasp makes decisions, the propagator mirrors the trail in the Prolog databas
 
 \subsection{Synchronization and Decision}
 
-Trail synchronization is incremental: during search, \mintinline{text}|propagate| and \mintinline{text}|undo| update the state of atoms in the Prolog database as their solver literals change on the trail.
+Trail synchronization is incremental: during search, \texttt{propagate} and \texttt{undo} update the state of atoms in the Prolog database as their solver literals change on the trail.
 
-At each decision point (\mintinline{text}|decide|), the backend queries all solutions to \mintinline{text}|heuristic(T, W, P, M)|, filters out targets that are already assigned on the trail, and branches on the candidate with the highest priority and weight. Unlike the native C++ backend, which incrementally maintains a sorted set of active targets, the Prolog backend re-evaluates the heuristic query from scratch at every decision step. This design prioritizes relational expressiveness over per-decision efficiency (evaluated in Section~\ref{sec:per-decision-cost}).
+At each decision point (\texttt{decide}), the backend queries all solutions to \mintinline{text}|heuristic(T, W, P, M)|, filters out targets that are already assigned on the trail, and branches on the candidate with the highest priority and weight. Unlike the native C++ backend, which incrementally maintains a sorted set of active targets, the Prolog backend re-evaluates the heuristic query from scratch at every decision step. This design prioritizes relational expressiveness over per-decision efficiency (evaluated in Section~\ref{sec:per-decision-cost}).
 
 \section{Benchmark Problems and Encodings}
 \label{sec:benchmarks}
@@ -111,31 +111,31 @@ At each decision point (\mintinline{text}|decide|), the backend queries all solu
 \subsection{Balanced Sum Problem (BSP)}
 \label{sec:bsp}
 
-The BSP divides the set of integers $\{1,\ldots,n\}$ into two disjoint sets, \mintinline{text}|b/1| and \mintinline{text}|c/1|, such that their sums differ by at most one. The heuristic greedily assigns unassigned integers to set $b$ with a priority proportional to the current sum of set $c$, driving the solver toward balanced partitions. Because all decisions share a single priority level, the current sum $S$ acts as the primary ranking term, with the element value $X$ resolving ties between equal sums.
+The BSP divides the set of integers $\{1,\ldots,n\}$ into two disjoint sets, \texttt{b/1} and \texttt{c/1}, such that their sums differ by at most one. The heuristic greedily assigns unassigned integers to set $b$ with a priority proportional to the current sum of set $c$, driving the solver toward balanced partitions. Because all decisions share a single priority level, the current sum $S$ acts as the primary ranking term, with the element value $X$ resolving ties between equal sums.
 
 The implementation of the three exploratory variants mentioned in //TODO on BSP required specific adjustments to the problem encodings and propagator interaction:
 \begin{itemize}
-    \item \mintinline{text}|ga_weak|: The ground heuristic directives omit the negative body guards (\mintinline{text}|not c(X)| / \mintinline{text}|not b(X)|), retaining only the static aggregate binding \mintinline{text}|S = #sum{Y : c(Y)}| without unrolling over candidate values:
+    \item \texttt{ga\_weak}: The ground heuristic directives omit the negative body guards (\mintinline{text}|not c(X)| / \mintinline{text}|not b(X)|), retaining only the static aggregate binding \mintinline{text}|S = #sum{Y : c(Y)}| without unrolling over candidate values:
     \begin{minted}{prolog}
     #heuristic b(X) : x(X), S = #sum{Y : c(Y)}, W = ((n+1)*S)+X. [W, true]
     #heuristic c(X) : x(X), S = #sum{Y : b(Y)}, W = ((n+1)*S)+X. [W, true]
     \end{minted}
-    Without the \mintinline{text}|sum_value(S)| domain predicate, Gringo generates exactly $2n$ ground directives in total.
+    Without the \texttt{sum\_value(S)} domain predicate, Gringo generates exactly $2n$ ground directives in total.
 
-    \item \mintinline{text}|la_aux|: Heuristic conditions and aggregate values are pre-materialized:
+    \item \texttt{la\_aux}: Heuristic conditions and aggregate values are pre-materialized:
     \begin{minted}{prolog}
     h_b(X,S) :- x(X), not c(X), S = #sum{Y : c(Y)}.
     h_c(X,S) :- x(X), not b(X), S = #sum{Y : b(Y)}.
     \end{minted}
-    The lazy propagator language is then instructed to monitor these auxiliary atoms via the \mintinline{text}|__body| constructor:
+    The lazy propagator language is then instructed to monitor these auxiliary atoms via the \texttt{\_\_body} constructor:
     \begin{minted}{prolog}
     __heuristic(__target(b), __body(h_b, __match(0,0), __bind_arg(s,1)),
                 __weight(__add(__mul(s, B), self)),
                 __semantics(alpha), __modifier(true)) :- B = n + 1.
     \end{minted}
-    The propagator will track truth-value assignments over the ground \mintinline{text}|h_b(X,S)| atoms on the trail, testing whether auxiliary trail synchronization reintroduces solver overhead.
+    The propagator will track truth-value assignments over the ground \texttt{h\_b(X,S)} atoms on the trail, testing whether auxiliary trail synchronization reintroduces solver overhead.
 
-    \item \mintinline{text}|la_co|: uses the same lazy heuristic as \mintinline{text}|la|, but instead of computing and comparing the two sums separately:
+    \item \texttt{la\_co}: uses the same lazy heuristic as \texttt{la}, but instead of computing and comparing the two sums separately:
     \begin{minted}{prolog}
     sumB(Sum) :- Sum = #sum{Y : b(Y)}.
     sumC(Sum) :- Sum = #sum{Y : c(Y)}.
@@ -155,7 +155,7 @@ The implementation of the three exploratory variants mentioned in //TODO on BSP 
 
 The PUP \cite{aschinger2011pup} assigns communication units to interconnected zones and sensors under capacity and topology constraints. The heuristic uses a two-level priority policy: zones are assigned first, followed by sensors.
 
-The base encoding is taken from the Alpha reference literature \cite{aschinger2011pup,comploi2023dynamicAggregates}. However, because the original encoding was written for a lazy solver, running it directly in Clingo causes a severe grounding bottleneck. To mitigate this while preserving exact solution equivalence, the encoding was refactored using standard ASP modeling practices: bounding unit indices to valid ranges, expressing capacity limits via linear \mintinline{text}|#count| aggregates, and eliminating a redundant blocking rule that generated excessive ground constraints.
+The base encoding is taken from the Alpha reference literature \cite{aschinger2011pup,comploi2023dynamicAggregates}. However, because the original encoding was written for a lazy solver, running it directly in Clingo causes a severe grounding bottleneck. To mitigate this while preserving exact solution equivalence, the encoding was refactored using standard ASP modeling practices: bounding unit indices to valid ranges, expressing capacity limits via linear \texttt{\#count} aggregates, and eliminating a redundant blocking rule that generated excessive ground constraints.
 
 Finally, the global priority of zones over sensors is flattened into the heuristic weights using the $+100{,}000$ offset introduced in Section~\ref{sec:flattening}.
 
@@ -165,25 +165,25 @@ Finally, the global priority of zones over sensors is flattened into the heurist
 
 The HRP \cite{friedrich2011reconfiguration} places items into cabinets and assigns cabinets to rooms under person-ownership and dimensional constraints, minimizing deviations from an existing legacy setup. The heuristic enforces a five-level priority policy: reusing legacy components, placing long items, placing short items, assigning cabinets to rooms, and finally setting unassigned choice atoms to false.
 
-Unlike BSP and PUP, HRP contains no aggregates, isolating the behavior of lazy default negation (\mintinline{text}|la| vs.\ \mintinline{text}|lc|) on partial assignments.
+Unlike BSP and PUP, HRP contains no aggregates, isolating the behavior of lazy default negation (\texttt{la} vs.\ \texttt{lc}) on partial assignments.
 
 \subsection{Alpha as an External Reference}
 \label{sec:alpha-setup}
 
-We benchmark our propagator against the lazy-grounding solver Alpha \cite{weinzierl2017blending,comploi2023domain} as an external state-of-the-art reference. Specifically, we test the \emph{Qh} (Query Heuristics) variant developed by Comploi-Taupe et al.~\cite{comploi2023dynamicAggregates}, invoked with \mintinline{text}|-uqh|, which evaluates domain heuristics and dynamic aggregates over partial assignments via Prolog queries. This mechanism directly mirrors our Prolog backend and implements the semantics our native propagator reproduces.
+We benchmark our propagator against the lazy-grounding solver Alpha \cite{weinzierl2017blending,comploi2023domain} as an external state-of-the-art reference. Specifically, we test the \emph{Qh} (Query Heuristics) variant developed by Comploi-Taupe et al.~\cite{comploi2023dynamicAggregates}, invoked with \texttt{-uqh}, which evaluates domain heuristics and dynamic aggregates over partial assignments via Prolog queries. This mechanism directly mirrors our Prolog backend and implements the semantics our native propagator reproduces.
 
-The choice of build matters: the official Alpha 0.7.0 release does not support \mintinline{text}|#heuristic| directives, and the main upstream branch evaluates aggregates statically. We therefore use the authors' research Qh build, which implements dynamic aggregates over partial assignments. All Alpha encodings and benchmark instances are taken directly from the authors' published materials.
+The choice of build matters: the official Alpha 0.7.0 release does not support \texttt{\#heuristic} directives, and the main upstream branch evaluates aggregates statically. We therefore use the authors' research Qh build, which implements dynamic aggregates over partial assignments. All Alpha encodings and benchmark instances are taken directly from the authors' published materials.
 
-We evaluate Alpha under two configurations on all benchmark families: \mintinline{text}|alpha| (with domain heuristics enabled via \mintinline{text}|-uqh|) and \mintinline{text}|alpha_noheur| (the baseline solver without heuristics, \mintinline{text}|-ids|). On HRP, we also run \mintinline{text}|alpha_dom|, which evaluates domain heuristics natively without the Prolog bridge. In Section~\ref{sec:alpha}, we compare these runs against our native Clingo variants---\mintinline{text}|la| (lazy propagator), \mintinline{text}|ga| (ground unrolled simulation), and \mintinline{text}|gc_noheur| (heuristic-free baseline)---to isolate the cost of lazy grounding from the benefit of dynamic heuristic guidance.
+We evaluate Alpha under two configurations on all benchmark families: \texttt{alpha} (with domain heuristics enabled via \texttt{-uqh}) and \texttt{alpha\_noheur} (the baseline solver without heuristics, \texttt{-ids}). On HRP, we also run \texttt{alpha\_dom}, which evaluates domain heuristics natively without the Prolog bridge. In Section~\ref{sec:alpha}, we compare these runs against our native Clingo variants---\texttt{la} (lazy propagator), \texttt{ga} (ground unrolled simulation), and \texttt{gc\_noheur} (heuristic-free baseline)---to isolate the cost of lazy grounding from the benefit of dynamic heuristic guidance.
 
-Search counters cannot be compared across systems: Alpha's \emph{guesses} and \emph{backtracks} measure lazy CDNL search interleaved with dynamic rule instantiation, whereas clasp records decision \emph{choices} and \emph{conflicts} over a pre-ground program. Cross-system comparisons are therefore limited to external process metrics recorded by \mintinline{text}|runlim|: wall-clock time and peak resident set size (RSS). Furthermore, because Alpha runs on the Java Virtual Machine (JVM), its peak RSS includes the heap pre-allocated via \mintinline{text}|-Xmx|, providing an upper bound on operational memory rather than the state held by the algorithm itself.
+Search counters cannot be compared across systems: Alpha's \emph{guesses} and \emph{backtracks} measure lazy CDNL search interleaved with dynamic rule instantiation, whereas clasp records decision \emph{choices} and \emph{conflicts} over a pre-ground program. Cross-system comparisons are therefore limited to external process metrics recorded by \texttt{runlim}: wall-clock time and peak resident set size (RSS). Furthermore, because Alpha runs on the Java Virtual Machine (JVM), its peak RSS includes the heap pre-allocated via \texttt{-Xmx}, providing an upper bound on operational memory rather than the state held by the algorithm itself.
 
 \section{Benchmark Infrastructure and Metrics}
 \label{sec:infra-metrics}
 
-The experimental campaigns are orchestrated using \mintinline{text}|benchmark-tool| \cite{benchmarkTool}, the Potassco benchmarking suite designed to automate ASP experiment execution and distribute jobs across SLURM clusters. Each run executes a specific (system, setting, instance) configuration under the supervision of \mintinline{text}|runlim| \cite{runlim}, which samples resource consumption while enforcing hard wall-clock time and memory limits.
+The experimental campaigns are orchestrated using \texttt{benchmark-tool} \cite{benchmarkTool}, the Potassco benchmarking suite designed to automate ASP experiment execution and distribute jobs across SLURM clusters. Each run executes a specific (system, setting, instance) configuration under the supervision of \texttt{runlim} \cite{runlim}, which samples resource consumption while enforcing hard wall-clock time and memory limits.
 
-All Clingo runs are executed with domain heuristics enabled (\mintinline{text}|--heuristic=Domain|) and search configured to find a single answer set (\mintinline{text}|-n 1|). For each run, we record total execution time, solving and grounding components, peak resident memory (RSS), and search statistics including choices and conflicts. We also track the size of the ground heuristic component, comparing materialized directives against lazy facts, along with propagator-specific overheads such as decision calls, query evaluation times, and trail synchronization costs.
+All Clingo runs are executed with domain heuristics enabled (\texttt{--heuristic=Domain}) and search configured to find a single answer set (\texttt{-n 1}). For each run, we record total execution time, solving and grounding components, peak resident memory (RSS), and search statistics including choices and conflicts. We also track the size of the ground heuristic component, comparing materialized directives against lazy facts, along with propagator-specific overheads such as decision calls, query evaluation times, and trail synchronization costs.
 
 Memory is measured as the peak resident set size (RSS) of the entire solver process, which for the Prolog backend includes the embedded SWI-Prolog runtime. Because the engine incurs a constant initialization overhead, lazy Prolog runs can consume more memory than ground variants on small instances; however, it still provides a substantial asymptotic memory advantage on larger instances compared to the ground-and-solve variants.
 
