@@ -597,18 +597,8 @@ def _wrap(text: str, width: int) -> str:
 
 def _figure_note(fig, text: str, *, width: int = 140, y: float = 0.015,
                  reserve: bool = True) -> None:
-    """Nota in calce alla FIGURA, non all'axes.
-
-    Prima era un ax.text a y=-0.20 in coordinate axes: (a) nei grafici singoli
-    finiva SOPRA l'xlabel, (b) nelle dashboard tight_layout la conta come parte
-    dell'axes e, essendo larga il triplo del pannello, restringeva il grafico
-    fino a renderlo illeggibile (era il caso di HRP/prolog). Un testo di FIGURA
-    non appartiene a nessun axes: tight_layout non lo vede, e il crop di
-    savefig(bbox_inches="tight") lo tiene."""
-    if reserve:
-        fig.subplots_adjust(bottom=max(0.17, fig.subplotpars.bottom))
-    fig.text(0.01, y, textwrap.fill(text, width), fontsize=6.5,
-             color="#7F8C8D", ha="left", va="bottom", style="italic")
+    """Disabilitata: le didascalie vengono scritte direttamente nel testo LaTeX della tesi."""
+    pass
 
 
 # ===========================================================================
@@ -713,16 +703,13 @@ def _dashboard_grid(agg_fb: pd.DataFrame, family: str, metrics: list[Metric], *,
     # margini in POLLICI convertiti in frazione: cosi' la banda di titolo e
     # legenda resta della stessa altezza qualunque sia il numero di righe.
     top_pad = 0.85 / fig_h
-    bot_pad = (0.20 + 0.16 * len(notes)) / fig_h if notes else 0.06 / fig_h
+    bot_pad = 0.06 / fig_h
     fig.tight_layout(rect=(0, bot_pad, 1, 1 - top_pad))
     fig.suptitle(suptitle, fontsize=15, fontweight="bold", y=1 - 0.22 / fig_h)
     if handles:
         fig.legend(list(handles.values()), list(handles), loc="upper center",
                    bbox_to_anchor=(0.5, 1 - 0.44 / fig_h), ncol=min(len(handles), 7),
                    fontsize=9, frameon=True, framealpha=0.9)
-    if notes:
-        fig.text(0.008, 0.06 / fig_h, "\n".join(textwrap.fill(n, 220) for n in notes),
-                 fontsize=8, color="#7F8C8D", ha="left", va="bottom", style="italic")
     _save(fig, path)
     return 1
 
@@ -1144,8 +1131,8 @@ def _plot_comparison_metric(agg_f: pd.DataFrame, area: str, family: str, fam_dir
     has_ratio = any(_max_rel_gap(s) is not None for s in data.values())
     if has_ratio:
         fig, (ax, ax_r) = plt.subplots(
-            2, 1, figsize=(8.8, 6.6), sharex=True,
-            gridspec_kw={"height_ratios": [3.2, 1.0], "hspace": 0.08})
+            2, 1, figsize=(8.8, 7.0), sharex=True,
+            gridspec_kw={"height_ratios": [3.0, 1.1], "hspace": 0.18})
     else:
         fig, ax = plt.subplots(figsize=(8.8, 5.4))
         ax_r = None
@@ -1190,13 +1177,15 @@ def _plot_comparison_metric(agg_f: pd.DataFrame, area: str, family: str, fam_dir
     ax.set_ylabel(metric.ylabel)
     ax.grid(True, alpha=0.3, linestyle="--")
     _apply_fmt(ax, metric)
-    # titolo della legenda su tre righe: in una sola era piu' largo del
-    # riquadro delle voci e allargava la legenda su meta' del grafico.
-    ax.legend(fontsize=7, ncol=2,
-              title="colour + marker = variant\n"
-                    "solid line / filled markers = C++\n"
-                    "dashed line / hollow markers = Prolog",
-              title_fontsize=6.5)
+    handles, labels = ax.get_legend_handles_labels()
+    cxx_items = [(h, l) for h, l in zip(handles, labels) if "C++" in l]
+    prolog_items = [(h, l) for h, l in zip(handles, labels) if "Prolog" in l]
+    ordered_items = cxx_items + prolog_items
+    if ordered_items:
+        h_ord, l_ord = zip(*ordered_items)
+        ax.legend(h_ord, l_ord, fontsize=7, ncol=2)
+    else:
+        ax.legend(fontsize=7, ncol=2)
 
     # Dichiarare la coincidenza e' piu' onesto (e piu' leggibile) che sperare
     # che si distinguano due tracciati sovrapposti.
@@ -1208,6 +1197,8 @@ def _plot_comparison_metric(agg_f: pd.DataFrame, area: str, family: str, fam_dir
                       "edgecolor": "#F1C40F", "linewidth": 0.7})
 
     if ax_r is not None:
+        title_suffix = "Runtime" if "time" in metric.title.lower() or metric.ylabel == "Time (s)" else metric.title
+        ax_r.set_title(f"{title_suffix} Ratio", fontsize=9.5, fontweight="bold")
         ax_r.axhline(1.0, color="#7F8C8D", linestyle="--", linewidth=1)
         ax_r.set_ylabel("Prolog / C++", fontsize=8)
         ax_r.set_xlabel(XLABEL.get(family, "size (N)"))

@@ -201,11 +201,11 @@ In contrast, \mintinline{text}|lc| exhibits search statistics that are identical
     \label{fig:bsp-search}
 \end{figure}
 
-Under Clingo semantics, aggregate guards on \mintinline{text}|c/1| require all elements to be assigned before the sum can be evaluated and an atom is considered "assigned false" only when clasp demonstrates that it cannot be true. During search, these conditions are virtually never met at decision points. At $n=120$, although the propagator is consulted on every decision ($78{,}565$ calls), it yields zero applicable candidates across the entire run. Because both variants run on the exact same native C++ propagator backend, this comparison proves that lazy evaluation alone is insufficient if the underlying semantics cannot evaluate partial information, causing the solver to fall back entirely on default CDCL branching.
+Under Clingo semantics, aggregate guards on \mintinline{text}|c/1| require all elements to be assigned before the sum can be evaluated and an atom is considered "assigned false" only when clasp demonstrates that it cannot be true. During search, these conditions are virtually never met at decision points. At $n=120$, although the propagator is consulted on every decision, it yields zero applicable candidates across the entire run. Because both variants run on the exact same native C++ propagator backend, this comparison proves that lazy evaluation alone is insufficient if the underlying semantics cannot evaluate partial information, causing the solver to fall back entirely on default CDCL branching.
 
 \section{BSP: Rules, Variables, and Memory}
 
-The reduction of the heuristic footprint is also evident in the size of the propositional formula generated for the solver. As shown in Table~\ref{tab:n100-vars}, \mintinline{text}|gc| generates over one million solver variables at $n=100$ because it materializes separate rules and aggregate bounds for every $(X,S)$ pair. In contrast, \mintinline{text}|ga| keeps the variable count low ($20{,}402$) by sharing aggregate structures, but incurs high grounding time instead. The lazy variants and the baseline maintain the minimal variable count ($20{,}300$).
+The reduction of the heuristic footprint is also evident in the size of the propositional formula generated for the solver. As shown in Table~\ref{tab:n100-vars}, //TODO ??
 
 \begin{table}[H]
 \centering
@@ -230,46 +230,47 @@ The reduction of the heuristic footprint is also evident in the size of the prop
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{hpc/\ThesisGraphQuality/bsp/native_mem.png}
-    \caption{BSP, C++ backend: peak resident set size.}
+    \caption{Peak Resident Set Size}
     \label{fig:bsp-memory}
 \end{figure}
 
-Figure~\ref{fig:bsp-memory} presents peak resident set size (RSS), measuring total end-to-end memory usage across grounding, solving, and propagator execution (including the embedded SWI-Prolog engine where applicable). For large instances, memory usage is dominated by the base problem encoding: at $n=120$, \mintinline{text}|gc_noheur|, \mintinline{text}|la|, and \mintinline{text}|lc| consume nearly identical memory ($6.58$--$6.59$\,GB), while \mintinline{text}|gc| requires $7.4$\,GB and \mintinline{text}|la_aux| $8.5$\,GB. While the memory budget (30\,GB) is not threatened at $n=120$, memory exhaustion occurs at $n \ge 180$ solely due to the base encoding. Thus, while lazy heuristics eliminate the memory overhead of heuristic directives, scaling on BSP remains bounded by the ground footprint of the base program, a limitation addressed by constraint reformulation in Section~\ref{sec:constr-form}.
+Figure~\ref{fig:bsp-memory} shows that on large instances, memory usage is dominated by the base problem encoding; thus, while lazy heuristics eliminate the memory overhead of heuristic directives, scaling on BSP remains bounded by the ground footprint of the base program, a limitation addressed by constraint reformulation in Section~\ref{sec:constr-form}.
 
 \section{The Price of Laziness: Per-Decision Cost}
 \label{sec:per-decision-cost}
 
-The lazy evaluation model represents a space-time trade-off: instead of paying a combinatorial memory cost during grounding, it incurs computational overhead at each decision during search. Detailed profiling on both execution backends measures this cost in terms of decision calls, candidates generated per call, query evaluation time, and trail synchronization time.
+The lazy evaluation model represents a space-time trade-off where instead of suffering a combinatorial cost in memory during the grounding phase, there is a cost in computation incurred for each decision made during the search phase.
+Below a detailed profiling over both backends
 
 \begin{table}[H]
 \centering
 \footnotesize
-\begin{tabular}{llrrrrrr}
+\begin{tabular}{ll rrcrr rr}
 \toprule
- & & & & \multicolumn{2}{c}{\textbf{ms/decide}} & & \\
-\cmidrule(lr){5-6}
-\textbf{Family} & \textbf{Variant} & \textbf{decide calls} & \textbf{cand./decide} & \textbf{native} & \textbf{Prolog} & \textbf{sync (s)} & \textbf{prop.\ share}\\
+ & & \multicolumn{2}{c}{\textbf{Search Activity}} & & \multicolumn{2}{c}{\textbf{Cost (ms/decide)}} & \multicolumn{2}{c}{\textbf{Prolog Overhead}} \\
+\cmidrule(lr){3-4}\cmidrule(lr){6-7}\cmidrule(lr){8-9}
+\textbf{Family} & \textbf{Var.} & \textbf{calls} & \textbf{cand./call} & & \textbf{native} & \textbf{Prolog} & \textbf{sync (s)} & \textbf{prop.\ share}\\
 \midrule
-BSP $n{=}120$ & \mintinline{text}|la| & 120 & 121 & $1.0\!\cdot\!10^{-4}$ & 0.62 & 3.4\,ms & $0.05\%$\\
-BSP $n{=}120$ & \mintinline{text}|lc| & $78{,}565$ & 0.0 & $1.5\!\cdot\!10^{-4}$ & 0.21 & 3.30 & $8.7\%$\\
-PUP $N{=}160$ & \mintinline{text}|la| & 197 & 5.3 & $3.8\!\cdot\!10^{-4}$ & 3.84 & 8.20 & $7.1\%$\\
-PUP $N{=}200$ & \mintinline{text}|la| & 249 & 5.2 & $5.6\!\cdot\!10^{-4}$ & 6.74 & 16.53 & $7.3\%$\\
-HRP $N{=}20$  & \mintinline{text}|la| & 106 & $1{,}248$ & $1.3\!\cdot\!10^{-4}$ & 9.68 & 0.035 & $68.3\%$\\
-HRP $N{=}14$  & \mintinline{text}|lc| & $73{,}143$ & 239 & $0.9\!\cdot\!10^{-4}$ & 3.44 & 11.09 & $99.4\%$\\
+BSP $n{=}120$ & \mintinline{text}|la| & 120        & 121   & & $1.0\!\cdot\!10^{-4}$ & 0.62 & 3.4\,ms & 0.05\% \\
+BSP $n{=}120$ & \mintinline{text}|lc| & $78{,}565$ & 0.0   & & $1.5\!\cdot\!10^{-4}$ & 0.21 & 3.30\,s & 8.7\%  \\
+PUP $N{=}160$ & \mintinline{text}|la| & 197        & 5.3   & & $3.8\!\cdot\!10^{-4}$ & 3.84 & 8.20\,s & 7.1\%  \\
+PUP $N{=}200$ & \mintinline{text}|la| & 249        & 5.2   & & $5.6\!\cdot\!10^{-4}$ & 6.74 & 16.53\,s & 7.3\% \\
+HRP $N{=}20$  & \mintinline{text}|la| & 106        & $1{,}248$ & & $1.3\!\cdot\!10^{-4}$ & 9.68 & 0.035\,s & 68.3\% \\
+HRP $N{=}14$  & \mintinline{text}|lc| & $73{,}143$ & 239   & & $0.9\!\cdot\!10^{-4}$ & 3.44 & 11.09\,s & 99.4\% \\
 \bottomrule
 \end{tabular}
-\caption{Propagator instrumentation on representative solved runs. \emph{decide calls} and \emph{cand./decide} are taken from the Prolog backend, which counts every candidate the \texttt{heuristic/4} query returns; \emph{ms/decide} is the average time of one consultation, reported by both backends; \emph{sync} is the cumulative cost of mirroring the solver trail into the Prolog database; \emph{prop.\ share} is the fraction of the Prolog run spent inside the propagator (whole decide callback plus synchronization). The native backend's own synchronization is not shown because on these runs it never exceeds $3.6$ seconds, reached on the inert \texttt{lc} cell, and on the well-guided \texttt{la} cells it stays in the milliseconds.}
+\caption{Per-decision overhead on representative solved instances.}
 \label{tab:per-decision}
 \end{table}
 
-Table~\ref{tab:per-decision} breaks down the runtime overhead into its two primary components: the frequency of heuristic consultations (number of decide calls) and the cost per consultation (query evaluation and state synchronization). A key result is the performance gap between execution backends: compiled C++ evaluation averages $\approx 10^{-4}$\,ms per consultation, whereas interpreted SWI-Prolog evaluation ranges from $0.2$ to $9.7$\,ms.
+A key result is the performance gap between execution backends: compiled C++ evaluation averages $\approx 10^{-4}$\,ms per consultation, whereas interpreted SWI-Prolog evaluation ranges from $0.2$ to $9.7$\,ms.
 
 The overall overhead varies dramatically across the benchmark configurations:
 \begin{itemize}
-    \item \textbf{Efficient guidance (\mintinline{text}|la| on BSP):} With only 120 decide calls taking $0.62$\,ms each in Prolog (and $10^{-4}$\,ms in C++), propagator overhead accounts for just $0.05\%$ of total runtime.
-    \item \textbf{Inert consultations (\mintinline{text}|lc| on BSP):} Although individual query costs remain low ($0.21$\,ms), making $78{,}565$ futile calls causes the propagator to consume $8.7\%$ of runtime ($17.7$\,s) without aiding search.
-    \item \textbf{Heavy candidate generation (\mintinline{text}|la| on HRP):} Because reference rules generate over $1{,}200$ candidates per call, Prolog query time rises to $9.68$\,ms per call, consuming $68.3\%$ of the run ($1.03$\,s out of $1.55$\,s).
-    \item \textbf{Pathological interaction (\mintinline{text}|lc| on HRP):} Combining frequent calls ($73{,}143$) with expensive candidate generation ($3.44$\,ms) causes Prolog evaluation and synchronization to dominate $99.4\%$ of total runtime ($250$\,s out of $264.5$\,s), compared to $1.80$\,s total on the native backend.
+    \item When the heuristic has \textbf{perfect guidance (\mintinline{text}|la| on BSP)}, with only 120 decide calls taking $0.62$\,ms each in Prolog (and $10^{-4}$\,ms in C++), propagator overhead accounts for just $0.05\%$ of the total runtime.
+    \item When the semantics gets in the way \textbf{(\mintinline{text}|lc| on BSP)}, although individual query costs remain low ($0.21$\,ms), making $78{,}565$ futile calls causes the propagator to consume $8.7\%$ of runtime ($17.7$\,s) without aiding search.
+    \item When candidate generation becomes heavy \textbf{(\mintinline{text}|la| on HRP)}, producing over $1{,}200$ candidates per decision increases Prolog evaluation time to $9.68$\,ms per call; as a result, the propagator absorbs $68.3\%$ of the total runtime ($1.03$\,s out of $1.55$\,s), even though search needs only 106 decisions.
+    \item When frequent search and expensive evaluation collide \textbf{(\mintinline{text}|lc| on HRP)}, making $73{,}143$ futile calls with $239$ candidates each creates a worst-case scenario: Prolog evaluation and trail synchronization eat up $99.4\%$ of the total runtime ($250$\,s out of $264.5$\,s), compared to just $1.80$\,s on the native C++ backend.
 \end{itemize}
 
 \begin{figure}[H]
@@ -281,10 +282,12 @@ The overall overhead varies dramatically across the benchmark configurations:
     \label{fig:bsp-instrumentation}
 \end{figure}
 
+Under Alpha semantics, the query successfully identifies and evaluates all eligible candidate atoms at each step, resulting in a slightly higher query time ($0.62$\,ms per call) due to Prolog term unification and weight calculation. Conversely, under Clingo semantics, the negative body condition fails immediately on partial assignments, producing zero candidates; while this allows individual queries to terminate faster ($0.21$\,ms), it provides no guidance whatsoever to the solver, causing a massive explosion in decision calls.
+
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{hpc/\ThesisGraphQuality/bsp/comparison_solving.png}
-    \caption{BSP: solving time, native (solid) versus Prolog (dashed) backend, lazy variants and ground reference.}
+    \caption{BSP: solving time comparison between the two backends. The bottom subplot shows the relative runtime ratio ($\text{Time}_{\text{Prolog}} / \text{Time}_{\text{C++}}$), where values above 1.0 indicate the factor by which the interpreted Prolog backend is slower than compiled C++.}
     \label{fig:bsp-comparison}
 \end{figure}
 
@@ -292,7 +295,7 @@ In summary, total lazy overhead follows the relation:
 \[
 \text{Total Overhead} = \text{Decide Calls} \times (\text{Query Cost} + \text{Amortized Synchronization Cost}).
 \]
-This highlights an advantageous property of lazy evaluation: it is computationally cheapest precisely when guidance is effective, as high-quality heuristics keep the total number of decision calls minimal.
+Consequently, lazy evaluation is computationally cheapest precisely when the heuristic is most effective: investing additional computational effort into evaluating rich dynamic conditions per decision pays off exponentially by suppressing search space explosion.
 
 \section{Two Ground Simulations of Alpha: \texttt{ga} versus \texttt{ga\_weak}}
 \label{sec:ga-weak}

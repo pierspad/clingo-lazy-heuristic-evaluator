@@ -113,11 +113,41 @@ At each decision point (\mintinline{text}|decide|), the backend queries all solu
 
 The BSP divides the set of integers $\{1,\ldots,n\}$ into two disjoint sets, \mintinline{text}|b/1| and \mintinline{text}|c/1|, such that their sums differ by at most one. The heuristic greedily assigns unassigned integers to set $b$ with a priority proportional to the current sum of set $c$, driving the solver toward balanced partitions. Because all decisions share a single priority level, the current sum $S$ acts as the primary ranking term, with the element value $X$ resolving ties between equal sums.
 
-Beyond the core four-variant matrix, the BSP evaluation includes three exploratory settings:
+The implementation of the three exploratory variants mentioned in //TODO on BSP required specific adjustments to the problem encodings and propagator interaction:
 \begin{itemize}
-    \item \mintinline{text}|ga_weak| (Section~\ref{sec:ga-simulation}): evaluates the ground heuristic with default negation adapted but without unrolling dynamic sum bounds;
-    \item \mintinline{text}|la_aux|: implements lazy evaluation where heuristic conditions are pre-materialized into auxiliary atoms \mintinline{text}|h_b(X,S)| in the ground program;
-    \item \mintinline{text}|la_co| (Lazy Alpha + Constraint Optimization): combines the \mintinline{text}|la| lazy heuristic with a linear reformulation of the balance constraint (replacing the quadratic pairwise difference check between partition sums with a direct linear aggregate bound), evaluating performance when both heuristic and base constraint grounding bottlenecks are removed.
+    \item \mintinline{text}|ga_weak|: The ground heuristic directives omit the negative body guards (\mintinline{text}|not c(X)| / \mintinline{text}|not b(X)|), retaining only the static aggregate binding \mintinline{text}|S = #sum{Y : c(Y)}| without unrolling over candidate values:
+    \begin{minted}{prolog}
+    #heuristic b(X) : x(X), S = #sum{Y : c(Y)}, W = ((n+1)*S)+X. [W, true]
+    #heuristic c(X) : x(X), S = #sum{Y : b(Y)}, W = ((n+1)*S)+X. [W, true]
+    \end{minted}
+    Without the \mintinline{text}|sum_value(S)| domain predicate, Gringo generates exactly $2n$ ground directives in total.
+
+    \item \mintinline{text}|la_aux|: Heuristic conditions and aggregate values are pre-materialized:
+    \begin{minted}{prolog}
+    h_b(X,S) :- x(X), not c(X), S = #sum{Y : c(Y)}.
+    h_c(X,S) :- x(X), not b(X), S = #sum{Y : b(Y)}.
+    \end{minted}
+    The lazy propagator language is then instructed to monitor these auxiliary atoms via the \mintinline{text}|__body| constructor:
+    \begin{minted}{prolog}
+    __heuristic(__target(b), __body(h_b, __match(0,0), __bind_arg(s,1)),
+                __weight(__add(__mul(s, B), self)),
+                __semantics(alpha), __modifier(true)) :- B = n + 1.
+    \end{minted}
+    The propagator will track truth-value assignments over the ground \mintinline{text}|h_b(X,S)| atoms on the trail, testing whether auxiliary trail synchronization reintroduces solver overhead.
+
+    \item \mintinline{text}|la_co|: uses the same lazy heuristic as \mintinline{text}|la|, but instead of computing and comparing the two sums separately:
+    \begin{minted}{prolog}
+    sumB(Sum) :- Sum = #sum{Y : b(Y)}.
+    sumC(Sum) :- Sum = #sum{Y : c(Y)}.
+    :- sumB(SB), sumC(SC), (SB - SC)**2 > 1.
+    \end{minted}
+    it enforces the partition balance directly with a single aggregate rule:
+    \begin{minted}{prolog}
+    #const min_val = tot / 2.
+    #const max_val = (tot + 1) / 2.
+    :- not min_val <= #sum{ Y : b(Y) } <= max_val.
+    \end{minted}
+    This removes the heavy grounding bottleneck of the base problem while keeping the meaning of the heuristic unchanged.
 \end{itemize}
 
 \subsection{Partner Units Problem (PUP)}

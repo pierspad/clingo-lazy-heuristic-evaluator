@@ -18,7 +18,7 @@ The \emph{semantics} axis fixes how a heuristic condition reads partial informat
 
 Crossing the two axes yields the four variants that the rest of the thesis refers to by: \mintinline{text}|gc| and \mintinline{text}|ga| for the ground approach under the Clingo and the Alpha semantics, \mintinline{text}|lc| and \mintinline{text}|la| for the lazy evaluated one, the prefix naming the approach and the suffix the semantics. To them is added the heuristic-free baseline \mintinline{text}|gc_noheur|, which carries the same domain logic with no heuristic at all and measures what the solver does when it is left alone (Figure~\ref{fig:axes}).
 
-The evaluation also includes three targeted exploratory variants (detailed in Section~\ref{sec:bsp}): \mintinline{text}|ga_weak| (alpha-like semantics over the negation but not over the aggregates), \mintinline{text}|la_aux| (pre-materialized heuristic bodies in external auxiliary predicates), and \mintinline{text}|la_co| (lazy heuristic combined with a reformulation of the encoding).
+To isolate specific architectural and modeling mechanisms beyond this primary matrix, the experimental design also incorporates three targeted exploratory variants: \mintinline{text}|ga_weak|, \mintinline{text}|la_aux|, and \mintinline{text}|la_co|. Their empirical motivation and methodological role in disentangling the contributions of default negation, body materialization, and constraint formulation are discussed in Section~\ref{sec:exploratory-methodology}.
 
 \subsection{Simulating Alpha in Ground Clingo}
 \label{sec:ga-simulation}
@@ -38,13 +38,23 @@ sum_value(0..tot).
 
 Instead of binding $S$ to the final value of the sum, the directive is unrolled over all candidate values \mintinline{text}|sum_value(S)| and guarded by the condition $S \le \#\mathtt{sum}\{Y : c(Y)\}$. During search, as soon as the partial sum reaches a bound $S$, every directive with that bound becomes applicable; among the applicable ground directives for the same atom, Clasp's Domain heuristic retains the one with the maximum weight, which corresponds exactly to the \emph{current} value of the aggregate. The max-weight selection thus reconstructs the dynamic aggregate at solving time. For aggregates whose contribution to the weight decreases rather than increases (such as the free-capacity terms $N_0,N_1,N_2$ in PUP) the same transformation is applied with the bound $V \ge \#\mathtt{max}\{\ldots\}$, so that the max-weight selection picks the smallest proven value.
 
-To isolate the individual impact of each transformation, we distinguish two ground encodings:
-\begin{itemize}
-    \item \mintinline{text}|ga_weak| (partial simulation): applies only the first transformation (dropping negative literals) while retaining static aggregate equality ($S = \#\mathtt{sum}\{\ldots\}$) without unrolling. It serves as an experimental control to test whether adjusting default negation alone provides heuristic guidance without dynamic aggregate evaluation.
-    \item \mintinline{text}|ga| (full simulation): applies both transformations, enabling dynamic aggregate reconstruction during search at the cost of grounding all unrolled domain values.
-\end{itemize}
-
 This full simulation in \mintinline{text}|ga| is faithful, but its price is exactly the combinatorial explosion that motivated the thesis: one ground directive per point of the product of the unrolled domains, measured in Chapter~\ref{sec:results}.
+
+\subsection{Methodological Rationale for the Exploratory Variants}
+\label{sec:exploratory-methodology}
+
+While the four main variants evaluate the core matrix of approach versus semantics, three targeted exploratory variants are introduced as experimental controls to isolate specific factors:
+
+\paragraph{Isolating Alpha-Negation from Dynamic Aggregates (\texttt{ga\_weak}).}
+Alpha-like semantics do treat default negation as satisfied over unassigned literals, and evaluating aggregates dynamically over currently true atoms. While \mintinline{text}|ga| simulates both via extensive ground unrolling, \mintinline{text}|ga_weak| acts as an ablation study that applies Alpha's negation semantics while avoiding unrolling aggregates. This investigates whether adapting default negation alone provides any improvement during search, or whether dynamic aggregate evaluation is strictly indispensable for an effective search guidance.
+
+\paragraph{Deconstructing Lazy Efficiency: Directives vs.\ Body Materialization (\texttt{la\_aux}).}
+Lazy evaluation replaces thousands of ground \mintinline{text}|#heuristic| directives with a minimal set of declarative facts. This raises a natural question: does the performance gain come merely from having fewer heuristic directives, or from keeping the calculation of heuristic conditions entirely out of the ground program? 
+The \mintinline{text}|la_aux| variant tests this distinction by pre-materializing all heuristic conditions into auxiliary ASP rules (\mintinline{text}|h_b(X,S)|), while querying them through the lazy propagator.
+
+\paragraph{Disentangling Heuristic and Problem Constraint Bottlenecks (\texttt{la\_co}).}
+In the baseline BSP encoding without heuristics, the balance constraint generates a combinatorial explosion of ground rules. Consequently, even though lazy evaluation reduces search time, total execution remains dominated by grounding the base problem constraints. 
+The \mintinline{text}|la_co| variant combines the lazy evaluation with a compact linear formulation of the balance constraint. 
 
 \subsection{Weights, Priorities, and Flattening}
 \label{sec:flattening}
@@ -103,7 +113,7 @@ The propagator never adds a constraint, never derives a literal, and never refus
 \label{sec:dsl}
 \label{sec:translation}
 
-Neither backend reads native \mintinline{text}|#heuristic| directives. Instead, a custom declarative lazy heuristic language replaces them with a single ground fact that \emph{describes} the rule.
+Neither backend reads native \mintinline{text}|#heuristic| directives. Instead, a custom declarative "lazy heuristic" language replaces them with a single ground fact that \emph{describes} the rule.
 This section presents what one may write, and what each construct means, by deriving that fact for the BSP heuristic of Section~\ref{sec:motivation} one component at a time. How the description is executed is left to Section~\ref{sec:implementation}.
 
 The starting point is the directive as Clingo reads it:
