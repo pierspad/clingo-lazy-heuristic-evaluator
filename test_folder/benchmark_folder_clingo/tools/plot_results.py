@@ -318,7 +318,7 @@ class Metric:
 METRICS = [
     Metric("solving", "Solving Time", "Time (s)"),
     Metric("grounding", "Grounding Time", "Time (s)"),
-    Metric("clingo_total", "Total Time (clingo)", "Time (s)"),
+    Metric("clingo_total", "Total Time", "Time (s)"),
     Metric("mem", "Peak RSS Memory", "Memory (GB)", fmt="gb"),
     Metric("choices", "Choices", "Choices", fmt="compact"),
     Metric("conflicts", "Conflicts", "Conflicts", fmt="compact"),
@@ -352,7 +352,7 @@ METRICS = [
 EXTRA_METRICS = [
     Metric("atoms", "Solver Atoms", "atoms", fmt="compact"),
     Metric("constraints", "Solver Constraints", "constraints", fmt="compact"),
-    Metric("time", "Wall Time (runlim)", "Time (s)"),
+    Metric("time", "Wall Time", "Time (s)"),
     # scomposizione del costo del propagatore: comune ai due backend
     Metric("total_state_sync_time_ms", "State Sync Time", "Time (ms)",
            scope=SCOPE_PROPAGATOR, fmt="compact"),
