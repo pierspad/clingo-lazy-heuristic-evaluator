@@ -321,45 +321,54 @@ Conversely, \texttt{ga\_weak} doesn't exceeds its timeout even though it grounds
 
 Overall, these results show that simply omitting negative guards without unrolling aggregate bounds provides no actionable heuristic guidance to the solver, increasing overall search effort and slightly reducing the solvable instance horizon.
 
-\section{Calculating the aggregate externally}
+\section{Evaluating Pre-Materialized Auxiliary Predicates}
 \label{sec:aux-form}
 
-The \texttt{la\_aux} variant tests an alternative lazy formulation where heuristic conditions and aggregate values are pre-materialized into auxiliary predicates (\texttt{h\_b(X,S)}, \texttt{h\_c(X,S)}) before being queried by the propagator. This experiment clarifies the distinction between reducing ground directive counts and avoiding the materialization of heuristic bodies.
+The \texttt{la\_aux} variant investigates whether the primary advantage of lazy evaluation stems simply from reducing the number of \texttt{\_\_heuristic} directives, or from keeping the evaluation of heuristic conditions entirely outside the ground program. In \texttt{la\_aux}, heuristic conditions and aggregate values are pre-materialized into auxiliary ASP predicates (\texttt{h\_b(X,S)} and \texttt{h\_c(X,S)}), which the lazy propagator then queries during search.
 
-Although \texttt{la\_aux} uses only two \texttt{\_\_heuristic} facts, materializing auxiliary relations reintroduces the quadratic $(X,S)$ product into the ground program. This causes severe overhead across all components:
-\begin{enumerate}
-    \item \textbf{Grounding expansion:} Auxiliary atoms inflate solver variables to $132{,}756$ at $n=50$ (compared to $5{,}150$ in direct \texttt{la}), with peak memory reaching $27.2$\,GB at $n=170$.
-    \item \textbf{Solver overhead:} In the C++ backend, scanning auxiliary candidates increases per-decision cost with $n^2$, requiring $287.1$\,s of solving at $n=60$ and timing out from $n=70$.
-    \item \textbf{Synchronization bottleneck in Prolog:} The vast number of auxiliary atoms overwhelms trail synchronization, which consumes $99.2\%$ of runtime ($383$\,s out of $386$\,s) at $n=30$, leading to timeouts from $n=40$.
-\end{enumerate}
-These results demonstrate that materializing heuristic bodies into auxiliary relations negates the benefits of lazy evaluation. The direct lazy representation (\texttt{la}) is essential to avoid reintroducing grounding and synchronization bottlenecks.
+Defining auxiliary rules forces the grounder to instantiate the full Cartesian product of elements and partial sums $(X, S)$. As a consequence, solver variables increase to $132{,}756$ at $n=50$ (compared to just $5{,}150$ in direct \texttt{la}), with PRSS escalating to $27.2$\,GB at $n=170$.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.49\textwidth]{hpc/\ThesisGraphQuality/bsp/expl_laaux_solving.png}
     \hfill
     \includegraphics[width=0.49\textwidth]{hpc/\ThesisGraphQuality/bsp/expl_laaux_decide_calls.png}
-    \caption{BSP, exploratory comparison of the auxiliary form. Left: C++ solving time; \texttt{la\_aux} diverges from $n=40$ and leaves the chart after $n=60$, while the direct \texttt{la} stays on the axis. Right: propagator decide calls on the Prolog backend; the auxiliary candidates multiply the consultations ($573$ at $n=20$ and $8{,}452$ at $n=30$, against the $n$ calls of the direct form), and the curve ends at $n=30$, the last size the variant solves on that backend.}
+    \caption{Solving time on the C++ backend (left) and number of propagator decide calls on the Prolog backend (right) comparing \texttt{la\_aux} against direct \texttt{la} in BSP.}
     \label{fig:laaux}
 \end{figure}
+
+Figure~\ref{fig:laaux} illustrates how this auxiliary materialization cripples performance across both backend architectures:
+\begin{itemize}
+    \item Because the propagator must scan all materialized auxiliary candidates, the per-decision cost scales as $\mathcal{O}(n^2)$. Solving time diverges sharply from $n=40$, reaching $287.1$\,s at $n=60$ before consistently timing out from $n=70$ onward. In contrast, the direct \texttt{la} formulation maintains negligible solving times across the entire range.
+    \item In the Prolog backend, the sheer volume of auxiliary candidates multiplies the required consultations, jumping from $573$ calls at $n=20$ to $8{,}452$ at $n=30$ (compared to exactly $n$ calls in direct \texttt{la}). Trail synchronization alone accounts for $99.2\%$ of the total runtime ($383$\,s out of $386$\,s) at $n=30$, causing the backend to time out for all sizes $n \ge 40$.
+\end{itemize}
+
+These findings demonstrate that merely reducing the number of heuristic directives is insufficient //TODO se non accompagnato anche dalla lazy evaluation.
 
 \section{Effect of the Constraint Formulation}
 \label{sec:constr-form}
 
-The \texttt{la\_co} variant combines the lazy heuristic with a reformulated balance constraint, replacing the quadratic difference check over \texttt{sumB}/\texttt{sumC} with a single constant-bound interval constraint.
+The \texttt{la\_co} variant replaces the quadratic difference check over the two sums with a single constant-bound interval constraint, substantially simplifying the grounding structure.
 
-The resulting performance improvement is substantial: at $n=120$, the propositional formula shrinks from $52.8$ million rules to just $366$, reducing total Clingo runtime from $154.2$\,s (\texttt{la}) to $9$\,ms, while maintaining perfect search guidance ($117$ choices, zero conflicts). This efficiency holds up to $n=200$, which solves in $14$\,ms.
-
-This experiment demonstrates that once lazy heuristics eliminate search overhead, the remaining performance bottleneck in BSP stems entirely from the ground materialization of the domain constraint. Combining lazy heuristics with propagation-friendly modeling resolves both search and grounding bottlenecks simultaneously.
+In the standard formulations (\texttt{gc}, \texttt{la}, and \texttt{lc}), this quadratic constraint dominates the grounding phase: at $n=120$, it produces approximately $52.8$\,million propositional rules and requires between one and three minutes of grounding time. While direct lazy evaluation (\texttt{la}) successfully eliminates heuristic directive bloat, the ground program remains constrained by the sheer size of the domain specification.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.49\textwidth]{hpc/\ThesisGraphQuality/bsp/expl_laco_grounding.png}
     \hfill
     \includegraphics[width=0.49\textwidth]{hpc/\ThesisGraphQuality/bsp/expl_laco_rules.png}
-    \caption{BSP, C++ backend, exploratory comparison of the constraint reformulation: grounding time (left) and propositional rules (right). \texttt{gc}, \texttt{la}, and \texttt{lc} overlap because they share the quadratic base encoding (some $52.8$ million rules and one to three minutes of grounding at $n=120$); \texttt{la\_co} lies on the horizontal axis of both plots ($366$ rules, milliseconds of grounding), the visual form of the five-orders-of-magnitude gap discussed in the text.}
+    \caption{Grounding time (left) and propositional rule count (right) for BSP on the C++ backend, comparing the compact constraint formulation (\texttt{la\_co}) against the baseline encodings (\texttt{gc}, \texttt{la}, and \texttt{lc}).}
     \label{fig:laco}
+    \vspace{-1em}
 \end{figure}
+
+Figure~\ref{fig:laco} demonstrates the dramatic impact of this reformulation on formula size and grounding efficiency:
+\begin{itemize}
+    \item \textbf{Five-orders-of-magnitude reduction:} While \texttt{gc}, \texttt{la}, and \texttt{lc} overlap near the top of both plots due to their shared quadratic base encoding, \texttt{la\_co} flattens along the horizontal axis. At $n=120$, the propositional formula collapses from $52.8$\,million rules down to just $366$.
+    \item \textbf{Sub-second execution:} Grounding overheads effectively disappear. Total Clingo runtime at $n=120$ drops from $154.2$\,s in \texttt{la} to a mere $9$\,ms, while fully maintaining optimal search guidance ($117$ choices, zero conflicts). This performance extends effortlessly up to $n=200$, which solves in just $14$\,ms.
+\end{itemize}
+
+These findings yield a key architectural insight: once lazy heuristics remove the search bottleneck, the remaining bottleneck in BSP is dictated entirely by domain constraint materialization. Pairing lazy heuristics with compact, propagation-friendly encodings resolves both grounding bloat and search overhead simultaneously.
 
 \section{PUP: the Grounding Bottleneck at Scale}
 \label{sec:pup}
