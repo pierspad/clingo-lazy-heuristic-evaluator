@@ -364,8 +364,8 @@ In the standard formulations (\texttt{gc}, \texttt{la}, and \texttt{lc}), this q
 
 Figure~\ref{fig:laco} demonstrates the dramatic impact of this reformulation on formula size and grounding efficiency:
 \begin{itemize}
-    \item \textbf{Five-orders-of-magnitude reduction:} While \texttt{gc}, \texttt{la}, and \texttt{lc} overlap near the top of both plots due to their shared quadratic base encoding, \texttt{la\_co} flattens along the horizontal axis. At $n=120$, the propositional formula collapses from $52.8$\,million rules down to just $366$.
-    \item \textbf{Sub-second execution:} Grounding overheads effectively disappear. Total Clingo runtime at $n=120$ drops from $154.2$\,s in \texttt{la} to a mere $9$\,ms, while fully maintaining optimal search guidance ($117$ choices, zero conflicts). This performance extends effortlessly up to $n=200$, which solves in just $14$\,ms.
+    \item While \texttt{gc}, \texttt{la}, and \texttt{lc} overlap near the top of both plots due to their shared quadratic base encoding, \texttt{la\_co} flattens along the horizontal axis. At $n=120$, the propositional formula collapses from $52.8$\,million rules down to just $366$.
+    \item Grounding overheads effectively disappear. Total Clingo runtime at $n=120$ drops from $154.2$\,s in \texttt{la} to a mere $9$\,ms, while fully maintaining optimal search guidance ($117$ choices, zero conflicts). This performance extends effortlessly up to $n=200$, which solves in just $14$\,ms.
 \end{itemize}
 
 These findings yield a key architectural insight: once lazy heuristics remove the search bottleneck, the remaining bottleneck in BSP is dictated entirely by domain constraint materialization. Pairing lazy heuristics with compact, propagation-friendly encodings resolves both grounding bloat and search overhead simultaneously.
@@ -373,12 +373,16 @@ These findings yield a key architectural insight: once lazy heuristics remove th
 \section{PUP: the Grounding Bottleneck at Scale}
 \label{sec:pup}
 
-PUP provides an experimental domain where heuristic guidance effectively resolves search, allowing the memory and time savings of lazy heuristic grounding to be observed directly at scale. Figure~\ref{fig:pup-total} and Table~\ref{tab:pup-frontier} summarize the benchmark results under the 600-second, 30\,GB budget.
+The Partner Units Problem (PUP) represents an industrial configuration benchmark where domain-specific heuristics effectively tame combinatorial search. Unlike BSP (which relies exclusively on \texttt{\#sum}), PUP combines dynamic \texttt{\#count} and \texttt{\#max} aggregates---notably using \texttt{\#max} to track remaining capacity across adjacent partner units.
+
+In BSP, unguided search dominated baseline execution times; in PUP, activating dynamic $\alpha$-semantics reduces solving effort to just a few hundred decisions across all instance sizes. Consequently, the solving phase becomes almost trivial, shifting the performance bottleneck almost entirely ($>95\%$ of total execution time) to the grounding phase and memory consumption. This makes PUP the ideal benchmark to evaluate the grounding and memory efficiency of lazy evaluation at scale.
+
+Figure~\ref{fig:pup-total} and Table~\ref{tab:pup-frontier} summarize the overall performance across all five variants under a $600$\,s timeout and a $30$\,GB memory limit.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{hpc/\ThesisGraphQuality/pup/native_clingo_total.png}
-    \caption{PUP, C++ backend: total clingo time. Each curve ends at the last instance its variant solves.}
+    \caption{Total Clingo runtime on PUP across instance sizes for the C++ backend (curves terminate at the largest solved instance).}
     \label{fig:pup-total}
 \end{figure}
 
@@ -387,7 +391,7 @@ PUP provides an experimental domain where heuristic guidance effectively resolve
 \footnotesize
 \begin{tabular}{lrrrrr}
 \toprule
-\textbf{Variant} & \textbf{max $N$ solved} & \textbf{Total (s)} & \textbf{Grounding (s)} & \textbf{Peak RSS} & \textbf{first failure}\\
+\textbf{Variant} & \textbf{max $N$ solved} & \textbf{Total (s)} & \textbf{Grounding (s)} & \textbf{Peak RSS} & \textbf{First failure}\\
 \midrule
 \texttt{gc\_noheur} & 80  & 123.2  & 10.6  & 0.7 GB & T@100\\
 \texttt{gc}        & 60  & 97.0   & 17.7  & 1.3 GB & T@80\\
@@ -396,39 +400,63 @@ PUP provides an experimental domain where heuristic guidance effectively resolve
 \texttt{lc}        & 100 & 241.5  & 27.0  & 2.1 GB & T@80 (non-mon.)\\
 \bottomrule
 \end{tabular}
-\caption{PUP frontier, C++ backend, 600\,s / 30\,GB per run: largest \texttt{double-$N$} solved and its cost. \texttt{ga} and \texttt{la} solve the whole tested range and are reported at $N=200$; the other three fail inside the range, and are reported at the largest size they solve. Unlike the BSP table, the separations here are between programs of different size: \texttt{ga} grounds twice the memory of \texttt{la} at every common size, a factor two orders of magnitude above the few-percent resolution established in Section~\ref{sec:time-reliability}.}
+\caption{PUP frontier on the C++ backend ($600$\,s / $30$\,GB budget): largest solved \texttt{double-$N$} instance and corresponding resource metrics.}
 \label{tab:pup-frontier}
 \end{table}
 
-The benchmark results highlight two distinct phases:
-\begin{enumerate}
-    \item \textbf{Search explosion in baselines:} Without dynamic guidance, the baseline \texttt{gc\_noheur} times out at $N=100$ due to search explosion ($546{,}549$ choices at $N=80$). Similarly, standard ground heuristic \texttt{gc} fails at $N=80$ ($865{,}136$ choices) because its static directives fail to capture dynamic aggregate values.
-    \item \textbf{Heuristic grounding savings in \texttt{la} vs \texttt{ga}:} Both Alpha-based variants (\texttt{ga} and \texttt{la}) solve all instances up to $N=200$ with near-perfect search guidance ($235$ choices for \texttt{ga} vs $162$ for \texttt{la} at $N=120$). With search time reduced to seconds, grounding time constitutes $>95\%$ of total execution time. Here, static aggregate unrolling in \texttt{ga} incurs substantial overhead, requiring $436.6$\,s of grounding and $24.6$\,GB peak memory at $N=200$. In comparison, lazy evaluation in \texttt{la} reduces grounding time to $225.8$\,s and peak memory to $12.7$\,GB---consistently cutting both metrics in half across all instances.
-\end{enumerate}
+\paragraph{Analysis of baseline failures.}
+The baseline results reveal two distinct failure dynamics:
+\begin{itemize}
+    \item In \texttt{gc\_noheur}, the lack of heuristic guidance forces the solver to rely entirely on VSIDS. Combinatorial choices escalate rapidly ($546{,}549$ choices at $N=80$), leading to a timeout at $N=100$.
+    \item In \texttt{gc}, the standard ground heuristic performs counterintuitively worse than using no heuristic at all, failing earlier at $N=80$ with $865{,}136$ choices. Because Clingo's static semantics requires aggregate bodies to be fully assigned before evaluating directives, the heuristic rules remain completely inactive during search. However, these inert ground directives still introduce additional variables into the solver that pollute the search space and degrade VSIDS branching decisions.
+\end{itemize}
+
+\paragraph{Grounding and memory savings (\texttt{la} vs \texttt{ga}).}
+Both $\alpha$-semantics variants (\texttt{ga} and \texttt{la}) solve the entire benchmark horizon up to $N=200$, maintaining near-perfect search guidance ($235$ choices for \texttt{ga} vs $162$ for \texttt{la} at $N=120$). Because solving takes only a few seconds, the overall performance is differentiated almost exclusively by the grounding footprint.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.49\textwidth]{hpc/\ThesisGraphQuality/pup/native_grounding.png}
-    \hfill
-    \includegraphics[width=0.49\textwidth]{hpc/\ThesisGraphQuality/pup/native_mem.png}
-    \caption{PUP, C++ backend: grounding time and peak memory. \texttt{ga} pays the heuristic unrolling (orange) on top of the base growth; \texttt{la} (green) pays the base program only, and stays consistently cheaper at every common size.}
-    \label{fig:pup-ground-mem}
+    \includegraphics[width=0.92\textwidth]{hpc/\ThesisGraphQuality/pup/native_grounding.png}
+    \caption{Grounding time on PUP for the C++ backend across instance sizes.}
+    \label{fig:pup-grounding}
 \end{figure}
-
-For \texttt{lc}, the Clingo aggregate semantics again yields zero candidates throughout search. However, because PUP requires auxiliary predicates to expose aggregate sources, the resulting ground program differs slightly from the baseline ($216{,}193$ rules vs $161{,}018$ at $N=20$). This structural difference alters the solver's initial variable ordering and restart trajectory, explaining why \texttt{lc} times out on \texttt{double-80} but successfully solves \texttt{double-100}. 
-
-Importantly, \texttt{la} and \texttt{lc} ground \emph{identical} propositional programs and differ solely by the semantic mode in the propagator. The contrast between them is stark: at $N=120$, \texttt{la} solves the instance in $162$ choices and $47.9$\,s, whereas \texttt{lc} makes $53{,}036$ choices and times out, providing a direct experimental demonstration of the impact of heuristic semantics.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.49\textwidth]{hpc/\ThesisGraphQuality/pup/comparison_solving.png}
-    \hfill
-    \includegraphics[width=0.49\textwidth]{hpc/\ThesisGraphQuality/pup/prolog_state_sync.png}
-    \caption{PUP: native-versus-Prolog solving comparison (left) and cumulative synchronization cost of the Prolog backend (right). For \texttt{la} the synchronization, not the query, is the dominant lazy cost at scale.}
-    \label{fig:pup-comparison}
+    \includegraphics[width=0.92\textwidth]{hpc/\ThesisGraphQuality/pup/native_mem.png}
+    \caption{Peak memory usage on PUP for the C++ backend, illustrating the $2\times$ memory reduction of \texttt{la} over \texttt{ga}.}
+    \label{fig:pup-mem}
 \end{figure}
 
-Comparing execution backends for \texttt{la} shows that both native C++ and Prolog achieve equivalent search guidance across the entire range ($217$ choices for Prolog vs $197$ for native at $N=160$). In Prolog, trail synchronization represents the primary overhead ($16.5$\,s at $N=200$, compared to $1.67$\,s of query time), whereas native in-process synchronization requires just $0.68$\,s.
+As shown in Figures~\ref{fig:pup-grounding} and~\ref{fig:pup-mem}, \texttt{ga} must statically unroll all discrete bounds for the dynamic aggregates into the ground program. This unrolling incurs severe overhead, consuming $436.6$\,s of grounding time and $24.6$\,GB of memory at $N=200$, perilously close to the $30$\,GB memory limit. In contrast, lazy evaluation in \texttt{la} delegates aggregate evaluation to the in-memory C++ propagator, grounding only the base problem specification. Consequently, \texttt{la} reduces grounding time to $225.8$\,s and peak memory to $12.7$\,GB, achieving a consistent $50\%$ reduction ($2\times$ factor) in both time and memory across all tested sizes.
+
+\paragraph{Controlled semantic comparison (\texttt{la} vs \texttt{lc}).}
+In PUP, the lazy propagator requires auxiliary relations to expose aggregate sources. As a result, the ground propositional programs for \texttt{la} and \texttt{lc} are completely identical ($216{,}193$ rules at $N=20$), differing exclusively in the runtime evaluation semantics configured within the propagator:
+\begin{itemize}
+    \item \texttt{la} evaluates dynamic aggregates over currently true atoms, solving $N=120$ in $47.9$\,s with only $162$ choices.
+    \item \texttt{lc} waits for complete assignments, generating zero active candidates during search. At $N=120$, it makes $53{,}036$ choices and times out.
+\end{itemize}
+The unguided nature of \texttt{lc} also explains its non-monotonic failure pattern in Table~\ref{tab:pup-frontier} (timing out on \texttt{double-80} but solving \texttt{double-100}). Without active heuristic guidance, the solver is subject to the high variance of CDCL restarts, occasionally finding an early solution by chance before failing definitively at larger sizes.
+
+Both backends provide guidance quality drastically reducing the number of choices.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.92\textwidth]{hpc/\ThesisGraphQuality/pup/comparison_solving.png}
+    \caption{Solving time (top) and Prolog-to-C++ runtime ratio (bottom) on PUP across execution backends.}
+    \label{fig:pup-comparison-solving}
+\end{figure}
+
+As shown in Figure~\ref{fig:pup-comparison-solving}, solving time remains well under $25$\,s across the whole horizon on both backends, with the Prolog runtime ratio remaining stable around $3.5\times$--$4\times$ the native C++ engine for \texttt{la}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.92\textwidth]{hpc/\ThesisGraphQuality/pup/prolog_state_sync.png}
+    \caption{Cumulative state synchronization time for the Prolog backend on PUP.}
+    \label{fig:pup-state-sync}
+\end{figure}
+
+However, as illustrated in Figure~\ref{fig:pup-state-sync}, in the Prolog backend, synchronizing solver trail accounts for $16.5$\,s at $N=200$, whereas actual Prolog query evaluation takes only $1.67$\,s. In comparison, the native C++ backend updates its in-process aggregate structures directly along the solver trail, completing all synchronization in just $0.68$\,s.
 
 \section{HRP: Semantics Without Aggregates}
 \label{sec:hrp}

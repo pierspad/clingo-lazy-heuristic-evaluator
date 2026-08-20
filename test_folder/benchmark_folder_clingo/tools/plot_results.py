@@ -1187,14 +1187,7 @@ def _plot_comparison_metric(agg_f: pd.DataFrame, area: str, family: str, fam_dir
     else:
         ax.legend(fontsize=7, ncol=2)
 
-    # Dichiarare la coincidenza e' piu' onesto (e piu' leggibile) che sperare
-    # che si distinguano due tracciati sovrapposti.
-    if coincident:
-        ax.text(0.005, 0.985,
-                "C++ ≡ Prolog (Δ < 1%): " + ", ".join(coincident),
-                transform=ax.transAxes, fontsize=7, va="top", ha="left", color="#2C3E50",
-                bbox={"boxstyle": "round,pad=0.32", "facecolor": "#FCF3CF",
-                      "edgecolor": "#F1C40F", "linewidth": 0.7})
+    # Coincidence box removed per design preference
 
     if ax_r is not None:
         title_suffix = "Runtime" if "time" in metric.title.lower() or metric.ylabel == "Time (s)" else metric.title
