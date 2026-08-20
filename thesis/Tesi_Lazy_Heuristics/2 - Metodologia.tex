@@ -18,7 +18,7 @@ The \emph{semantics} axis fixes how a heuristic condition reads partial informat
 
 Crossing the two axes yields the four variants that the rest of the thesis refers to by: \mintinline{text}|gc| and \mintinline{text}|ga| for the ground approach under the Clingo and the Alpha semantics, \mintinline{text}|lc| and \mintinline{text}|la| for the lazy evaluated one, the prefix naming the approach and the suffix the semantics. To them is added the heuristic-free baseline \mintinline{text}|gc_noheur|, which carries the same domain logic with no heuristic at all and measures what the solver does when it is left alone (Figure~\ref{fig:axes}).
 
-The evaluation also includes three targeted exploratory variants (detailed in Section~\ref{sec:bsp}): \mintinline{text}|ga_weak| (alpha-like semantics over the negation but not over the aggregates), \mintinline{text}|la_aux| (pre-materialized heuristic bodies in external auxiliary predicates), and \mintinline{text}|la_co| (lazy heuristic combined with a reformulation of the encoding).
+To isolate specific architectural and modeling mechanisms beyond this primary matrix, the experimental design also incorporates three targeted exploratory variants: \mintinline{text}|ga_weak|, \mintinline{text}|la_aux|, and \mintinline{text}|la_co|. Their empirical motivation and methodological role in disentangling the contributions of default negation, body materialization, and constraint formulation are discussed in Section~\ref{sec:exploratory-methodology}.
 
 \subsection{Simulating Alpha in Ground Clingo}
 \label{sec:ga-simulation}
@@ -38,13 +38,21 @@ sum_value(0..tot).
 
 Instead of binding $S$ to the final value of the sum, the directive is unrolled over all candidate values \mintinline{text}|sum_value(S)| and guarded by the condition $S \le \#\mathtt{sum}\{Y : c(Y)\}$. During search, as soon as the partial sum reaches a bound $S$, every directive with that bound becomes applicable; among the applicable ground directives for the same atom, Clasp's Domain heuristic retains the one with the maximum weight, which corresponds exactly to the \emph{current} value of the aggregate. The max-weight selection thus reconstructs the dynamic aggregate at solving time. For aggregates whose contribution to the weight decreases rather than increases (such as the free-capacity terms $N_0,N_1,N_2$ in PUP) the same transformation is applied with the bound $V \ge \#\mathtt{max}\{\ldots\}$, so that the max-weight selection picks the smallest proven value.
 
-To isolate the individual impact of each transformation, we distinguish two ground encodings:
-\begin{itemize}
-    \item \mintinline{text}|ga_weak| (partial simulation): applies only the first transformation (dropping negative literals) while retaining static aggregate equality ($S = \#\mathtt{sum}\{\ldots\}$) without unrolling. It serves as an experimental control to test whether adjusting default negation alone provides heuristic guidance without dynamic aggregate evaluation.
-    \item \mintinline{text}|ga| (full simulation): applies both transformations, enabling dynamic aggregate reconstruction during search at the cost of grounding all unrolled domain values.
-\end{itemize}
-
 This full simulation in \mintinline{text}|ga| is faithful, but its price is exactly the combinatorial explosion that motivated the thesis: one ground directive per point of the product of the unrolled domains, measured in Chapter~\ref{sec:results}.
+
+\subsection{Methodological Rationale for the Exploratory Variants}
+\label{sec:exploratory-methodology}
+
+While the four main variants evaluate the core matrix of approach versus semantics, three targeted exploratory variants are introduced as experimental controls to isolate specific factors:
+
+\paragraph{Isolating Alpha-Negation from Dynamic Aggregates (\mintinline{text}|ga_weak|).}
+Alpha-like semantics combines two distinct features: treating default negation as satisfied over unassigned literals, and evaluating aggregates dynamically over currently true atoms. While \mintinline{text}|ga| simulates both via extensive ground unrolling, \mintinline{text}|ga_weak| acts as an ablation study: it applies Alpha's negation semantics (omitting negative guards) but keeps static aggregate equality ($S = \#\mathtt{sum}\{\dots\}$) without unrolling. Methodologically, this investigates whether adapting default negation alone provides any heuristic guidance during search, or whether dynamic aggregate evaluation is strictly indispensable for effective search guidance.
+
+\paragraph{Deconstructing Lazy Efficiency: Directives vs.\ Body Materialization (\mintinline{text}|la_aux|).}
+Lazy heuristics replace thousands of ground \mintinline{text}|#heuristic| directives with a minimal set of declarative facts. The \mintinline{text}|la_aux| variant investigates whether this efficiency gain stems simply from reducing the number of heuristic directives, or if it requires keeping the entire heuristic condition out of the ground program. By pre-materializing heuristic bodies into auxiliary domain predicates in the ASP program while retaining lazy propagator invocation, \mintinline{text}|la_aux| determines whether static body materialization reintroduces the grounding explosion and trail synchronization overhead that lazy evaluation aims to eliminate.
+
+\paragraph{Disentangling Heuristic and Problem Constraint Bottlenecks (\mintinline{text}|la_co|).}
+When lazy evaluation eliminates search overhead (achieving zero-backtracking solving), overall benchmark scalability becomes constrained by the ground representation of the base problem itself. In problems like BSP, the baseline domain constraints exhibit quadratic ground growth. The \mintinline{text}|la_co| variant combines the lazy heuristic with a linear constraint reformulation, methodologically demonstrating that once the heuristic bottleneck is resolved lazily, optimizing the base domain constraints unlocks full, millisecond scalability.
 
 \subsection{Weights, Priorities, and Flattening}
 \label{sec:flattening}
