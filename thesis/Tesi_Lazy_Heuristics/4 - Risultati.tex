@@ -300,26 +300,25 @@ Consequently, lazy evaluation is computationally cheapest precisely when the heu
 \section{Two Ground Simulations of Alpha: \texttt{ga} versus \texttt{ga\_weak}}
 \label{sec:ga-weak}
 
-The following subsections examine exploratory configurations designed to isolate specific modeling decisions. 
+How closely can Alpha semantics be simulated within a ground-and-solve pipeline? Section~\ref{sec:ga-simulation} introduced two distinct transformations: \mintinline{text}|ga_weak|, which simply removes negative atoms from rule bodies, and \mintinline{text}|ga|, which replaces aggregate equality checks with dynamically unrolled monotone bounds ($S \le \#\mathtt{sum}\{Y : c(Y)\}$).
 
-The first comparison investigates how closely Alpha semantics can be simulated within a ground-and-solve pipeline. Section~\ref{sec:ga-simulation} defined two distinct transformations: \mintinline{text}|ga_weak|, which removes negative guards while retaining equality bindings ($S = \#\mathtt{sum}\{Y : c(Y)\}$), and \mintinline{text}|ga|, which replaces equality with dynamically unrolled monotone bounds ($S \le \#\mathtt{sum}\{Y : c(Y)\}$).
-
-Both simulations generate the exact same $\Theta(n^3)$ ground directives as the standard ground heuristic \mintinline{text}|gc| ($1{,}120$ directives at $n=10$, $8{,}440$ at $n=20$, and $27{,}960$ at $n=30$). Retaining equality bindings does not reduce grounding size because the grounder still enumerates all subset sums. Instead, the difference lies in activation during search: equality bindings activate at most one directive only after the sum is fully determined, whereas monotone bounds activate progressively as the partial sum increases.
+In BSP, both simulations produce the exact same $\Theta(n^3)$ ground directives as the baseline heuristic \mintinline{text}|gc| ($1{,}120$ directives at $n=10$, $8{,}440$ at $n=20$, and $27{,}960$ at $n=30$). Keeping equality bindings does not reduce the grounding size, as the grounder must still enumerate all subset sums. Rather, the crucial difference lies in solver-side activation: equality bindings trigger at most one directive only after all the atoms of the sum are assigned, whereas monotone bounds activate incrementally as the partial sum increases.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.49\textwidth]{hpc/\ThesisGraphQuality/bsp/expl_gaweak_solving.png}
     \hfill
     \includegraphics[width=0.49\textwidth]{hpc/\ThesisGraphQuality/bsp/expl_gaweak_choices.png}
-    \caption{BSP, C++ backend, exploratory comparison: solving time (left) and solver choices (right) with both Alpha simulations alongside the main variants. \texttt{ga} is exact up to $n=50$, degrades from $n=51$ once its weights leave the representable range, needs $1.7$ million choices and $137$ seconds of solving at $n=60$, and times out from $n=70$; \texttt{ga\_weak} stays in the baseline's band over the whole range and reaches $n=140$ on both backends, two sizes short of the baseline.}
+    \caption{Solving time (left) and solver choices (right) for BSP comparing the $\alpha$-semantics simulations (\mintinline{text}|ga| and \mintinline{text}|ga_weak|) against the baseline variants.}
     \label{fig:gaweak}
 \end{figure}
 
-Figure~\ref{fig:gaweak} illustrates the solving performance of each approach. In \mintinline{text}|ga_weak|, directives rarely activate during search; at $n=120$, it explores a noisy search trajectory ($121{,}159$ choices and $69.6$\,s solving, compared to $78{,}565$ choices and $44.1$\,s in the baseline). Simply omitting negative guards without unrolling aggregate bounds provides no effective guidance, increases solving time, and reduces reach by two sizes ($n=140$ vs $n=160$).
+This illustrates the solving performance and search complexity of both simulation strategies. 
+The dynamically unrolled simulation, \mintinline{text}|ga|, maintains exact behavior up to $n=50$. Beyond this threshold, performance rapidly deteriorates as weights exceed the \mintinline{text}|int16| range; at $n=60$, it already requires $1.7$\,million choices and $137$\,s of solving time, before consistently timing out from $n=70$.
 
-In contrast, \mintinline{text}|ga| unrolls aggregate bounds and successfully reproduces dynamic guidance up to $n=50$ ($n$ choices, zero conflicts). Beyond $n=50$, however, the calculated heuristic weight $((n+1)S + X)$ exceeds clasp's 16-bit integer limit ($32{,}767$). Consequently, weight rankings saturate, leading to search explosion at $n=60$ ($1.67$ million choices, $136.8$\,s) and timeouts from $n=70$. Rescaling weights to fit within 16-bit limits restores guidance at $n=70$ ($665$ choices), confirming that the failure is caused by integer overflow rather than grounding size.
+Conversely, \mintinline{text}|ga_weak| remains within the baseline's performance band across the entire benchmark range, scaling up to $n=140$ on both backends, only two instance sizes short of the baseline maximum. However, because its directives rarely activate during search, it fails to provide effective propagation. At $n=120$, for instance, it exhibits a degraded and noisier search trajectory, requiring $121{,}159$ choices and $69.6$\,s of solving time compared to $78{,}565$ choices and $44.1$\,s for the baseline. 
 
-These results show that ground simulation of dynamic aggregates is severely limited: partial approximations (\mintinline{text}|ga_weak|) fail to guide search, while full unrolling (\mintinline{text}|ga|) suffers from integer weight saturation. The lazy propagator bypasses both limitations, achieving optimal guidance ($120$ choices, $0.04$\,s solving at $n=120$) without static unrolling or weight bounds.
+Overall, these results show that simply omitting negative guards without unrolling aggregate bounds provides no actionable heuristic guidance to the solver, increasing overall search effort and slightly reducing the solvable instance horizon.
 
 \section{Direct and Auxiliary Forms}
 \label{sec:aux-form}
