@@ -82,6 +82,18 @@ FAMILY = {"bsp": "BSP", "double": "PUP", "house": "HRP"}
 FAM_SUBDIR = {"BSP": "1_BSP", "PUP": "2_PUP", "HRP": "3_HRP"}
 BACKENDS = ("native", "prolog")
 
+BACKEND_DISPLAY = {"native": "C++", "prolog": "Prolog"}
+BACKEND_LABEL = {"native": "C++ backend", "prolog": "Prolog backend"}
+
+
+def backend_label(backend: str) -> str:
+    return BACKEND_LABEL.get(backend, f"{backend} backend")
+
+
+def backend_short(backend: str) -> str:
+    return BACKEND_DISPLAY.get(backend, backend)
+
+
 # Il solver Alpha entra in results.xml come un terzo `system` e quindi come un
 # terzo "backend" dopo la normalizzazione del nome. NON viene aggiunto a
 # BACKENDS di proposito: BACKENDS enumera i due backend DEL PROPAGATORE di
@@ -268,9 +280,9 @@ SCOPE_NATIVE = "native"
 # l'altro backend non e' definita.
 SCOPE_NOTES = {
     SCOPE_PROPAGATOR: "propagator metric: defined only for the lazy variants (l*)",
-    SCOPE_PROLOG: "prolog-backend metric: the native backend has no query phase "
+    SCOPE_PROLOG: "Prolog-backend metric: the C++ backend has no query phase "
                   "towards an external engine",
-    SCOPE_NATIVE: "native-backend metric (in-memory C++ propagator)",
+    SCOPE_NATIVE: "C++ backend metric (in-memory C++ propagator)",
 }
 
 
@@ -814,7 +826,7 @@ def render_backend_tree(agg: pd.DataFrame, backend: str, base: Path, ground: pd.
             # dell'albero gemello: in "no_lc" lc non deve ricomparire qui.
             metric_variants = (_lazy_of(variants) if metric.lazy_only else variants)
             if _plot_metric_axis(ax, agg_fb, metric, family, variants=metric_variants,
-                                 title=f"{family} — {metric.title} ({backend}){label_suffix}"):
+                                 title=f"{family} — {metric.title} ({backend_label(backend)}){label_suffix}"):
                 _save(fig, fam_dir / f"{metric.key}.png")
                 n += 1
             else:
@@ -857,14 +869,14 @@ def _render_dashboard(agg_fb: pd.DataFrame, family: str, backend: str, fam_dir: 
 
     n = _dashboard_grid(
         agg_fb, family, shared, variants=variants, lazy_variants=lazy,
-        suptitle=f"{family} Dashboard — {backend}{label_suffix}",
+        suptitle=f"{family} Dashboard — {backend_label(backend)}{label_suffix}",
         path=fam_dir / "_dashboard.png",
         # gli EXTRA ricominciano da una riga nuova, cosi' restano "accodati sotto"
         row_break_after=len([k for k in core if not METRIC_BY_KEY[k].lazy_only]))
     n += _dashboard_grid(
         agg_fb, family, prop, variants=variants, lazy_variants=lazy,
         suptitle=f"{family} Propagator dashboard (lazy variants only) "
-                 f"— {backend}{label_suffix}",
+                 f"— {backend_label(backend)}{label_suffix}",
         path=fam_dir / "_dashboard_propagator.png")
     return n
 
@@ -897,7 +909,7 @@ def _render_ratio(agg_fb: pd.DataFrame, family: str, backend: str, fam_dir: Path
         plt.close(fig)
         return 0
     ax.axhline(1.0, color="#888", linestyle="--", linewidth=1)
-    ax.set_title(f"{family} — Lazy/Standard Solving-Time Ratio ({backend}){label_suffix}", fontsize=12, fontweight="bold")
+    ax.set_title(f"{family} — Lazy/Standard Solving-Time Ratio ({backend_label(backend)}){label_suffix}", fontsize=12, fontweight="bold")
     ax.set_xlabel(XLABEL.get(family, "size (N)"))
     ax.set_ylabel("lazy / standard solving time (x)")
     ax.grid(True, alpha=0.3, linestyle="--")
@@ -918,12 +930,11 @@ def _render_ground(ground: pd.DataFrame, family: str, backend: str, fam_dir: Pat
             g[col] = pd.to_numeric(g[col], errors="coerce")
     g["combined_heuristics"] = (g.get("ground_heuristics", pd.Series(dtype=float)).fillna(0)
                                 + g.get("ground_lazy_heuristic_facts", pd.Series(dtype=float)).fillna(0)
-                                + g.get("ground_query_heuristic_facts", pd.Series(dtype=float)).fillna(0))
-    gm = g.groupby(["variant", "size"]).median(numeric_only=True).reset_index()
+                                + g.get("ground_query_heuristic_facts", pd.Series(dtype=float)).fillna(0)
+                                + g.get("ground_prolog_heuristic_facts", pd.Series(dtype=float)).fillna(0))
+    gm = g.groupby(["variant", "size"], as_index=False)["combined_heuristics"].mean()
     n = 0
-    for metric in GROUND_METRICS:
-        if metric.key not in gm.columns or gm[metric.key].dropna().empty:
-            continue
+    for metric in (Metric("combined_heuristics", "Ground Heuristic Entities", "entities"),):
         fig, ax = plt.subplots(figsize=(8, 5.2))
         drew = False
         for v in variants:
@@ -935,7 +946,7 @@ def _render_ground(ground: pd.DataFrame, family: str, backend: str, fam_dir: Pat
         if not drew:
             plt.close(fig)
             continue
-        ax.set_title(f"{family} — {metric.title} ({backend})", fontsize=12, fontweight="bold")
+        ax.set_title(f"{family} — {metric.title} ({backend_label(backend)})", fontsize=12, fontweight="bold")
         ax.set_xlabel(XLABEL.get(family, "size (N)"))
         ax.set_ylabel(metric.ylabel)
         ax.grid(True, alpha=0.3, linestyle="--")
@@ -960,7 +971,7 @@ def _render_ground(ground: pd.DataFrame, family: str, backend: str, fam_dir: Pat
                 ax.scatter(d["combined_heuristics"], d["grounding"], s=40,
                            color=st.color, marker=st.marker,
                            edgecolor="white", linewidth=0.6, label=st.label)
-            ax.set_title(f"{family} — Grounding Time vs Heuristic Objects ({backend})",
+            ax.set_title(f"{family} — Grounding Time vs Heuristic Objects ({backend_label(backend)})",
                          fontsize=12, fontweight="bold")
             ax.set_xlabel("combined ground heuristic objects")
             ax.set_ylabel("grounding time (s)")
@@ -1006,7 +1017,7 @@ def render_exploratory_tree(agg: pd.DataFrame, backend: str, base: Path,
                                   if metric.lazy_only else study["variants"])
                 fig, ax = plt.subplots(figsize=(8, 5.2))
                 if _plot_metric_axis(ax, agg_fb, metric, family, variants=study_variants,
-                                     title=f"{family} — {metric.title} ({backend})\n"
+                                     title=f"{family} — {metric.title} ({backend_label(backend)})\n"
                                            f"{study['title']}", title_width=90):
                     _save(fig, fam_dir / f"{metric.key}.png")
                     n += 1
@@ -1028,7 +1039,7 @@ def _render_study_dashboard(agg_fb: pd.DataFrame, family: str, backend: str,
         agg_fb, family, [METRIC_BY_KEY[k] for k in keys],
         variants=study["variants"],
         lazy_variants=[v for v in study["variants"] if v.startswith("l")],
-        suptitle=f"{family} — {study['title']} ({backend})",
+        suptitle=f"{family} — {study['title']} ({backend_label(backend)})",
         path=fam_dir / "_dashboard.png", ncol=min(3, len(keys)))
 
 
@@ -1157,7 +1168,7 @@ def _plot_comparison_metric(agg_f: pd.DataFrame, area: str, family: str, fam_dir
                         markerfacecolor="white" if backend == "prolog" else style_of(v).color,
                         markeredgecolor=style_of(v).color if backend == "prolog" else "white",
                         markeredgewidth=1.1 if backend == "prolog" else 0.6,
-                        label=f"{label_of(v)} · {backend}"))
+                        label=f"{label_of(v)} · {backend_short(backend)}"))
             drew = True
 
         gap = _max_rel_gap(series)
@@ -1175,7 +1186,7 @@ def _plot_comparison_metric(agg_f: pd.DataFrame, area: str, family: str, fam_dir
         plt.close(fig)
         return 0
 
-    ax.set_title(f"{family} — {metric.title}: native vs prolog", fontsize=12, fontweight="bold")
+    ax.set_title(f"{family} — {metric.title}: C++ vs Prolog", fontsize=12, fontweight="bold")
     ax.set_ylabel(metric.ylabel)
     ax.grid(True, alpha=0.3, linestyle="--")
     _apply_fmt(ax, metric)
@@ -1183,22 +1194,22 @@ def _plot_comparison_metric(agg_f: pd.DataFrame, area: str, family: str, fam_dir
     # riquadro delle voci e allargava la legenda su meta' del grafico.
     ax.legend(fontsize=7, ncol=2,
               title="colour + marker = variant\n"
-                    "solid line / filled markers = native\n"
-                    "dashed line / hollow markers = prolog",
+                    "solid line / filled markers = C++\n"
+                    "dashed line / hollow markers = Prolog",
               title_fontsize=6.5)
 
     # Dichiarare la coincidenza e' piu' onesto (e piu' leggibile) che sperare
     # che si distinguano due tracciati sovrapposti.
     if coincident:
         ax.text(0.005, 0.985,
-                "native ≡ prolog (Δ < 1%): " + ", ".join(coincident),
+                "C++ ≡ Prolog (Δ < 1%): " + ", ".join(coincident),
                 transform=ax.transAxes, fontsize=7, va="top", ha="left", color="#2C3E50",
                 bbox={"boxstyle": "round,pad=0.32", "facecolor": "#FCF3CF",
                       "edgecolor": "#F1C40F", "linewidth": 0.7})
 
     if ax_r is not None:
         ax_r.axhline(1.0, color="#7F8C8D", linestyle="--", linewidth=1)
-        ax_r.set_ylabel("prolog / native", fontsize=8)
+        ax_r.set_ylabel("Prolog / C++", fontsize=8)
         ax_r.set_xlabel(XLABEL.get(family, "size (N)"))
         ax_r.grid(True, alpha=0.3, linestyle="--")
         ax_r.tick_params(labelsize=8)
@@ -1304,9 +1315,13 @@ def _render_table(rows: list[list[str]], *, title: str, subtitle: str = "",
     _save(fig, path)
 
 
-_WIN_COLOR = {"native": TABLE_STYLE["win_native"],
-              "prolog": TABLE_STYLE["win_prolog"],
-              "tie": TABLE_STYLE["win_tie"]}
+_WIN_COLOR = {
+    "native": TABLE_STYLE["win_native"],
+    "C++": TABLE_STYLE["win_native"],
+    "prolog": TABLE_STYLE["win_prolog"],
+    "Prolog": TABLE_STYLE["win_prolog"],
+    "tie": TABLE_STYLE["win_tie"],
+}
 
 
 def _fmt_delta(rel: float) -> str:
@@ -1345,7 +1360,7 @@ def _verdict(agg_f: pd.DataFrame, family: str, fam_dir: Path,
         if area not in agg_f.columns:
             continue
         metric = METRIC_BY_KEY[area]
-        wins = {"native": 0, "prolog": 0, "tie": 0}
+        wins = {"C++": 0, "Prolog": 0, "tie": 0}
         compared = 0
         for v in MAIN_LAZY_VARIANTS:
             nat = agg_f[(agg_f["backend"] == "native") & (agg_f["setting"] == v)].dropna(subset=[area])
@@ -1362,18 +1377,18 @@ def _verdict(agg_f: pd.DataFrame, family: str, fam_dir: Path,
             if rel < COINCIDENCE_TOL:
                 winner = "tie"
             else:
-                winner = "native" if nv < pv else "prolog"
+                winner = "C++" if nv < pv else "Prolog"
             wins[winner] += 1
             compared += 1
             rows.append((metric, area, v, s, nv, pv, rel if pv >= nv else -rel, winner))
         if compared == 0:
             summary[area] = "n/a"                     # nessuna taglia comune
-        elif wins["native"] == wins["prolog"]:
+        elif wins["C++"] == wins["Prolog"]:
             summary[area] = "tie"
         else:
-            summary[area] = "native" if wins["native"] > wins["prolog"] else "prolog"
+            summary[area] = "C++" if wins["C++"] > wins["Prolog"] else "Prolog"
 
-    header = ["Area", "Variant", "N", "native", "prolog", "Δ prolog/native", "Better"]
+    header = ["Area", "Variant", "N", "C++", "Prolog", "Δ Prolog / C++", "Better"]
     table_rows: list[list[str]] = [header]
     cell_colors: dict[tuple[int, int], str] = {}
     section_rows: set[int] = set()
@@ -1392,7 +1407,7 @@ def _verdict(agg_f: pd.DataFrame, family: str, fam_dir: Path,
 
     _render_table(
         table_rows,
-        title=f"{family} — Verdict: native vs prolog",
+        title=f"{family} — Verdict: C++ vs Prolog",
         subtitle="compared at the largest size N solved by BOTH backends  ·  "
                  f"the lower value wins  ·  gap < {COINCIDENCE_TOL:.0%} = tie  ·  "
                  "n/a = no common size (or metric not measured on one backend)",
@@ -1584,7 +1599,7 @@ def render_alpha_tree(agg: pd.DataFrame, base: Path,
             key = metric.key
             fig, ax = plt.subplots(figsize=(8.8, 5.4))
             drew = _plot_metric_axis(ax, agg_f, metric, family, variants=present,
-                                     title=f"{family} — {metric.title}: clingo vs Alpha")
+                                     title=f"{family} — {metric.title}: Clingo (C++) vs Alpha")
             if drew:
                 # una sola nota per figura: due _figure_note si scriverebbero
                 # alla stessa y, una sopra l'altra.
@@ -1623,7 +1638,7 @@ def render_alpha_tree(agg: pd.DataFrame, base: Path,
         n += _dashboard_grid(
             agg_f, family, shared,
             variants=present, lazy_variants=present,
-            suptitle=f"{family} — clingo vs Alpha (runlim measures, the only comparable ones)",
+            suptitle=f"{family} — Clingo (C++) vs Alpha (runlim measures, the only comparable ones)",
             path=fam_dir / "_dashboard.png", ncol=len(ALPHA_SHARED_METRICS),
             panel=(6.4, 4.9),
             extra_notes=[_ALPHA_MEM_NOTE] + ([log_note] if log_scale else []))
@@ -1679,7 +1694,7 @@ ENGINE_METRICS = [
 ]
 
 _ENGINE_NOTES = [
-    "clingo curves (la/lc) are the PROLOG backend; the native backend has no query phase and does not appear here.",
+    "clingo curves (la/lc) are the PROLOG backend; the C++ backend has no query phase and does not appear here.",
     "counts are NOT commensurable: Alpha queries around its own guesses, the propagator once per clasp decision. "
     "The commensurable measures are the cost of one consultation and the share of the run spent inside the engine.",
     "share = cumulative query time / runlim wall time, same definition for both systems: for the clingo variants "

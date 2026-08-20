@@ -332,7 +332,7 @@ PLOT_CONFIGS = [
         "metric": "combined_heuristics",
         "title": "Heuristic Grounding",
         "ylabel": "Ground heuristic entries (millions)",
-        "description": "Standard: native #heuristic directives\nLazy: __heuristic and query-driven heuristic facts passed to the propagator",
+        "description": "",
         "filename": "combined_heuristics.png",
     },
     {
@@ -1227,20 +1227,32 @@ def _annotate_series_endpoints(ax, series, *, label_fn, visual_offsets=None):
 
     offsets = _endpoint_label_offsets(ax, series, visual_offsets)
 
+    y_min, y_max = ax.get_ylim()
+    y_span = max(y_max - y_min, 1e-6)
+
+    # Separate items that lie on the bottom baseline from curve items
+    bottom_items = []
+    curve_items = []
     for item in series:
         points = _finite_xy(item["x"], item["y"])
         if not points:
             continue
-
         x, y = points[-1]
+        if y <= 0.05 * y_span or (y - y_min) <= 0.05 * y_span or abs(y) < 1e-4:
+            bottom_items.append((x, y, item))
+        else:
+            curve_items.append((x, y, item))
+
+    # Annotate curve items (higher up)
+    for x, y, item in curve_items:
         visual_offset = visual_offsets.get(item["key"], 0.0)
         text = ax.annotate(
             label_fn(item),
             xy=(x, y),
-            xytext=(7, visual_offset + offsets.get(item["key"], 0.0)),
+            xytext=(6, visual_offset + offsets.get(item["key"], 0.0)),
             textcoords="offset points",
             color=item.get("color"),
-            fontsize=item.get("fontsize", 7),
+            fontsize=item.get("fontsize", 8),
             fontweight="bold",
             va="center",
             ha="left",
@@ -1249,9 +1261,49 @@ def _annotate_series_endpoints(ax, series, *, label_fn, visual_offsets=None):
         )
         if path_effects is not None:
             text.set_path_effects([
-                path_effects.Stroke(linewidth=2.5, foreground="white"),
+                path_effects.Stroke(linewidth=3.0, foreground="white"),
                 path_effects.Normal(),
             ])
+
+    # Annotate bottom items with clean staggered pill boxes
+    bottom_items.sort(key=lambda it: it[0])
+    for idx, (x, y, item) in enumerate(bottom_items):
+        y_off = 10
+        x_off = 0
+        ha = "center"
+
+        has_near_next = (idx < len(bottom_items) - 1 and (bottom_items[idx + 1][0] - x) <= 25)
+        has_near_prev = (idx > 0 and (x - bottom_items[idx - 1][0]) <= 25)
+
+        if has_near_next:
+            y_off = 22
+            x_off = -6
+            ha = "right"
+        elif has_near_prev:
+            y_off = 10
+            x_off = 6
+            ha = "left"
+
+        ax.annotate(
+            label_fn(item),
+            xy=(x, y),
+            xytext=(x_off, y_off),
+            textcoords="offset points",
+            color=item.get("color"),
+            fontsize=item.get("fontsize", 8),
+            fontweight="bold",
+            va="bottom",
+            ha=ha,
+            bbox=dict(
+                boxstyle="round,pad=0.25",
+                facecolor="white",
+                edgecolor=item.get("color"),
+                alpha=0.95,
+                linewidth=0.8,
+            ),
+            clip_on=False,
+            zorder=9,
+        )
 
 
 def _annotate_metric_endpoints(ax, series, theme, metric: str, visual_offsets=None):
@@ -2907,12 +2959,13 @@ def _plot_compare_metric(ax, metric, stats_by_backend, lazy_variants, theme):
             mean = np.array(data["mean"])
             sd = np.array(data["gc"])
             color = colors.get(variant)
+            backend_name = "C++" if backend == "native" else "Prolog"
             ax.plot(
                 x, mean,
                 marker=markers.get(variant, "o"),
                 markersize=5, markeredgecolor="white", markeredgewidth=0.7,
                 linewidth=1.9, linestyle=style["linestyle"], color=color,
-                label=f"{labels.get(variant, variant)} [{backend}]",
+                label=f"{labels.get(variant, variant)} [{backend_name}]",
             )
             ax.fill_between(x, mean - sd, mean + sd, color=color,
                             alpha=VARIANT_FILL_ALPHA)
@@ -2977,8 +3030,8 @@ def generate_comparison_graphs(stats_by_backend, out_dir, theme, problem_label, 
         ax.axis("off")
 
     fig.suptitle(
-        f"{problem_label}: confronto backend Native vs Prolog (varianti lazy)\n"
-        "linea piena = native, tratteggiata = prolog; banda = ±σ sui seed",
+        f"{problem_label}: confronto backend C++ vs Prolog (varianti lazy)\n"
+        "linea piena = C++, tratteggiata = Prolog; banda = ±σ sui seed",
         fontsize=14, fontweight="bold", y=0.99,
     )
     plt.tight_layout(rect=[0, 0.01, 1, 0.95], h_pad=3.0, w_pad=3.0)
@@ -3210,7 +3263,8 @@ def process_problem(backend, problem, exclude_selectors, out_root):
     out = os.path.join(out_root, f"graphs-{backend}", spec["subdir"])
     if excluded:
         out = os.path.join(out, exclusion_dir_name(theme, excluded, excluded_order))
-    label = f"{spec['label']} [{backend}]"
+    backend_name = "C++" if backend == "native" else "Prolog"
+    label = f"{spec['label']} [{backend_name}]"
     return process_csv(csv_path, out, theme, label, excluded_variants=excluded)
 
 
