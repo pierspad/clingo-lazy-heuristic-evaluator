@@ -497,13 +497,13 @@ On BSP, the guided Alpha configuration (\texttt{alpha\_qh}) solves all twenty in
     \label{fig:alpha-bsp}
 \end{figure}
 
-Crucially, lazy grounding alone is insufficient without dynamic heuristic guidance: \texttt{alpha\_noheur} fails prematurely at $n=40$, well before clingo's ground baseline \texttt{gc\_noheur} ($n=150$). This divergence highlights a fundamental architectural trade-off:
+Crucially, lazy grounding alone is insufficient without dynamic heuristic guidance: \texttt{alpha\_noheur} solves nothing beyond $n=40$, eleven sizes short of clingo's ground baseline \texttt{gc\_noheur} ($n=150$). This divergence highlights a fundamental trade-off:
 \begin{itemize}
-    \item \textbf{Ground-and-solve (clingo):} Because the program is fully grounded before search begins, exploring unpromising search branches is computationally very cheap: Clasp only has to perform fast boolean propagation and VSIDS variable scoring over pre-existing clauses in compiled C++.
-    \item \textbf{Lazy grounding (Alpha):} Because rules are grounded on demand during search, exploring unpromising branches is extremely expensive: every wrong decision and subsequent backtrack forces the engine to instantiate new rules and nogoods on the fly inside the JVM runtime.
+    \item \textbf{clingo:} Because the program is fully grounded before search begins, exploring unpromising search branches is computationally very cheap: Clasp only has to perform fast boolean propagation and VSIDS variable scoring over pre-existing clauses in compiled C++.
+    \item \textbf{Alpha:} Because rules are grounded on demand during search, exploring unpromising branches is extremely expensive: every wrong decision and subsequent backtrack forces the engine to instantiate new rules and nogoods on the fly.
 \end{itemize}
 
-As shown in Figure~\ref{fig:alpha-internals}, \texttt{alpha\_noheur} suffers a severe search space explosion, spiking to over $67{,}000$ guesses and backtracks at $n=30$ before timing out at $n=40$. Conversely, with heuristic guidance, \texttt{alpha\_qh} never backtracks, materializing only the minimal subset of ground rules along the single valid solution path. This demonstrates that lazy grounding and dynamic heuristics are strictly complementary: dynamic heuristics require lazy evaluation to prevent grounding bottlenecks, while lazy grounding requires dynamic heuristics to avoid drowning in runtime instantiation overhead.
+As shown in Figure~\ref{fig:alpha-internals}, \texttt{alpha\_noheur} suffers a severe search space explosion, spiking to over $67{,}000$ guesses and backtracks at $n=30$ before timing out from $n=40$ onward. Conversely, with heuristic guidance, \texttt{alpha\_qh} never backtracks, materializing only the minimal subset of ground rules along the single valid solution path. This demonstrates that lazy grounding and dynamic heuristics are strictly complementary: dynamic heuristics require lazy evaluation to prevent grounding bottlenecks, while lazy grounding requires dynamic heuristics to avoid drowning in runtime instantiation overhead.
 
 \begin{figure}[H]
     \centering

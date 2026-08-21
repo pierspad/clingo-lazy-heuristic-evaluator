@@ -408,6 +408,15 @@
       \field{year}{2023}
       \field{pages}{59\bibrangedash 114}
       \range{pages}{56}
+      \verb{doi}
+      \verb 10.1613/jair.1.14091
+      \endverb
+      \verb{urlraw}
+      \verb https://jair.org/index.php/jair/article/view/14091
+      \endverb
+      \verb{url}
+      \verb https://jair.org/index.php/jair/article/view/14091
+      \endverb
     \endentry
     \entry{comploi2023dynamicAggregates}{inproceedings}{}{}
       \name{author}{3}{}{%
@@ -447,6 +456,14 @@
       \field{title}{Dynamic Aggregates in Expressive ASP Heuristics for Configuration Problems}
       \field{volume}{3509}
       \field{year}{2023}
+      \field{pages}{75\bibrangedash 84}
+      \range{pages}{10}
+      \verb{urlraw}
+      \verb https://ceur-ws.org/Vol-3509/paper11.pdf
+      \endverb
+      \verb{url}
+      \verb https://ceur-ws.org/Vol-3509/paper11.pdf
+      \endverb
     \endentry
     \entry{gebser2019multishot}{article}{}{}
       \name{author}{4}{}{%

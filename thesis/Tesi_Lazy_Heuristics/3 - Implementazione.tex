@@ -111,7 +111,7 @@ At each decision point (\texttt{decide}), the backend queries all solutions to \
 \subsection{Balanced Sum Problem (BSP)}
 \label{sec:bsp}
 
-The BSP divides the set of integers $\{1,\ldots,n\}$ into two disjoint sets, \texttt{b/1} and \texttt{c/1}, such that their sums differ by at most one. The heuristic greedily assigns unassigned integers to set $b$ with a priority proportional to the current sum of set $c$, driving the solver toward balanced partitions. Because all decisions share a single priority level, the current sum $S$ acts as the primary ranking term, with the element value $X$ resolving ties between equal sums.
+The BSP divides the set of integers $\{1,\ldots,n\}$ into two disjoint sets, \texttt{b/1} and \texttt{c/1}, such that their sums differ by at most one. It is the motivating example of \cite{comploi2023dynamicAggregates}, and the encoding used here as the Alpha reference is the authors' own \path{Evaluation/Motivating_Example/Balanced_Sum_Alpha.asp}, taken unmodified from the supplementary material of that paper (Section~\ref{sec:alpha-setup}). The heuristic greedily assigns unassigned integers to set $b$ with a priority proportional to the current sum of set $c$, driving the solver toward balanced partitions. Because all decisions share a single priority level, the current sum $S$ acts as the primary ranking term, with the element value $X$ resolving ties between equal sums.
 
 The implementation of the three exploratory variants introduced in Section~\ref{sec:exploratory-methodology} on BSP required some specific adjustments:
 \begin{itemize}
@@ -155,7 +155,7 @@ The implementation of the three exploratory variants introduced in Section~\ref{
 
 The PUP \cite{aschinger2011pup} assigns communication units to interconnected zones and sensors under capacity and topology constraints. The heuristic uses a two-level priority policy: zones are assigned first, followed by sensors.
 
-The base encoding is taken from the Alpha reference literature \cite{aschinger2011pup,comploi2023dynamicAggregates}. However, because the original encoding was written for a lazy solver, running it directly in clingo causes a severe grounding bottleneck. To mitigate this while preserving exact solution equivalence, the encoding was refactored using standard ASP modeling practices: bounding unit indices to valid ranges, expressing capacity limits via linear \texttt{\#count} aggregates, and eliminating a redundant blocking rule that generated excessive ground constraints.
+The base encoding is taken from the Alpha reference literature \cite{aschinger2011pup,comploi2023dynamicAggregates}: the reference file is the authors' \path{Evaluation/PUP/Double/encoding-alpha-prologheu-double.asp}, and the \texttt{double-$N$} instances are byte-identical to theirs, so both systems run on the same files. However, because the original encoding was written for a lazy solver, running it directly in clingo causes a severe grounding bottleneck. To mitigate this while preserving exact solution equivalence, the encoding was refactored using standard ASP modeling practices: bounding unit indices to valid ranges, expressing capacity limits via linear \texttt{\#count} aggregates, and eliminating a redundant blocking rule that generated excessive ground constraints.
 
 Finally, the global priority of zones over sensors is flattened into the heuristic weights using the $+100{,}000$ offset introduced in Section~\ref{sec:flattening}.
 
@@ -163,16 +163,16 @@ Finally, the global priority of zones over sensors is flattened into the heurist
 \subsection{House Reconfiguration Problem (HRP)}
 \label{sec:hrp-encoding}
 
-The HRP \cite{friedrich2011reconfiguration} places items into cabinets and assigns cabinets to rooms under person-ownership and dimensional constraints, minimizing deviations from an existing legacy setup. The heuristic enforces a five-level priority policy: reusing legacy components, placing long items, placing short items, assigning cabinets to rooms, and finally setting unassigned choice atoms to false.
+The HRP \cite{friedrich2011reconfiguration} places items into cabinets and assigns cabinets to rooms under person-ownership and dimensional constraints, minimizing deviations from an existing legacy setup. The heuristic enforces a five-level priority policy: reusing legacy components, placing long items, placing short items, assigning cabinets to rooms, and finally setting unassigned choice atoms to false. It is the heuristic of Case Study 1 of \cite{comploi2023domain}; the reference file is the authors' \path{DomainHeuristics/House/house_alpha_2021-02-04.asp}, and the encodings of this suite are a rule-by-rule port of it.
 
-Unlike BSP and PUP, HRP contains no aggregates, isolating the behavior of lazy default negation (\texttt{la} vs.\ \texttt{lc}) on partial assignments.
+Unlike BSP and PUP, the HRP heuristic uses no dynamic aggregates: its conditions are ordinary literals and its weights plain arithmetic, and the aggregates of the encoding sit one rule further away, in the definitions of \texttt{fullCabinet/1} and \texttt{fullRoom/1}. HRP therefore isolates the behavior of lazy default negation (\texttt{la} vs.\ \texttt{lc}) on partial assignments.
 
 \subsection{Alpha as an External Reference}
 \label{sec:alpha-setup}
 
 We benchmark our propagator against the lazy-grounding solver Alpha \cite{weinzierl2017blending,comploi2023domain} as an external state-of-the-art reference. Specifically, we test the \emph{Qh} (Query Heuristics) variant developed by Comploi-Taupe et al.~\cite{comploi2023dynamicAggregates}, invoked with \texttt{-uqh}, which evaluates domain heuristics and dynamic aggregates over partial assignments via Prolog queries. This mechanism directly mirrors our Prolog backend and implements the semantics our native propagator reproduces.
 
-The choice of build matters: the official Alpha 0.7.0 release does not support \texttt{\#heuristic} directives, and the main upstream branch evaluates aggregates statically. We therefore use the authors' research Qh build, which implements dynamic aggregates over partial assignments. All Alpha encodings and benchmark instances are taken directly from the authors' published materials.
+The choice of build matters: the official Alpha 0.7.0 release does not support \texttt{\#heuristic} directives, and the main upstream branch evaluates aggregates statically. We therefore use the authors' research Qh build, which implements dynamic aggregates over partial assignments.\footnote{\url{https://github.com/tilmanni/Alpha/tree/domspec_heuristics_extended_prolog}, the build referenced by \cite{comploi2023dynamicAggregates}.} All Alpha encodings and benchmark instances are taken unmodified from that same repository: BSP and PUP from its \path{Evaluation} directory, the HRP encoding from the test resources of \cite{comploi2023domain} it also carries.
 
 We evaluate Alpha under two configurations on all benchmark families: \texttt{alpha\_qh} (with domain heuristics enabled via \texttt{-uqh}) and \texttt{alpha\_noheur} (the baseline solver without heuristics, \texttt{-ids}). On HRP, we also run \texttt{alpha\_dom}, which evaluates domain heuristics natively without the Prolog bridge. In Section~\ref{sec:alpha}, we compare these runs against our native clingo variants---\texttt{la} (lazy propagator), \texttt{ga} (ground unrolled simulation), and \texttt{gc\_noheur} (heuristic-free baseline)---to isolate the cost of lazy grounding from the benefit of dynamic heuristic guidance.
 
