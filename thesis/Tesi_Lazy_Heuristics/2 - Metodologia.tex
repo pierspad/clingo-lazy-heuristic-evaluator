@@ -3,11 +3,11 @@
 
 \section{The Experimental Design: Two Axes, Four Variants}
 
-Every experiment in this thesis compares encodings of the same problem that differ in how the domain-specific heuristic is represented and interpreted. The rules that define the problem, its guess and its constraints, are held fixed across the variants of a family; what varies are the two properties that Section~\ref{sec:bg-heuristics} and Section~\ref{sec:bg-alpha} identified as the points on which Clingo and Alpha disagree, and they vary independently.
+Every experiment in this thesis compares encodings of the same problem that differ in how the domain-specific heuristic is represented and interpreted. The rules that define the problem, its guess and its constraints, are held fixed across the variants of a family; what varies are the two properties that Section~\ref{sec:bg-heuristics} and Section~\ref{sec:bg-alpha} identified as the points on which clingo and Alpha disagree, and they vary independently.
 
 The \emph{approach} axis fixes where the heuristic is evaluated. In the ground-and-solve approach the heuristic is written with native \texttt{\#heuristic} directives: Gringo expands them before search and Clasp's Domain heuristic consumes the resulting ground objects. In the lazy approach the heuristic remains a handful of ground facts, \texttt{\_\_heuristic(...)} for the native backend and \mintinline{text}|heuristic("...")| for the Prolog one, which the propagator reads at its initialization and evaluates at every decision step against the partial assignment.
 
-The \emph{semantics} axis fixes how a heuristic condition reads partial information: the Clingo-like semantics, under which \mintinline{text}|not a| holds only once $a$ has been assigned false and an aggregate has a value only once its sources are determined, against the Alpha-like semantics, under which \mintinline{text}|not a| holds as soon as $a$ is not assigned true, and an aggregate is computed over the atoms currently true. Only the second reading makes a heuristic dynamic in the sense of reacting to a partial assignment during search, as motivated in Section~\ref{sec:motivation}: an instruction such as \enquote{prefer the element whose insertion keeps the two sums balanced} presupposes that the sum can be evaluated against an assignment that is still being built; under Clingo's semantics, that sum simply has no value until it is too late for the guidance to matter.
+The \emph{semantics} axis fixes how a heuristic condition reads partial information: the clingo-like semantics, under which \mintinline{text}|not a| holds only once $a$ has been assigned false and an aggregate has a value only once its sources are determined, against the Alpha-like semantics, under which \mintinline{text}|not a| holds as soon as $a$ is not assigned true, and an aggregate is computed over the atoms currently true. Only the second reading makes a heuristic dynamic in the sense of reacting to a partial assignment during search, as motivated in Section~\ref{sec:motivation}: an instruction such as \enquote{prefer the element whose insertion keeps the two sums balanced} presupposes that the sum can be evaluated against an assignment that is still being built; under clingo's semantics, that sum simply has no value until it is too late for the guidance to matter.
 
 \begin{figure}[H]
 \centering
@@ -16,17 +16,17 @@ The \emph{semantics} axis fixes how a heuristic condition reads partial informat
 \label{fig:axes}
 \end{figure}
 
-Crossing the two axes yields the four variants that the rest of the thesis refers to by: \texttt{gc} and \texttt{ga} for the ground approach under the Clingo and the Alpha semantics, \texttt{lc} and \texttt{la} for the lazy evaluated one, the prefix naming the approach and the suffix the semantics. To them is added the heuristic-free baseline \texttt{gc\_noheur}, which carries the same domain logic with no heuristic at all and measures what the solver does when it is left alone (Figure~\ref{fig:axes}).
+Crossing the two axes yields the four variants that the rest of the thesis refers to by: \texttt{gc} and \texttt{ga} for the ground approach under the clingo and the Alpha semantics, \texttt{lc} and \texttt{la} for the lazy evaluated one, the prefix naming the approach and the suffix the semantics. To them is added the heuristic-free baseline \texttt{gc\_noheur}, which carries the same domain logic with no heuristic at all and measures what the solver does when it is left alone (Figure~\ref{fig:axes}).
 
 To isolate specific architectural and modeling mechanisms beyond this primary matrix, the experimental design also incorporates three targeted exploratory variants: \texttt{ga\_weak}, \texttt{la\_aux}, and \texttt{la\_co}. Their empirical motivation and methodological role in disentangling the contributions of default negation, body materialization, and constraint formulation are discussed in Section~\ref{sec:exploratory-methodology}.
 
-\subsection{Simulating Alpha in Ground Clingo}
+\subsection{Simulating Alpha in Ground clingo}
 \label{sec:ga-simulation}
 
 Simulating Alpha-like semantics within a ground-and-solve pipeline requires addressing two distinct semantic aspects: default negation over unassigned literals and dynamic aggregate evaluation.
 
 The first transformation drops negative literals that test the partial state (such as \mintinline{text}|not c(X)| in BSP, \mintinline{text}|not not_assigned_sensor(S)| in PUP, and guards like \mintinline{text}|not fullCabinet(C)| in HRP). 
-Under Alpha-like semantics, these literals are satisfied by unassigned atoms as well as false ones. Since a target atom is unassigned at the moment a decision is evaluated, dropping the negative literal altogether provides the closest approximation in ground Clingo; this is harmless in practice because the solver never re-decides an atom that is already assigned.
+Under Alpha-like semantics, these literals are satisfied by unassigned atoms as well as false ones. Since a target atom is unassigned at the moment a decision is evaluated, dropping the negative literal altogether provides the closest approximation in ground clingo; this is harmless in practice because the solver never re-decides an atom that is already assigned.
 
 The second transformation replaces the equality condition with a \emph{lower/upper} bound. For BSP:
 
@@ -59,7 +59,7 @@ The \texttt{la\_co} variant combines the lazy evaluation with a compact linear f
 \subsection{Weights, Priorities, and Flattening}
 \label{sec:flattening}
 
-Section~\ref{sec:bg-alpha} recorded that the two systems read the annotation $[W@P]$ of a heuristic differently. In Alpha, the pair is an \emph{absolute} rank over all heuristic instances, read lexicographically as $(P,W)$: the priority $P$ is a global level and decides first, so no instance of level $P$ is considered while an instance of a level $P' > P$ is still applicable, and the weight $W$ only orders the instances that share the same level. In Clingo, the evaluation is different: $P$ is local, arbitrating only between heuristics relative to the \emph{same} target atom, while the order in which distinct atoms are decided comes from the weight alone. An encoding written for Alpha therefore cannot be handed to Clingo verbatim.
+Section~\ref{sec:bg-alpha} recorded that the two systems read the annotation $[W@P]$ of a heuristic differently. In Alpha, the pair is an \emph{absolute} rank over all heuristic instances, read lexicographically as $(P,W)$: the priority $P$ is a global level and decides first, so no instance of level $P$ is considered while an instance of a level $P' > P$ is still applicable, and the weight $W$ only orders the instances that share the same level. In clingo, the evaluation is different: $P$ is local, arbitrating only between heuristics relative to the \emph{same} target atom, while the order in which distinct atoms are decided comes from the weight alone. An encoding written for Alpha therefore cannot be handed to clingo verbatim.
 
 The intended order can nevertheless be recovered, by \emph{flattening} the level into the weight:
 \[
@@ -75,21 +75,21 @@ Each benchmark fixes its own $M$. In the PUP encodings $M$ is the constant offse
 Clasp stores the weight of a \texttt{\#heuristic} modification in a signed 16-bit integer field and clamps any value exceeding $32{,}767$. Consequently, two ground directives whose weights both exceed $32{,}767$ become indistinguishable to Clasp's Domain heuristic. A flattened weight must therefore satisfy $W + P\cdot M \le 32{,}767$ for the ground variants to rank as intended. 
 HRP stays far below this bound; PUP exceeds it on the zone directives, with the consequences discussed in Section~\ref{sec:pup}; and BSP, whose maximum weight grows as $\Theta(n^{3})$, crosses it within the benchmarked range. What matters there is not the largest weight the grounder emits, but the largest one the search actually reaches: directives whose aggregate value is never attained may clamp without any observable effect. On BSP that effective crossing occurs at $n=51$, as analyzed in detail in Section~\ref{sec:ga-weak}. The lazy backends are not subject to this bound because they rank targets internally and hand Clasp a ready decision rather than a weight.
 
-The suite adopts Clingo's convention in \emph{all four variants and in both backends}: absolute levels always live in the weight, simplifying the propagator as it does not need to account for a separate priority field. Once global levels are folded into weights, weight becomes the sole ordering criterion under both semantics. Accordingly, the native lazy language (Section~\ref{sec:dsl}) omits the priority field entirely.
+The suite adopts clingo's convention in \emph{all four variants and in both backends}: absolute levels always live in the weight, simplifying the propagator as it does not need to account for a separate priority field. Once global levels are folded into weights, weight becomes the sole ordering criterion under both semantics. Accordingly, the native lazy language (Section~\ref{sec:dsl}) omits the priority field entirely.
 
-A last convention concerns empty aggregates: \texttt{\#max} over an empty set is $0$ in Alpha but $-\infty$ (\texttt{\#inf}) in Clingo. All encodings therefore write \mintinline{text}|#max{0; ...}| with an explicit neutral element, and both lazy backends implement the same rule (the native \texttt{MaxState} returns $0$ when empty; the Prolog runtime defines \texttt{dyn\_max} with a $0$ default).
+A last convention concerns empty aggregates: \texttt{\#max} over an empty set is $0$ in Alpha but $-\infty$ (\texttt{\#inf}) in clingo. All encodings therefore write \mintinline{text}|#max{0; ...}| with an explicit neutral element, and both lazy backends implement the same rule (the native \texttt{MaxState} returns $0$ when empty; the Prolog runtime defines \texttt{dyn\_max} with a $0$ default).
 
 \section{System Architecture}
 \label{sec:architecture}
 
-The project maintains two modified copies of Clingo. They share the same upstream sources and differ only in their extensions: the build in \path{clingo-native} carries the C++ backend, while the build in \path{clingo-prolog} carries the Prolog backend, configured with \texttt{CLINGO\_USE\_SWIPL=ON} so that the SWI-Prolog engine is linked in-process, making its memory impact easier to account for. In both builds, the extension lives entirely under \path{libclingo}, exposes the same class name, and is registered at the same point of \path{clingo_app.cc}:
+The project maintains two modified copies of clingo. They share the same upstream sources and differ only in their extensions: the build in \path{clingo-native} carries the C++ backend, while the build in \path{clingo-prolog} carries the Prolog backend, configured with \texttt{clingo\_USE\_SWIPL=ON} so that the SWI-Prolog engine is linked in-process, making its memory impact easier to account for. In both builds, the extension lives entirely under \path{libclingo}, exposes the same class name, and is registered at the same point of \path{clingo_app.cc}:
 
 \begin{minted}{cpp}
 HeuristicPropagator my_propagator;
 ctl.register_propagator(my_propagator, true);
 \end{minted}
 
-The propagator is registered on \emph{every} run of the modified binary. On a program that contains no heuristic facts, it remains inert because \texttt{init} finds nothing to watch and \texttt{decide} always returns $0$; the same binary therefore runs the ground variants and the heuristic-free baseline without requiring a separate build. The second argument, \texttt{true}, instructs Clasp to call the propagator sequentially, avoiding race conditions on the incremental state described in Section~\ref{sec:runtime}. No other parts of Clingo are modified. Figure~\ref{fig:architecture} shows the architecture of the two binary build variants.
+The propagator is registered on \emph{every} run of the modified binary. On a program that contains no heuristic facts, it remains inert because \texttt{init} finds nothing to watch and \texttt{decide} always returns $0$; the same binary therefore runs the ground variants and the heuristic-free baseline without requiring a separate build. The second argument, \texttt{true}, instructs Clasp to call the propagator sequentially, avoiding race conditions on the incremental state described in Section~\ref{sec:runtime}. No other parts of clingo are modified. Figure~\ref{fig:architecture} shows the architecture of the two binary build variants.
 
 \begin{figure}[H]
 \centering
@@ -98,7 +98,7 @@ The propagator is registered on \emph{every} run of the modified binary. On a pr
 \label{fig:architecture}
 \end{figure}
 
-In both builds, the class implements \texttt{Clingo::Heuristic}---the propagator interface extended with the \texttt{decide} callback (Section~\ref{sec:bg-propagator}). Both backends follow the same four-step lifecycle:
+In both builds, the class implements \texttt{clingo::Heuristic}---the propagator interface extended with the \texttt{decide} callback (Section~\ref{sec:bg-propagator}). Both backends follow the same four-step lifecycle:
 \begin{itemize}[leftmargin=1.5em, itemsep=1pt]
     \item During \texttt{init}, they scan symbolic atoms for trigger facts (\texttt{\_\_heuristic(...)} in the C++ build and \mintinline{text}|heuristic("...")| in the Prolog build), construct their runtime representation, and register watches on solver literals.
     \item During forward search, \texttt{propagate} updates internal aggregate and candidate states as watched literals become true.
@@ -116,13 +116,13 @@ The propagator never adds a constraint, never derives a literal, and never refus
 Neither backend reads native \texttt{\#heuristic} directives. Instead, a custom declarative "lazy heuristic" language replaces them with a single ground fact that \emph{describes} the rule.
 This section presents what one may write, and what each construct means, by deriving that fact for the BSP heuristic of Section~\ref{sec:motivation} one component at a time. How the description is executed is left to Section~\ref{sec:implementation}.
 
-The starting point is the directive as Clingo reads it:
+The starting point is the directive as clingo reads it:
 
 \begin{minted}{prolog}
 #heuristic b(X) : x(X), not c(X), S = #sum{Y : c(Y)}, W = ((n+1)*S)+X. [W, true]
 \end{minted}
 
-\paragraph{Target.} The target atom is \texttt{b(X)}, where $X$ ranges over the ground instances. The lazy fact specifies only the predicate name, \texttt{\_\_target(b)}. During \texttt{init}, the propagator queries Clingo's atom table for all ground instances of \texttt{b(...)} already materialized by Gringo.
+\paragraph{Target.} The target atom is \texttt{b(X)}, where $X$ ranges over the ground instances. The lazy fact specifies only the predicate name, \texttt{\_\_target(b)}. During \texttt{init}, the propagator queries clingo's atom table for all ground instances of \texttt{b(...)} already materialized by Gringo.
 
 \paragraph{Positive body.} The condition \texttt{x(X)} shares its argument with the target: the candidate for \texttt{b(7)} is alive only while \texttt{x(7)} is true. A condition of this shape is written as the bare predicate name, \texttt{x}, and the propagator matches its arguments against the target tuple position by position.
 
@@ -173,9 +173,9 @@ The binary constructors \texttt{\_\_add}, \texttt{\_\_sub}, and \texttt{\_\_mul}
 
 At \texttt{init}, the propagator compiles all weight term trees into ASTs. During search, each active heuristic object evaluates its weight AST dynamically against the current trail state, avoiding the memory overhead of materializing them in the ground program. Only candidates with a strictly positive resolved weight are taken into account; the others are ignored, leaving their decision to the solver's default heuristic.
 
-\paragraph{Modifier.} The \texttt{\_\_modifier(M)} selector specifies which of Clingo's heuristic modifiers to use: \texttt{level} sets the ranking value alone, \texttt{sign} sets the preferred polarity alone, while \texttt{true} (the default) and \texttt{false} set both. 
+\paragraph{Modifier.} The \texttt{\_\_modifier(M)} selector specifies which of clingo's heuristic modifiers to use: \texttt{level} sets the ranking value alone, \texttt{sign} sets the preferred polarity alone, while \texttt{true} (the default) and \texttt{false} set both. 
 
-The solver's \texttt{decide} interface expects a \emph{signed} literal, so a ranking value alone does not determine a decision. Each target keeps one slot per channel, ranking value and preferred polarity, and when several directives write to the same slot the one with the highest weight wins. This is what replaces Clingo's local priority. Across the benchmarks all directives use \texttt{true}, except for the final layer of HRP, which uses \texttt{false} to prune the remaining choice atoms.
+The solver's \texttt{decide} interface expects a \emph{signed} literal, so a ranking value alone does not determine a decision. Each target keeps one slot per channel, ranking value and preferred polarity, and when several directives write to the same slot the one with the highest weight wins. This is what replaces clingo's local priority. Across the benchmarks all directives use \texttt{true}, except for the final layer of HRP, which uses \texttt{false} to prune the remaining choice atoms.
 
 \medskip
 Assembling the components gives the fact in full:
