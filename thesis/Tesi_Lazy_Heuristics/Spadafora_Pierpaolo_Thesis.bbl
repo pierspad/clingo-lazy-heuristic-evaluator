@@ -599,6 +599,8 @@
       \field{booktitle}{Proceedings of the 38th Design Automation Conference}
       \field{title}{Chaff: Engineering an Efficient SAT Solver}
       \field{year}{2001}
+      \field{pages}{530\bibrangedash 535}
+      \range{pages}{6}
     \endentry
     \entry{wielemaker2012swipl}{article}{}{}
       \name{author}{4}{}{%
