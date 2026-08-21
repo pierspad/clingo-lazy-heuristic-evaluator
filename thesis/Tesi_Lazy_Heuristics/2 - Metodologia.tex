@@ -46,7 +46,7 @@ This full simulation in \texttt{ga} is faithful, but its price is exactly the co
 While the four main variants evaluate the core matrix of approach versus semantics, three targeted exploratory variants are introduced as experimental controls to isolate specific factors:
 
 \paragraph{Isolating Alpha-Negation from Dynamic Aggregates (\texttt{ga\_weak}).}
-Alpha-like semantics do treat default negation as satisfied over unassigned literals, and evaluating aggregates dynamically over currently true atoms. While \texttt{ga} simulates both via extensive ground unrolling, \texttt{ga\_weak} acts as an ablation study that applies Alpha's negation semantics while avoiding unrolling aggregates. This investigates whether adapting default negation alone provides any improvement during search, or whether dynamic aggregate evaluation is strictly indispensable for an effective search guidance.
+Alpha-like semantics treat default negation as satisfied over unassigned literals, and evaluate aggregates dynamically over currently true atoms. While \texttt{ga} simulates both via extensive ground unrolling, \texttt{ga\_weak} acts as an ablation study that applies Alpha's negation semantics while avoiding unrolling aggregates. This investigates whether adapting default negation alone provides any improvement during search, or whether dynamic aggregate evaluation is strictly indispensable for an effective search guidance.
 
 \paragraph{Deconstructing Lazy Efficiency: Directives vs.\ Body Materialization (\texttt{la\_aux}).}
 Lazy evaluation replaces thousands of ground \texttt{\#heuristic} directives with a minimal set of declarative facts. This raises a natural question: does the performance gain come merely from having fewer heuristic directives, or from keeping the calculation of heuristic conditions entirely out of the ground program? 
@@ -113,7 +113,7 @@ The propagator never adds a constraint, never derives a literal, and never refus
 \label{sec:dsl}
 \label{sec:translation}
 
-Neither backend reads native \texttt{\#heuristic} directives. Instead, a custom declarative "lazy heuristic" language replaces them with a single ground fact that \emph{describes} the rule.
+Neither backend reads native \texttt{\#heuristic} directives. Instead, a custom declarative \enquote{lazy heuristic} language replaces them with a single ground fact that \emph{describes} the rule.
 This section presents what one may write, and what each construct means, by deriving that fact for the BSP heuristic of Section~\ref{sec:motivation} one component at a time. How the description is executed is left to Section~\ref{sec:implementation}.
 
 The starting point is the directive as clingo reads it:
