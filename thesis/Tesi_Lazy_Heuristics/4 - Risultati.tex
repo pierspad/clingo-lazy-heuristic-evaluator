@@ -461,7 +461,7 @@ However, as illustrated in Figure~\ref{fig:pup-state-sync}, in the Prolog backen
 \section{HRP: Semantics Without Aggregates}
 \label{sec:hrp}
 
-HRP evaluates heuristic semantics on rules with nested default negations but without dynamic aggregates. Because HRP instances are relatively small, nearly all variants solve every instance in under a second on the native backend, making this benchmark an ideal testbed for assessing guidance quality and per-decision query overhead.
+HRP evaluates heuristic semantics on rules with nested default negations but without dynamic aggregates. Because HRP instances are relatively small, nearly all variants solve every instance in under a second making it an ideal testbed for guidance quality and per-decision overhead.
 
 \begin{figure}[H]
     \centering
@@ -472,45 +472,64 @@ HRP evaluates heuristic semantics on rules with nested default negations but wit
     \label{fig:hrp}
 \end{figure}
 
-The experimental results highlight a sharp semantic contrast:
+The experimental results highlight a tight correlation between semantics and :
 \begin{itemize}
-    \item \textbf{Alpha semantics (\texttt{la} and \texttt{ga}):} \texttt{la} matches \texttt{ga} choice-for-choice ($86$ vs $88$ choices at $N=14$, with zero conflicts for both), confirming that lazy evaluation faithfully replicates reference Alpha guidance.
-    \item \textbf{Misguidance under Clingo semantics (\texttt{lc}):} In Clingo semantics, evaluating default negations on partial assignments requires established falsity (e.g., \mintinline{text}|not fullCabinet(C)|). This delays higher-level heuristic rules while allowing incomplete lower-level rules to fire, actively misdirecting search. Consequently, native \texttt{lc} requires $66{,}717$ choices at $N=14$ (an 800-fold increase over \texttt{la}) and $14.2$ million choices at $N=16$, timing out from $N=18$.
+    \item under \textbf{Alpha-like semantics:} \texttt{la} matches \texttt{ga} choice-for-choice ($86$ vs $88$ choices at $N=14$, with zero conflicts for both), confirming that lazy evaluation faithfully replicates reference Alpha guidance.
+    \item under \textbf{Clingo-like semantics:} the semantic of negation delays higher-level heuristic rules while allowing incomplete lower-level rules to fire, actively misdirecting search. Consequently, \texttt{lc} requires $66{,}717$ choices at $N=14$ (an 800-fold increase over \texttt{la}) and $14.2$ million choices at $N=16$, timing out from $N=18$.
 \end{itemize}
 
-HRP also illustrates query cost differences on the Prolog backend. Because reference heuristic rules generate over $1{,}000$ candidate pairs per decision at $N=20$, Prolog query time averages $9.7$\,ms per call. For \texttt{la}, this accounts for $1.03$\,s of the $1.55$\,s Prolog runtime (compared to $0.38$\,s on native C++). For misguided \texttt{lc}, making $73{,}143$ expensive calls at $N=14$ pushes Prolog runtime to $264.5$\,s ($99.4\%$ inside the propagator), compared to $1.80$\,s on the native backend.
+Beyond guidance quality, HRP also illustrates the operational cost of relational candidate matching in the Prolog backend. Because the multi-room placement rules join multiple domain predicates, the SWI-Prolog must evaluate over $1{,}200$ candidate pairs per decision at $N=20$, driving unit query cost to $9.68$\,ms (Table~\ref{tab:per-decision}). 
+
+For \texttt{la}, where search is resolved in only $106$ choices, this per-decision effort accounts for $68.3\%$ of the total runtime ($1.03$\,s out of $1.55$\,s), compared to just $0.38$\,s on the compiled C++ backend. For \texttt{lc}, the combination of misdirected search and relational query overhead creates a catastrophic bottleneck: making $73{,}143$ queries, already at $N=14$, inflates total Prolog execution time to $264.5$\,s (with $99.4\%$ spent inside the propagator), whereas the compiled native backend resolves the same misguided trajectory in $1.80$\,s.
 
 \section{An External Reference: Alpha}
 \label{sec:alpha}
 
-To evaluate how closely lazy heuristics reproduce the performance of native lazy-grounding systems, we compare Clingo variants against Alpha with and without its declarative heuristic engine (Qh mode). Across systems, wall-clock time and peak RSS provide commensurable metrics.
+To evaluate how closely our propagator reproduce the lazy evaluation and the performance of native lazy-grounding systems, we compare clingo variants against Alpha with and without its declarative heuristic engine (Qh mode).
+
+On BSP, \texttt{Alpha Qh} solves all twenty instances in $3.4$\,s and $0.37$\,GB at $n=200$, requiring exactly $n$ decisions and zero backtracks. This matches the results achieved by \texttt{la} in Clingo. The performance gap at larger sizes ($585.7$\,s for \texttt{la} at $n=160$ versus $2.4$\,s for Alpha) stems entirely from base program grounding in Gringo, which Alpha completely avoids by instantiating rules lazily along the search trail.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{hpc/\ThesisGraphQuality/alpha/bsp_dashboard.png}
-    \caption{BSP: the four clingo variants and the heuristic-free clingo baseline against Alpha with and without its declarative heuristic. Left, wall time; right, peak RSS. The \texttt{Alpha Qh} curve lies on the horizontal axis of both plots for the whole range; \texttt{Alpha (no heur)} instead leaves it, and stops at $n=40$, earlier than any clingo variant.}
+    \includegraphics[width=0.95\textwidth]{hpc/\ThesisGraphQuality/alpha/bsp_dashboard.png}
+    \vspace{0.3em}
+    \caption{BSP benchmark dashboard: the four Clingo variants and the heuristic-free baseline compared against \texttt{Alpha Qh} and \texttt{Alpha no heur}. While \texttt{Alpha Qh} stays flat along the horizontal axis, unguided Alpha degrades rapidly, failing earlier than any Clingo variant.}
     \label{fig:alpha-bsp}
 \end{figure}
 
-On BSP, Alpha with heuristic guidance solves all twenty instances in $3.4$\,s and $0.37$\,GB at $n=200$, requiring exactly $n$ decisions and zero backtracks. This matches the search trajectory achieved by \texttt{la} in Clingo ($n$ choices, zero conflicts). The performance gap at larger sizes ($585.7$\,s for \texttt{la} at $n=160$ vs $2.4$\,s for Alpha) stems entirely from base program grounding in Gringo ($52.8$ million rules at $n=120$), which Alpha avoids by instantiating rules lazily during search.
+Crucially, lazy grounding alone is insufficient even for a lazy ground solver without heuristic guidance: \texttt{alpha\_noheur} fails early at $n=40$, well before \texttt{gc\_noheur} ($n=150$). 
 
-Crucially, lazy grounding alone is insufficient without heuristic guidance: heuristic-free Alpha (\texttt{alpha\_noheur}) fails early at $n=40$ ($42{,}058$ guesses, $42{,}021$ backtracks), well before Clingo's ground baseline ($n=150$). This confirms that effective dynamic heuristics and scalable grounding are complementary techniques.
+\begin{itemize}
+    \item In ground-and-solve systems, the search space is fixed ahead of time. Even without heuristic guidance, wandering into dead ends has little computational cost because the solver only flips boolean assignments on pre-materialized rules and, together with VSIDS is able to perform hundreds of thousands of decisions per second.
+    \item In lazy-grounding solvers, grounding happens dynamically during search. Without heuristic guidance to keep it on the right path, the solver wastes substantial time generating and matching first-order rules for branches that will simply be abandoned shortly after.
+\end{itemize}
+
+As shown in Figure~\ref{fig:alpha-internals}, unguided Alpha suffers a severe search space explosion, spiking to over $67{,}000$ guesses and backtracks at $n=30$ before timing out at $n=40$. Conversely, with heuristic guidance, Alpha never backtracks, materializing only the minimal subset of ground rules along the single valid solution path. This demonstrates that lazy grounding and dynamic heuristics are strictly complementary: dynamic heuristics require lazy evaluation to prevent grounding bottlenecks, while lazy grounding requires dynamic heuristics to avoid drowning in runtime instantiation overhead.
+
+As shown in Figure~\ref{fig:alpha-internals}, unguided Alpha suffers a severe search space explosion, spiking to over $67{,}000$ guesses and backtracks at $n=30$ before timing out at $n=40$. Conversely, with heuristic guidance, Alpha never backtracks, materializing only the minimal subset of ground rules along the single valid solution path.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{hpc/\ThesisGraphQuality/alpha/bsp_internals.png}
-    \caption{BSP, Alpha's own counters, plotted apart from every clingo measure because they are not commensurable with clasp's (Section~\ref{sec:alpha-setup}). Top row: with the heuristic, guesses stay equal to $n$ and backtracks at zero over the whole range, while the heuristic-free run spikes to some $67{,}000$ of each at $n=30$ and stops at $n=40$. Bottom row: the cost of the heuristic itself, which is a Prolog query in this variant --- $2.2$ seconds cumulative at $n=200$, at $1.9$ to $5.4$ milliseconds per query.}
+    \includegraphics[width=0.95\textwidth]{hpc/\ThesisGraphQuality/alpha/bsp_internals.png}
+    \vspace{0.2em}
+    \caption{BSP internal search counters for Alpha across instance sizes. Top row: with heuristics (\texttt{Alpha Qh}), guesses remain equal to $n$ with zero backtracks; without heuristics, search choices explode exponentially. Bottom row: cumulative Prolog query evaluation time ($2.2$\,s total at $n=200$, averaging $1.9$ to $5.4$\,ms per consultation).}
     \label{fig:alpha-internals}
 \end{figure}
 
+
+
+On PUP, \texttt{la} closely approaches Alpha's performance, solving $N=200$ in $234.7$\,s and $12.7$\,GB compared to $50.8$\,s and $10.6$\,GB for Alpha (a factor of $4.6\times$ in time and $1.2\times$ in memory). In contrast, the static ground simulation \texttt{ga} requires nine times Alpha's runtime and over twice its memory. Furthermore, \texttt{alpha\_noheur} solves no instances on PUP, reaffirming that dynamic heuristics are essential for solving this problem family.
+
 \begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{hpc/\ThesisGraphQuality/alpha/pup_dashboard.png}
-    \caption{PUP: the same comparison. \texttt{Alpha (no heur)} does not appear because it solves no instance at all, not even \texttt{double-20}. Here the clingo lazy variant stays within a small factor of Alpha in time and matches it in memory, while the ground simulation \texttt{ga} is worse than Alpha on both axes.}
+    \includegraphics[width=0.95\textwidth]{hpc/\ThesisGraphQuality/alpha/pup_dashboard.png}
+    \vspace{0.2em}
+    \caption{PUP benchmark dashboard: external comparison between Clingo variants and Alpha. \texttt{Alpha (no heur)} does not appear as it solves zero instances. The lazy Clingo variant (\texttt{la}) remains within a small factor of Alpha in both time and memory, whereas the ground simulation \texttt{ga} incurs substantial overhead on both axes.}
     \label{fig:alpha-pup}
 \end{figure}
 
-On PUP, Clingo with lazy heuristics (\texttt{la}) closely approaches Alpha's performance, solving $N=200$ in $234.7$\,s and $12.7$\,GB compared to $50.8$\,s and $10.6$\,GB for Alpha (a factor of $4.6\times$ in time and $1.2\times$ in memory). In contrast, the static ground simulation \texttt{ga} requires $451.4$\,s and $24.6$\,GB (nine times Alpha's runtime and over twice its memory). Furthermore, \texttt{alpha\_noheur} solves no instances on PUP, reaffirming that dynamic heuristics are essential for solving this problem family.
+\paragraph{Overall Frontier and Query Engines.}
+Table~\ref{tab:alpha-frontier} summarizes the maximal instance reach and resource consumption across systems. Regarding query engines, Alpha's Qh mode and the Prolog backend of this thesis both evaluate heuristics by querying an embedded Prolog engine over partial assignments.
 
 \begin{table}[H]
 \centering
@@ -533,11 +552,12 @@ PUP & clingo \texttt{la}               & 200 & 234.7 & 12.7 GB\\
 PUP & \texttt{alpha} (Qh)              & 200 & 50.8  & 10.6 GB\\
 \bottomrule
 \end{tabular}
-\caption{Largest instance solved within the 600\,s / 30\,GB budget, and its cost, ordered by reach within each family. Wall time and peak RSS are \texttt{runlim} measures, the only ones commensurable across the two systems; Alpha's RSS includes the reserved JVM heap. clingo rows are the C++ backend. A dash marks a system that solved no instance of the family.}
+\caption{Largest instance solved within the 600\,s / 30\,GB budget, and its cost, ordered by reach within each family. Alpha's RSS includes the reserved JVM heap. Clingo rows represent the native C++ backend. A dash marks a configuration that solved no instances.}
 \label{tab:alpha-frontier}
 \end{table}
 
-Regarding query engines, Alpha's Qh mode and the Prolog backend of this thesis both evaluate heuristics by querying an embedded Prolog engine over partial assignments. Consultation costs are of similar magnitude: at BSP $n=120$, Alpha issues $242$ queries at $2.87$\,ms each, compared to $120$ consultations at $0.62$\,ms for the Prolog backend. This confirms that the synchronization-based propagator design achieves competitive performance relative to reference logic programming engines.
+
+
 
 \section{Native versus Prolog: Summary}
 \label{sec:backend-summary}
