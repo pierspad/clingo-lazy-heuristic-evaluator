@@ -180,7 +180,7 @@ However here we can see a clear difference on the different semantics over the n
 
 This highlights three major findings:
 \begin{enumerate}
-    \item In \texttt{la} the default negation and dynamic aggregate evaluation allows clingo make use of the perfect heuristic given making exactly 120 perfect choices at $n=120$.
+    \item In \texttt{la}, default negation and dynamic aggregate evaluation allow clingo to make use of the heuristic from the very first decision, taking exactly 120 choices with zero conflicts at $n=120$.
     \item While \texttt{ga} matches \texttt{la} perfectly up to $n=50$, its performance degrades sharply at $n=60$ and times out from $n=70$ onward. This failure is caused by the 16-bit integer weight limit in clasp ($32{,}767$), as explained in Section~\ref{sec:weight-problem}. When weights saturate beyond $n=50$, dynamic aggregate ranking breaks down entirely.
     \item \texttt{ga\_weak} tracks close to the baseline and is discussed in Section~\ref{sec:ga-weak}, while \texttt{la\_co} is analyzed in Section~\ref{sec:constr-form}.
 \end{enumerate}
@@ -197,7 +197,7 @@ In contrast, \texttt{lc} exhibits search statistics that are identical point-by-
     \includegraphics[width=0.49\textwidth]{hpc/\ThesisGraphQuality/bsp/native_choices.png}
     \hfill
     \includegraphics[width=0.49\textwidth]{hpc/\ThesisGraphQuality/bsp/native_conflicts.png}
-    \caption{}
+    \caption{BSP search statistics on the C++ backend: solver choices (left) and conflicts (right) across sizes. \texttt{la} stays flat at $n$ choices with zero conflicts, while \texttt{lc} overlaps the heuristic-free baseline \texttt{gc\_noheur} point by point.}
     \label{fig:bsp-search}
 \end{figure}
 
@@ -205,7 +205,7 @@ Under Clingo semantics, aggregate guards on \texttt{c/1} require all elements to
 
 \section{BSP: Rules, Variables, and Memory}
 
-The reduction of the heuristic footprint is also evident in the size of the propositional formula generated for the solver. As shown in Table~\ref{tab:n100-vars}, //TODO ??
+The reduction of the heuristic footprint is also evident in the size of the propositional formula generated for the solver. As shown in Table~\ref{tab:n100-vars}, at $n=100$ the two lazy variants replace the $1{,}010{,}200$ ground directives of \texttt{gc} with the two static facts of the DSL, and their variable count ($20{,}300$) coincides exactly with the heuristic-free baseline: the heuristic leaves no trace in the propositional formula. The ground variants pay this cost in different forms. In \texttt{gc} the directives dominate the formula itself, which grows to more than one million variables, fifty times the baseline; in \texttt{ga} the variable count stays close to the baseline, but the same million directives still have to be grounded, and beyond $n=50$ this effort does not translate into usable guidance. Only \texttt{la\_co} falls below the baseline, with $101$ variables, because it also reformulates the balance constraint (Section~\ref{sec:constr-form}).
 
 \begin{table}[H]
 \centering
@@ -240,11 +240,12 @@ Figure~\ref{fig:bsp-memory} shows that on large instances, memory usage is domin
 \label{sec:per-decision-cost}
 
 The lazy evaluation model represents a space-time trade-off where instead of suffering a combinatorial cost in memory during the grounding phase, there is a cost in computation incurred for each decision made during the search phase.
-Below a detailed profiling over both backends
+Table~\ref{tab:per-decision} profiles this cost on both backends.
 
 \begin{table}[H]
 \centering
 \footnotesize
+\setlength{\tabcolsep}{4pt}
 \begin{tabular}{ll rrcrr rr}
 \toprule
  & & \multicolumn{2}{c}{\textbf{Search Activity}} & & \multicolumn{2}{c}{\textbf{Cost (ms/decide)}} & \multicolumn{2}{c}{\textbf{Prolog Overhead}} \\
@@ -314,10 +315,9 @@ In BSP, both simulations produce the exact same $\Theta(n^3)$ ground directives 
 \end{figure}
 
 This illustrates the solving performance and search complexity of both simulation strategies. 
-The dynamically unrolled simulation, \texttt{ga}, maintains exact behavior up to $n=50$. Beyond this threshold, performance rapidly deteriorates as weights exceed the \texttt{int16} range and smettono di essere sufficientemente informative perchè non c'è più modo di discriminare il peso //TODO tradurre frase precedente; at $n=60$, it already requires $1.7$\,million choices and $137$\,s of solving time, before consistently timing out from $n=70$.
+Beyond $n=50$,\texttt{ga} performance rapidly deteriorates as weights exceed the \texttt{int16} range and saturate at $32{,}767$: distinct partial sums collapse onto the same weight, and the ranking stops discriminating between candidate decisions. At $n=60$, it already requires $1.7$\,million choices and $137$\,s of solving time, before consistently timing out from $n=70$.
 
-//TODO rivedere, scritto coi piedi
-Conversely, \texttt{ga\_weak} doesn't exceeds its timeout even though it grounds the weights in the same way of \texttt{ga} because the equal doesn't let the heuristic activate, however,for this same reason, it fails to provide effective guidance during search. At $n=120$, for instance, it exhibits a degraded and noisier search trajectory, requiring $121{,}159$ choices and $69.6$\,s of solving time compared to $78{,}565$ choices and $44.1$\,s for the baseline. 
+Conversely, \texttt{ga\_weak} never hits the timeout, even though it grounds weights in the same way as \texttt{ga}: the equality binding is satisfied only once all the elements of the sum are assigned, so the heuristic almost never activates and the saturation issue never arises. For this same reason, however, it provides no effective guidance during search. At $n=120$, for instance, it exhibits a degraded and noisier search trajectory, requiring $121{,}159$ choices and $69.6$\,s of solving time compared to $78{,}565$ choices and $44.1$\,s for the baseline. 
 
 Overall, these results show that simply omitting negative guards without unrolling aggregate bounds provides no actionable heuristic guidance to the solver, increasing overall search effort and slightly reducing the solvable instance horizon.
 
@@ -343,7 +343,7 @@ Figure~\ref{fig:laaux} illustrates how this auxiliary materialization cripples p
     \item In the Prolog backend, the sheer volume of auxiliary candidates multiplies the required consultations, jumping from $573$ calls at $n=20$ to $8{,}452$ at $n=30$ (compared to exactly $n$ calls in direct \texttt{la}). Trail synchronization alone accounts for $99.2\%$ of the total runtime ($383$\,s out of $386$\,s) at $n=30$, causing the backend to time out for all sizes $n \ge 40$.
 \end{itemize}
 
-These findings demonstrate that merely reducing the number of heuristic directives is insufficient //TODO se non accompagnato anche dalla lazy evaluation.
+These findings demonstrate that merely reducing the number of heuristic directives is insufficient on its own: the benefit comes from keeping the evaluation of the heuristic conditions out of the ground program. Once those conditions are materialized as auxiliary rules, the combinatorial cost simply moves from the directives to the base encoding, and the lazy propagator inherits it at every decision.
 
 \section{Effect of the Constraint Formulation}
 \label{sec:constr-form}
