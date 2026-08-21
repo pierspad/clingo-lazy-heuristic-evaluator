@@ -5,7 +5,7 @@
 
 Every experiment in this thesis compares encodings of the same problem that differ in how the domain-specific heuristic is represented and interpreted. The rules that define the problem, its guess and its constraints, are held fixed across the variants of a family; what varies are the two properties that Section~\ref{sec:bg-heuristics} and Section~\ref{sec:bg-alpha} identified as the points on which clingo and Alpha disagree, and they vary independently.
 
-The \emph{approach} axis fixes where the heuristic is evaluated. In the ground-and-solve approach the heuristic is written with native \texttt{\#heuristic} directives: Gringo expands them before search and Clasp's Domain heuristic consumes the resulting ground objects. In the lazy approach the heuristic remains a handful of ground facts, \texttt{\_\_heuristic(...)} for the native backend and \mintinline{text}|heuristic("...")| for the Prolog one, which the propagator reads at its initialization and evaluates at every decision step against the partial assignment.
+The \emph{approach} axis fixes where the heuristic is evaluated. In the ground-and-solve approach the heuristic is written with native \texttt{\#heuristic} directives: gringo expands them before search and clasp's Domain heuristic consumes the resulting ground objects. In the lazy approach the heuristic remains a handful of ground facts, \texttt{\_\_heuristic(...)} for the native backend and \mintinline{text}|heuristic("...")| for the Prolog one, which the propagator reads at its initialization and evaluates at every decision step against the partial assignment.
 
 The \emph{semantics} axis fixes how a heuristic condition reads partial information: the clingo-like semantics, under which \mintinline{text}|not a| holds only once $a$ has been assigned false and an aggregate has a value only once its sources are determined, against the Alpha-like semantics, under which \mintinline{text}|not a| holds as soon as $a$ is not assigned true, and an aggregate is computed over the atoms currently true. Only the second reading makes a heuristic dynamic in the sense of reacting to a partial assignment during search, as motivated in Section~\ref{sec:motivation}: an instruction such as \enquote{prefer the element whose insertion keeps the two sums balanced} presupposes that the sum can be evaluated against an assignment that is still being built; under clingo's semantics, that sum simply has no value until it is too late for the guidance to matter.
 
@@ -36,7 +36,7 @@ sum_value(0..tot).
     W = ((n+1)*S)+X. [W, true]
 \end{minted}
 
-Instead of binding $S$ to the final value of the sum, the directive is unrolled over all candidate values \texttt{sum\_value(S)} and guarded by the condition $S \le \#\mathtt{sum}\{Y : c(Y)\}$. During search, as soon as the partial sum reaches a bound $S$, every directive with that bound becomes applicable; among the applicable ground directives for the same atom, Clasp's Domain heuristic retains the one with the maximum weight, which corresponds exactly to the \emph{current} value of the aggregate. The max-weight selection thus reconstructs the dynamic aggregate at solving time. For aggregates whose contribution to the weight decreases rather than increases (such as the free-capacity terms $N_0,N_1,N_2$ in PUP) the same transformation is applied with the bound $V \ge \#\mathtt{max}\{\ldots\}$, so that the max-weight selection picks the smallest proven value.
+Instead of binding $S$ to the final value of the sum, the directive is unrolled over all candidate values \texttt{sum\_value(S)} and guarded by the condition $S \le \#\mathtt{sum}\{Y : c(Y)\}$. During search, as soon as the partial sum reaches a bound $S$, every directive with that bound becomes applicable; among the applicable ground directives for the same atom, clasp's Domain heuristic retains the one with the maximum weight, which corresponds exactly to the \emph{current} value of the aggregate. The max-weight selection thus reconstructs the dynamic aggregate at solving time. For aggregates whose contribution to the weight decreases rather than increases (such as the free-capacity terms $N_0,N_1,N_2$ in PUP) the same transformation is applied with the bound $V \ge \#\mathtt{max}\{\ldots\}$, so that the max-weight selection picks the smallest proven value.
 
 This full simulation in \texttt{ga} is faithful, but its price is exactly the combinatorial explosion that motivated the thesis: one ground directive per point of the product of the unrolled domains, measured in Chapter~\ref{sec:results}.
 
@@ -72,8 +72,8 @@ Each benchmark fixes its own $M$. In the PUP encodings $M$ is the constant offse
 
 \subsection{Problems on bigger weights}
 \label{sec:weight-problem}
-Clasp stores the weight of a \texttt{\#heuristic} modification in a signed 16-bit integer field and clamps any value exceeding $32{,}767$. Consequently, two ground directives whose weights both exceed $32{,}767$ become indistinguishable to Clasp's Domain heuristic. A flattened weight must therefore satisfy $W + P\cdot M \le 32{,}767$ for the ground variants to rank as intended. 
-HRP stays far below this bound; PUP exceeds it on the zone directives, with the consequences discussed in Section~\ref{sec:pup}; and BSP, whose maximum weight grows as $\Theta(n^{3})$, crosses it within the benchmarked range. What matters there is not the largest weight the grounder emits, but the largest one the search actually reaches: directives whose aggregate value is never attained may clamp without any observable effect. On BSP that effective crossing occurs at $n=51$, as analyzed in detail in Section~\ref{sec:ga-weak}. The lazy backends are not subject to this bound because they rank targets internally and hand Clasp a ready decision rather than a weight.
+clasp stores the weight of a \texttt{\#heuristic} modification in a signed 16-bit integer field and clamps any value exceeding $32{,}767$. Consequently, two ground directives whose weights both exceed $32{,}767$ become indistinguishable to clasp's Domain heuristic. A flattened weight must therefore satisfy $W + P\cdot M \le 32{,}767$ for the ground variants to rank as intended. 
+HRP stays far below this bound; PUP exceeds it on the zone directives, with the consequences discussed in Section~\ref{sec:pup}; and BSP, whose maximum weight grows as $\Theta(n^{3})$, crosses it within the benchmarked range. What matters there is not the largest weight the grounder emits, but the largest one the search actually reaches: directives whose aggregate value is never attained may clamp without any observable effect. On BSP that effective crossing occurs at $n=51$, as analyzed in detail in Section~\ref{sec:ga-weak}. The lazy backends are not subject to this bound because they rank targets internally and hand clasp a ready decision rather than a weight.
 
 The suite adopts clingo's convention in \emph{all four variants and in both backends}: absolute levels always live in the weight, simplifying the propagator as it does not need to account for a separate priority field. Once global levels are folded into weights, weight becomes the sole ordering criterion under both semantics. Accordingly, the native lazy language (Section~\ref{sec:dsl}) omits the priority field entirely.
 
@@ -89,12 +89,12 @@ HeuristicPropagator my_propagator;
 ctl.register_propagator(my_propagator, true);
 \end{minted}
 
-The propagator is registered on \emph{every} run of the modified binary. On a program that contains no heuristic facts, it remains inert because \texttt{init} finds nothing to watch and \texttt{decide} always returns $0$; the same binary therefore runs the ground variants and the heuristic-free baseline without requiring a separate build. The second argument, \texttt{true}, instructs Clasp to call the propagator sequentially, avoiding race conditions on the incremental state described in Section~\ref{sec:runtime}. No other parts of clingo are modified. Figure~\ref{fig:architecture} shows the architecture of the two binary build variants.
+The propagator is registered on \emph{every} run of the modified binary. On a program that contains no heuristic facts, it remains inert because \texttt{init} finds nothing to watch and \texttt{decide} always returns $0$; the same binary therefore runs the ground variants and the heuristic-free baseline without requiring a separate build. The second argument, \texttt{true}, instructs clasp to call the propagator sequentially, avoiding race conditions on the incremental state described in Section~\ref{sec:runtime}. No other parts of clingo are modified. Figure~\ref{fig:architecture} shows the architecture of the two binary build variants.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{architecture}
-\caption{System architecture of the two binary variants, showing their respective heuristic propagators and evaluation backends attached to Clasp.}
+\caption{System architecture of the two binary variants, showing their respective heuristic propagators and evaluation backends attached to clasp.}
 \label{fig:architecture}
 \end{figure}
 
@@ -103,11 +103,11 @@ In both builds, the class implements \texttt{clingo::Heuristic}---the propagator
     \item During \texttt{init}, they scan symbolic atoms for trigger facts (\texttt{\_\_heuristic(...)} in the C++ build and \mintinline{text}|heuristic("...")| in the Prolog build), construct their runtime representation, and register watches on solver literals.
     \item During forward search, \texttt{propagate} updates internal aggregate and candidate states as watched literals become true.
     \item During backtracking, \texttt{undo} restores internal aggregate and candidate states as literals are retracted from the trail.
-    \item At each decision point, \texttt{decide} either returns a signed literal for the highest-ranked target or returns $0$, delegating the decision to Clasp's fallback heuristic.
+    \item At each decision point, \texttt{decide} either returns a signed literal for the highest-ranked target or returns $0$, delegating the decision to clasp's fallback heuristic.
 \end{itemize}
 To activate this mechanism, runs are launched with the flag \texttt{--heuristic=Domain}. A detailed discussion of the architectural differences between the two backends is provided in Chapter~\ref{sec:implementation}.
 
-The propagator never adds a constraint, never derives a literal, and never refuses one. It only reorders the decisions Clasp would have taken anyway, so the answer sets are untouched, and a heuristic can make a run slower or faster but cannot change the meaning of the encoding (detailed in Section~\ref{sec:decision}).
+The propagator never adds a constraint, never derives a literal, and never refuses one. It only reorders the decisions clasp would have taken anyway, so the answer sets are untouched, and a heuristic can make a run slower or faster but cannot change the meaning of the encoding (detailed in Section~\ref{sec:decision}).
 
 \section{Translation of the Heuristic Directives}
 \label{sec:dsl}
@@ -122,7 +122,7 @@ The starting point is the directive as clingo reads it:
 #heuristic b(X) : x(X), not c(X), S = #sum{Y : c(Y)}, W = ((n+1)*S)+X. [W, true]
 \end{minted}
 
-\paragraph{Target.} The target atom is \texttt{b(X)}, where $X$ ranges over the ground instances. The lazy fact specifies only the predicate name, \texttt{\_\_target(b)}. During \texttt{init}, the propagator queries clingo's atom table for all ground instances of \texttt{b(...)} already materialized by Gringo.
+\paragraph{Target.} The target atom is \texttt{b(X)}, where $X$ ranges over the ground instances. The lazy fact specifies only the predicate name, \texttt{\_\_target(b)}. During \texttt{init}, the propagator queries clingo's atom table for all ground instances of \texttt{b(...)} already materialized by gringo.
 
 \paragraph{Positive body.} The condition \texttt{x(X)} shares its argument with the target: the candidate for \texttt{b(7)} is alive only while \texttt{x(7)} is true. A condition of this shape is written as the bare predicate name, \texttt{x}, and the propagator matches its arguments against the target tuple position by position.
 

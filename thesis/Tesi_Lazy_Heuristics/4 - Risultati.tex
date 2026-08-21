@@ -43,7 +43,7 @@ In the BSP benchmark, solver failures scale predictably with instance size: once
 \texttt{la\_co}     & \textbf{20/20} & \textbf{---} & \textbf{20/20} & \textbf{---}\\
 \bottomrule
 \end{tabular}
-\caption{BSP campaign overview ($n=10..200$, 600\,s / 30\,GB per run). Best results in bold; bottom block shows exploratory and reformulated variants.}
+\caption{BSP campaign overview ($n=10..200$, 600\,s / 30\,GB per run). Best results in bold; \texttt{ga\_weak} is the exploratory variant of the main block, the bottom block holds the two BSP-specific ones.}
 \label{tab:overview-bsp}
 \end{table}
 
@@ -90,7 +90,7 @@ In the BSP benchmark, solver failures scale predictably with instance size: once
 Evaluating these summary tables reveals that the maximum instance size solved provides different insights depending on the problem of choice. 
 \begin{itemize}
     \item \textbf{On BSP}, the solvability frontier alone is insufficient to differentiate the approaches. Variants sharing the same base encoding (\texttt{gc\_noheur}, \texttt{la}, and \texttt{lc}) all stop between $n=150$ and $n=160$, constrained by the heavy grounding of the base program. What distinguishes these variants is their internal search efficiency: \texttt{la} virtually eliminates solving time and conflicts (Sections~\ref{sec:bsp-runtime} and~\ref{sec:per-decision-cost}).
-    \item \textbf{On PUP}, the \enquote{alpha semantic}-like dynamic guidance enables both \texttt{ga} and \texttt{la} to solve the entire range up to $N=200$, whereas the other variants stall around $N=80$ due to search space explosion. With search effectively solved, PUP isolates the cost of the heuristic representation itself: the lazy approach \texttt{la} cuts grounding time and peak memory in half compared to the static aggregate unrolling in \texttt{ga} (\textbf{12.7\,GB} vs \textbf{24.6\,GB} at $N=200$).
+    \item \textbf{On PUP}, the Alpha-like dynamic guidance enables both \texttt{ga} and \texttt{la} to solve the entire range up to $N=200$, whereas the other variants stall around $N=80$ due to search space explosion. With search effectively solved, PUP isolates the cost of the heuristic representation itself: the lazy approach \texttt{la} cuts grounding time and peak memory in half compared to the static aggregate unrolling in \texttt{ga} (\textbf{12.7\,GB} vs \textbf{24.6\,GB} at $N=200$).
     \item \textbf{On HRP}, the solvability frontier is uninformative because nearly all variants solve the entire benchmark suite; the evaluation centers instead on decision quality and the severe misguidance observed in \texttt{lc}.
 \end{itemize}
 
@@ -311,7 +311,7 @@ The main difference is that equality bindings trigger at most once, and only aft
     \includegraphics[width=0.49\textwidth]{hpc/\ThesisGraphQuality/bsp/expl_gaweak_solving.png}
     \hfill
     \includegraphics[width=0.49\textwidth]{hpc/\ThesisGraphQuality/bsp/expl_gaweak_choices.png}
-    \caption{Solving time (left) and solver choices (right) for BSP comparing the $\alpha$-semantics simulations (\texttt{ga} and \texttt{ga\_weak}) against the baseline variants.}
+    \caption{Solving time (left) and solver choices (right) for BSP comparing the Alpha-like semantics simulations (\texttt{ga} and \texttt{ga\_weak}) against the baseline variants.}
     \label{fig:gaweak}
 \end{figure}
 
@@ -376,7 +376,7 @@ These findings yield a key architectural insight: once lazy heuristics remove th
 
 The Partner Units Problem (PUP) represents an industrial configuration benchmark where domain-specific heuristics effectively tame combinatorial search. Unlike BSP (which relies exclusively on \texttt{\#sum}), PUP combines dynamic \texttt{\#count} and \texttt{\#max} aggregates---notably using \texttt{\#max} to track remaining capacity across adjacent partner units.
 
-In BSP, unguided search dominated baseline execution times; in PUP, activating dynamic $\alpha$-semantics reduces solving effort to just a few hundred decisions across all instance sizes. Consequently, the solving phase becomes almost trivial, shifting the performance bottleneck almost entirely ($>95\%$ of total execution time) to the grounding phase and memory consumption. This makes PUP the ideal benchmark to evaluate the grounding and memory efficiency of lazy evaluation at scale.
+In BSP, unguided search dominated baseline execution times; in PUP, activating the dynamic Alpha-like semantics reduces solving effort to just a few hundred decisions across all instance sizes. Consequently, the solving phase becomes almost trivial, shifting the performance bottleneck almost entirely ($>95\%$ of total execution time) to the grounding phase and memory consumption. This makes PUP the ideal benchmark to evaluate the grounding and memory efficiency of lazy evaluation at scale.
 
 Figure~\ref{fig:pup-total} and Table~\ref{tab:pup-frontier} summarize the overall performance across all five variants under a $600$\,s timeout and a $30$\,GB memory limit.
 
@@ -413,7 +413,7 @@ The baseline results reveal two distinct failure dynamics:
 \end{itemize}
 
 \paragraph{Grounding and memory savings (\texttt{la} vs \texttt{ga}).}
-Both $\alpha$-semantics variants (\texttt{ga} and \texttt{la}) solve the entire benchmark horizon up to $N=200$, maintaining near-perfect search guidance ($235$ choices for \texttt{ga} vs $162$ for \texttt{la} at $N=120$). Because solving takes only a few seconds, the overall performance is differentiated almost exclusively by the grounding footprint.
+Both Alpha-like semantics variants (\texttt{ga} and \texttt{la}) solve the entire benchmark horizon up to $N=200$, maintaining near-perfect search guidance ($235$ choices for \texttt{ga} vs $162$ for \texttt{la} at $N=120$). Because solving takes only a few seconds, the overall performance is differentiated almost exclusively by the grounding footprint.
 
 \begin{figure}[H]
     \centering
@@ -487,7 +487,7 @@ For \texttt{la}, where search is resolved in only $106$ choices, this per-decisi
 
 To evaluate how closely our propagator reproduces the lazy evaluation process and performance advantages, we compare our clingo variants against Alpha with and without its declarative heuristic engine (Qh mode). 
 
-On BSP, the guided Alpha configuration (\texttt{alpha\_qh}) solves all twenty instances in $3.4$\,s and $0.37$\,GB at $n=200$, requiring exactly $n$ decisions and zero backtracks. This matches the search trajectory achieved by \texttt{la} in clingo ($n$ choices, zero conflicts). The performance gap at larger sizes ($585.7$\,s for \texttt{la} at $n=160$ versus $2.4$\,s for \texttt{alpha\_qh}) stems entirely from base program grounding in Gringo ($52.8$ million rules at $n=120$), which Alpha completely avoids by instantiating rules lazily along the search trail.
+On BSP, the guided Alpha configuration (\texttt{alpha\_qh}) solves all twenty instances in $3.4$\,s and $0.37$\,GB at $n=200$, requiring exactly $n$ decisions and zero backtracks. This matches the search trajectory achieved by \texttt{la} in clingo ($n$ choices, zero conflicts). The performance gap at larger sizes ($585.7$\,s for \texttt{la} at $n=160$ versus $2.4$\,s for \texttt{alpha\_qh}) stems entirely from base program grounding in gringo ($52.8$ million rules at $n=120$), which Alpha completely avoids by instantiating rules lazily along the search trail.
 
 \begin{figure}[H]
     \centering
@@ -499,7 +499,7 @@ On BSP, the guided Alpha configuration (\texttt{alpha\_qh}) solves all twenty in
 
 Crucially, lazy grounding alone is insufficient without dynamic heuristic guidance: \texttt{alpha\_noheur} solves nothing beyond $n=40$, eleven sizes short of clingo's ground baseline \texttt{gc\_noheur} ($n=150$). This divergence highlights a fundamental trade-off:
 \begin{itemize}
-    \item \textbf{clingo:} Because the program is fully grounded before search begins, exploring unpromising search branches is computationally very cheap: Clasp only has to perform fast boolean propagation and VSIDS variable scoring over pre-existing clauses in compiled C++.
+    \item \textbf{clingo:} Because the program is fully grounded before search begins, exploring unpromising search branches is computationally very cheap: clasp only has to perform fast boolean propagation and VSIDS variable scoring over pre-existing clauses in compiled C++.
     \item \textbf{Alpha:} Because rules are grounded on demand during search, exploring unpromising branches is extremely expensive: every wrong decision and subsequent backtrack forces the engine to instantiate new rules and nogoods on the fly.
 \end{itemize}
 
@@ -566,6 +566,6 @@ The C++ backend evaluates heuristic decisions three to four orders of magnitude 
 
 The empirical evaluation demonstrates that lazy heuristic evaluation fundamentally changes how domain-specific guidance interacts with ground-and-solve ASP. By shifting dynamic aggregate evaluation from grounding to search, the framework reduces the heuristic representation from a combinatorial $\Theta(n^3)$ explosion down to two constant template facts on BSP. In realistic configuration benchmarks like PUP, this translates into halving both grounding time ($225.8$\,s versus $436.6$\,s) and peak memory ($12.7$\,GB versus $24.6$\,GB) at scale compared to static ground simulation (\texttt{ga}). Furthermore, the exploratory variants confirm that this benefit requires keeping the evaluation entirely dynamic: omitting negative guards without unrolling dynamic aggregates (\texttt{ga\_weak}) fails to provide actionable search guidance, while pre-materializing heuristic bodies into auxiliary ASP rules (\texttt{la\_aux}) reintroduces the combinatorial explosion into the base program. Conversely, pairing lazy heuristics with compact domain constraints (\texttt{la\_co}) eliminates grounding and solving bottlenecks simultaneously, resolving BSP up to $n=200$ in milliseconds.
 
-The campaign also proves that evaluation semantics is decisive for search guidance. Under Alpha-like semantics, dynamic aggregate evaluation provides immediate, actionable advice on partial assignments, achieving near-perfect search on BSP ($n$ choices with zero conflicts) and faithful multi-level ranking on HRP. In contrast, standard clingo semantics requires complete assignments to evaluate aggregate bodies, rendering the heuristic completely inert on BSP and actively misleading on HRP, where delayed high-level rules allow incomplete lower-level rules to steer the solver into massive search subspaces. Moreover, while static ground unrolling (\texttt{ga}) can approximate dynamic aggregates on small instances, it slows down grounding and breaks down whenever the flattened weights overflow Clasp's 16-bit ceiling ($32{,}767$), a limitation that the lazy propagator avoids entirely by sorting decisions internally.
+The campaign also proves that evaluation semantics is decisive for search guidance. Under Alpha-like semantics, dynamic aggregate evaluation provides immediate, actionable advice on partial assignments, achieving near-perfect search on BSP ($n$ choices with zero conflicts) and faithful multi-level ranking on HRP. In contrast, standard clingo semantics requires complete assignments to evaluate aggregate bodies, rendering the heuristic completely inert on BSP and actively misleading on HRP, where delayed high-level rules allow incomplete lower-level rules to steer the solver into massive search subspaces. Moreover, while static ground unrolling (\texttt{ga}) can approximate dynamic aggregates on small instances, it slows down grounding and breaks down whenever the flattened weights overflow clasp's 16-bit ceiling ($32{,}767$), a limitation that the lazy propagator avoids entirely by sorting decisions internally.
 
-Finally, lazy evaluation trades grounding memory for decision-time computation, where total overhead factorizes into decision frequency multiplied by per-consultation cost. As a result, the lazy mechanism is computationally cheapest precisely when the heuristic guides well, as the solver makes only a minimal number of decisions. Compared against the reference lazy solver Alpha, our clingo propagator reproduces the exact reference search trajectories, coming within a factor of $4.6\times$ in execution time and matching peak memory on PUP while avoiding the static unrolling overhead of standard ground-and-solve systems.
+Finally, lazy evaluation trades grounding memory for decision-time computation, where total overhead factorizes into decision frequency multiplied by per-consultation cost. As a result, the lazy mechanism is computationally cheapest precisely when the heuristic guides well, as the solver makes only a minimal number of decisions. Compared against the reference lazy solver Alpha, our clingo propagator reproduces the exact reference search trajectories, coming within a factor of $4.6\times$ in execution time and $1.2\times$ in peak memory on PUP while avoiding the static unrolling overhead of standard ground-and-solve systems.

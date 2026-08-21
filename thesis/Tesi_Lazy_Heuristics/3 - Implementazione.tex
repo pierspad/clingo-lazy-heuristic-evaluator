@@ -47,7 +47,7 @@ The native propagator adopts four of clingo's domain heuristic modifiers:
     \item \texttt{false}: sets the branching priority to $w$ and forces the truth polarity to \textit{false}.
 \end{itemize}
 
-clingo's remaining modifiers, \texttt{init} and \texttt{factor}, are not supported because custom propagators cannot manipulate Clasp's internal VSIDS score tables.
+clingo's remaining modifiers, \texttt{init} and \texttt{factor}, are not supported because custom propagators cannot manipulate clasp's internal VSIDS score tables.
 
 If multiple heuristic rules target the same atom, their effects are combined into a \texttt{TargetHeuristicState} that tracks the \texttt{level} and \texttt{sign} across all active \texttt{RuntimeHeuristicCandidate} instances.
 
@@ -57,9 +57,9 @@ Unassigned targets with an active \texttt{level} are stored in an ordered set:
 std::set<DecisionRankKey, DecisionRankGreater> active_decision_ranks_;
 \end{minted}
 
-Entries are sorted by decreasing weight. Because weights are stored as standard 32-bit integers, this avoids the 16-bit saturation limit of Clasp's internal domain table (Section~\ref{sec:flattening}).
+Entries are sorted by decreasing weight. Because weights are stored as standard 32-bit integers, this avoids the 16-bit saturation limit of clasp's internal domain table (Section~\ref{sec:flattening}).
 
-When Clasp calls \texttt{decide}, the propagator inspects \texttt{active\_decision\_ranks\_} from the beginning, discarding any targets that are already assigned on the trail or whose weights have changed. It then branches on the first valid target using its stored \texttt{sign}. If the set is empty, the propagator checks whether Clasp's fallback atom has a stored \texttt{sign}; otherwise, it returns $0$ to delegate the decision to Clasp. During backtracking, \texttt{undo} restores aggregates and candidate states using \texttt{noexcept} functions to prevent state corruption during solver unwinding.
+When clasp calls \texttt{decide}, the propagator inspects \texttt{active\_decision\_ranks\_} from the beginning, discarding any targets that are already assigned on the trail or whose weights have changed. It then branches on the first valid target using its stored \texttt{sign}. If the set is empty, the propagator checks whether clasp's fallback atom has a stored \texttt{sign}; otherwise, it returns $0$ to delegate the decision to clasp. During backtracking, \texttt{undo} restores aggregates and candidate states using \texttt{noexcept} functions to prevent state corruption during solver unwinding.
 
 
 \section{The Prolog Backend}
@@ -96,7 +96,7 @@ dyn_max(Goal, Template, Max) :-
     (aggregate_all(max(Template), Goal, R) -> Max = R ; Max = 0).
 \end{minted}
 
-As Clasp makes decisions, the propagator mirrors the trail in the Prolog database by adding \mintinline{text}|true_atom(A)| when an atom is assigned to true and \mintinline{text}|false_atom(A)| when it is assigned to false, removing them upon backtracking. Undecided atoms simply do not exist in the database. Because of this, \mintinline{text}|alpha_not(A)| succeeds whenever an atom does not hold true. In contrast, \mintinline{text}|clingo_not(A)| requires an explicit \mintinline{text}|false_atom(A)| on the trail. In the same way, \mintinline{text}|aggregate_all| dynamically computes sums and counts over the atoms currently true on the trail. \mintinline{text}|target_available(A)| verifies that a target is neither true nor false before branching on it, and \mintinline{text}|dyn_max/3| defaults to $0$ when evaluating an empty set (Section~\ref{sec:flattening}).
+As clasp makes decisions, the propagator mirrors the trail in the Prolog database by adding \mintinline{text}|true_atom(A)| when an atom is assigned to true and \mintinline{text}|false_atom(A)| when it is assigned to false, removing them upon backtracking. Undecided atoms simply do not exist in the database. Because of this, \mintinline{text}|alpha_not(A)| succeeds whenever an atom does not hold true. In contrast, \mintinline{text}|clingo_not(A)| requires an explicit \mintinline{text}|false_atom(A)| on the trail. In the same way, \mintinline{text}|aggregate_all| dynamically computes sums and counts over the atoms currently true on the trail. \mintinline{text}|target_available(A)| verifies that a target is neither true nor false before branching on it, and \mintinline{text}|dyn_max/3| defaults to $0$ when evaluating an empty set (Section~\ref{sec:flattening}).
 
 
 \subsection{Synchronization and Decision}
@@ -120,7 +120,7 @@ The implementation of the three exploratory variants introduced in Section~\ref{
     #heuristic b(X) : x(X), S = #sum{Y : c(Y)}, W = ((n+1)*S)+X. [W, true]
     #heuristic c(X) : x(X), S = #sum{Y : b(Y)}, W = ((n+1)*S)+X. [W, true]
     \end{minted}
-    Without the \texttt{sum\_value(S)} domain predicate, Gringo generates exactly $2n$ ground directives in total.
+    Without the \texttt{sum\_value(S)} domain predicate, gringo generates exactly $2n$ ground directives in total.
 
     \item \texttt{la\_aux}: Heuristic conditions and aggregate values are pre-materialized:
     \begin{minted}{prolog}
@@ -187,4 +187,4 @@ All clingo runs are executed with domain heuristics enabled (\texttt{--heuristic
 
 Memory is measured as the peak resident set size (RSS) of the entire solver process, which for the Prolog backend includes the embedded SWI-Prolog runtime. Because the engine incurs a constant initialization overhead, lazy Prolog runs can consume more memory than ground variants on small instances; however, it still provides a substantial asymptotic memory advantage on larger instances compared to the ground-and-solve variants.
 
-Ground variants count directives materialized by Gringo, whereas lazy variants count template facts that expand into candidates dynamically during search. The runtime effort deferred by lazy grounding is thus captured directly through the per-decision propagator metrics.
+Ground variants count directives materialized by gringo, whereas lazy variants count template facts that expand into candidates dynamically during search. The runtime effort deferred by lazy grounding is thus captured directly through the per-decision propagator metrics.

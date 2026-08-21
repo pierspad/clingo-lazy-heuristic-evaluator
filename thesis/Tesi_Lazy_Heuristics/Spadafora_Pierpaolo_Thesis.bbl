@@ -465,50 +465,6 @@
       \verb https://ceur-ws.org/Vol-3509/paper11.pdf
       \endverb
     \endentry
-    \entry{gebser2019multishot}{article}{}{}
-      \name{author}{4}{}{%
-        {{hash=a296fbe902a96f2ceebb7398463f3e13}{%
-           family={Gebser},
-           familyi={G\bibinitperiod},
-           given={Martin},
-           giveni={M\bibinitperiod}}}%
-        {{hash=75758236531a52ffc97ef10f8b482f05}{%
-           family={Kaminski},
-           familyi={K\bibinitperiod},
-           given={Roland},
-           giveni={R\bibinitperiod}}}%
-        {{hash=3fe0253f0b3212a4109e50143a91fede}{%
-           family={Kaufmann},
-           familyi={K\bibinitperiod},
-           given={Benjamin},
-           giveni={B\bibinitperiod}}}%
-        {{hash=3c55d70c19bd5f5a654a6ad7ae64450c}{%
-           family={Schaub},
-           familyi={S\bibinitperiod},
-           given={Torsten},
-           giveni={T\bibinitperiod}}}%
-      }
-      \strng{namehash}{980252df49c9c725a120aee1519288fc}
-      \strng{fullhash}{6ff2ecbb0dace9a796d510f578f069a3}
-      \strng{fullhashraw}{6ff2ecbb0dace9a796d510f578f069a3}
-      \strng{bibnamehash}{980252df49c9c725a120aee1519288fc}
-      \strng{authorbibnamehash}{980252df49c9c725a120aee1519288fc}
-      \strng{authornamehash}{980252df49c9c725a120aee1519288fc}
-      \strng{authorfullhash}{6ff2ecbb0dace9a796d510f578f069a3}
-      \strng{authorfullhashraw}{6ff2ecbb0dace9a796d510f578f069a3}
-      \field{extraname}{3}
-      \field{sortinit}{7}
-      \field{sortinithash}{108d0be1b1bee9773a1173443802c0a3}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{journaltitle}{Theory and Practice of Logic Programming}
-      \field{number}{1}
-      \field{title}{Multi-shot {ASP} solving with clingo}
-      \field{volume}{19}
-      \field{year}{2019}
-      \field{pages}{27\bibrangedash 82}
-      \range{pages}{56}
-    \endentry
     \entry{gebser2007clasp}{inproceedings}{}{}
       \name{author}{4}{}{%
         {{hash=a296fbe902a96f2ceebb7398463f3e13}{%
@@ -543,7 +499,7 @@
       \strng{authornamehash}{980252df49c9c725a120aee1519288fc}
       \strng{authorfullhash}{d4213acdb4ab6d160ca32e54d6f57fa1}
       \strng{authorfullhashraw}{d4213acdb4ab6d160ca32e54d6f57fa1}
-      \field{extraname}{4}
+      \field{extraname}{3}
       \field{sortinit}{8}
       \field{sortinithash}{a231b008ebf0ecbe0b4d96dcc159445f}
       \field{labelnamesource}{author}
@@ -601,6 +557,66 @@
       \field{year}{2001}
       \field{pages}{530\bibrangedash 535}
       \range{pages}{6}
+    \endentry
+    \entry{gebser2016theorySolving}{inproceedings}{}{}
+      \name{author}{6}{}{%
+        {{hash=a296fbe902a96f2ceebb7398463f3e13}{%
+           family={Gebser},
+           familyi={G\bibinitperiod},
+           given={Martin},
+           giveni={M\bibinitperiod}}}%
+        {{hash=75758236531a52ffc97ef10f8b482f05}{%
+           family={Kaminski},
+           familyi={K\bibinitperiod},
+           given={Roland},
+           giveni={R\bibinitperiod}}}%
+        {{hash=3fe0253f0b3212a4109e50143a91fede}{%
+           family={Kaufmann},
+           familyi={K\bibinitperiod},
+           given={Benjamin},
+           giveni={B\bibinitperiod}}}%
+        {{hash=121398acde74ccd9e0d29d065c9c45eb}{%
+           family={Ostrowski},
+           familyi={O\bibinitperiod},
+           given={Max},
+           giveni={M\bibinitperiod}}}%
+        {{hash=3c55d70c19bd5f5a654a6ad7ae64450c}{%
+           family={Schaub},
+           familyi={S\bibinitperiod},
+           given={Torsten},
+           giveni={T\bibinitperiod}}}%
+        {{hash=5a28f806bf3518aaa98d2cdef7416984}{%
+           family={Wanko},
+           familyi={W\bibinitperiod},
+           given={Philipp},
+           giveni={P\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Schloss Dagstuhl -- Leibniz-Zentrum für Informatik}%
+      }
+      \strng{namehash}{980252df49c9c725a120aee1519288fc}
+      \strng{fullhash}{20ec61f8a8be834812019bad4bc7fa30}
+      \strng{fullhashraw}{20ec61f8a8be834812019bad4bc7fa30}
+      \strng{bibnamehash}{980252df49c9c725a120aee1519288fc}
+      \strng{authorbibnamehash}{980252df49c9c725a120aee1519288fc}
+      \strng{authornamehash}{980252df49c9c725a120aee1519288fc}
+      \strng{authorfullhash}{20ec61f8a8be834812019bad4bc7fa30}
+      \strng{authorfullhashraw}{20ec61f8a8be834812019bad4bc7fa30}
+      \field{extraname}{4}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Technical Communications of the 32nd International Conference on Logic Programming ({ICLP} 2016)}
+      \field{series}{OpenAccess Series in Informatics (OASIcs)}
+      \field{title}{Theory Solving Made Easy with {Clingo} 5}
+      \field{volume}{52}
+      \field{year}{2016}
+      \field{pages}{2:1\bibrangedash 2:15}
+      \range{pages}{-1}
+      \verb{doi}
+      \verb 10.4230/OASIcs.ICLP.2016.2
+      \endverb
     \endentry
     \entry{wielemaker2012swipl}{article}{}{}
       \name{author}{4}{}{%
@@ -780,9 +796,17 @@
       \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{howpublished}{\url{https://potassco.org/benchmark-tool/}}
-      \field{note}{Accessed 2026}
       \field{title}{benchmark-tool: A tool for benchmarking solvers and orchestrating cluster runs}
+      \field{urlday}{22}
+      \field{urlmonth}{8}
+      \field{urlyear}{2026}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://potassco.org/benchmark-tool/
+      \endverb
+      \verb{url}
+      \verb https://potassco.org/benchmark-tool/
+      \endverb
     \endentry
     \entry{runlim}{misc}{}{}
       \name{author}{1}{}{%
@@ -804,9 +828,17 @@
       \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{howpublished}{\url{https://github.com/arminbiere/runlim}}
-      \field{note}{Accessed 2026}
       \field{title}{runlim: a tool for sampling time and memory usage of a process}
+      \field{urlday}{22}
+      \field{urlmonth}{8}
+      \field{urlyear}{2026}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://github.com/arminbiere/runlim
+      \endverb
+      \verb{url}
+      \verb https://github.com/arminbiere/runlim
+      \endverb
     \endentry
   \enddatalist
 \endrefsection
