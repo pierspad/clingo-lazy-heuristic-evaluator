@@ -113,7 +113,7 @@ At each decision point (\texttt{decide}), the backend queries all solutions to \
 
 The BSP divides the set of integers $\{1,\ldots,n\}$ into two disjoint sets, \texttt{b/1} and \texttt{c/1}, such that their sums differ by at most one. The heuristic greedily assigns unassigned integers to set $b$ with a priority proportional to the current sum of set $c$, driving the solver toward balanced partitions. Because all decisions share a single priority level, the current sum $S$ acts as the primary ranking term, with the element value $X$ resolving ties between equal sums.
 
-The implementation of the three exploratory variants mentioned in //TODO on BSP required specific adjustments to the problem encodings and propagator interaction:
+The implementation of the three exploratory variants introduced in Section~\ref{sec:exploratory-methodology} on BSP required some specific adjustments:
 \begin{itemize}
     \item \texttt{ga\_weak}: The ground heuristic directives omit the negative body guards (\mintinline{text}|not c(X)| / \mintinline{text}|not b(X)|), retaining only the static aggregate binding \mintinline{text}|S = #sum{Y : c(Y)}| without unrolling over candidate values:
     \begin{minted}{prolog}
