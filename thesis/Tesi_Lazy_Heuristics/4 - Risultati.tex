@@ -9,8 +9,8 @@ All experiments were executed on dedicated HPC cluster nodes requesting 4 cores,
 The evaluation covers the benchmark suite defined in Section~\ref{sec:benchmarks}:
 \begin{itemize}[noitemsep,topsep=2pt]
     \item BSP: $n \in \{10, 20, \ldots, 200\}$ ($20$ instances);
-    \item PUP: \mintinline{text}|double-$N$|, with $N \in \{20, 40, \ldots, 200\}$ ($10$ instances);
-    \item HRP: \mintinline{text}|house-$N$|, with $N \in \{2, 4, \ldots, 20\}$ persons ($10$ instances).
+    \item PUP: \texttt{double-$N$}, with $N \in \{20, 40, \ldots, 200\}$ ($10$ instances);
+    \item HRP: \texttt{house-$N$}, with $N \in \{2, 4, \ldots, 20\}$ persons ($10$ instances).
 \end{itemize}
 
 Across all benchmark families, timeouts represent the exclusive first failure mode (denoted \emph{T@$N$} in the summary tables), as every failing variant encounters the 600-second time limit before exhausting the memory ceiling. Memory exhaustion is confined to very large BSP instances ($n \ge 180$) where base program grounding alone exceeds the 30\,GB budget, beyond all the first failures for BSP.
@@ -89,8 +89,8 @@ In the BSP benchmark, solver failures scale predictably with instance size: once
 
 Evaluating these summary tables reveals that the maximum instance size solved provides different insights depending on the problem of choice. 
 \begin{itemize}
-    \item \textbf{On BSP}, the solvability frontier alone is insufficient to differentiate the approaches. Variants sharing the same base encoding (\texttt{gc\_noheur}, \texttt{la}, and \texttt{lc}) all stop between $n=140$ and $n=160$, constrained by the heavy grounding of the base program. What distinguishes these variants is their internal search efficiency: \texttt{la} virtually eliminates solving time and conflicts (Sections~\ref{sec:bsp-runtime} and~\ref{sec:per-decision-cost}).
-    \item \textbf{On PUP}, the "alpha semantic"-like dynamic guidance enables both \texttt{ga} and \texttt{la} to solve the entire range up to $N=200$, whereas the other stalls around $N=80$ due to search space explosion. With search effectively solved, PUP isolates the cost of the heuristic representation itself: the lazy approach \texttt{la} cuts grounding time and peak memory in half compared to the static aggregate unrolling in \texttt{ga} (\textbf{12.7\,GB} vs \textbf{24.6\,GB} at $N=200$).
+    \item \textbf{On BSP}, the solvability frontier alone is insufficient to differentiate the approaches. Variants sharing the same base encoding (\texttt{gc\_noheur}, \texttt{la}, and \texttt{lc}) all stop between $n=150$ and $n=160$, constrained by the heavy grounding of the base program. What distinguishes these variants is their internal search efficiency: \texttt{la} virtually eliminates solving time and conflicts (Sections~\ref{sec:bsp-runtime} and~\ref{sec:per-decision-cost}).
+    \item \textbf{On PUP}, the \enquote{alpha semantic}-like dynamic guidance enables both \texttt{ga} and \texttt{la} to solve the entire range up to $N=200$, whereas the other variants stall around $N=80$ due to search space explosion. With search effectively solved, PUP isolates the cost of the heuristic representation itself: the lazy approach \texttt{la} cuts grounding time and peak memory in half compared to the static aggregate unrolling in \texttt{ga} (\textbf{12.7\,GB} vs \textbf{24.6\,GB} at $N=200$).
     \item \textbf{On HRP}, the solvability frontier is uninformative because nearly all variants solve the entire benchmark suite; the evaluation centers instead on decision quality and the severe misguidance observed in \texttt{lc}.
 \end{itemize}
 
@@ -201,7 +201,7 @@ In contrast, \texttt{lc} exhibits search statistics that are identical point-by-
     \label{fig:bsp-search}
 \end{figure}
 
-Under clingo semantics, aggregate guards on \texttt{c/1} require all elements to be assigned before the sum can be evaluated and an atom is considered "assigned false" only when clasp demonstrates that it cannot be true. During search, these conditions are virtually never met at decision points. At $n=120$, although the propagator is consulted on every decision, it yields zero applicable candidates across the entire run. Because both variants run on the exact same native C++ propagator backend, this comparison proves that lazy evaluation alone is insufficient if the underlying semantics cannot evaluate partial information, causing the solver to fall back entirely on default CDCL branching.
+Under clingo semantics, aggregate guards on \texttt{c/1} require all elements to be assigned before the sum can be evaluated and an atom is considered \enquote{assigned false} only when clasp demonstrates that it cannot be true. During search, these conditions are virtually never met at decision points. At $n=120$, although the propagator is consulted on every decision, it yields zero applicable candidates across the entire run. Because both variants run on the exact same native C++ propagator backend, this comparison proves that lazy evaluation alone is insufficient if the underlying semantics cannot evaluate partial information, causing the solver to fall back entirely on default CDCL branching.
 
 \section{BSP: Rules, Variables, and Memory}
 
@@ -303,7 +303,8 @@ Consequently, lazy evaluation is computationally cheapest precisely when the heu
 
 How closely can Alpha semantics be simulated within a ground-and-solve pipeline? Section~\ref{sec:ga-simulation} introduced two distinct transformations: \texttt{ga\_weak}, which simply removes negative atoms from rule bodies, and \texttt{ga}, which replaces aggregate equality checks with dynamically unrolled monotone bounds ($S \le \#\mathtt{sum}\{Y : c(Y)\}$).
 
-In BSP, both simulations produce the exact same $\Theta(n^3)$ ground directives as the baseline heuristic \texttt{gc} ($1{,}120$ directives at $n=10$, $8{,}440$ at $n=20$, and $27{,}960$ at $n=30$). Keeping equality bindings does not reduce the grounding size, as the grounder must still enumerate all subset sums. Rather, the crucial difference lies in solver-side activation: equality bindings trigger at most one directive only after all the atoms of the sum are assigned, whereas monotone bounds activate incrementally as the partial sum increases.
+In BSP, \texttt{ga} produces the exact same $\Theta(n^3)$ ground directives as the baseline \texttt{gc} ($1{,}120$ directives at $n=10$, $8{,}440$ at $n=20$, and $27{,}960$ at $n=30$). This is because keeping equality bindings rather than unrolled bounds does not reduce the grounding size: the grounder must still enumerate all subset sums. In contrast, \texttt{ga\_weak} removes the \texttt{sum\_value(S)} domain entirely, generating only $2n$ directives (Section~\ref{sec:bsp}).
+The main difference is that equality bindings trigger at most once, and only after all atoms in the sum are assigned, whereas monotone bounds activate incrementally as the partial sum grows.
 
 \begin{figure}[H]
     \centering
@@ -315,9 +316,9 @@ In BSP, both simulations produce the exact same $\Theta(n^3)$ ground directives 
 \end{figure}
 
 This illustrates the solving performance and search complexity of both simulation strategies. 
-Beyond $n=50$,\texttt{ga} performance rapidly deteriorates as weights exceed the \texttt{int16} range and saturate at $32{,}767$: distinct partial sums collapse onto the same weight, and the ranking stops discriminating between candidate decisions. At $n=60$, it already requires $1.7$\,million choices and $137$\,s of solving time, before consistently timing out from $n=70$.
+Beyond $n=50$, \texttt{ga} performance rapidly deteriorates as weights exceed the \texttt{int16} range and saturate at $32{,}767$: distinct partial sums collapse onto the same weight, and the ranking stops discriminating between candidate decisions. At $n=60$, it already requires $1.7$\,million choices and $137$\,s of solving time, before consistently timing out from $n=70$.
 
-Conversely, \texttt{ga\_weak} never hits the timeout, even though it grounds weights in the same way as \texttt{ga}: the equality binding is satisfied only once all the elements of the sum are assigned, so the heuristic almost never activates and the saturation issue never arises. For this same reason, however, it provides no effective guidance during search. At $n=120$, for instance, it exhibits a degraded and noisier search trajectory, requiring $121{,}159$ choices and $69.6$\,s of solving time compared to $78{,}565$ choices and $44.1$\,s for the baseline. 
+Conversely, \texttt{ga\_weak} never hits the timeout, even though its weight expression is the same as \texttt{ga}'s: the equality binding is satisfied only once all the elements of the sum are assigned, so the heuristic almost never activates and the saturation issue never arises. For this same reason, however, it provides no effective guidance during search. At $n=120$, for instance, it exhibits a degraded and noisier search trajectory, requiring $121{,}159$ choices and $69.6$\,s of solving time compared to $78{,}565$ choices and $44.1$\,s for the baseline. 
 
 Overall, these results show that simply omitting negative guards without unrolling aggregate bounds provides no actionable heuristic guidance to the solver, increasing overall search effort and slightly reducing the solvable instance horizon.
 
@@ -326,7 +327,7 @@ Overall, these results show that simply omitting negative guards without unrolli
 
 The \texttt{la\_aux} variant investigates whether the primary advantage of lazy evaluation stems simply from reducing the number of \texttt{\_\_heuristic} directives, or from keeping the evaluation of heuristic conditions entirely outside the ground program. In \texttt{la\_aux}, heuristic conditions and aggregate values are pre-materialized into auxiliary ASP predicates (\texttt{h\_b(X,S)} and \texttt{h\_c(X,S)}), which the lazy propagator then queries during search.
 
-Defining auxiliary rules forces the grounder to instantiate the full Cartesian product of elements and partial sums $(X, S)$. As a consequence, solver variables increase to $132{,}756$ at $n=50$ (compared to just $5{,}150$ in direct \texttt{la}), with PRSS escalating to $27.2$\,GB at $n=170$.
+Defining auxiliary rules forces the grounder to instantiate the full Cartesian product of elements and partial sums $(X, S)$. As a consequence, solver variables increase to $132{,}756$ at $n=50$ (compared to just $5{,}150$ in direct \texttt{la}), with peak RSS escalating to $27.2$\,GB at $n=170$.
 
 \begin{figure}[H]
     \centering
@@ -438,7 +439,7 @@ In PUP, the lazy propagator requires auxiliary relations to expose aggregate sou
 \end{itemize}
 The unguided nature of \texttt{lc} also explains its non-monotonic failure pattern in Table~\ref{tab:pup-frontier} (timing out on \texttt{double-80} but solving \texttt{double-100}). Without active heuristic guidance, the solver is subject to the high variance of CDCL restarts, occasionally finding an early solution by chance before failing definitively at larger sizes.
 
-Both backends provide guidance quality drastically reducing the number of choices.
+Both backends provide the same quality of guidance, drastically reducing the number of choices.
 
 \begin{figure}[H]
     \centering
@@ -565,6 +566,6 @@ The C++ backend evaluates heuristic decisions three to four orders of magnitude 
 
 The empirical evaluation demonstrates that lazy heuristic evaluation fundamentally changes how domain-specific guidance interacts with ground-and-solve ASP. By shifting dynamic aggregate evaluation from grounding to search, the framework reduces the heuristic representation from a combinatorial $\Theta(n^3)$ explosion down to two constant template facts on BSP. In realistic configuration benchmarks like PUP, this translates into halving both grounding time ($225.8$\,s versus $436.6$\,s) and peak memory ($12.7$\,GB versus $24.6$\,GB) at scale compared to static ground simulation (\texttt{ga}). Furthermore, the exploratory variants confirm that this benefit requires keeping the evaluation entirely dynamic: omitting negative guards without unrolling dynamic aggregates (\texttt{ga\_weak}) fails to provide actionable search guidance, while pre-materializing heuristic bodies into auxiliary ASP rules (\texttt{la\_aux}) reintroduces the combinatorial explosion into the base program. Conversely, pairing lazy heuristics with compact domain constraints (\texttt{la\_co}) eliminates grounding and solving bottlenecks simultaneously, resolving BSP up to $n=200$ in milliseconds.
 
-The campaign also proves that evaluation semantics is decisive for search guidance. Under Alpha-like semantics, dynamic aggregate evaluation provides immediate, actionable advice on partial assignments, achieving near-perfect search on BSP ($n$ choices with zero conflicts) and faithful multi-level ranking on HRP. In contrast, standard Clingo semantics requires complete assignments to evaluate aggregate bodies, rendering the heuristic completely inert on BSP and actively misleading on HRP, where delayed high-level rules allow incomplete lower-level rules to steer the solver into massive search subspaces. Moreover, while static ground unrolling (\texttt{ga}) can approximate dynamic aggregates on small instances, it slows down grounding and breaks down whenever the flattened weights overflow Clasp's 16-bit ceiling ($32{,}767$), a limitation that the lazy propagator avoids entirely by sorting decisions internally.
+The campaign also proves that evaluation semantics is decisive for search guidance. Under Alpha-like semantics, dynamic aggregate evaluation provides immediate, actionable advice on partial assignments, achieving near-perfect search on BSP ($n$ choices with zero conflicts) and faithful multi-level ranking on HRP. In contrast, standard clingo semantics requires complete assignments to evaluate aggregate bodies, rendering the heuristic completely inert on BSP and actively misleading on HRP, where delayed high-level rules allow incomplete lower-level rules to steer the solver into massive search subspaces. Moreover, while static ground unrolling (\texttt{ga}) can approximate dynamic aggregates on small instances, it slows down grounding and breaks down whenever the flattened weights overflow Clasp's 16-bit ceiling ($32{,}767$), a limitation that the lazy propagator avoids entirely by sorting decisions internally.
 
-Finally, lazy evaluation trades grounding memory for decision-time computation, where total overhead factorizes into decision frequency multiplied by per-consultation cost. As a result, the lazy mechanism is computationally cheapest precisely when the heuristic guides well, as the solver makes only a minimal number of decisions. Compared against the reference lazy solver Alpha, our Clingo propagator reproduces the exact reference search trajectories, coming within a factor of $4.6\times$ in execution time and matching peak memory on PUP while avoiding the static unrolling overhead of standard ground-and-solve systems.
+Finally, lazy evaluation trades grounding memory for decision-time computation, where total overhead factorizes into decision frequency multiplied by per-consultation cost. As a result, the lazy mechanism is computationally cheapest precisely when the heuristic guides well, as the solver makes only a minimal number of decisions. Compared against the reference lazy solver Alpha, our clingo propagator reproduces the exact reference search trajectories, coming within a factor of $4.6\times$ in execution time and matching peak memory on PUP while avoiding the static unrolling overhead of standard ground-and-solve systems.
