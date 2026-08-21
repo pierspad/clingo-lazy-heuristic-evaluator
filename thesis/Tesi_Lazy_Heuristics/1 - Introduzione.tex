@@ -57,7 +57,7 @@ The candidate $\{a,b\}$ deletes both rules, leaving the least model $\emptyset$:
 A stable model is then a set of atoms both closed under the rules and justified by them, in which every atom has a non-circular derivation that survives the model's own assumptions about what is false.
 
 In the \emph{guess-and-check} idiom a choice construct opens the solution space, integrity constraints prune the candidates that violate the specification, and the answer sets of the program correspond one-to-one to the solutions of the problem. ASP syntax extends normal rules with first-order variables, arithmetic, conditional literals, and three constructs this thesis uses throughout. 
-A \emph{choice rule} such as \mintinline{text}|{ b(X) } :- x(X).| leaves the truth values of its head atoms unconstrained, making these \emph{choice atoms} the explicit decision points of the solver..
+A \emph{choice rule} such as \mintinline{text}|{ b(X) } :- x(X).| leaves the truth values of its head atoms unconstrained, making these \emph{choice atoms} the explicit decision points of the solver.
 An \emph{integrity constraint} \mintinline{text}|:- Body.| is a rule with empty head and forbids every model that satisfies $Body$. 
 An \emph{aggregate atom} such as \texttt{\#sum}, \texttt{\#count}, \texttt{\#min} or \texttt{\#max} condenses a set of weighted contributions into a single comparable value \cite{clingoGuide}. Aggregates are central to this work: the heuristics under study rank decisions by expressions such as \enquote{the current sum of the elements already placed in a set}, and how and \emph{when} such an aggregate is evaluated is exactly what differentiates the systems compared here.
 
