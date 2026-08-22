@@ -410,7 +410,7 @@ The baseline results reveal two distinct failure dynamics:
 \end{itemize}
 
 \paragraph{Grounding and memory savings (\texttt{la} vs \texttt{ga}).}
-Both Alpha-like semantics variants (\texttt{ga} and \texttt{la}) solve the entire benchmark horizon up to $N=200$, maintaining near-perfect search guidance ($235$ choices for \texttt{ga} vs $162$ for \texttt{la} at $N=120$). The residual gap between the two is not noise: the unrolled bounds on the \texttt{\#max} capacity terms reconstruct those aggregates conservatively rather than exactly (Section~\ref{sec:ga-simulation}), whereas the propagator reads them off the trail. Because solving takes only a few seconds, the overall performance is differentiated almost exclusively by the grounding footprint.
+Both Alpha-like semantics variants (\texttt{ga} and \texttt{la}) solve the entire benchmark horizon up to $N=200$, maintaining near-perfect search guidance ($235$ choices for \texttt{ga} vs $162$ for \texttt{la} at $N=120$). The two are close but not identical, and the residual difference cannot be attributed to a single cause: \texttt{ga} departs from \texttt{la} in two respects at once, having both dropped the negative guards and reconstructed the \texttt{\#max} capacity terms through unrolled bounds (Section~\ref{sec:ga-simulation}). Because solving takes only a few seconds, the overall performance is differentiated almost exclusively by the grounding footprint.
 
 \begin{figure}[H]
     \centering
