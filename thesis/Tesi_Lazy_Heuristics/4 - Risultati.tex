@@ -269,7 +269,7 @@ A key result is the performance gap between execution backends: compiled C++ eva
 The overall overhead varies dramatically across the benchmark configurations:
 \begin{itemize}
     \item When the heuristic has \textbf{perfect guidance (\texttt{la} on BSP)}, with only 120 decide calls taking $0.62$\,ms each in Prolog (and $10^{-4}$\,ms in C++), propagator overhead accounts for just $0.05\%$ of the total runtime.
-    \item When the semantics gets in the way \textbf{(\texttt{lc} on BSP)}, although individual query costs remain low ($0.21$\,ms), making $78{,}565$ futile calls causes the propagator to consume $8.7\%$ of runtime ($17.7$\,s) without aiding search.
+    \item When the semantics gets in the way \textbf{(\texttt{lc} on BSP)}, although individual query costs remain low ($0.21$\,ms), making $78{,}565$ futile calls causes the propagator to consume $8.7\%$ of runtime without aiding search.
     \item When candidate generation becomes heavy \textbf{(\texttt{la} on HRP)}, producing over $1{,}200$ candidates per decision increases Prolog evaluation time to $9.68$\,ms per call; as a result, the propagator absorbs $68.3\%$ of the total runtime ($1.06$\,s out of $1.55$\,s), even though search needs only 106 decisions.
     \item When frequent search and expensive evaluation collide \textbf{(\texttt{lc} on HRP)}, making $73{,}143$ futile calls with $239$ candidates each creates a worst-case scenario: Prolog evaluation and trail synchronization eat up $99.4\%$ of the total runtime ($263$\,s out of $264.5$\,s), compared to just $1.80$\,s on the native C++ backend.
 \end{itemize}
