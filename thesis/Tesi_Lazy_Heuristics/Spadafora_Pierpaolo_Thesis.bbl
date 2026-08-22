@@ -797,10 +797,6 @@
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{title}{benchmark-tool: A tool for benchmarking solvers and orchestrating cluster runs}
-      \field{urlday}{22}
-      \field{urlmonth}{8}
-      \field{urlyear}{2026}
-      \field{urldateera}{ce}
       \verb{urlraw}
       \verb https://potassco.org/benchmark-tool/
       \endverb
@@ -829,10 +825,6 @@
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{title}{runlim: a tool for sampling time and memory usage of a process}
-      \field{urlday}{22}
-      \field{urlmonth}{8}
-      \field{urlyear}{2026}
-      \field{urldateera}{ce}
       \verb{urlraw}
       \verb https://github.com/arminbiere/runlim
       \endverb
