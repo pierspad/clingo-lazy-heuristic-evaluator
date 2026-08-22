@@ -68,7 +68,7 @@ W_{\mathit{flat}} \;=\; W + P \cdot M,
 \]
 where the intra-level weights $W$ range over $[\min W, \max W]$ and the level multiplier $M$ is larger than that range. Under this condition $W + P\cdot M > W' + P'\cdot M$ holds whenever $P > P'$, regardless of the two individual weights, and reduces to $W > W'$ when $P = P'$: the total order induced on the atoms is then the one Alpha's absolute levels induce. When all weights are non-negative, which is the case in every encoding of this suite, $M > \max W$ suffices.
 
-Each benchmark fixes its own $M$. In the PUP encodings $M$ is the constant offset $100{,}000$ added to the zone weights, against a maximum sensor weight of $26{,}220$ on the benchmark instances; in HRP $M$ is derived from the instance as \mintinline{text}|levelMul(LM) :- LM = MC + MR + 10| over the maximum cabinet and room identifiers, which gives $16$ on the smallest instance and $54$ on the largest. BSP doesn't need a multiplier, as discussed in Section~\ref{sec:bsp}.
+Each benchmark fixes its own $M$. In the PUP encodings $M$ is the constant offset $100{,}000$ added to the zone weights, against a maximum sensor weight of $26{,}220$ on the benchmark instances; in HRP $M$ is derived from the instance as \mintinline{text}|levelMul(LM) :- LM = MC + MR + 10| over the maximum cabinet and room identifiers, which gives $16$ on the smallest instance and $54$ on the largest. BSP does not need a multiplier, as discussed in Section~\ref{sec:bsp}.
 
 \subsection{Problems on Bigger Weights}
 \label{sec:weight-problem}

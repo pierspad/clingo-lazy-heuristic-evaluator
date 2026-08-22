@@ -120,7 +120,7 @@ The implementation of the three exploratory variants introduced in Section~\ref{
     #heuristic b(X) : x(X), S = #sum{Y : c(Y)}, W = ((n+1)*S)+X. [W, true]
     #heuristic c(X) : x(X), S = #sum{Y : b(Y)}, W = ((n+1)*S)+X. [W, true]
     \end{minted}
-    Without the \texttt{sum\_value(S)} domain predicate, gringo generates exactly $2n$ ground directives in total.
+    Dropping the \texttt{sum\_value(S)} domain predicate does not reduce the grounding: the equality binding still forces gringo to enumerate every reachable sum, so \texttt{ga\_weak} materializes the same $\Theta(n^3)$ directives as \texttt{gc} and \texttt{ga}. What changes is when they fire, since the equality holds only once every atom of the sum is assigned (Section~\ref{sec:ga-weak}).
 
     \item \texttt{la\_aux}: Heuristic conditions and aggregate values are pre-materialized:
     \begin{minted}{prolog}

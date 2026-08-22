@@ -142,7 +142,7 @@ This reduction reflects a smaller grounding footprint rather than eliminated com
 
 For all variants sharing the base encoding without all the grounded heuristic directives (\texttt{gc\_noheur}, \texttt{la}, and \texttt{lc}), the base program grounding alone dominates overall runtime. At $n=120$, it generates $52.8$ million rules, requiring $160.9$\,s of grounding for \texttt{gc\_noheur}, $159.7$\,s for \texttt{lc}, and $154.2$\,s for \texttt{la}.
 
-However here we can see a clear difference on the different semantics over the negation: while \texttt{gc\_noheur} and \texttt{lc} require $44.1$\,s and $47.5$\,s respectively, \texttt{la} completes search in just $0.04$\,s. As a result, the total runtime curve for \texttt{la} remains consistently below all other variants across the entire benchmark, directly reflecting the dramatic solving speedup shown in Figure~\ref{fig:bsp-solving}.
+However, a clear difference emerges here from the two readings of negation: while \texttt{gc\_noheur} and \texttt{lc} require $44.1$\,s and $47.5$\,s respectively, \texttt{la} completes search in just $0.04$\,s. As a result, the total runtime curve for \texttt{la} remains consistently below all other variants across the entire benchmark, directly reflecting the dramatic solving speedup shown in Figure~\ref{fig:bsp-solving}.
 
 \begin{figure}[H]
     \centering
@@ -216,7 +216,7 @@ The reduction of the heuristic footprint is also evident in the size of the prop
 \midrule
 \texttt{gc}        & $1{,}010{,}200$ & $1{,}030{,}606$\\
 \texttt{ga}        & $1{,}010{,}200$ & $20{,}402$\\
-\texttt{ga\_weak}   & $200$           & $20{,}406$\\
+\texttt{ga\_weak}   & $1{,}010{,}200$ & $20{,}406$\\
 \texttt{lc}        & $2$             & $20{,}300$\\
 \texttt{la}        & $2$             & $20{,}300$\\
 \texttt{gc\_noheur} & $0$             & $20{,}300$\\
@@ -270,8 +270,8 @@ The overall overhead varies dramatically across the benchmark configurations:
 \begin{itemize}
     \item When the heuristic has \textbf{perfect guidance (\texttt{la} on BSP)}, with only 120 decide calls taking $0.62$\,ms each in Prolog (and $10^{-4}$\,ms in C++), propagator overhead accounts for just $0.05\%$ of the total runtime.
     \item When the semantics gets in the way \textbf{(\texttt{lc} on BSP)}, although individual query costs remain low ($0.21$\,ms), making $78{,}565$ futile calls causes the propagator to consume $8.7\%$ of runtime ($17.7$\,s) without aiding search.
-    \item When candidate generation becomes heavy \textbf{(\texttt{la} on HRP)}, producing over $1{,}200$ candidates per decision increases Prolog evaluation time to $9.68$\,ms per call; as a result, the propagator absorbs $68.3\%$ of the total runtime ($1.03$\,s out of $1.55$\,s), even though search needs only 106 decisions.
-    \item When frequent search and expensive evaluation collide \textbf{(\texttt{lc} on HRP)}, making $73{,}143$ futile calls with $239$ candidates each creates a worst-case scenario: Prolog evaluation and trail synchronization eat up $99.4\%$ of the total runtime ($250$\,s out of $264.5$\,s), compared to just $1.80$\,s on the native C++ backend.
+    \item When candidate generation becomes heavy \textbf{(\texttt{la} on HRP)}, producing over $1{,}200$ candidates per decision increases Prolog evaluation time to $9.68$\,ms per call; as a result, the propagator absorbs $68.3\%$ of the total runtime ($1.06$\,s out of $1.55$\,s), even though search needs only 106 decisions.
+    \item When frequent search and expensive evaluation collide \textbf{(\texttt{lc} on HRP)}, making $73{,}143$ futile calls with $239$ candidates each creates a worst-case scenario: Prolog evaluation and trail synchronization eat up $99.4\%$ of the total runtime ($263$\,s out of $264.5$\,s), compared to just $1.80$\,s on the native C++ backend.
 \end{itemize}
 
 \begin{figure}[H]
@@ -303,7 +303,7 @@ Consequently, lazy evaluation is computationally cheapest precisely when the heu
 
 How closely can Alpha semantics be simulated within a ground-and-solve pipeline? Section~\ref{sec:ga-simulation} introduced two distinct transformations: \texttt{ga\_weak}, which simply removes negative atoms from rule bodies, and \texttt{ga}, which replaces aggregate equality checks with dynamically unrolled monotone bounds ($S \le \#\mathtt{sum}\{Y : c(Y)\}$).
 
-In BSP, \texttt{ga} produces the exact same $\Theta(n^3)$ ground directives as the baseline \texttt{gc} ($1{,}120$ directives at $n=10$, $8{,}440$ at $n=20$, and $27{,}960$ at $n=30$). This is because keeping equality bindings rather than unrolled bounds does not reduce the grounding size: the grounder must still enumerate all subset sums. In contrast, \texttt{ga\_weak} removes the \texttt{sum\_value(S)} domain entirely, generating only $2n$ directives (Section~\ref{sec:bsp}).
+In BSP, both \texttt{ga} and \texttt{ga\_weak} produce the exact same $\Theta(n^3)$ ground directives as the baseline \texttt{gc} ($1{,}120$ directives at $n=10$, $8{,}440$ at $n=20$, and $27{,}960$ at $n=30$). Dropping the \texttt{sum\_value(S)} domain in \texttt{ga\_weak} does not reduce the grounding size: with the equality binding in place, the grounder must still enumerate all subset sums.
 The main difference is that equality bindings trigger at most once, and only after all atoms in the sum are assigned, whereas monotone bounds activate incrementally as the partial sum grows.
 
 \begin{figure}[H]
@@ -316,7 +316,7 @@ The main difference is that equality bindings trigger at most once, and only aft
 \end{figure}
 
 This illustrates the solving performance and search complexity of both simulation strategies. 
-Beyond $n=50$, \texttt{ga} performance rapidly deteriorates as weights exceed the \texttt{int16} range and saturate at $32{,}767$: distinct partial sums collapse onto the same weight, and the ranking stops discriminating between candidate decisions. At $n=60$, it already requires $1.7$\,million choices and $137$\,s of solving time, before consistently timing out from $n=70$.
+Beyond $n=50$, \texttt{ga} performance rapidly deteriorates as weights exceed the \texttt{int16} range and saturate at $32{,}767$: distinct partial sums collapse onto the same weight, and the ranking stops discriminating between candidate decisions. At $n=60$, it already required $1.7$\,million choices and $137$\,s of solving time, before consistently timing out from $n=70$.
 
 Conversely, \texttt{ga\_weak} never hits the timeout, even though its weight expression is the same as \texttt{ga}'s: the equality binding is satisfied only once all the elements of the sum are assigned, so the heuristic almost never activates and the saturation issue never arises. For this same reason, however, it provides no effective guidance during search. At $n=120$, for instance, it exhibits a degraded and noisier search trajectory, requiring $121{,}159$ choices and $69.6$\,s of solving time compared to $78{,}565$ choices and $44.1$\,s for the baseline. 
 
@@ -351,7 +351,7 @@ These findings demonstrate that merely reducing the number of heuristic directiv
 
 The \texttt{la\_co} variant replaces the quadratic difference check over the two sums with a single constant-bound interval constraint, substantially simplifying the grounding structure.
 
-In the standard formulations (\texttt{gc}, \texttt{la}, and \texttt{lc}), this quadratic constraint dominates the grounding phase: at $n=120$, it produces approximately $52.8$\,million propositional rules and requires between one and three minutes of grounding time. While direct lazy evaluation (\texttt{la}) successfully eliminates heuristic directive bloat, the ground program remains constrained by the sheer size of the domain specification.
+In the standard formulations (\texttt{gc}, \texttt{la}, and \texttt{lc}), this quadratic constraint dominates the grounding phase: at $n=120$, it produces approximately $52.8$\,million propositional rules and required between two and three minutes of grounding time. While direct lazy evaluation (\texttt{la}) successfully eliminates heuristic directive bloat, the ground program remains constrained by the sheer size of the domain specification.
 
 \begin{figure}[H]
     \centering
@@ -457,7 +457,7 @@ As shown in Figure~\ref{fig:pup-comparison-solving}, solving time remains well u
     \label{fig:pup-state-sync}
 \end{figure}
 
-However, as illustrated in Figure~\ref{fig:pup-state-sync}, in the Prolog backend, synchronizing solver trail accounts for $16.5$\,s at $N=200$, whereas actual Prolog query evaluation takes only $1.67$\,s. In comparison, the native C++ backend updates its in-process aggregate structures directly along the solver trail, completing all synchronization in just $0.68$\,s.
+However, as illustrated in Figure~\ref{fig:pup-state-sync}, in the Prolog backend, synchronizing the solver trail accounts for $16.5$\,s at $N=200$, whereas actual Prolog query evaluation takes only $1.67$\,s. In comparison, the native C++ backend updates its in-process aggregate structures directly along the solver trail, completing all synchronization in just $0.68$\,s.
 
 \section{HRP: Semantics Without Aggregates}
 \label{sec:hrp}
@@ -475,12 +475,12 @@ HRP evaluates heuristic semantics on rules with nested default negations but wit
 
 \begin{itemize}
     \item under \textbf{Alpha-like semantics:} \texttt{la} matches \texttt{ga} choice-for-choice ($86$ vs $88$ choices at $N=14$, with zero conflicts for both), confirming that lazy evaluation faithfully replicates reference Alpha guidance.
-    \item under \textbf{clingo-like semantics:} the semantics of negation delays higher-level heuristic rules while allowing incomplete lower-level rules to fire, actively misdirecting search. Consequently, \texttt{lc} requires $66{,}717$ choices at $N=14$ (an 800-fold increase over \texttt{la}) and $14.2$ million choices at $N=16$, timing out from $N=18$.
+    \item under \textbf{clingo-like semantics:} the semantics of negation delays higher-level heuristic rules while allowing incomplete lower-level rules to fire, actively misdirecting search. Consequently, \texttt{lc} required $66{,}717$ choices at $N=14$ (an 800-fold increase over \texttt{la}) and $14.2$ million choices at $N=16$, timing out from $N=18$.
 \end{itemize}
 
 Beyond guidance quality, HRP also illustrates the operational cost of relational candidate matching in the Prolog backend. Because the multi-room placement rules join multiple domain predicates, the SWI-Prolog engine must evaluate over $1{,}200$ candidate pairs per decision at $N=20$, driving unit query cost to $9.68$\,ms (Table~\ref{tab:per-decision}). 
 
-For \texttt{la}, where search is resolved in only $106$ choices, this per-decision effort accounts for $68.3\%$ of the total runtime ($1.03$\,s out of $1.55$\,s), compared to just $0.38$\,s on the compiled C++ backend. For \texttt{lc}, the combination of misdirected search and relational query overhead creates a catastrophic bottleneck: making $73{,}143$ queries, already at $N=14$, inflates total Prolog execution time to $264.5$\,s (with $99.4\%$ spent inside the propagator), whereas the compiled native backend resolves the same misguided trajectory in $1.80$\,s.
+For \texttt{la}, where search is resolved in only $106$ choices, this per-decision effort accounts for $68.3\%$ of the total runtime ($1.06$\,s out of $1.55$\,s), compared to just $0.38$\,s on the compiled C++ backend. For \texttt{lc}, the combination of misdirected search and relational query overhead creates a catastrophic bottleneck: making $73{,}143$ queries, already at $N=14$, inflates total Prolog execution time to $264.5$\,s (with $99.4\%$ spent inside the propagator), whereas the compiled native backend resolves the same misguided trajectory in $1.80$\,s.
 
 \section{An External Reference: Alpha}
 \label{sec:alpha}
@@ -503,7 +503,7 @@ Crucially, lazy grounding alone is insufficient without dynamic heuristic guidan
     \item \textbf{Alpha:} Because rules are grounded on demand during search, exploring unpromising branches is extremely expensive: every wrong decision and subsequent backtrack forces the engine to instantiate new rules and nogoods on the fly.
 \end{itemize}
 
-As shown in Figure~\ref{fig:alpha-internals}, \texttt{alpha\_noheur} suffers a severe search space explosion, spiking to over $67{,}000$ guesses and backtracks at $n=30$ before timing out from $n=40$ onward. Conversely, with heuristic guidance, \texttt{alpha\_qh} never backtracks, materializing only the minimal subset of ground rules along the single valid solution path. This demonstrates that lazy grounding and dynamic heuristics are strictly complementary: dynamic heuristics require lazy evaluation to prevent grounding bottlenecks, while lazy grounding requires dynamic heuristics to avoid drowning in runtime instantiation overhead.
+As shown in Figure~\ref{fig:alpha-internals}, \texttt{alpha\_noheur} suffers a severe search space explosion, peaking at over $67{,}000$ guesses and backtracks at $n=30$; it still solves $n=40$, where each guess costs more even though fewer are needed, and from $n=50$ it no longer finishes at all. Conversely, with heuristic guidance, \texttt{alpha\_qh} never backtracks, materializing only the minimal subset of ground rules along the single valid solution path. This demonstrates that lazy grounding and dynamic heuristics are strictly complementary: dynamic heuristics require lazy evaluation to prevent grounding bottlenecks, while lazy grounding requires dynamic heuristics to avoid drowning in runtime instantiation overhead.
 
 \begin{figure}[H]
     \centering
@@ -514,7 +514,7 @@ As shown in Figure~\ref{fig:alpha-internals}, \texttt{alpha\_noheur} suffers a s
 \end{figure}
 
 \paragraph{Partner Units Problem (PUP).}
-On PUP, clingo with lazy heuristics (\texttt{la}) closely approaches Alpha's performance, solving $N=200$ in $234.7$\,s and $12.7$\,GB compared to $50.8$\,s and $10.6$\,GB for \texttt{alpha\_qh} (a factor of $4.6\times$ in time and $1.2\times$ in memory). In contrast, the static ground simulation \texttt{ga} requires $451.4$\,s and $24.6$\,GB (nine times the runtime and over twice the memory of \texttt{alpha\_qh}). Furthermore, \texttt{alpha\_noheur} solves no instances on PUP, reaffirming that dynamic heuristics are essential for solving this problem family.
+On PUP, clingo with lazy heuristics (\texttt{la}) closely approaches Alpha's performance, solving $N=200$ in $234.7$\,s and $12.7$\,GB compared to $50.8$\,s and $10.6$\,GB for \texttt{alpha\_qh} (a factor of $4.6\times$ in time and $1.2\times$ in memory). In contrast, the static ground simulation \texttt{ga} required $451.4$\,s and $24.6$\,GB (nine times the runtime and over twice the memory of \texttt{alpha\_qh}). Furthermore, \texttt{alpha\_noheur} solves no instances on PUP, reaffirming that dynamic heuristics are essential for solving this problem family.
 
 \begin{figure}[H]
     \centering
