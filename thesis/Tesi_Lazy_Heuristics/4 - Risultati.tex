@@ -87,14 +87,14 @@ In the BSP benchmark, solver failures scale predictably with instance size: once
 \label{tab:overview-hrp}
 \end{table}
 
-The maximum instance size solved carries different information in each of the three families.
+The maximum instance size solved provides different insights depending on the problem of choice. 
 \begin{itemize}
     \item \textbf{On BSP}, the solvability frontier alone does not separate the approaches. Variants sharing the same base encoding (\texttt{gc\_noheur}, \texttt{la}, and \texttt{lc}) all stop between $n=150$ and $n=160$, constrained by the heavy grounding of the base program. What distinguishes them is search efficiency: \texttt{la} reduces solving time and conflicts to near zero (Sections~\ref{sec:bsp-runtime} and~\ref{sec:per-decision-cost}).
     \item \textbf{On PUP}, the Alpha-like dynamic guidance lets both \texttt{ga} and \texttt{la} solve the entire range up to $N=200$, whereas the other variants stall around $N=80$ under search space explosion. With search no longer the bottleneck, PUP isolates the cost of the heuristic representation itself: \texttt{la} halves both grounding time and peak memory with respect to the static aggregate unrolling of \texttt{ga} (\textbf{12.7\,GB} vs \textbf{24.6\,GB} at $N=200$).
     \item \textbf{On HRP}, the frontier is uninformative because nearly all variants solve the entire suite; the evaluation centers instead on decision quality and on the misguidance observed in \texttt{lc}.
 \end{itemize}
 
-Three further trends are visible in the tables. First, the static ground simulation (\texttt{ga}) fails on BSP already at $n=70$, nine sizes earlier than the baseline, under the combinatorial explosion of static unrolling. Second, the native C++ and Prolog backends yield identical frontiers whenever propagator queries remain cheap; where they diverge, the Prolog backend always fails earlier because of evaluation overhead, particularly for \texttt{lc}, where the propagator is queried tens of thousands of times. Third, \texttt{lc} shows two distinct failure modes of clingo-style aggregate evaluation over partial assignments: on BSP the heuristic never activates, because its aggregate conditions are not satisfied at any decision point (zero candidates), whereas on HRP delayed evaluation produces misleading suggestions that degrade search by orders of magnitude (Sections~\ref{sec:bsp-semantics} and~\ref{sec:hrp}).
+Three further trends are visible in the tables. First, the static ground simulation (\texttt{ga}) fails on BSP already at $n=70$, nine sizes earlier than the baseline, under the combinatorial explosion of static unrolling. Second, the native C++ and Prolog backends yield identical frontiers whenever propagator queries remain cheap; where they diverge, the Prolog backend always fails earlier because of evaluation overhead, particularly for \texttt{lc}, where the propagator is queried tens of thousands of times. Third, \texttt{lc} shows two distinct failure modes of clingo-style aggregate evaluation over partial assignments: on BSP the heuristic never activates, because its aggregate conditions are not satisfied at any decision point, whereas on HRP delayed evaluation produces misleading suggestions that degrade search by orders of magnitude (Sections~\ref{sec:bsp-semantics} and~\ref{sec:hrp}).
 
 \section{Reduction of the Ground Heuristic Component}
 
@@ -181,7 +181,7 @@ However, a clear difference emerges here from the two readings of negation: whil
 Three points follow:
 \begin{enumerate}
     \item In \texttt{la}, default negation and dynamic aggregate evaluation let clingo use the heuristic from the first decision, taking exactly 120 choices with zero conflicts at $n=120$.
-    \item \texttt{ga} matches \texttt{la} exactly up to $n=50$, then degrades at $n=60$ and times out from $n=70$ onward. The cause is clasp's 16-bit weight field ($32{,}767$), as explained in Section~\ref{sec:weight-problem}: once weights saturate beyond $n=50$, the ranking no longer discriminates between candidates.
+    \item \texttt{ga} matches \texttt{la} exactly up to $n=50$, then degrades at $n=60$ and times out from $n=70$ onward. The cause is clasp's 16-bit weight field, as explained in Section~\ref{sec:weight-problem}: once weights saturate beyond $n=50$, the ranking no longer discriminates between candidates.
     \item \texttt{ga\_weak} tracks close to the baseline and is discussed in Section~\ref{sec:ga-weak}, while \texttt{la\_co} is analyzed in Section~\ref{sec:constr-form}.
 \end{enumerate}
 
@@ -239,8 +239,8 @@ Figure~\ref{fig:bsp-memory} shows that on large instances, memory usage is domin
 \section{The Price of Laziness: Per-Decision Cost}
 \label{sec:per-decision-cost}
 
-The lazy evaluation model represents a space-time trade-off where instead of suffering a combinatorial cost in memory during the grounding phase, there is a cost in computation incurred for each decision made during the search phase.
-Table~\ref{tab:per-decision} profiles this cost on both backends.
+The lazy evaluation model represents a space-time trade-off where instead of suffering a combinatorial cost in memory during the grounding phase, there is a cost in computation incurred for each decision made during the search phase. 
+There is also a remarkable difference between the two backends; the C++ one manages to be orders of magnitude faster in its decisions
 
 \begin{table}[H]
 \centering
@@ -264,14 +264,12 @@ HRP $N{=}14$  & \texttt{lc} & $66{,}717$ & $73{,}143$ & $0.9\!\cdot\!10^{-4}$ & 
 \label{tab:per-decision}
 \end{table}
 
-The two backends differ by orders of magnitude per consultation: compiled C++ evaluation averages $\approx 10^{-4}$\,ms, whereas interpreted SWI-Prolog evaluation ranges from $0.2$ to $9.7$\,ms.
-
-Since the total cost is the number of calls times the cost of a call, the four rows of Table~\ref{tab:per-decision} cover the four combinations of the two factors:
+The overall overhead varies dramatically across the benchmark configurations:
 \begin{itemize}
-    \item \textbf{Few calls, cheap calls (\texttt{la} on BSP).} 120 decide calls at $0.62$\,ms each in Prolog, $10^{-4}$\,ms in C++: the propagator accounts for $0.05\%$ of the total runtime.
-    \item \textbf{Many calls, cheap calls (\texttt{lc} on BSP).} Individual queries stay cheap ($0.21$\,ms), but $78{,}565$ of them return nothing, and the propagator takes $8.7\%$ of the runtime without helping the search.
-    \item \textbf{Few calls, expensive calls (\texttt{la} on HRP).} Over $1{,}200$ candidates per decision raise Prolog evaluation to $9.68$\,ms per call, so the propagator takes $68\%$ of the total runtime even though the search needs only about 100 decisions.
-    \item \textbf{Many calls, expensive calls (\texttt{lc} on HRP).} $73{,}143$ calls with $239$ candidates each: Prolog evaluation and trail synchronization take $99.4\%$ of the total runtime, two orders of magnitude above what the same misguided trajectory costs on the C++ backend.
+    \item When the heuristic has \textbf{perfect guidance (\texttt{la} on BSP)}, with only 120 decide calls taking $0.62$\,ms each in Prolog (and $10^{-4}$\,ms in C++), propagator overhead accounts for less than $0.10\%$ of the total runtime.
+    \item When the semantics gets in the way \textbf{(\texttt{lc} on BSP)}, although individual query costs remain low, making many futile calls causes the propagator to consume a significant portion of its runtime without aiding search.
+    \item When candidate generation becomes heavy \textbf{(\texttt{la} on HRP)}, producing over $1{,}200$ candidates per decision, Prolog evaluation time  increases to $9.68$\,ms per call; as a result, the propagator absorbs $68\%$ of the total runtime, even though search needs only about 100 decisions.
+    \item When frequent search and expensive evaluation collide \textbf{(\texttt{lc} on HRP)}, making $73{,}143$ futile calls with $239$ candidates each creates a worst-case scenario: Prolog evaluation and trail synchronization eat up to $99.4\%$ of the total runtime, two orders of magnitude above what the same misguided trajectory costs on the C++ backend.
 \end{itemize}
 
 \begin{figure}[H]
@@ -317,7 +315,7 @@ The main difference is that equality bindings trigger at most once, and only aft
 
 Beyond $n=50$, \texttt{ga} deteriorates rapidly as weights exceed the \texttt{int16} range and saturate at $32{,}767$: distinct partial sums collapse onto the same weight, and the ranking stops discriminating between candidate decisions (Figure~\ref{fig:gaweak}). At $n=60$ it already required $1.7$\,million choices and $137$\,s of solving time, before timing out from $n=70$ on.
 
-\texttt{ga\_weak} never hits the timeout, even though its weight expression is the same as \texttt{ga}'s: the equality binding is satisfied only once every element of the sum is assigned, so the heuristic almost never activates and the saturation is never reached. For the same reason it gives no useful guidance. At $n=120$ its search trajectory is worse and noisier than the heuristic-free baseline, taking about half as many choices again ($121{,}159$ against $78{,}565$) and correspondingly longer to solve (Table~\ref{tab:bsp-n120}).
+\texttt{ga\_weak} never hits the timeout, even though its weight expression is the same as \texttt{ga}'s: the equality binding is satisfied only once every element of the sum is assigned, so the heuristic almost never activates and the saturation is never reached. For the same reason it gives no useful guidance. At $n=120$ its search trajectory is worse and noisier than the heuristic-free baseline, making roughly half as many choices as the heuristic-free baseline.
 
 Omitting the negative guards without unrolling the aggregate bounds therefore yields no usable guidance: it increases search effort and slightly reduces the solvable horizon.
 
@@ -479,7 +477,7 @@ HRP evaluates heuristic semantics on rules with nested default negations but wit
 
 Beyond guidance quality, HRP also illustrates the operational cost of relational candidate matching in the Prolog backend. Because the multi-room placement rules join multiple domain predicates, the SWI-Prolog engine must evaluate over $1{,}200$ candidate pairs per decision at $N=20$, driving unit query cost to $9.68$\,ms (Table~\ref{tab:per-decision}). 
 
-For \texttt{la}, where search is resolved in only $106$ choices, this per-decision effort accounts for $68.3\%$ of the total runtime ($1.06$\,s out of $1.55$\,s), compared to just $0.38$\,s on the compiled C++ backend. For \texttt{lc}, misdirected search and relational query overhead compound: $73{,}143$ queries, already at $N=14$, take total Prolog execution time to $264.5$\,s, with $99.4\%$ spent inside the propagator, whereas the compiled native backend resolves the same misguided trajectory in $1.80$\,s.
+For \texttt{la}, where search is resolved in only $106$ choices, this per-decision effort accounts for $68.3\%$ of the total runtime ($1.06$\,s out of $1.55$\,s), compared to just $0.38$\,s on the compiled C++ backend. For \texttt{lc}, the combination of misdirected search and relational query overhead creates a catastrophic bottleneck: making $73{,}143$ queries, already at $N=14$, inflates total Prolog execution time to $264.5$\,s (with $99.4\%$ spent inside the propagator), whereas the compiled native backend resolves the same misguided trajectory in $1.80$\,s.
 
 \section{An External Reference: Alpha}
 \label{sec:alpha}
