@@ -240,7 +240,7 @@ Figure~\ref{fig:bsp-memory} shows that on large instances, memory usage is domin
 \label{sec:per-decision-cost}
 
 The lazy evaluation model represents a space-time trade-off where instead of suffering a combinatorial cost in memory during the grounding phase, there is a cost in computation incurred for each decision made during the search phase. 
-There is also a remarkable difference between the two backends; the C++ one manages to be orders of magnitude faster in its decisions
+There is also a remarkable difference between the two backends; the C++ one manages to be orders of magnitude faster in its decisions.
 
 \begin{table}[H]
 \centering
@@ -267,7 +267,7 @@ HRP $N{=}14$  & \texttt{lc} & $66{,}717$ & $73{,}143$ & $0.9\!\cdot\!10^{-4}$ & 
 The overall overhead varies dramatically across the benchmark configurations:
 \begin{itemize}
     \item When the heuristic has \textbf{perfect guidance (\texttt{la} on BSP)}, with only 120 decide calls taking $0.62$\,ms each in Prolog (and $10^{-4}$\,ms in C++), propagator overhead accounts for less than $0.10\%$ of the total runtime.
-    \item When the semantics gets in the way \textbf{(\texttt{lc} on BSP)}, although individual query costs remain low, making many futile calls causes the propagator to consume a significant portion of its runtime without aiding search.
+    \item When the semantics gets in the way \textbf{(\texttt{lc} on BSP)}, although individual query costs remain low, making many futile calls causes the propagator to consume a significant portion of the total runtime without aiding search.
     \item When candidate generation becomes heavy \textbf{(\texttt{la} on HRP)}, producing over $1{,}200$ candidates per decision, Prolog evaluation time  increases to $9.68$\,ms per call; as a result, the propagator absorbs $68\%$ of the total runtime, even though search needs only about 100 decisions.
     \item When frequent search and expensive evaluation collide \textbf{(\texttt{lc} on HRP)}, making $73{,}143$ futile calls with $239$ candidates each creates a worst-case scenario: Prolog evaluation and trail synchronization eat up to $99.4\%$ of the total runtime, two orders of magnitude above what the same misguided trajectory costs on the C++ backend.
 \end{itemize}
@@ -315,7 +315,7 @@ The main difference is that equality bindings trigger at most once, and only aft
 
 Beyond $n=50$, \texttt{ga} deteriorates rapidly as weights exceed the \texttt{int16} range and saturate at $32{,}767$: distinct partial sums collapse onto the same weight, and the ranking stops discriminating between candidate decisions (Figure~\ref{fig:gaweak}). At $n=60$ it already required $1.7$\,million choices and $137$\,s of solving time, before timing out from $n=70$ on.
 
-\texttt{ga\_weak} never hits the timeout, even though its weight expression is the same as \texttt{ga}'s: the equality binding is satisfied only once every element of the sum is assigned, so the heuristic almost never activates and the saturation is never reached. For the same reason it gives no useful guidance. At $n=120$ its search trajectory is worse and noisier than the heuristic-free baseline, making roughly half as many choices as the heuristic-free baseline.
+\texttt{ga\_weak} never hits the timeout, even though its weight expression is the same as \texttt{ga}'s: the equality binding is satisfied only once every element of the sum is assigned, so the heuristic almost never activates and the saturation is never reached. For the same reason it gives no useful guidance. At $n=120$ its search trajectory is worse and noisier than the heuristic-free baseline, taking about $50\%$ more choices and correspondingly longer to solve (Table~\ref{tab:bsp-n120}).
 
 Omitting the negative guards without unrolling the aggregate bounds therefore yields no usable guidance: it increases search effort and slightly reduces the solvable horizon.
 
