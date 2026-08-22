@@ -17,8 +17,8 @@ Across all benchmark families, timeouts represent the exclusive first failure mo
 
 On BSP, search trajectories between C++ and Prolog coincide identically across all solved instances. On PUP and HRP there are minor discrepancies in choices that arise solely from the tie-breaking among equal-rank candidates.
 
-\subsection{Measurement Reliability and Timing Variation}
-\label{sec:time-reliability}
+\subsection{Campaign Overview and Failure Modes}
+\label{sec:campaign-overview}
 
 Tables~\ref{tab:overview-bsp}--\ref{tab:overview-hrp} summarize the outcome of the benchmark campaign, reporting the number of solved instances and the first failure point for each variant.
 In the BSP benchmark, solver failures scale predictably with instance size: once a variant fails at a given size, it also fails for all subsequent sizes, with timeouts representing the first failure mode in all cases (between $n=70$ and $n=170$). On PUP, however, difficulty does not scale monotonically with size: \texttt{lc} times out on \texttt{double-80} yet successfully solves \texttt{double-100}. This behavior stems from the benchmark design, which provides only a single instance per size with significant variations in hardness between neighboring sizes; Section~\ref{sec:pup} analyzes this effect in detail using choice counts rather than runtimes.
@@ -410,7 +410,7 @@ The baseline results reveal two distinct failure dynamics:
 \end{itemize}
 
 \paragraph{Grounding and memory savings (\texttt{la} vs \texttt{ga}).}
-Both Alpha-like semantics variants (\texttt{ga} and \texttt{la}) solve the entire benchmark horizon up to $N=200$, maintaining near-perfect search guidance ($235$ choices for \texttt{ga} vs $162$ for \texttt{la} at $N=120$). Because solving takes only a few seconds, the overall performance is differentiated almost exclusively by the grounding footprint.
+Both Alpha-like semantics variants (\texttt{ga} and \texttt{la}) solve the entire benchmark horizon up to $N=200$, maintaining near-perfect search guidance ($235$ choices for \texttt{ga} vs $162$ for \texttt{la} at $N=120$). The residual gap between the two is not noise: the unrolled bounds on the \texttt{\#max} capacity terms reconstruct those aggregates conservatively rather than exactly (Section~\ref{sec:ga-simulation}), whereas the propagator reads them off the trail. Because solving takes only a few seconds, the overall performance is differentiated almost exclusively by the grounding footprint.
 
 \begin{figure}[H]
     \centering
