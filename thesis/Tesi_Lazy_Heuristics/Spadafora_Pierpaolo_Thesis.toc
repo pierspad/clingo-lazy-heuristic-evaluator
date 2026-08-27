@@ -19,7 +19,7 @@
 \contentsline {subsection}{\numberline {2.1.2}Methodological Rationale for the Exploratory Variants}{11}{subsection.2.1.2}%
 \contentsline {paragraph}{Isolating Alpha-Negation from Dynamic Aggregates (\texttt {ga\_weak}).}{11}{section*.8}%
 \contentsline {paragraph}{Deconstructing Lazy Efficiency: Directives vs.\ Body Materialization (\texttt {la\_aux}).}{11}{section*.9}%
-\contentsline {paragraph}{Disentangling Heuristic and Problem Constraint Bottlenecks (\texttt {la\_co}).}{12}{section*.10}%
+\contentsline {paragraph}{Disentangling Heuristic and Problem Constraint Bottlenecks (\texttt {la\_co}).}{11}{section*.10}%
 \contentsline {subsection}{\numberline {2.1.3}Weights, Priorities, and Flattening}{12}{subsection.2.1.3}%
 \contentsline {subsection}{\numberline {2.1.4}Problems on Bigger Weights}{12}{subsection.2.1.4}%
 \contentsline {section}{\numberline {2.2}System Architecture}{13}{section.2.2}%
