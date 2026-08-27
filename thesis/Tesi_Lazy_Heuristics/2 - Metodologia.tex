@@ -20,17 +20,24 @@ Crossing the two axes yields the four variants that the rest of the thesis refer
 
 To isolate specific architectural and modeling mechanisms beyond this primary matrix, the experimental design also incorporates three targeted exploratory variants: \texttt{ga\_weak}, \texttt{la\_aux}, and \texttt{la\_co}. Their empirical motivation and methodological role in disentangling the contributions of default negation, body materialization, and constraint formulation are discussed in Section~\ref{sec:exploratory-methodology}.
 
-\subsection{Simulating Alpha in Ground clingo}
+\subsection{Simulating Alpha semantics}
 \label{sec:ga-simulation}
 
-Simulating Alpha-like semantics within a ground-and-solve pipeline requires addressing two distinct semantic aspects: default negation over unassigned literals and dynamic aggregate evaluation.
+Reproducing an Alpha-like behaviour within clingo requires addressing two distinct aspects: default negation over unassigned literals and dynamic aggregate evaluation.
 
-The first transformation handles negative literals in heuristic bodies (such as \mintinline{text}|not c(X)| in BSP, \mintinline{text}|not not_assigned_sensor(S)| in PUP, and guards like \mintinline{text}|not fullCabinet(C)| in HRP). 
-Under Alpha-like semantics, \mintinline{text}|not p| is satisfied whenever $p$ is unassigned or false. 
-In standard ground clingo, however, \mintinline{text}|not p| in a \mintinline{text}|#heuristic| directive requires $p$ to be explicitly assigned false; while $p$ is still unassigned, the directive never triggers. 
-To enable heuristic guidance from the beginning of search, the ground variant \texttt{ga} drops these negative literals. 
-In problems like BSP, where \mintinline{text}|not c(X)| simply tests the complementary choice for the same element, this simplification is completely harmless because the solver never re-decides an atom that is already assigned. 
-In problems like HRP and PUP, dropping capacity guards (such as \mintinline{text}|not fullCabinet(C)|) is a necessary approximation: it allows directives to fire on unassigned atoms, but it cannot deactivate them once a resource becomes full. Overcoming this limitation is one of the motivations for the lazy propagator approach.
+\subsubsection{Default negation over unassigned literals}
+
+The first transformation concerns the negative literals of the heuristic bodies: \mintinline{text}|not c(X)| in BSP, \mintinline{text}|not not_assigned_sensor_unit(S,U)| in PUP, and capacity guards such as \mintinline{text}|not fullCabinet(C)| in HRP. Because Clasp ``listens'' to the heuristic suggestion on variable only while that variable is still unassigned, as the guard in \texttt{DomainHeuristic::propagate} shows:
+\begin{minted}{cpp}
+if (s.value(a.var) == value_free && a.prio >= prio) { applyAction(s, a, prio); }
+\end{minted}
+\emph{a directive whose body determines the truth value of its own target can therefore never fire}: once the body holds, the target is already assigned, and clasp skips it. 
+
+In BSP and PUP every heuristic directive carries such a guard, so none of them ever fires. HRP is the exception: $544$ of the $2\,608$ ground directives on \texttt{house-10}, the legacy-reuse ones and the \mintinline{text}|[1, false]| sign defaults, have no condition at all and are applied at initialisation. There \texttt{gc} loses only the capacity guards.
+
+The ground variant \texttt{ga} therefore drops these negative literals. This translation is free when the negated atom is the target or its complement, as in BSP and PUP: nothing is lost that could have fired, and the \mintinline{text}|value_free| guard still keeps clasp from steering an atom that is already assigned. In HRP the dropped literals also include capacity guards such as \mintinline{text}|not fullCabinet(C)|, which describe a resource rather than the target; there the drop buys early activation at the price of never switching the directive off once a cabinet fills up.
+
+\subsubsection{Dynamic aggregates by bound-guarded unrolling}
 
 The second transformation replaces dynamic aggregate equality with bound-guarded unrolling over all candidate values. For BSP:
 
@@ -40,25 +47,32 @@ sum_value(0..tot).
     W = ((n+1)*S)+X. [W, true]
 \end{minted}
 
-Instead of binding $S$ to the final value of the sum, the directive is unrolled over all candidate values \texttt{sum\_value(S)} and guarded by a bound condition. During search, clasp's Domain heuristic activates all directives whose bounds are satisfied by the current partial assignment, and retains the single directive with the \emph{maximum weight} for each target atom. This mechanism reconstructs the dynamic aggregate value depending on the direction of the weight function:
+Instead of binding $S$ to the final value of the sum, the directive is unrolled over all candidate values \texttt{sum\_value(S)} and guarded by a bound condition, so that during search the currently satisfied bounds encode the current aggregate value. Whether this reconstruction succeeds depends on two independent conditions, which are easy to conflate: \emph{which} of the satisfied directives clasp retains, and \emph{when} a guard can become satisfied at all.
+
+\paragraph{Selection: activation order, not maximum weight.}
+Written as \mintinline{text}|[W, true]| without an explicit \mintinline{text}|@p| field, all unrolled directives receive the default priority $0$. Clasp's domain heuristic then applies every newly activated modification --- the test $\mathtt{a.prio} \ge \mathtt{prio}$ above always succeeds --- overwriting the previous bias and restoring it in reverse order on backtracking. The retained directive is thus the \emph{most recently activated} one, not the one of maximum weight. The unrolling is therefore designed so that activation order coincides with weight order:
 
 \begin{itemize}
-    \item \textbf{Increasing weights (e.g., BSP):} The heuristic favors larger sums, using the guard $S \le \#\mathtt{sum}\{Y : c(Y)\}$. When the partial sum of elements currently assigned to $c$ reaches $S_{\mathit{curr}}$, all directives with $S \le S_{\mathit{curr}}$ become active. Since the weight $W(S)$ is directly proportional to $S$, clasp's maximum-weight selection picks the highest active bound:
-    \[
-    \arg\max_{S \le S_{\mathit{curr}}} W(S) \;=\; S_{\mathit{curr}}
-    \]
-    reconstructing the exact current sum.
-    
-    \item \textbf{Decreasing weights (e.g., PUP):} The heuristic favors lower occupancy (to maximize free capacity), using the inverted guard $V \ge \#\mathtt{max}\{\ldots\}$. When the number of sensors currently assigned to unit $U$ reaches $V_{\mathit{curr}}$, all directives with $V \ge V_{\mathit{curr}}$ become active. Since the weight $W(V)$ is inversely proportional to $V$, clasp's maximum-weight selection picks the lowest active bound:
-    \[
-    \arg\max_{V \ge V_{\mathit{curr}}} W(V) \;=\; V_{\mathit{curr}}
-    \]
-    isolating the exact current maximum.
+    \item \textbf{Lower-bound guards.} With a guard $V \le f$, where $f$ denotes the dynamic aggregate, the active set is the interval $\{V : V \le f_{\mathit{curr}}\}$, which grows by admitting ever larger values of $V$ as $f_{\mathit{curr}}$ increases. The last directive activated is therefore the one with $V = f_{\mathit{curr}}$, and this coincides with the maximum-weight directive precisely when $W$ is \emph{increasing} in $V$. BSP is of this form: the guard is $S \le \#\mathtt{sum}\{Y : c(Y)\}$ and $W(S) = (n{+}1)S + X$ is strictly increasing, so the retained value is exactly the current sum.
+
+    \item \textbf{Upper-bound guards.} With a guard $V \ge f$, the active set is $\{V : V \ge f_{\mathit{curr}}\}$, which grows by admitting ever smaller values of $V$; the reconstruction then requires $W$ to be \emph{decreasing} in $V$. This is the form taken by the capacity component of the PUP zone directive, where units with fewer occupied sensors are preferred and the weight is $6 - (N_0 + N_1 + N_2)$.
 \end{itemize}
 
-This unrolling transformation relies on two structural properties. First, the unrolled variable is a \emph{binding} rather than a boolean test: it occurs only in the aggregate and the weight, ensuring that no specific value disables the directive. Second, the aggregate itself must be monotone so that satisfied bounds remain valid as the assignment grows. 
+The direction of the comparison is thus dictated by the direction of the weight, which in turn is dictated by the reference Alpha heuristic; it is not a free choice, and it is independent of which aggregate function occurs in the directive. A heuristic favouring small values of a \mintinline{text}|#min| aggregate would be unrolled as $V \ge \#\mathtt{min}\{\ldots\}$ with a decreasing weight, one favouring large values as $V \le \#\mathtt{min}\{\ldots\}$ with an increasing weight, and so on for the remaining combinations.
 
-While this simulation enables ground clingo to emulate dynamic aggregates, its fatal drawback is the resulting combinatorial explosion: grounding requires emitting one directive per point of the unrolled domains. The lazy backends avoid this overhead entirely by querying the dynamic aggregate directly from the solver trail at decision time.
+\paragraph{Activation: only monotone guards fire under a partial assignment.}
+The second condition is more restrictive, and it is where the ground simulation genuinely departs from Alpha. A guard can be \emph{true} under a partial assignment only if it is monotone, i.e.\ only if it asserts that sufficiently many atoms are already true:
+\[
+V \le \#\mathtt{sum}, \qquad V \le \#\mathtt{count}, \qquad V \le \#\mathtt{max}, \qquad V \ge \#\mathtt{min}.
+\]
+Their duals --- $V \ge \#\mathtt{sum}$, $V \ge \#\mathtt{count}$, $V \ge \#\mathtt{max}$, $V \le \#\mathtt{min}$ --- assert instead that no further atom \emph{can} contribute, a property clasp establishes only once the relevant atoms have been decided false. Combining the two conditions, exact reconstruction under a partial assignment is available for increasing weights over $\#\mathtt{sum}$, $\#\mathtt{count}$ and $\#\mathtt{max}$, and for decreasing weights over $\#\mathtt{min}$; the remaining two combinations degrade to a conservative approximation.
+
+BSP and the sensor directive of PUP fall entirely within the monotone fragment: all their guards are of the form $V \le \#\mathtt{count}$ or $V \le \#\mathtt{max}$, and the reconstruction is exact at every point of the search. The capacity component of the PUP zone directive does not. On \texttt{double-20}, of the $31\,320$ ground zone directives only $1\,320$ are active at the root, and of these $400$ carry weight $100\,000$ against $20$ each at $100\,001$, $100\,002$ and $100\,010$ --- that is, the term $6 - (N_0+N_1+N_2)$ evaluates to $0$ for essentially every candidate. Where Alpha sees six free sensor slots on an empty unit, the ground simulation sees none, and it does so uniformly, so the component provides no discrimination at all. The discrepancy persists during search: a unit that is still empty keeps reporting zero free capacity until all of its candidate sensor assignments have been decided false.
+
+This is not a defect of the particular encoding that a more careful rewriting could remove. The statement \emph{``this unit still has room''} is a claim about atoms that are not yet assigned, and no body literal interpreted under completion semantics can express it: clingo's body literals range over what the solver has entailed, whereas an Alpha-style heuristic reads the atoms that are true \emph{on the current trail}, a non-monotone function of the partial assignment. The monotone fragment identified above is therefore precisely the fragment that a ground simulation can cover, and this delimitation is the structural argument for the lazy propagator, which queries the trail directly rather than an entailment-based encoding of it.
+
+\paragraph{Cost.}
+The unrolling also relies on the unrolled variable being a \emph{binding} rather than a boolean test: it occurs only in the guard and in the weight, so that no particular value can disable the directive on its own. Its fatal drawback, however, is the resulting combinatorial explosion, since grounding must emit one directive per point of the Cartesian product of the unrolled domains. On \texttt{double-20} --- the smallest PUP instance --- this already yields $137\,160$ ground heuristic directives, $105\,840$ for \mintinline{text}|assigned_sensor_unit| (four unrolled domains) and $31\,320$ for \mintinline{text}|assigned_zone_unit| (four unrolled domains). The lazy backends avoid this overhead entirely by querying the dynamic aggregate directly from the solver trail at decision time.
 
 \subsection{Methodological Rationale for the Exploratory Variants}
 \label{sec:exploratory-methodology}

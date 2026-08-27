@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Arch Linux) (preloaded format=pdflatex 2026.6.1)  27 AUG 2026 19:24
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Arch Linux) (preloaded format=pdflatex 2026.6.1)  27 AUG 2026 21:20
 entering extended mode
  \write18 enabled.
  file:line:error style messages enabled.
@@ -797,10 +797,10 @@ Chapter 1.
 \pydata@fh@0=\write7
 \openout7 = `_2AE2944559263F6456DC6AA53993E271.data.minted'.
 
-runsystem(latexminted config  --timestamp 20260827192457 2AE2944559263F6456DC6AA53993E271)...executed.
+runsystem(latexminted config  --timestamp 20260827212025 2AE2944559263F6456DC6AA53993E271)...executed.
 
  (./_2AE2944559263F6456DC6AA53993E271.config.minted)
-runsystem(latexminted cleanconfig  --timestamp 20260827192457 2AE2944559263F6456DC6AA53993E271)...executed.
+runsystem(latexminted cleanconfig  --timestamp 20260827212025 2AE2944559263F6456DC6AA53993E271)...executed.
 
  (./_minted/friendly.style.minted) (./_minted/E1D5B53048E1E5BC0486921A57CBCDE1.highlight.minted)
 <figures/diagrams/png/pipelines.png, id=293, 466.3824pt x 260.53336pt>
@@ -816,40 +816,35 @@ Chapter 2.
 
 
 
-] (./_minted/796DE5BF0DC65FACFFF5B4150D9A0456.highlight.minted) (./_minted/4B708799818C421022335E1BCF0D6379.highlight.minted) (./_minted/5897657D5068492A64BFF2A08FD1E05C.highlight.minted) (./_minted/DF041953113E3BA1AA33D3BADC5A9079.highlight.minted) (./_minted/DF041953113E3BA1AA33D3BADC5A9079.highlight.minted) (./_minted/77E245A12C4194799EDC7F8DB459E11B.highlight.minted) (./_minted/796DE5BF0DC65FACFFF5B4150D9A0456.highlight.minted) (./_minted/5897657D5068492A64BFF2A08FD1E05C.highlight.minted)
-Underfull \hbox (badness 3989) in paragraph at lines 28--34
-\T1/cmr/m/n/12 as [][][][][][] in BSP, [][][][][][] in PUP, and guards like
- []
-
-
-Underfull \hbox (badness 2261) in paragraph at lines 28--34
-[][][][][][] \T1/cmr/m/n/12 in HRP). Un-der Alpha-like se-man-tics, [][][][][][] is sat-is-fied
- []
-
-[8] (./_minted/52CEC1A831089BB009114D25A931146F.highlight.minted) [9{/usr/share/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}]
-LaTeX Font Info:    Font shape `T1/cmtt/bx/n' in size <12> not available
-(Font)              Font shape `T1/cmtt/m/n' tried instead on input line 69.
- [10] (./_minted/244C3493D7D3E2BD1596C352EC8B6183.highlight.minted) (./_minted/5D5C8B2261515407F1913D87CBB56743.highlight.minted) [11] (./_minted/A2D513347769D5B93E99CAB1E88AB60B.highlight.minted)
-<figures/diagrams/png/architecture.png, id=406, 587.3142pt x 505.89pt>
- (./_minted/B9AAB00C6787A8AF8A433BA4FF1D93B3.highlight.minted) [12] (./_minted/E1D5B53048E1E5BC0486921A57CBCDE1.highlight.minted) (./_minted/4E331156494B2F970489241DBFE0C4D4.highlight.minted
+] (./_minted/796DE5BF0DC65FACFFF5B4150D9A0456.highlight.minted) (./_minted/2D447FB4BFAF6203462BA61E35D7F384.highlight.minted) (./_minted/5897657D5068492A64BFF2A08FD1E05C.highlight.minted) (./_minted/BD784CA54403552B35F07A40E4122658.highlight.minted
 LaTeX Font Info:    Font shape `T1/cmtt/bx/n' in size <10> not available
 (Font)              Font shape `T1/cmtt/m/n' tried instead on input line 2.
-) [13] (./_minted/08F9AF0B320D10091C79577D393C8F0A.highlight.minted) (./_minted/995546C303A89CE9D543995C3FC6D7EE.highlight.minted) (./_minted/E6716F8359FE71EE0C42E63B70D87EA9.highlight.minted) (./_minted/8E5FA543E39E232E2B524CBD20CF7987.highlight.minted) (./_minted/E4CBEF28A8B7EA164D576E312D257D20.highlight.minted) (./_minted/758D89E0165B79128102BEA2D53D9599.highlight.minted) (./_minted/BF6FEFE011D151391D17544D61A8645E.highlight.minted) (./_minted/796DE5BF0DC65FACFFF5B4150D9A0456.highlight.minted) (./_minted/948C7CDD2A34D8067E883B681D2E01BC.highlight.minted)
-Underfull \hbox (badness 3128) in paragraph at lines 178--179
+) [8] (./_minted/CE1D022A1D87FED7D01095382DBE39E5.highlight.minted) (./_minted/10A1C371F2BC162BEAF08FA72A9A6AA9.highlight.minted) (./_minted/8CDB439CAA8F5F2538C82CFA7A5181BD.highlight.minted) (./_minted/10A1C371F2BC162BEAF08FA72A9A6AA9.highlight.minted) (./_minted/7D04FD50A0260AE1045720444E786A3D.highlight.minted) (./_minted/5442520CDF420CC4D9D8E5811425430D.highlight.minted) (./_minted/36AFC11B77BC784BB917100D5D17BDFB.highlight.minted) (./_minted/33A2CF0B629A6A0B93F04F91BAFEF50B.highlight.minted)
+Overfull \hbox (27.61569pt too wide) in paragraph at lines 38--39
+[]\T1/cmr/m/n/12 In \T1/cmr/bx/n/12 PUP\T1/cmr/m/n/12 , the con-di-tion [][][][][][]
+ []
+
+(./_minted/31450973AA3A2F8E9C3623005B3E959A.highlight.minted) (./_minted/D5B57BA816462BBD1FE0B12186F93A56.highlight.minted) (./_minted/AFA65D08A0A8AE05B965E01DBD53BDB1.highlight.minted) (./_minted/D1CEBF6490D0CC669918D937A245B555.highlight.minted) (./_minted/FF0781A1DD37FB2CCD07C492CD148168.highlight.minted) (./_minted/5897657D5068492A64BFF2A08FD1E05C.highlight.minted) (./_minted/52CEC1A831089BB009114D25A931146F.highlight.minted) (./_minted/B9C7C4CC40F7CDEE326F1B0E37CF2561.highlight.minted) (./_minted/BED18FECFAF3B099C162923566B84543.highlight.minted) [9{/usr/share/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}] (./_minted/E7D943591C412407B62A0B8A7383E18C.highlight.minted) [10] (./_minted/B452597037846BC872ECA241C74E0D81.highlight.minted) (./_minted/CB998A9632C2B413949EF5D2ED589F15.highlight.minted)
+LaTeX Font Info:    Font shape `T1/cmtt/bx/n' in size <12> not available
+(Font)              Font shape `T1/cmtt/m/n' tried instead on input line 89.
+ [11] (./_minted/244C3493D7D3E2BD1596C352EC8B6183.highlight.minted) [12] (./_minted/5D5C8B2261515407F1913D87CBB56743.highlight.minted) (./_minted/A2D513347769D5B93E99CAB1E88AB60B.highlight.minted)
+<figures/diagrams/png/architecture.png, id=415, 587.3142pt x 505.89pt>
+ [13] (./_minted/B9AAB00C6787A8AF8A433BA4FF1D93B3.highlight.minted) [14] (./_minted/E1D5B53048E1E5BC0486921A57CBCDE1.highlight.minted) (./_minted/4E331156494B2F970489241DBFE0C4D4.highlight.minted) (./_minted/08F9AF0B320D10091C79577D393C8F0A.highlight.minted) (./_minted/995546C303A89CE9D543995C3FC6D7EE.highlight.minted) (./_minted/E6716F8359FE71EE0C42E63B70D87EA9.highlight.minted) (./_minted/8E5FA543E39E232E2B524CBD20CF7987.highlight.minted) (./_minted/E4CBEF28A8B7EA164D576E312D257D20.highlight.minted) (./_minted/758D89E0165B79128102BEA2D53D9599.highlight.minted) (./_minted/BF6FEFE011D151391D17544D61A8645E.highlight.minted) [15] (./_minted/796DE5BF0DC65FACFFF5B4150D9A0456.highlight.minted) (./_minted/948C7CDD2A34D8067E883B681D2E01BC.highlight.minted)
+Underfull \hbox (badness 3128) in paragraph at lines 198--199
  []\T1/cmr/bx/n/12 Aggregates.[] \T1/cmr/m/n/12 Ag-gre-gates are eval-u-ated lazily dur-ing search. \T1/cmtt/m/n/12 __bind(s,
  []
 
 (./_minted/C577BFC0576C6EE19A17E21B39F31FD1.highlight.minted) (./_minted/33A2CF0B629A6A0B93F04F91BAFEF50B.highlight.minted) (./_minted/FD4285D72B9CE6AC644C60C3BC50ACC8.highlight.minted
-Overfull \hbox (8.81062pt too wide) in paragraph at lines 180--1
+Overfull \hbox (8.81062pt too wide) in paragraph at lines 200--1
 []\T1/cmr/m/n/12 An ag-gre-gate can be re-stricted \T1/cmr/m/it/12 per tar-get \T1/cmr/m/n/12 us-ing [][][][][][],
  []
 
-) (./_minted/A2CC52821467F6F68C723596C177AE17.highlight.minted) (./_minted/EFA345FF8344ADDA10C160753F252CA1.highlight.minted) (./_minted/06EE43AE3397C0B5EB27EFB9D13C857B.highlight.minted [14]) (./_minted/83BB8BBFA2D40411B7337A2EEE543757.highlight.minted)) [15] [16]
+) (./_minted/A2CC52821467F6F68C723596C177AE17.highlight.minted) (./_minted/EFA345FF8344ADDA10C160753F252CA1.highlight.minted) (./_minted/06EE43AE3397C0B5EB27EFB9D13C857B.highlight.minted) [16] (./_minted/83BB8BBFA2D40411B7337A2EEE543757.highlight.minted)) [17] [18]
 \openout2 = `"3 - Implementazione.aux"'.
 
  (./3 - Implementazione.tex
 Chapter 3.
-[17
+[19
 
 
 
@@ -859,7 +854,7 @@ Overfull \hbox (29.53194pt too wide) in paragraph at lines 23--24
 []\T1/cmr/m/n/12 Each source atom up-dates the \T1/cmtt/m/n/12 AggregateState \T1/cmr/m/n/12 matched by its \T1/cmtt/m/n/12 RuntimeAggregateKey\T1/cmr/m/n/12 :
  []
 
-(./_minted/3DD3C2D1945653E7A0828F7F5D4E67F9.highlight.minted) (./_minted/28D766099570CA483739284393578E06.highlight.minted) [18] (./_minted/08A2EA52740AD58C3904D139957C71E5.highlight.minted) (./_minted/FE762A2D2A03C235899964B790C087BE.highlight.minted) (./_minted/20259B13BE587567BFA60300E8248659.highlight.minted) (./_minted/102CC375E9996868E634C9949EEDED00.highlight.minted) (./_minted/C6F0CAEA20DE6EAAE5F5AAB48194B4DE.highlight.minted) (./_minted/9510204A4B4742902396FFD75E4E8BB6.highlight.minted) (./_minted/E85F06C2F487C0395637BA6F3477DCFD.highlight.minted) (./_minted/84FF1B774D9BC44D18F3B2EEE911E337.highlight.minted) (./_minted/976628591801A4DF31FBE24E4BAC7CAF.highlight.minted) (./_minted/96F49EF2C09405C15EE32319605F6CFA.highlight.minted) (./_minted/FCF75B959469E11F7EACBD63AA36BFF6.highlight.minted) (./_minted/94A9C6F050F6019A1D27151C522CB376.highlight.minted) (./_minted/972EAE722AACDB599BCB49507C7D872B.highlight.minted) (./_minted/7A18A8BCFFB9F822260A1AA1B9ECCA00.highlight.minted [19]) (./_minted/018A5885D0B8E38F406A55778BFBC07C.highlight.minted) (./_minted/85806575D7F900B504BAC13364CEC12B.highlight.minted) (./_minted/314FDB61AD2BC059B0BFBCD0C45ABC69.highlight.minted) (./_minted/EA206B2A758E221B28E0FA42E920EA98.highlight.minted) (./_minted/85806575D7F900B504BAC13364CEC12B.highlight.minted) (./_minted/1AEE91B85F76C7D54846913521F111FE.highlight.minted) (./_minted/01C7CE607C211B7BCB83C525DDCBF7FA.highlight.minted) (./_minted/5921520A6CAC3ACED1342B343DA55C71.highlight.minted) (./_minted/E499274346FF1C02CD8DEEB9A82E07F3.highlight.minted)
+(./_minted/3DD3C2D1945653E7A0828F7F5D4E67F9.highlight.minted) (./_minted/28D766099570CA483739284393578E06.highlight.minted) [20] (./_minted/08A2EA52740AD58C3904D139957C71E5.highlight.minted) (./_minted/FE762A2D2A03C235899964B790C087BE.highlight.minted) (./_minted/20259B13BE587567BFA60300E8248659.highlight.minted) (./_minted/102CC375E9996868E634C9949EEDED00.highlight.minted) (./_minted/C6F0CAEA20DE6EAAE5F5AAB48194B4DE.highlight.minted) (./_minted/9510204A4B4742902396FFD75E4E8BB6.highlight.minted) (./_minted/E85F06C2F487C0395637BA6F3477DCFD.highlight.minted) (./_minted/84FF1B774D9BC44D18F3B2EEE911E337.highlight.minted) (./_minted/976628591801A4DF31FBE24E4BAC7CAF.highlight.minted) (./_minted/96F49EF2C09405C15EE32319605F6CFA.highlight.minted) (./_minted/FCF75B959469E11F7EACBD63AA36BFF6.highlight.minted) (./_minted/94A9C6F050F6019A1D27151C522CB376.highlight.minted) (./_minted/972EAE722AACDB599BCB49507C7D872B.highlight.minted) (./_minted/7A18A8BCFFB9F822260A1AA1B9ECCA00.highlight.minted [21]) (./_minted/018A5885D0B8E38F406A55778BFBC07C.highlight.minted) (./_minted/85806575D7F900B504BAC13364CEC12B.highlight.minted) (./_minted/314FDB61AD2BC059B0BFBCD0C45ABC69.highlight.minted) (./_minted/EA206B2A758E221B28E0FA42E920EA98.highlight.minted) (./_minted/85806575D7F900B504BAC13364CEC12B.highlight.minted) (./_minted/1AEE91B85F76C7D54846913521F111FE.highlight.minted) (./_minted/01C7CE607C211B7BCB83C525DDCBF7FA.highlight.minted) (./_minted/5921520A6CAC3ACED1342B343DA55C71.highlight.minted) (./_minted/E499274346FF1C02CD8DEEB9A82E07F3.highlight.minted)
 Underfull \hbox (badness 2205) in paragraph at lines 106--107
 []\T1/cmr/m/n/12 At each de-ci-sion point (\T1/cmtt/m/n/12 decide\T1/cmr/m/n/12 ), the back-end queries all so-lu-tions to
  []
@@ -869,7 +864,7 @@ Underfull \hbox (badness 2229) in paragraph at lines 106--107
 [][][][][][]\T1/cmr/m/n/12 , fil-ters out tar-gets that are al-ready as-signed on the
  []
 
-(./_minted/796DE5BF0DC65FACFFF5B4150D9A0456.highlight.minted) (./_minted/8CDB439CAA8F5F2538C82CFA7A5181BD.highlight.minted) (./_minted/EED2305D403C4774A06C8809CC40A024.highlight.minted) (./_minted/7552D83CB72B6C51D2641EDFD558A8EA.highlight.minted [20]) (./_minted/E84BB6C4AA039764ADD2DD7AEF0B250E.highlight.minted) (./_minted/2D2857F1F3BEBAEE85B35984F53A174D.highlight.minted) (./_minted/3449FC7A2C63E87201302CD26AD1708A.highlight.minted) (./_minted/D30CFCEAF4C7220B46F026369DBA8DD1.highlight.minted) [21]
+(./_minted/796DE5BF0DC65FACFFF5B4150D9A0456.highlight.minted) (./_minted/8CDB439CAA8F5F2538C82CFA7A5181BD.highlight.minted) (./_minted/EED2305D403C4774A06C8809CC40A024.highlight.minted) (./_minted/7552D83CB72B6C51D2641EDFD558A8EA.highlight.minted [22]) (./_minted/E84BB6C4AA039764ADD2DD7AEF0B250E.highlight.minted) (./_minted/2D2857F1F3BEBAEE85B35984F53A174D.highlight.minted) (./_minted/3449FC7A2C63E87201302CD26AD1708A.highlight.minted) (./_minted/D30CFCEAF4C7220B46F026369DBA8DD1.highlight.minted) [23]
 Overfull \hbox (24.37389pt too wide) in paragraph at lines 158--159
 \T1/cmr/m/n/12 ence file is the au-thors' $\T1/cmtt/m/n/12 Evaluation / PUP / Double / encoding-[]alpha-[]prologheu-[]double .
  []
@@ -879,7 +874,7 @@ Underfull \hbox (badness 1983) in paragraph at lines 175--175
 [][][][]$\T1/cmtt/m/n/10 https : / / github . com / tilmanni / Alpha / tree / domspec _ heuristics _ extended _ prolog$[]\T1/cmr/m/n/10 , the
  []
 
-[22]
+[24]
 Underfull \hbox (badness 1314) in paragraph at lines 177--178
 []\T1/cmr/m/n/12 We eval-u-ate Al-pha un-der two con-fig-u-ra-tions on all bench-mark fam-i-lies:
  []
@@ -889,93 +884,93 @@ Overfull \hbox (4.66296pt too wide) in paragraph at lines 186--187
 []\T1/cmr/m/n/12 All clingo runs are ex-e-cuted with do-main heuris-tics en-abled (\T1/cmtt/m/n/12 --heuristic=Domain\T1/cmr/m/n/12 )
  []
 
-) [23]
+) [25]
 \openout2 = `"4 - Risultati.aux"'.
 
  (./4 - Risultati.tex
 Chapter 4.
-[24
+[26
 
 
 
 
-] [25] (./_minted/658B0E09B80E970C25BA6BDEB43E4080.highlight.minted)
-<figures/bsp/SD/standard/combined_heuristics.png, id=529, 903.375pt x 502.87875pt>
- [26]
-<figures/hpc/SD/bsp/native_clingo_total.png, id=536, 464.59285pt x 323.15015pt>
- [27]
-<figures/hpc/SD/bsp/native_solving.png, id=547, 464.59285pt x 323.15015pt>
- [28] [29]
-<figures/hpc/SD/bsp/native_choices.png, id=565, 464.59285pt x 319.02043pt>
-<figures/hpc/SD/bsp/native_conflicts.png, id=566, 464.59285pt x 319.02043pt>
- [30]
-<figures/hpc/SD/bsp/native_mem.png, id=577, 464.59285pt x 326.76364pt>
- [31]
-<figures/hpc/SD/bsp/prolog_decide_calls.png, id=585, 464.59285pt x 319.02043pt>
-<figures/hpc/SD/bsp/prolog_ms_per_decide.png, id=586, 464.59285pt x 325.215pt>
+] [27] (./_minted/658B0E09B80E970C25BA6BDEB43E4080.highlight.minted)
+<figures/bsp/SD/standard/combined_heuristics.png, id=543, 903.375pt x 502.87875pt>
+ [28]
+<figures/hpc/SD/bsp/native_clingo_total.png, id=550, 464.59285pt x 323.15015pt>
+ [29]
+<figures/hpc/SD/bsp/native_solving.png, id=560, 464.59285pt x 323.15015pt>
+ [30] [31]
+<figures/hpc/SD/bsp/native_choices.png, id=579, 464.59285pt x 319.02043pt>
+<figures/hpc/SD/bsp/native_conflicts.png, id=580, 464.59285pt x 319.02043pt>
  [32]
-<figures/hpc/SD/bsp/comparison_solving.png, id=594, 464.59285pt x 380.96614pt>
+<figures/hpc/SD/bsp/native_mem.png, id=590, 464.59285pt x 326.76364pt>
  [33]
+<figures/hpc/SD/bsp/prolog_decide_calls.png, id=599, 464.59285pt x 319.02043pt>
+<figures/hpc/SD/bsp/prolog_ms_per_decide.png, id=600, 464.59285pt x 325.215pt>
+ [34]
+<figures/hpc/SD/bsp/comparison_solving.png, id=608, 464.59285pt x 380.96614pt>
+ [35]
 LaTeX Font Info:    Font shape `T1/cmtt/bx/n' in size <17.28> not available
 (Font)              Font shape `T1/cmtt/m/n' tried instead on input line 299.
- [34]
-<figures/hpc/SD/bsp/expl_gaweak_solving.png, id=608, 464.59285pt x 336.57172pt>
-<figures/hpc/SD/bsp/expl_gaweak_choices.png, id=609, 464.59285pt x 332.442pt>
- [35]
-<figures/hpc/SD/bsp/expl_laaux_solving.png, id=617, 464.59285pt x 336.57172pt>
-<figures/hpc/SD/bsp/expl_laaux_decide_calls.png, id=618, 464.59285pt x 340.70143pt>
  [36]
-<figures/hpc/SD/bsp/expl_laco_grounding.png, id=625, 464.59285pt x 336.57172pt>
-<figures/hpc/SD/bsp/expl_laco_rules.png, id=626, 464.59285pt x 330.89336pt>
-<figures/hpc/SD/pup/native_clingo_total.png, id=630, 464.59285pt x 323.15015pt>
+<figures/hpc/SD/bsp/expl_gaweak_solving.png, id=621, 464.59285pt x 336.57172pt>
+<figures/hpc/SD/bsp/expl_gaweak_choices.png, id=622, 464.59285pt x 332.442pt>
  [37]
+<figures/hpc/SD/bsp/expl_laaux_solving.png, id=630, 464.59285pt x 336.57172pt>
+<figures/hpc/SD/bsp/expl_laaux_decide_calls.png, id=631, 464.59285pt x 340.70143pt>
+ [38]
+<figures/hpc/SD/bsp/expl_laco_grounding.png, id=638, 464.59285pt x 336.57172pt>
+<figures/hpc/SD/bsp/expl_laco_rules.png, id=639, 464.59285pt x 330.89336pt>
+<figures/hpc/SD/pup/native_clingo_total.png, id=643, 464.59285pt x 323.15015pt>
+ [39]
 Overfull \hbox (2.9333pt too wide) in paragraph at lines 390--401
  [][] 
  []
 
-[38]
-<figures/hpc/SD/pup/native_grounding.png, id=644, 464.59285pt x 323.15015pt>
-<figures/hpc/SD/pup/native_mem.png, id=645, 464.59285pt x 326.76364pt>
- [39] [40]
-<figures/hpc/SD/pup/comparison_solving.png, id=662, 464.59285pt x 380.96614pt>
-<figures/hpc/SD/pup/prolog_state_sync.png, id=664, 464.59285pt x 323.15015pt>
- [41]
-<figures/hpc/SD/hrp/native_choices.png, id=671, 464.59285pt x 321.6015pt>
-<figures/hpc/SD/hrp/comparison_solving.png, id=672, 464.59285pt x 380.96614pt>
- [42] [43]
-<figures/hpc/SD/alpha/bsp_dashboard.png, id=684, 464.59285pt x 170.86693pt>
-<figures/hpc/SD/alpha/bsp_internals.png, id=686, 464.59285pt x 303.534pt>
- [44]
-<figures/hpc/SD/alpha/pup_dashboard.png, id=693, 464.59285pt x 170.86693pt>
- [45] [46]) [47] [48] [49
+[40]
+<figures/hpc/SD/pup/native_grounding.png, id=658, 464.59285pt x 323.15015pt>
+<figures/hpc/SD/pup/native_mem.png, id=659, 464.59285pt x 326.76364pt>
+ [41] [42]
+<figures/hpc/SD/pup/comparison_solving.png, id=675, 464.59285pt x 380.96614pt>
+<figures/hpc/SD/pup/prolog_state_sync.png, id=677, 464.59285pt x 323.15015pt>
+ [43]
+<figures/hpc/SD/hrp/native_choices.png, id=684, 464.59285pt x 321.6015pt>
+<figures/hpc/SD/hrp/comparison_solving.png, id=685, 464.59285pt x 380.96614pt>
+ [44] [45]
+<figures/hpc/SD/alpha/bsp_dashboard.png, id=698, 464.59285pt x 170.86693pt>
+<figures/hpc/SD/alpha/bsp_internals.png, id=700, 464.59285pt x 303.534pt>
+ [46]
+<figures/hpc/SD/alpha/pup_dashboard.png, id=708, 464.59285pt x 170.86693pt>
+ [47] [48]) [49] [50] [51
 \def\@LN@column{1}
 
 
 
-] [50] (./Spadafora_Pierpaolo_Thesis.aux (./0.2 - abstract.aux) (./1 - Introduzione.aux) (./2 - Metodologia.aux) (./3 - Implementazione.aux) (./4 - Risultati.aux))
+] [52] (./Spadafora_Pierpaolo_Thesis.aux (./0.2 - abstract.aux) (./1 - Introduzione.aux) (./2 - Metodologia.aux) (./3 - Implementazione.aux) (./4 - Risultati.aux))
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
  ***********
 Package rerunfilecheck Info: File `Spadafora_Pierpaolo_Thesis.out' has not changed.
-(rerunfilecheck)             Checksum: 07D1CB28956F6D8E55B2FE4F5F517E55;11048.
+(rerunfilecheck)             Checksum: 6917ACB98E66070EC560CB424CF290B9;11007.
 Package logreq Info: Writing requests to 'Spadafora_Pierpaolo_Thesis.run.xml'.
 \openout1 = `Spadafora_Pierpaolo_Thesis.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 26460 strings out of 469515
- 528086 string characters out of 5470808
- 1484306 words of memory out of 5000000
- 54370 multiletter control sequences out of 15000+600000
+ 26568 strings out of 469515
+ 533497 string characters out of 5470808
+ 1484299 words of memory out of 5000000
+ 54427 multiletter control sequences out of 15000+600000
  656503 words of font info for 113 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  86i,10n,93p,1239b,2321s stack positions out of 10000i,1000n,20000p,200000b,200000s
-</usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmti7.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmti8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1000.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx2074.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx2488.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfcc1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm0600.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm0700.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfti1000.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfti1095.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sftt1000.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sftt1095.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sftt1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sftt1728.pfb>
-Output written on Spadafora_Pierpaolo_Thesis.pdf (54 pages, 746450 bytes).
+</usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmti8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1000.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx2074.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx2488.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfcc1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm0600.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm0700.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfti1000.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfti1095.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sftt1000.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sftt1095.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sftt1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sftt1728.pfb>
+Output written on Spadafora_Pierpaolo_Thesis.pdf (56 pages, 745046 bytes).
 PDF statistics:
- 939 PDF objects out of 1000 (max. 8388607)
- 767 compressed objects within 8 object streams
- 179 named destinations out of 1000 (max. 500000)
+ 951 PDF objects out of 1000 (max. 8388607)
+ 779 compressed objects within 8 object streams
+ 186 named destinations out of 1000 (max. 500000)
  538 words of extra memory for PDF output out of 10000 (max. 10000000)
 
