@@ -30,9 +30,9 @@ Under Alpha-like semantics, \mintinline{text}|not p| is satisfied whenever $p$ i
 In standard ground clingo, however, \mintinline{text}|not p| in a \mintinline{text}|#heuristic| directive requires $p$ to be explicitly assigned false; while $p$ is still unassigned, the directive never triggers. 
 To enable heuristic guidance from the beginning of search, the ground variant \texttt{ga} drops these negative literals. 
 In problems like BSP, where \mintinline{text}|not c(X)| simply tests the complementary choice for the same element, this simplification is completely harmless because the solver never re-decides an atom that is already assigned. 
-In problems like HRP and PUP, dropping capacity guards (such as \mintinline{text}|not fullCabinet(C)|) is a necessary approximation: it allows directives to fire on unassigned atoms, but it cannot deactivate them once a resource becomes full. Overcoming this static approximation is one of the motivations for the lazy propagator approach.
+In problems like HRP and PUP, dropping capacity guards (such as \mintinline{text}|not fullCabinet(C)|) is a necessary approximation: it allows directives to fire on unassigned atoms, but it cannot deactivate them once a resource becomes full. Overcoming this limitation is one of the motivations for the lazy propagator approach.
 
-The second transformation replaces the equality condition with a \emph{lower/upper} bound. For BSP:
+The second transformation replaces dynamic aggregate equality with bound-guarded unrolling over all candidate values. For BSP:
 
 \begin{minted}{prolog}
 sum_value(0..tot).
@@ -40,19 +40,25 @@ sum_value(0..tot).
     W = ((n+1)*S)+X. [W, true]
 \end{minted}
 
-Instead of binding $S$ to the final value of the sum, the directive is unrolled over all candidate values \texttt{sum\_value(S)} and guarded by the condition $S \le \#\mathtt{sum}\{Y : c(Y)\}$. During search, as soon as the partial sum reaches a bound $S$, every directive with that bound becomes applicable; among the applicable ground directives for the same atom, clasp's Domain heuristic retains the one with the maximum weight, which corresponds exactly to the \emph{current} value of the aggregate. The max-weight selection thus reconstructs the dynamic aggregate at solving time. 
+Instead of binding $S$ to the final value of the sum, the directive is unrolled over all candidate values \texttt{sum\_value(S)} and guarded by a bound condition. During search, clasp's Domain heuristic activates all directives whose bounds are satisfied by the current partial assignment, and retains the single directive with the \emph{maximum weight} for each target atom. This mechanism reconstructs the dynamic aggregate value depending on the direction of the weight function:
 
-For aggregates whose contribution to the weight decreases rather than increases (such as the free-capacity terms $N_0,N_1,N_2$ in PUP, where we want to give higher priority to units with fewer occupied sensors), the same transformation is applied with the bound $V \ge \#\mathtt{max}\{\ldots\}$. 
-Because the weight decreases as $V$ grows, among all directives satisfied by the current state ($V \ge V_{\mathit{current}}$), clasp's maximum-weight selection naturally picks the directive with the smallest satisfied $V$, which corresponds exactly to the current value of the aggregate.
+\begin{itemize}
+    \item \textbf{Increasing weights (e.g., BSP):} The heuristic favors larger sums, using the guard $S \le \#\mathtt{sum}\{Y : c(Y)\}$. When the partial sum of elements currently assigned to $c$ reaches $S_{\mathit{curr}}$, all directives with $S \le S_{\mathit{curr}}$ become active. Since the weight $W(S)$ is directly proportional to $S$, clasp's maximum-weight selection picks the highest active bound:
+    \[
+    \arg\max_{S \le S_{\mathit{curr}}} W(S) \;=\; S_{\mathit{curr}}
+    \]
+    reconstructing the exact current sum.
+    
+    \item \textbf{Decreasing weights (e.g., PUP):} The heuristic favors lower occupancy (to maximize free capacity), using the inverted guard $V \ge \#\mathtt{max}\{\ldots\}$. When the number of sensors currently assigned to unit $U$ reaches $V_{\mathit{curr}}$, all directives with $V \ge V_{\mathit{curr}}$ become active. Since the weight $W(V)$ is inversely proportional to $V$, clasp's maximum-weight selection picks the lowest active bound:
+    \[
+    \arg\max_{V \ge V_{\mathit{curr}}} W(V) \;=\; V_{\mathit{curr}}
+    \]
+    isolating the exact current maximum.
+\end{itemize}
 
+This unrolling transformation relies on two structural properties. First, the unrolled variable is a \emph{binding} rather than a boolean test: it occurs only in the aggregate and the weight, ensuring that no specific value disables the directive. Second, the aggregate itself must be monotone so that satisfied bounds remain valid as the assignment grows. 
 
-The transformation is not a general rewriting, and two properties of the encodings of this suite are what make it work. First, $S$ is a \emph{binding} and not a test: it occurs only inside the aggregate and inside the weight, so no value of $S$ is meant to enable or disable the directive. An equality used as a \emph{guard}, one that must fire at a single value and stay silent elsewhere, is not preserved, because $S \le \mathit{agg}$ becomes true as soon as the aggregate reaches $S$ and never becomes false again. Second, the weight has to order the unrolled instances so that the one carrying the current value is the one that wins. Suppose the elements already placed in $c$ sum to $10$. Every directive with $S \le 10$ then has its guard satisfied, while those with $S > 10$ do not; since the weight $W = (n+1)S + X$ grows with $S$, the applicable directive with the largest weight is the one with $S = 10$, which is exactly the value the heuristic should read. Where the weight instead \emph{decreases} in the unrolled variable, as for the free-capacity terms of PUP, the guard must be reversed to $V \ge \#\mathtt{max}\{\ldots\}$, so that the winning directive is the smallest applicable $V$.
-
-Both aggregates involved are monotone: as atoms are assigned, a sum of positive elements and a maximum can only grow. A guard $S \le \mathit{aggregate}$ therefore asks whether the aggregate has \emph{already reached} $S$, and clasp can settle it from the assigned atoms alone, since the undecided ones could only push the value further up; the answer is available immediately and never has to be retracted. A guard $V \ge \mathit{aggregate}$ asks the opposite question, whether the aggregate can \emph{still exceed} $V$, and that one is about atoms that have not been decided yet.
-
-The direction of the guard is thus dictated by the direction of the weight. BSP ranks candidates by a quantity that accumulates, and reads it exactly from the first decision; PUP ranks them by the capacity still free on a unit, a quantity that can only be bounded from above as the assignment fills in. The lazy propagator is subject to neither constraint, because it reads the aggregate off the trail rather than having to prove bounds on it.
-
-Under these conditions the simulation in \texttt{ga} is faithful, but its price is exactly the combinatorial explosion that motivated the thesis: one ground directive per point of the product of the unrolled domains, measured in Chapter~\ref{sec:results}.
+While this simulation enables ground clingo to emulate dynamic aggregates, its fatal drawback is the resulting combinatorial explosion: grounding requires emitting one directive per point of the unrolled domains. The lazy backends avoid this overhead entirely by querying the dynamic aggregate directly from the solver trail at decision time.
 
 \subsection{Methodological Rationale for the Exploratory Variants}
 \label{sec:exploratory-methodology}
