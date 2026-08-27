@@ -56,32 +56,13 @@ sum_value(0..tot).
     W = ((n+1)*S)+X. [W, true]
 \end{minted}
 
-Instead of binding $S$ to the final value of the sum, the directive is unrolled over all candidate values \texttt{sum\_value(S)} and guarded by a bound condition, so that during search the currently satisfied bounds encode the current aggregate value. Whether this reconstruction succeeds depends on two independent conditions, which are easy to conflate: \emph{which} of the satisfied directives clasp retains, and \emph{when} a guard can become satisfied at all.
+the directive is unrolled over all \texttt{sum\_value(S)} and guarded by a bound condition, so that during search the currently satisfied bounds encode the current aggregate value. Whether this simulation succeeds depends on two conditions: \emph{selection} (which directive clasp retains) and \emph{activation} (when a guard can be satisfied).
 
-\paragraph{Selection: activation order, not maximum weight.}
-Written as \mintinline{text}|[W, true]| without an explicit \mintinline{text}|@p| field, all unrolled directives receive the default priority $0$. Clasp's domain heuristic then applies every newly activated modification --- the test $\mathtt{a.prio} \ge \mathtt{prio}$ above always succeeds --- overwriting the previous bias and restoring it in reverse order on backtracking. The retained directive is thus the \emph{most recently activated} one, not the one of maximum weight. The unrolling is therefore designed so that activation order coincides with weight order:
-
+Without explicit priorities all unrolled directives share the default priority $0$. Clasp applies newly satisfied directives by overwriting previous ones; it therefore retains the \emph{most recently activated} directive, not the maximum-weight one. To match the reference heuristic, the unrolling must align the activation order with the weight order:
 \begin{itemize}
-    \item \textbf{Lower-bound guards.} With a guard $V \le f$, where $f$ denotes the dynamic aggregate, the active set is the interval $\{V : V \le f_{\mathit{curr}}\}$, which grows by admitting ever larger values of $V$ as $f_{\mathit{curr}}$ increases. The last directive activated is therefore the one with $V = f_{\mathit{curr}}$, and this coincides with the maximum-weight directive precisely when $W$ is \emph{increasing} in $V$. BSP is of this form: the guard is $S \le \#\mathtt{sum}\{Y : c(Y)\}$ and $W(S) = (n{+}1)S + X$ is strictly increasing, so the retained value is exactly the current sum.
-
-    \item \textbf{Upper-bound guards.} With a guard $V \ge f$, the active set is $\{V : V \ge f_{\mathit{curr}}\}$, which grows by admitting ever smaller values of $V$; the reconstruction then requires $W$ to be \emph{decreasing} in $V$. This is the form taken by the capacity component of the PUP zone directive, where units with fewer occupied sensors are preferred and the weight is $6 - (N_0 + N_1 + N_2)$.
+    \item \textbf{Lower-bound guards ($V \le f$):} As $f$ increases, the active set $\{V : V \le f_{\mathit{curr}}\}$ expands upwards. The last activated value is $V = f_{\mathit{curr}}$, which yields the maximum weight if $W(V)$ is strictly \emph{increasing} (e.g., in BSP, where $W(S) = (n{+}1)S + X$).
+    \item \textbf{Upper-bound guards ($V \ge f$):} As $f$ decreases, the active set $\{V : V \ge f_{\mathit{curr}}\}$ expands downwards, requiring $W(V)$ to be strictly \emph{decreasing} (e.g., the capacity component in PUP, where $W = 6 - \sum N_i$).
 \end{itemize}
-
-The direction of the comparison is thus dictated by the direction of the weight, which in turn is dictated by the reference Alpha heuristic; it is not a free choice, and it is independent of which aggregate function occurs in the directive. A heuristic favouring small values of a \mintinline{text}|#min| aggregate would be unrolled as $V \ge \#\mathtt{min}\{\ldots\}$ with a decreasing weight, one favouring large values as $V \le \#\mathtt{min}\{\ldots\}$ with an increasing weight, and so on for the remaining combinations.
-
-\paragraph{Activation: only monotone guards fire under a partial assignment.}
-The second condition is more restrictive, and it is where the ground simulation genuinely departs from Alpha. A guard can be \emph{true} under a partial assignment only if it is monotone, i.e.\ only if it asserts that sufficiently many atoms are already true:
-\[
-V \le \#\mathtt{sum}, \qquad V \le \#\mathtt{count}, \qquad V \le \#\mathtt{max}, \qquad V \ge \#\mathtt{min}.
-\]
-Their duals --- $V \ge \#\mathtt{sum}$, $V \ge \#\mathtt{count}$, $V \ge \#\mathtt{max}$, $V \le \#\mathtt{min}$ --- assert instead that no further atom \emph{can} contribute, a property clasp establishes only once the relevant atoms have been decided false. Combining the two conditions, exact reconstruction under a partial assignment is available for increasing weights over $\#\mathtt{sum}$, $\#\mathtt{count}$ and $\#\mathtt{max}$, and for decreasing weights over $\#\mathtt{min}$; the remaining two combinations degrade to a conservative approximation.
-
-BSP and the sensor directive of PUP fall entirely within the monotone fragment: all their guards are of the form $V \le \#\mathtt{count}$ or $V \le \#\mathtt{max}$, and the reconstruction is exact at every point of the search. The capacity component of the PUP zone directive does not. On \texttt{double-20}, of the $31\,320$ ground zone directives only $1\,320$ are active at the root, and of these $400$ carry weight $100\,000$ against $20$ each at $100\,001$, $100\,002$ and $100\,010$ --- that is, the term $6 - (N_0+N_1+N_2)$ evaluates to $0$ for essentially every candidate. Where Alpha sees six free sensor slots on an empty unit, the ground simulation sees none, and it does so uniformly, so the component provides no discrimination at all. The discrepancy persists during search: a unit that is still empty keeps reporting zero free capacity until all of its candidate sensor assignments have been decided false.
-
-This is not a defect of the particular encoding that a more careful rewriting could remove. The statement \emph{``this unit still has room''} is a claim about atoms that are not yet assigned, and no body literal interpreted under completion semantics can express it: clingo's body literals range over what the solver has entailed, whereas an Alpha-style heuristic reads the atoms that are true \emph{on the current trail}, a non-monotone function of the partial assignment. The monotone fragment identified above is therefore precisely the fragment that a ground simulation can cover, and this delimitation is the structural argument for the lazy propagator, which queries the trail directly rather than an entailment-based encoding of it.
-
-\paragraph{Cost.}
-The unrolling also relies on the unrolled variable being a \emph{binding} rather than a boolean test: it occurs only in the guard and in the weight, so that no particular value can disable the directive on its own. Its fatal drawback, however, is the resulting combinatorial explosion, since grounding must emit one directive per point of the Cartesian product of the unrolled domains. On \texttt{double-20} --- the smallest PUP instance --- this already yields $137\,160$ ground heuristic directives, $105\,840$ for \mintinline{text}|assigned_sensor_unit| (four unrolled domains) and $31\,320$ for \mintinline{text}|assigned_zone_unit| (four unrolled domains). The lazy backends avoid this overhead entirely by querying the dynamic aggregate directly from the solver trail at decision time.
 
 \subsection{Methodological Rationale for the Exploratory Variants}
 \label{sec:exploratory-methodology}
@@ -107,7 +88,7 @@ Section~\ref{sec:bg-alpha} recorded that the two systems read the annotation $[W
 The intended order can nevertheless be recovered, by \emph{flattening} the level into the weight:
 \[
 W_{\mathit{flat}} \;=\; W + P \cdot M,
-\qquad M > \max W - \min W ,
+\qquad M > \max W - \min W,
 \]
 where the intra-level weights $W$ range over $[\min W, \max W]$ and the level multiplier $M$ is larger than that range. Under this condition $W + P\cdot M > W' + P'\cdot M$ holds whenever $P > P'$, regardless of the two individual weights, and reduces to $W > W'$ when $P = P'$: the total order induced on the atoms is then the one Alpha's absolute levels induce. When all weights are non-negative, which is the case in every encoding of this suite, $M > \max W$ suffices.
 
@@ -143,7 +124,7 @@ The second argument, \texttt{true}, instructs clasp to call the propagator seque
 \label{fig:architecture}
 \end{figure}
 
-In both builds, the class implements \texttt{clingo::Heuristic}---the propagator interface extended with the \texttt{decide} callback (Section~\ref{sec:bg-propagator}). Both backends follow the same four-step lifecycle:
+In both builds, the class implements \texttt{clingo::Heuristic},the propagator interface extended with the \texttt{decide} callback (Section~\ref{sec:bg-propagator}). Both backends follow the same four-step lifecycle:
 \begin{itemize}[leftmargin=1.5em, itemsep=1pt]
     \item During \texttt{init}, they scan symbolic atoms for trigger facts (\texttt{\_\_heuristic(...)} in the C++ build and \mintinline{text}|heuristic("...")| in the Prolog build), construct their runtime representation, and register watches on solver literals.
     \item During forward search, \texttt{propagate} updates the internal state of the aggregates appearing in the heuristic bodies, together with the candidate states, as watched literals become true.
@@ -265,9 +246,9 @@ weight & \texttt{W = ((n+1)*S)+X} & \texttt{\_\_weight(\_\_add(} \newline \textt
 \addlinespace[3pt]
 modifier & \texttt{[W, true]} & \texttt{\_\_modifier(true)}, \newline default \texttt{true} & fourth head argument\\
 \addlinespace[3pt]
-semantics & --- (fixed by the system) & \texttt{\_\_semantics(alpha)} \newline \texttt{\_\_semantics(clingo)} & choice of \texttt{alpha\_not} / \texttt{clingo\_not}\\
+semantics &, (fixed by the system) & \texttt{\_\_semantics(alpha)} \newline \texttt{\_\_semantics(clingo)} & choice of \texttt{alpha\_not} / \texttt{clingo\_not}\\
 \addlinespace[3pt]
-target still free & --- (implicit in clasp) & implicit: an assigned target is skipped & \texttt{target\_available(} \newline \texttt{\ \ b(X))}\\
+target still free &, (implicit in clasp) & implicit: an assigned target is skipped & \texttt{target\_available(} \newline \texttt{\ \ b(X))}\\
 \bottomrule
 \end{tabular}
 \caption{The same heuristic in the three notations.}

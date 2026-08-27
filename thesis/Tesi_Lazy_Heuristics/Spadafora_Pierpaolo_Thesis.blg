@@ -1,15 +1,15 @@
 [0] Config.pm:329> INFO - This is Biber 2.22
 [0] Config.pm:332> INFO - Logfile is 'Spadafora_Pierpaolo_Thesis.blg'
-[51] biber:342> INFO - === gio ago 27, 2026, 22:37:45
-[66] Biber.pm:421> INFO - Reading 'Spadafora_Pierpaolo_Thesis.bcf'
-[122] Biber.pm:1002> INFO - Found 17 citekeys in bib section 0
-[136] Biber.pm:4487> INFO - Processing section 0
-[145] Biber.pm:4680> INFO - Looking for bibtex file 'bibliografia.bib' for section 0
-[146] bibtex.pm:1713> INFO - LaTeX decoding ...
-[160] bibtex.pm:1519> INFO - Found BibTeX data source 'bibliografia.bib'
-[317] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'variable = shifted' with 'variable = non-ignorable'
-[317] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'normalization = NFD' with 'normalization = prenormalized'
-[317] Biber.pm:4307> INFO - Sorting list 'none/global//global/global/global' of type 'entry' with template 'none' and locale 'en-US'
-[317] Biber.pm:4313> INFO - No sort tailoring available for locale 'en-US'
-[328] bbl.pm:676> INFO - Writing 'Spadafora_Pierpaolo_Thesis.bbl' with encoding 'UTF-8'
-[334] bbl.pm:779> INFO - Output to Spadafora_Pierpaolo_Thesis.bbl
+[58] biber:342> INFO - === gio ago 27, 2026, 22:56:08
+[71] Biber.pm:421> INFO - Reading 'Spadafora_Pierpaolo_Thesis.bcf'
+[129] Biber.pm:1002> INFO - Found 17 citekeys in bib section 0
+[142] Biber.pm:4487> INFO - Processing section 0
+[150] Biber.pm:4680> INFO - Looking for bibtex file 'bibliografia.bib' for section 0
+[151] bibtex.pm:1713> INFO - LaTeX decoding ...
+[166] bibtex.pm:1519> INFO - Found BibTeX data source 'bibliografia.bib'
+[329] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'variable = shifted' with 'variable = non-ignorable'
+[329] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'normalization = NFD' with 'normalization = prenormalized'
+[329] Biber.pm:4307> INFO - Sorting list 'none/global//global/global/global' of type 'entry' with template 'none' and locale 'en-US'
+[329] Biber.pm:4313> INFO - No sort tailoring available for locale 'en-US'
+[342] bbl.pm:676> INFO - Writing 'Spadafora_Pierpaolo_Thesis.bbl' with encoding 'UTF-8'
+[350] bbl.pm:779> INFO - Output to Spadafora_Pierpaolo_Thesis.bbl
