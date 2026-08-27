@@ -27,16 +27,25 @@ Reproducing an Alpha-like behaviour within clingo requires addressing two distin
 
 \subsubsection{Default negation over unassigned literals}
 
-The first transformation concerns the negative literals of the heuristic bodies: \mintinline{text}|not c(X)| in BSP, \mintinline{text}|not not_assigned_sensor_unit(S,U)| in PUP, and capacity guards such as \mintinline{text}|not fullCabinet(C)| in HRP. clasp listens to a heuristic suggestion only while its target variable is still unassigned, as the guard in \texttt{DomainHeuristic::propagate} shows:
+The first transformation concerns negative literals in heuristic bodies: \mintinline{text}|not c(X)| in BSP, \mintinline{text}|not not_assigned_sensor_unit(S,U)| in PUP, and guards such as \mintinline{text}|not fullCabinet(C)| and \mintinline{text}|not assignedThing(T)| in HRP. 
+
+Clasp applies heuristic modifications only to variables that are currently unassigned, as enforced in \texttt{DomainHeuristic::propagate}:
 \begin{minted}{cpp}
 if (s.value(a.var) == value_free && a.prio >= prio) { applyAction(s, a, prio); }
 \end{minted}
-It follows that \emph{a directive whose body determines the truth value of its own target can never fire}: once the body holds, the target is already assigned, and clasp skips it.
+It follows that \emph{a directive whose body entails the truth value of its own target atom can never fire}: once the body conditions hold, the target is already decided, and clasp skips it.
 
-Every heuristic directive of BSP and PUP has this shape: in BSP, \mintinline{text}|b(X)| and \mintinline{text}|c(X)| collapse to a single solver variable with opposite signs, so the condition \mintinline{text}|not b(X)| is the target literal \mintinline{text}|c(X)| itself; in PUP, the condition on \mintinline{text}|assigned_sensor_unit(S,U)| is the body of the rule that derives it. The \mintinline{text}|cabinetTOthing| directives of HRP are the same, since \mintinline{text}|not assignedThing(T)| forces the target false rather than true. None of them ever fires. HRP, however, also contains some directives that simply prefer reusing the legacy furniture, guarded only by input predicates such as \mintinline{text}|legacyCabinet(C)|. Nothing in them depends on the search, so their ground instances carry no condition at all and clasp applies them before the first decision. On HRP, \texttt{gc} therefore keeps the reuse preferences and loses only the capacity guards.
+All heuristic directives in the suite that test the search state through negative literals show the same problem:
+\begin{itemize}
+    \item In \textbf{BSP}, \mintinline{text}|b(X)| and \mintinline{text}|c(X)| are complementary choices, so the condition \mintinline{text}|not b(X)| is satisfied only once the target \mintinline{text}|c(X)| is already derived.
+    \item In \textbf{PUP}, the condition on \mintinline{text}|assigned_sensor_unit(S,U)| in the heuristic is identical to the problem rule that derives that same atom.
+    \item In \textbf{HRP}, the placement directives for \mintinline{text}|cabinetTOthing(C,T)| require \mintinline{text}|not assignedThing(T)|; in ground clingo this holds only when the candidate assignments for $T$ are already proven false, meaning the target is never unassigned (\texttt{value\_free}) when the directive evaluates.
+\end{itemize}
+Consequently, in the \texttt{gc} variant, none of these ever fires during search.
 
-The ground variant \texttt{ga} therefore drops these negative literals. This translation is free when the negated atom is the target or its complement, as in BSP and PUP: nothing is lost that could have fired, and the \mintinline{text}|value_free| guard still keeps clasp from steering an atom that is already assigned. In HRP the dropped literals also include capacity guards such as \mintinline{text}|not fullCabinet(C)|, which describe a resource rather than the target; there the drop buys early activation at the price of never switching the directive off once a cabinet fills up.
-
+The ground variant \texttt{ga} therefore drops these negative literals from the heuristic bodies. 
+For directives where the negated literal simply tests the target atom or its complement (as in BSP and PUP), this simplification is completely safe: nothing is lost that could have fired, and clasp's \mintinline{text}|value_free| check still prevents modifying an already assigned atom. 
+In HRP, however, the dropped literals also include capacity guards such as \mintinline{text}|not fullCabinet(C)|, which describe a shared resource rather than the target atom itself. There, dropping the guard is a necessary static approximation: it enables the directive to fire on unassigned atoms from the start of search, at the price of never deactivating once a cabinet becomes full.
 \subsubsection{Dynamic aggregates by bound-guarded unrolling}
 
 The second transformation replaces dynamic aggregate equality with bound-guarded unrolling over all candidate values. For BSP:
