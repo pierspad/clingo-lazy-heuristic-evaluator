@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Arch Linux) (preloaded format=pdflatex 2026.6.1)  27 AUG 2026 23:05
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Arch Linux) (preloaded format=pdflatex 2026.6.1)  27 AUG 2026 23:17
 entering extended mode
  \write18 enabled.
  file:line:error style messages enabled.
@@ -797,10 +797,10 @@ Chapter 1.
 \pydata@fh@0=\write7
 \openout7 = `_2AE2944559263F6456DC6AA53993E271.data.minted'.
 
-runsystem(latexminted config  --timestamp 20260827230506 2AE2944559263F6456DC6AA53993E271)...executed.
+runsystem(latexminted config  --timestamp 20260827231737 2AE2944559263F6456DC6AA53993E271)...executed.
 
  (./_2AE2944559263F6456DC6AA53993E271.config.minted)
-runsystem(latexminted cleanconfig  --timestamp 20260827230506 2AE2944559263F6456DC6AA53993E271)...executed.
+runsystem(latexminted cleanconfig  --timestamp 20260827231737 2AE2944559263F6456DC6AA53993E271)...executed.
 
  (./_minted/friendly.style.minted) (./_minted/E1D5B53048E1E5BC0486921A57CBCDE1.highlight.minted)
 <figures/diagrams/png/pipelines.png, id=293, 466.3824pt x 260.53336pt>
@@ -831,16 +831,16 @@ Overfull \hbox (23.82777pt too wide) in paragraph at lines 42--43
 
 (./_minted/FF0781A1DD37FB2CCD07C492CD148168.highlight.minted) (./_minted/5897657D5068492A64BFF2A08FD1E05C.highlight.minted) (./_minted/52CEC1A831089BB009114D25A931146F.highlight.minted) [9{/usr/share/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}]
 LaTeX Font Info:    Font shape `T1/cmtt/bx/n' in size <12> not available
-(Font)              Font shape `T1/cmtt/m/n' tried instead on input line 82.
+(Font)              Font shape `T1/cmtt/m/n' tried instead on input line 74.
  [10] (./_minted/244C3493D7D3E2BD1596C352EC8B6183.highlight.minted) (./_minted/5D5C8B2261515407F1913D87CBB56743.highlight.minted) [11] (./_minted/A2D513347769D5B93E99CAB1E88AB60B.highlight.minted)
-<figures/diagrams/png/architecture.png, id=407, 587.3142pt x 505.89pt>
+<figures/diagrams/png/architecture.png, id=406, 587.3142pt x 505.89pt>
  [12] (./_minted/B9AAB00C6787A8AF8A433BA4FF1D93B3.highlight.minted) [13] (./_minted/E1D5B53048E1E5BC0486921A57CBCDE1.highlight.minted) (./_minted/4E331156494B2F970489241DBFE0C4D4.highlight.minted) (./_minted/08F9AF0B320D10091C79577D393C8F0A.highlight.minted) (./_minted/995546C303A89CE9D543995C3FC6D7EE.highlight.minted [14]) (./_minted/E6716F8359FE71EE0C42E63B70D87EA9.highlight.minted) (./_minted/8E5FA543E39E232E2B524CBD20CF7987.highlight.minted) (./_minted/E4CBEF28A8B7EA164D576E312D257D20.highlight.minted) (./_minted/758D89E0165B79128102BEA2D53D9599.highlight.minted) (./_minted/BF6FEFE011D151391D17544D61A8645E.highlight.minted) (./_minted/796DE5BF0DC65FACFFF5B4150D9A0456.highlight.minted) (./_minted/948C7CDD2A34D8067E883B681D2E01BC.highlight.minted)
-Underfull \hbox (badness 3128) in paragraph at lines 195--196
+Underfull \hbox (badness 3128) in paragraph at lines 187--188
  []\T1/cmr/bx/n/12 Aggregates.[] \T1/cmr/m/n/12 Ag-gre-gates are eval-u-ated lazily dur-ing search. \T1/cmtt/m/n/12 __bind(s,
  []
 
 (./_minted/C577BFC0576C6EE19A17E21B39F31FD1.highlight.minted) (./_minted/33A2CF0B629A6A0B93F04F91BAFEF50B.highlight.minted) (./_minted/FD4285D72B9CE6AC644C60C3BC50ACC8.highlight.minted
-Overfull \hbox (8.81062pt too wide) in paragraph at lines 197--1
+Overfull \hbox (8.81062pt too wide) in paragraph at lines 189--1
 []\T1/cmr/m/n/12 An ag-gre-gate can be re-stricted \T1/cmr/m/it/12 per tar-get \T1/cmr/m/n/12 us-ing [][][][][][],
  []
 
@@ -900,21 +900,21 @@ Chapter 4.
 
 
 ] [26] (./_minted/658B0E09B80E970C25BA6BDEB43E4080.highlight.minted)
-<figures/bsp/SD/standard/combined_heuristics.png, id=535, 903.375pt x 502.87875pt>
+<figures/bsp/SD/standard/combined_heuristics.png, id=534, 903.375pt x 502.87875pt>
  [27]
-<figures/hpc/SD/bsp/native_clingo_total.png, id=543, 464.59285pt x 323.15015pt>
+<figures/hpc/SD/bsp/native_clingo_total.png, id=542, 464.59285pt x 323.15015pt>
  [28]
-<figures/hpc/SD/bsp/native_solving.png, id=553, 464.59285pt x 323.15015pt>
+<figures/hpc/SD/bsp/native_solving.png, id=552, 464.59285pt x 323.15015pt>
  [29] [30]
-<figures/hpc/SD/bsp/native_choices.png, id=572, 464.59285pt x 319.02043pt>
-<figures/hpc/SD/bsp/native_conflicts.png, id=573, 464.59285pt x 319.02043pt>
+<figures/hpc/SD/bsp/native_choices.png, id=571, 464.59285pt x 319.02043pt>
+<figures/hpc/SD/bsp/native_conflicts.png, id=572, 464.59285pt x 319.02043pt>
  [31]
-<figures/hpc/SD/bsp/native_mem.png, id=583, 464.59285pt x 326.76364pt>
+<figures/hpc/SD/bsp/native_mem.png, id=582, 464.59285pt x 326.76364pt>
  [32]
-<figures/hpc/SD/bsp/prolog_decide_calls.png, id=591, 464.59285pt x 319.02043pt>
-<figures/hpc/SD/bsp/prolog_ms_per_decide.png, id=592, 464.59285pt x 325.215pt>
+<figures/hpc/SD/bsp/prolog_decide_calls.png, id=590, 464.59285pt x 319.02043pt>
+<figures/hpc/SD/bsp/prolog_ms_per_decide.png, id=591, 464.59285pt x 325.215pt>
  [33]
-<figures/hpc/SD/bsp/comparison_solving.png, id=601, 464.59285pt x 380.96614pt>
+<figures/hpc/SD/bsp/comparison_solving.png, id=600, 464.59285pt x 380.96614pt>
  [34]
 LaTeX Font Info:    Font shape `T1/cmtt/bx/n' in size <17.28> not available
 (Font)              Font shape `T1/cmtt/m/n' tried instead on input line 299.
@@ -972,7 +972,7 @@ Here is how much of TeX's memory you used:
  14 hyphenation exceptions out of 8191
  86i,10n,93p,1239b,2321s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmti8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1000.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx2074.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx2488.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfcc1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm0600.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm0700.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfti1000.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfti1095.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sftt1000.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sftt1095.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sftt1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sftt1728.pfb>
-Output written on Spadafora_Pierpaolo_Thesis.pdf (55 pages, 740511 bytes).
+Output written on Spadafora_Pierpaolo_Thesis.pdf (55 pages, 738779 bytes).
 PDF statistics:
  944 PDF objects out of 1000 (max. 8388607)
  773 compressed objects within 8 object streams
