@@ -1,8 +1,8 @@
 [0] Config.pm:329> INFO - This is Biber 2.22
 [0] Config.pm:332> INFO - Logfile is 'Spadafora_Pierpaolo_Thesis.blg'
-[55] biber:342> INFO - === gio ago 27, 2026, 23:17:33
-[69] Biber.pm:421> INFO - Reading 'Spadafora_Pierpaolo_Thesis.bcf'
-[128] Biber.pm:1002> INFO - Found 17 citekeys in bib section 0
+[55] biber:342> INFO - === gio ago 27, 2026, 23:50:48
+[70] Biber.pm:421> INFO - Reading 'Spadafora_Pierpaolo_Thesis.bcf'
+[130] Biber.pm:1002> INFO - Found 17 citekeys in bib section 0
 [144] Biber.pm:4487> INFO - Processing section 0
 [151] Biber.pm:4680> INFO - Looking for bibtex file 'bibliografia.bib' for section 0
 [152] bibtex.pm:1713> INFO - LaTeX decoding ...

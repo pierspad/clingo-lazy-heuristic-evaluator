@@ -124,7 +124,7 @@ The second argument, \texttt{true}, instructs clasp to call the propagator seque
 \label{fig:architecture}
 \end{figure}
 
-In both builds, the class implements \texttt{clingo::Heuristic},the propagator interface extended with the \texttt{decide} callback (Section~\ref{sec:bg-propagator}). Both backends follow the same four-step lifecycle:
+In both builds, the class implements \texttt{clingo::Heuristic}, the propagator interface extended with the \texttt{decide} callback (Section~\ref{sec:bg-propagator}). Both backends follow the same four-step lifecycle:
 \begin{itemize}[leftmargin=1.5em, itemsep=1pt]
     \item During \texttt{init}, they scan symbolic atoms for trigger facts (\texttt{\_\_heuristic(...)} in the C++ build and \mintinline{text}|heuristic("...")| in the Prolog build), construct their runtime representation, and register watches on solver literals.
     \item During forward search, \texttt{propagate} updates the internal state of the aggregates appearing in the heuristic bodies, together with the candidate states, as watched literals become true.
