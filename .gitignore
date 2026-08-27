@@ -33,3 +33,6 @@ test_folder/benchmark_folder_clingo/benchmarks.bak/
 # insieme di nodi SLURM congelato per la campagna (generato sull'HPC da
 # scripts/hpc_target.sh: e' uno stato del cluster, non del repo)
 .hpc_target.conf
+thesis/feedback_javier.pdf
+thesis/feedback_javier_notes.md
+paper/Learning-to-solve-and-optimize-by-evolving-code.pdf
