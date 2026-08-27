@@ -46,6 +46,7 @@ Consequently, in the \texttt{gc} variant, none of these ever fires during search
 The ground variant \texttt{ga} therefore drops these negative literals from the heuristic bodies. 
 For directives where the negated literal simply tests the target atom or its complement (as in BSP and PUP), this simplification is completely safe: nothing is lost that could have fired, and clasp's \mintinline{text}|value_free| check still prevents modifying an already assigned atom. 
 In HRP, however, the dropped literals also include capacity guards such as \mintinline{text}|not fullCabinet(C)|, which describe a shared resource rather than the target atom itself. There, dropping the guard is a necessary static approximation: it enables the directive to fire on unassigned atoms from the start of search, at the price of never deactivating once a cabinet becomes full.
+
 \subsubsection{Dynamic aggregates by bound-guarded unrolling}
 
 The second transformation replaces dynamic aggregate equality with bound-guarded unrolling over all candidate values. For BSP:
@@ -56,12 +57,12 @@ sum_value(0..tot).
     W = ((n+1)*S)+X. [W, true]
 \end{minted}
 
-the directive is unrolled over all \texttt{sum\_value(S)} and guarded by a bound condition, so that during search the currently satisfied bounds encode the current aggregate value. Whether this simulation succeeds depends on two conditions: \emph{selection} (which directive clasp retains) and \emph{activation} (when a guard can be satisfied).
+Here the directive is unrolled over all \texttt{sum\_value(S)} and guarded by a bound condition, so that during search the currently satisfied bounds encode the current aggregate value, provided the guard is monotone, i.e.\ once satisfied it stays satisfied as further atoms become true.
 
 Without explicit priorities all unrolled directives share the default priority $0$. Clasp applies newly satisfied directives by overwriting previous ones; it therefore retains the \emph{most recently activated} directive, not the maximum-weight one. To match the reference heuristic, the unrolling must align the activation order with the weight order:
 \begin{itemize}
-    \item \textbf{Lower-bound guards ($V \le f$):} As $f$ increases, the active set $\{V : V \le f_{\mathit{curr}}\}$ expands upwards. The last activated value is $V = f_{\mathit{curr}}$, which yields the maximum weight if $W(V)$ is strictly \emph{increasing} (e.g., in BSP, where $W(S) = (n{+}1)S + X$).
-    \item \textbf{Upper-bound guards ($V \ge f$):} As $f$ decreases, the active set $\{V : V \ge f_{\mathit{curr}}\}$ expands downwards, requiring $W(V)$ to be strictly \emph{decreasing} (e.g., the capacity component in PUP, where $W = 6 - \sum N_i$).
+    \item \textbf{Lower-bound guards ($V \le f$):} As $f$ increases, the active set $\{V : V \le f_{\mathit{curr}}\}$ expands upwards. The last activated value is $V = f_{\mathit{curr}}$, which yields the maximum weight if $W(V)$ is strictly \emph{increasing} (e.g.\ in BSP, where $W(S) = (n{+}1)S + X$).
+    \item \textbf{Upper-bound guards ($V \ge f$):} The active set $\{V : V \ge f_{\mathit{curr}}\}$ instead expands downwards, as $f$ decreases, and the alignment requires $W(V)$ to be strictly \emph{decreasing}.
 \end{itemize}
 
 \subsection{Methodological Rationale for the Exploratory Variants}

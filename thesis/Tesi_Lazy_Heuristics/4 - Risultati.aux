@@ -77,15 +77,15 @@
 \newlabel{fig:pup-total}{{4.11}{39}{Total clingo runtime on PUP across instance sizes for the C++ backend (curves terminate at the largest solved instance)}{figure.4.11}{}}
 \@writefile{lot}{\contentsline {table}{\numberline {4.8}{\ignorespaces PUP frontier on the C++ backend ($600$\,s / $30$\,GB budget): largest solved \texttt  {double-$N$} instance and corresponding resource metrics.}}{39}{table.4.8}\protected@file@percent }
 \newlabel{tab:pup-frontier}{{4.8}{39}{PUP frontier on the C++ backend ($600$\,s / $30$\,GB budget): largest solved \texttt {double-$N$} instance and corresponding resource metrics}{table.4.8}{}}
-\@writefile{toc}{\contentsline {paragraph}{Analysis of baseline failures.}{39}{section*.16}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Analysis of baseline failures.}{39}{section*.15}\protected@file@percent }
 \def\@LN@column{1}
-\@writefile{toc}{\contentsline {paragraph}{Grounding and memory savings (\texttt  {la} vs \texttt  {ga}).}{40}{section*.17}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Grounding and memory savings (\texttt  {la} vs \texttt  {ga}).}{40}{section*.16}\protected@file@percent }
 \@writefile{lof}{\contentsline {figure}{\numberline {4.12}{\ignorespaces Grounding time on PUP for the C++ backend across instance sizes.}}{40}{figure.4.12}\protected@file@percent }
 \newlabel{fig:pup-grounding}{{4.12}{40}{Grounding time on PUP for the C++ backend across instance sizes}{figure.4.12}{}}
 \def\@LN@column{1}
 \@writefile{lof}{\contentsline {figure}{\numberline {4.13}{\ignorespaces Peak memory usage on PUP for the C++ backend, illustrating the $2\times $ memory reduction of \texttt  {la} over \texttt  {ga}.}}{41}{figure.4.13}\protected@file@percent }
 \newlabel{fig:pup-mem}{{4.13}{41}{Peak memory usage on PUP for the C++ backend, illustrating the $2\times $ memory reduction of \texttt {la} over \texttt {ga}}{figure.4.13}{}}
-\@writefile{toc}{\contentsline {paragraph}{Controlled semantic comparison (\texttt  {la} vs \texttt  {lc}).}{41}{section*.18}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Controlled semantic comparison (\texttt  {la} vs \texttt  {lc}).}{41}{section*.17}\protected@file@percent }
 \def\@LN@column{1}
 \@writefile{lof}{\contentsline {figure}{\numberline {4.14}{\ignorespaces Solving time (top) and Prolog-to-C++ runtime ratio (bottom) on PUP across execution backends.}}{42}{figure.4.14}\protected@file@percent }
 \newlabel{fig:pup-comparison-solving}{{4.14}{42}{Solving time (top) and Prolog-to-C++ runtime ratio (bottom) on PUP across execution backends}{figure.4.14}{}}
@@ -105,11 +105,11 @@
 \def\@LN@column{1}
 \@writefile{lof}{\contentsline {figure}{\numberline {4.18}{\ignorespaces BSP internal search counters for Alpha across instance sizes. Top row: with heuristics (\texttt  {alpha\_qh}), guesses remain equal to $n$ with zero backtracks; without heuristics (\texttt  {alpha\_noheur}), search explodes past $n=20$ and the curve stops at $n=40$, the last size it solves. Bottom row: cumulative Prolog query evaluation time for \texttt  {alpha\_qh} ($2.2$\,s total at $n=200$, averaging $1.0$ to $5.4$\,ms per consultation).}}{46}{figure.4.18}\protected@file@percent }
 \newlabel{fig:alpha-internals}{{4.18}{46}{BSP internal search counters for Alpha across instance sizes. Top row: with heuristics (\texttt {alpha\_qh}), guesses remain equal to $n$ with zero backtracks; without heuristics (\texttt {alpha\_noheur}), search explodes past $n=20$ and the curve stops at $n=40$, the last size it solves. Bottom row: cumulative Prolog query evaluation time for \texttt {alpha\_qh} ($2.2$\,s total at $n=200$, averaging $1.0$ to $5.4$\,ms per consultation)}{figure.4.18}{}}
-\@writefile{toc}{\contentsline {paragraph}{Partner Units Problem (PUP).}{46}{section*.19}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Partner Units Problem (PUP).}{46}{section*.18}\protected@file@percent }
 \def\@LN@column{1}
 \@writefile{lof}{\contentsline {figure}{\numberline {4.19}{\ignorespaces PUP benchmark dashboard: external comparison between clingo variants and Alpha. The baseline \texttt  {alpha\_noheur} does not appear as it solves zero instances. The lazy clingo variant \texttt  {la} remains within a small factor of \texttt  {alpha\_qh} in both time and memory, whereas the ground simulation \texttt  {ga} incurs substantial overhead on both axes.}}{47}{figure.4.19}\protected@file@percent }
 \newlabel{fig:alpha-pup}{{4.19}{47}{PUP benchmark dashboard: external comparison between clingo variants and Alpha. The baseline \texttt {alpha\_noheur} does not appear as it solves zero instances. The lazy clingo variant \texttt {la} remains within a small factor of \texttt {alpha\_qh} in both time and memory, whereas the ground simulation \texttt {ga} incurs substantial overhead on both axes}{figure.4.19}{}}
-\@writefile{toc}{\contentsline {paragraph}{Overall Frontier and Query Engines.}{47}{section*.20}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Overall Frontier and Query Engines.}{47}{section*.19}\protected@file@percent }
 \@writefile{lot}{\contentsline {table}{\numberline {4.9}{\ignorespaces Largest instance solved within the 600\,s / 30\,GB budget, and its cost, ordered by reach within each family. Wall time and peak RSS are \texttt  {runlim} external process measures; Alpha's RSS includes the reserved JVM heap. clingo rows represent the native C++ backend. A dash marks a configuration that solved no instances.}}{47}{table.4.9}\protected@file@percent }
 \newlabel{tab:alpha-frontier}{{4.9}{47}{Largest instance solved within the 600\,s / 30\,GB budget, and its cost, ordered by reach within each family. Wall time and peak RSS are \texttt {runlim} external process measures; Alpha's RSS includes the reserved JVM heap. clingo rows represent the native C++ backend. A dash marks a configuration that solved no instances}{table.4.9}{}}
 \def\@LN@column{1}

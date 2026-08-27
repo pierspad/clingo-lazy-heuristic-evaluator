@@ -412,10 +412,10 @@ INPUT _minted/5897657D5068492A64BFF2A08FD1E05C.highlight.minted
 INPUT ./_minted/52CEC1A831089BB009114D25A931146F.highlight.minted
 INPUT ./_minted/52CEC1A831089BB009114D25A931146F.highlight.minted
 INPUT _minted/52CEC1A831089BB009114D25A931146F.highlight.minted
-INPUT ./_minted/BED18FECFAF3B099C162923566B84543.highlight.minted
-INPUT ./_minted/BED18FECFAF3B099C162923566B84543.highlight.minted
-INPUT _minted/BED18FECFAF3B099C162923566B84543.highlight.minted
 INPUT /usr/share/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc
+INPUT /usr/share/texmf-dist/fonts/tfm/public/cm/cmtt12.tfm
+INPUT /usr/share/texmf-dist/fonts/tfm/public/cm/cmtt8.tfm
+INPUT /usr/share/texmf-dist/fonts/tfm/public/cm/cmtt8.tfm
 INPUT ./_minted/244C3493D7D3E2BD1596C352EC8B6183.highlight.minted
 INPUT ./_minted/244C3493D7D3E2BD1596C352EC8B6183.highlight.minted
 INPUT _minted/244C3493D7D3E2BD1596C352EC8B6183.highlight.minted
@@ -435,6 +435,7 @@ INPUT _minted/B9AAB00C6787A8AF8A433BA4FF1D93B3.highlight.minted
 INPUT ./_minted/E1D5B53048E1E5BC0486921A57CBCDE1.highlight.minted
 INPUT ./_minted/E1D5B53048E1E5BC0486921A57CBCDE1.highlight.minted
 INPUT _minted/E1D5B53048E1E5BC0486921A57CBCDE1.highlight.minted
+INPUT /usr/share/texmf-dist/fonts/tfm/public/cm/cmtt8.tfm
 INPUT ./_minted/4E331156494B2F970489241DBFE0C4D4.highlight.minted
 INPUT ./_minted/4E331156494B2F970489241DBFE0C4D4.highlight.minted
 INPUT _minted/4E331156494B2F970489241DBFE0C4D4.highlight.minted
@@ -487,6 +488,8 @@ INPUT _minted/06EE43AE3397C0B5EB27EFB9D13C857B.highlight.minted
 INPUT ./_minted/83BB8BBFA2D40411B7337A2EEE543757.highlight.minted
 INPUT ./_minted/83BB8BBFA2D40411B7337A2EEE543757.highlight.minted
 INPUT _minted/83BB8BBFA2D40411B7337A2EEE543757.highlight.minted
+INPUT /usr/share/texmf-dist/fonts/tfm/public/cm/cmtt10.tfm
+INPUT /usr/share/texmf-dist/fonts/tfm/public/cm/cmtt8.tfm
 INPUT /usr/share/texmf-dist/fonts/tfm/jknappen/ec/ecbx1000.tfm
 INPUT /usr/share/texmf-dist/fonts/tfm/jknappen/ec/ecti1000.tfm
 INPUT ./3 - Implementazione.tex
@@ -606,6 +609,7 @@ INPUT /usr/share/texmf-dist/fonts/tfm/public/cm/cmmi10.tfm
 INPUT /usr/share/texmf-dist/fonts/tfm/public/cm/cmsy10.tfm
 INPUT /usr/share/texmf-dist/fonts/tfm/public/cm/cmex10.tfm
 INPUT /usr/share/texmf-dist/fonts/tfm/public/cm/cmti10.tfm
+INPUT /usr/share/texmf-dist/fonts/tfm/public/cm/cmtt10.tfm
 INPUT /usr/share/texmf-dist/fonts/tfm/public/amsfonts/symbols/msam10.tfm
 INPUT /usr/share/texmf-dist/fonts/tfm/public/amsfonts/symbols/msbm10.tfm
 INPUT /usr/share/texmf-dist/fonts/tfm/jknappen/ec/ecbx1095.tfm
@@ -651,9 +655,6 @@ INPUT ./figures/hpc/SD/bsp/comparison_solving.png
 INPUT ./figures/hpc/SD/bsp/comparison_solving.png
 INPUT ./figures/hpc/SD/bsp/comparison_solving.png
 INPUT /usr/share/texmf-dist/fonts/tfm/jknappen/ec/ectt1728.tfm
-INPUT /usr/share/texmf-dist/fonts/tfm/public/cm/cmtt12.tfm
-INPUT /usr/share/texmf-dist/fonts/tfm/public/cm/cmtt8.tfm
-INPUT /usr/share/texmf-dist/fonts/tfm/public/cm/cmtt8.tfm
 INPUT ./figures/hpc/SD/bsp/expl_gaweak_solving.png
 INPUT ./figures/hpc/SD/bsp/expl_gaweak_solving.png
 INPUT ./figures/hpc/SD/bsp/expl_gaweak_solving.png
@@ -682,9 +683,6 @@ INPUT ./figures/hpc/SD/pup/native_clingo_total.png
 INPUT ./figures/hpc/SD/pup/native_clingo_total.png
 INPUT ./figures/hpc/SD/pup/native_clingo_total.png
 INPUT ./figures/hpc/SD/pup/native_clingo_total.png
-INPUT /usr/share/texmf-dist/fonts/tfm/public/cm/cmtt10.tfm
-INPUT /usr/share/texmf-dist/fonts/tfm/public/cm/cmtt8.tfm
-INPUT /usr/share/texmf-dist/fonts/tfm/public/cm/cmtt8.tfm
 INPUT ./figures/hpc/SD/pup/native_grounding.png
 INPUT ./figures/hpc/SD/pup/native_grounding.png
 INPUT ./figures/hpc/SD/pup/native_grounding.png
@@ -721,7 +719,6 @@ INPUT ./figures/hpc/SD/alpha/pup_dashboard.png
 INPUT ./figures/hpc/SD/alpha/pup_dashboard.png
 INPUT ./figures/hpc/SD/alpha/pup_dashboard.png
 INPUT ./figures/hpc/SD/alpha/pup_dashboard.png
-INPUT /usr/share/texmf-dist/fonts/tfm/public/cm/cmtt10.tfm
 INPUT /usr/share/texmf-dist/fonts/tfm/jknappen/ec/eccc1200.tfm
 INPUT Spadafora_Pierpaolo_Thesis.aux
 INPUT ./0.2 - abstract.aux
