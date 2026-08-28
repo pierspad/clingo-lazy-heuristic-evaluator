@@ -295,7 +295,14 @@ hpc_target_ensure() {
 hpc_pin_args() {
   hpc_target_ensure
   HPC_PIN_ARGS=(--partition="$HPC_PARTITION")
-  [ -n "$HPC_TARGET_EXCLUDE" ] && HPC_PIN_ARGS+=(--exclude="$HPC_TARGET_EXCLUDE")
+  # NON usare "test && comando" come ultima riga: quando l'exclude e' vuoto
+  # (tutti i nodi della partizione sono nel gruppo omogeneo) il test fallisce,
+  # la funzione ritorna 1 e il "set -e" del chiamante uccide lo script in
+  # silenzio, prima ancora del rilancio via srun.
+  if [ -n "$HPC_TARGET_EXCLUDE" ]; then
+    HPC_PIN_ARGS+=(--exclude="$HPC_TARGET_EXCLUDE")
+  fi
+  return 0
 }
 
 # Vero se $1 (hostname) appartiene all'insieme ammesso.

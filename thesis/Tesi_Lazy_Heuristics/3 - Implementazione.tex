@@ -78,7 +78,7 @@ heuristic("heuristic(b(X), W, 0, true) :-
     W is Base*S+X.").
 \end{minted}
 
-During initialization, the propagator collects all \mintinline{text}|heuristic/1| facts, normalizes the rule strings, and classifies their semantics: rules containing \mintinline{text}|clingo_not(...)| use clingo semantics, while all others use Alpha semantics. The propagator extracts the predicate signatures referenced in the rules (\mintinline{text}|holds|, \mintinline{text}|alpha_not|, \mintinline{text}|clingo_not|, \mintinline{text}|target_available|, and rule targets) and asserts into Prolog only solver atoms matching those signatures, avoiding unnecessary memory and synchronization overhead from irrelevant predicates.
+During initialization, the propagator collects all \texttt{heuristic/1} facts and normalizes the rule strings. The body uses one between the \texttt{clingo\_not/1} and \texttt{alpha\_not/1} predicate to determine which kind of sematics to us. The propagator extracts the predicate signatures referenced in the rules (\texttt{holds}, \texttt{alpha\_not}, \texttt{clingo\_not}, \texttt{target\_available}, and rule targets) and asserts into Prolog only solver atoms matching those signatures, avoiding unnecessary memory and synchronization overhead from irrelevant predicates.
 
 \subsection{The Runtime Program}
 
@@ -94,14 +94,15 @@ dyn_max(Goal, Template, Max) :-
     (aggregate_all(max(Template), Goal, R) -> Max = R ; Max = 0).
 \end{minted}
 
-As clasp makes decisions, the propagator mirrors the trail in the Prolog database by adding \mintinline{text}|true_atom(A)| when an atom is assigned to true and \mintinline{text}|false_atom(A)| when it is assigned to false, removing them upon backtracking. Undecided atoms simply do not exist in the database. Because of this, \mintinline{text}|alpha_not(A)| succeeds whenever an atom does not hold true. In contrast, \mintinline{text}|clingo_not(A)| requires an explicit \mintinline{text}|false_atom(A)| on the trail. In the same way, \mintinline{text}|aggregate_all| dynamically computes sums and counts over the atoms currently true on the trail. \mintinline{text}|target_available(A)| verifies that a target is neither true nor false before branching on it, and \mintinline{text}|dyn_max/3| defaults to $0$ when evaluating an empty set (Section~\ref{sec:flattening}).
+As clasp makes decisions, the propagator mirrors the trail in the dynamic Prolog database. Each update is issued through SWI-Prolog's C API as a single goal built as a string and executed with \texttt{PL\_chars\_to\_term} and \texttt{PL\_call}: the goal always begins with \texttt{retractall(true\_atom(A))} and \texttt{retractall(false\_atom(A))}, followed by an \texttt{assertz/1} of the appropriate fact when the atom is assigned. Retracting an atom without asserting it, hence its absence from the Prolog database, is what represents an unassigned atom. Because of this, \texttt{alpha\_not(A)} succeeds whenever an atom does not hold true, while \texttt{clingo\_not(A)} requires an explicit \texttt{false\_atom(A)} on the trail. In the same way, \texttt{aggregate\_all} dynamically computes sums and counts over the atoms currently true on the trail. \texttt{target\_available(A)} verifies that a target is neither true nor false before branching on it, and \texttt{dyn\_max/3} defaults to $0$ when evaluating an empty set (Section~\ref{sec:flattening}).
 
+Unlike the native propagator, which defers an aggregate until every one of its source literals is assigned (Section~\ref{sec:decision}), the Prolog engine has no mechanism to suspend \texttt{aggregate\_all}: the wait has to be expressed in the encoding itself, using \texttt{target\_available/1}. Since it succeeds on atoms that are still undecided, \texttt{\textbackslash+ target\_available(Pattern)} succeeds only when no atom matching \texttt{Pattern} is left undecided. The \texttt{lc} encodings carry one such guard per dynamic source of each aggregate; in BSP, where the sum ranges over the \texttt{c} atoms, the guard is \texttt{\textbackslash+ target\_available(c(\_))}.
 
 \subsection{Synchronization and Decision}
 
 Trail synchronization is incremental: during search, \texttt{propagate} and \texttt{undo} update the state of atoms in the Prolog database as their solver literals change on the trail.
 
-At each decision point (\texttt{decide}), the backend queries all solutions to \mintinline{text}|heuristic(T, W, P, M)|, filters out targets that are already assigned on the trail, and branches on the candidate with the highest priority and weight. Unlike the native C++ backend, which incrementally maintains a sorted set of active targets, the Prolog backend re-evaluates the heuristic query from scratch at every decision step. This design prioritizes relational expressiveness over per-decision efficiency (evaluated in Section~\ref{sec:per-decision-cost}).
+At each decision point (\texttt{decide}), the backend runs the query \texttt{heuristic(T, W, P, M)} and collects every solution. A solution is only a proposal: before it can become a decision, its target term must be matched to a solver literal that is still unassigned. This matching cannot be delegated to the rule, because an unrestricted Prolog rule may build a target term that does not occur in the ground program at all, and such a term has no literal for clasp to branch on. Among the solutions that survive, the backend branches on the one with the highest priority and weight. Unlike the native C++ backend, which incrementally maintains a sorted set of active targets, the Prolog backend re-evaluates the heuristic query from scratch at every decision step. This design prioritizes relational expressiveness over per-decision efficiency (evaluated in Section~\ref{sec:per-decision-cost}).
 
 \section{Benchmark Problems and Encodings}
 \label{sec:benchmarks}
@@ -113,7 +114,7 @@ The BSP divides the set of integers $\{1,\ldots,n\}$ into two disjoint sets, \te
 
 The implementation of the three exploratory variants introduced in Section~\ref{sec:exploratory-methodology} on BSP required some specific adjustments:
 \begin{itemize}
-    \item \texttt{ga\_weak}: The ground heuristic directives omit the negative body guards (\mintinline{text}|not c(X)| / \mintinline{text}|not b(X)|), retaining only the static aggregate binding \mintinline{text}|S = #sum{Y : c(Y)}| without unrolling over candidate values:
+    \item \texttt{ga\_weak}: The ground heuristic directives omit the negative body guards (\texttt{not c(X)} / \texttt{not b(X)}), retaining only the static aggregate binding \texttt{S = \#sum\{Y : c(Y)\}} without unrolling over candidate values:
     \begin{minted}{prolog}
     #heuristic b(X) : x(X), S = #sum{Y : c(Y)}, W = ((n+1)*S)+X. [W, true]
     #heuristic c(X) : x(X), S = #sum{Y : b(Y)}, W = ((n+1)*S)+X. [W, true]
