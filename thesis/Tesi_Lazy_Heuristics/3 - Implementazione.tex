@@ -69,7 +69,7 @@ While the native backend prioritizes evaluation speed through compiled C++ struc
 \subsection{Rule Strings and Normalization}
 \label{sec:prolog-syntax}
 
-In the Prolog backend, a heuristic is defined as a rule string whose head is a four-argument term: \mintinline{text}|heuristic(Target, Weight, Priority, Modifier)|. The BSP heuristic from Section~\ref{sec:translation} is specified as follows:
+Section~\ref{sec:prolog-notation} introduced the notation and the predicates it relies on; recalling the BSP heuristic:
 
 \begin{minted}{prolog}
 heuristic("heuristic(b(X), W, 0, true) :-
@@ -77,8 +77,6 @@ heuristic("heuristic(b(X), W, 0, true) :-
     holds(x(X)), target_available(b(X)), alpha_not(c(X)),
     W is Base*S+X.").
 \end{minted}
-
-The rule body uses standard Prolog syntax and maps directly to the native constructs: \mintinline{text}|holds/1| for positive conditions, \mintinline{text}|alpha_not/1| for negative conditions, \mintinline{text}|aggregate_all/3| for dynamic sums, and \mintinline{text}|is/2| for arithmetic evaluation of weights. Furthermore, \mintinline{text}|target_available/1| ensures the target atom is still unassigned. While the native backend checks this implicitly during candidate selection, the Prolog rule must state it explicitly to prevent proposing atoms that are already assigned on the trail.
 
 During initialization, the propagator collects all \mintinline{text}|heuristic/1| facts, normalizes the rule strings, and classifies their semantics: rules containing \mintinline{text}|clingo_not(...)| use clingo semantics, while all others use Alpha semantics. The propagator extracts the predicate signatures referenced in the rules (\mintinline{text}|holds|, \mintinline{text}|alpha_not|, \mintinline{text}|clingo_not|, \mintinline{text}|target_available|, and rule targets) and asserts into Prolog only solver atoms matching those signatures, avoiding unnecessary memory and synchronization overhead from irrelevant predicates.
 

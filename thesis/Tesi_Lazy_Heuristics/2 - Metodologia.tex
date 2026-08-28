@@ -144,7 +144,7 @@ The propagator never adds a constraint, never derives a literal, and never refus
 Neither backend reads native \texttt{\#heuristic} directives. Instead, a custom declarative \enquote{lazy heuristic} language replaces them with a single ground fact that \emph{describes} the rule.
 This section presents what one may write, and what each construct means, by deriving that fact for the BSP heuristic of Section~\ref{sec:motivation} one component at a time.
 
-The starting point is the directive as clingo reads it:
+\subsection{Lazy heuristic syntax for the C++ backend}
 
 \begin{minted}{prolog}
 #heuristic b(X) : x(X), not c(X), S = #sum{Y : c(Y)}, W = ((n+1)*S)+X. [W, true]
@@ -172,9 +172,7 @@ choose(1). choose(2). choose(3).
 \end{minted}
 the directive:
 \begin{minted}{prolog}
-__heuristic(__target(choose),
-            __body(score, __match(0,0), __bind_arg(w,1)),
-            __weight(w), __modifier(true)).
+__heuristic(__target(choose), __body(score, __match(0,0), __bind_arg(w,1)), __weight(w), __modifier(true)).
 \end{minted}
 
 pairs each \mintinline{text}|choose(X)| with the \mintinline{text}|score(X,W)| that agrees with it on the first argument, and binds \mintinline{text}|w| to the second argument of that atom. The weights are then $10$, $5$ and $7$, so the propagator decides \mintinline{text}|choose(1)| first.
@@ -209,10 +207,41 @@ The solver's \texttt{decide} interface expects a \emph{signed} literal, so a ran
 Assembling the components gives the fact in full:
 
 \begin{minted}{prolog}
-__heuristic(__target(b), x, __n_c, __bind(s, __sum(c)),
-            __weight(__add(__mul(s, B), self)),
-            __semantics(alpha), __modifier(true)) :- B = n + 1.
+__heuristic(__target(b), 
+            x, 
+            __n_c, 
+            __bind(s, __sum(c)), 
+            __weight(__add(__mul(s, B), self)), 
+            __semantics(alpha), 
+            __modifier(true)) 
+                :- B = n + 1.
 \end{minted}
+
+
+\subsection{Lazy heuristic syntax for the Prolog backend}
+\label{sec:prolog-notation}
+
+Unlike the native backend, which only supports a fixed set of predefined constructs, the Prolog backend imposes no syntactic restrictions. A heuristic is declared as a string inside a \mintinline{text}|heuristic("...")| fact and parsed directly as a standard Prolog clause; consequently, its body accepts any goal that the engine can prove.
+
+\begin{minted}{prolog}
+heuristic(b(X), W, 0, true) :-
+    holds(x(X)),
+    target_available(b(X)),
+    alpha_not(c(X)),
+    aggregate_all(sum(Y), holds(c(Y)), S),
+    holds(heuristic_base(Base)),
+    W is Base * S + X.
+\end{minted}
+
+The rule is structured into two main parts:
+the \textbf{head} encodes the four arguments of the \texttt{\#heuristic} directive, the target atom ($A$), the calculated weight ($W$), the priority level ($P$), and the modifier ($M$), while the \textbf{body} specifies the conditions and computations needed to derive them.
+
+To interact with the solver's search state, the backend provides a few dedicated interface predicates: \mintinline{text}|holds/1| succeeds on atoms currently true on the trail and on static ground facts; \mintinline{text}|alpha_not/1| and \mintinline{text}|clingo_not/1| implement the two readings of default negation described in Section~\ref{sec:bg-alpha}; and \mintinline{text}|target_available/1| discards candidates that are already assigned.
+
+Everything else uses standard Prolog: arithmetic relies on \mintinline{text}|is/2|, and set aggregations use \mintinline{text}|aggregate_all/3|. For convenience, the backend provides the \mintinline{text}|dyn_*| wrappers (\mintinline{text}|dyn_sum/3|, \mintinline{text}|dyn_count/2|, \mintinline{text}|dyn_min/3|, and \mintinline{text}|dyn_max/3|); in particular, when no matching atoms are yet assigned on the trail (such as at the beginning of search), \mintinline{text}|dyn_min/3| and \mintinline{text}|dyn_max/3| safely return $0$ instead of failing, allowing the heuristic to compute a weight and guide early decisions.
+
+Table~\ref{tab:translation} summarizes the correspondence between the three notations.
+
 
 \begin{table}[H]
 \centering

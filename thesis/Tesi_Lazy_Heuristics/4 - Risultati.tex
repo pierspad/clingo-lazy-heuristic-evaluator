@@ -363,7 +363,7 @@ In the standard formulations (\texttt{gc}, \texttt{la}, and \texttt{lc}), this q
 The reformulation changes formula size and grounding time by orders of magnitude (Figure~\ref{fig:laco}):
 \begin{itemize}
     \item \texttt{gc}, \texttt{la}, and \texttt{lc} overlap near the top of both plots, sharing the same quadratic base encoding, whereas \texttt{la\_co} flattens along the horizontal axis. At $n=120$ the propositional formula drops from $52.8$\,million rules to $366$.
-    \item Grounding all but disappears. Total clingo runtime at $n=120$ falls from $154.2$\,s in \texttt{la} to $9$\,ms, with the search guidance unchanged ($117$ choices, zero conflicts). The same holds up to $n=200$, which solves in $14$\,ms.
+    \item Grounding all but disappears. Total clingo runtime at $n=120$ falls from $154.2$\,s in \texttt{la} to $9$\,ms, with the search guidance unchanged ($117$ choices, zero conflicts). The same holds up to $n=200$, which is solved in $14$\,ms.
 \end{itemize}
 
 The two bottlenecks are therefore independent. Once lazy heuristics remove the search cost, what remains in BSP is set entirely by the materialization of the domain constraints, and pairing lazy heuristics with a compact encoding addresses both at once.
