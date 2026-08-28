@@ -16,18 +16,18 @@ The \emph{semantics} axis fixes how a heuristic condition reads partial informat
 \label{fig:axes}
 \end{figure}
 
-Crossing the two axes yields the four variants that the rest of the thesis refers to by: \texttt{gc} and \texttt{ga} for the ground approach under the clingo and the Alpha semantics, \texttt{lc} and \texttt{la} for the lazy evaluated one, the prefix naming the approach and the suffix the semantics. To them is added the heuristic-free baseline \texttt{gc\_noheur}, which carries the same domain logic with no heuristic at all and measures what the solver does when it is left alone (Figure~\ref{fig:axes}).
+Crossing the two axes yields the four variants that the rest of the thesis refers to as: \texttt{gc} and \texttt{ga} for the ground approach under the clingo and the Alpha semantics, \texttt{lc} and \texttt{la} for the lazily evaluated one, the prefix naming the approach and the suffix the semantics. To them is added the heuristic-free baseline \texttt{gc\_noheur}, which carries the same domain logic with no heuristic at all and measures what the solver does when it is left alone (Figure~\ref{fig:axes}).
 
 To isolate specific architectural and modeling mechanisms beyond this primary matrix, the experimental design also incorporates three targeted exploratory variants: \texttt{ga\_weak}, \texttt{la\_aux}, and \texttt{la\_co}. Their empirical motivation and methodological role in disentangling the contributions of default negation, body materialization, and constraint formulation are discussed in Section~\ref{sec:exploratory-methodology}.
 
 \subsection{Simulating Alpha semantics}
 \label{sec:ga-simulation}
 
-Reproducing an Alpha-like behaviour within clingo requires addressing two distinct aspects: default negation over unassigned literals and dynamic aggregate evaluation.
+Reproducing an Alpha-like behavior within clingo requires addressing two distinct aspects: default negation over unassigned literals and dynamic aggregate evaluation.
 
 \subsubsection{Default negation over unassigned literals}
 
-The first transformation concerns negative literals in heuristic bodies: \mintinline{text}|not c(X)| in BSP, \mintinline{text}|not not_assigned_sensor_unit(S,U)| in PUP, and guards such as \mintinline{text}|not fullCabinet(C)| and \mintinline{text}|not assignedThing(T)| in HRP. 
+The first transformation concerns negative literals in heuristic bodies: \mintinline{text}|not c(X)| in BSP, \mintinline{text}|not not_assigned_sensor_unit(S,U)| in PUP, and the guards \mintinline{text}|not fullCabinet(C)| and \mintinline{text}|not assignedThing(T)| in HRP. 
 
 Clasp applies heuristic modifications only to variables that are currently unassigned, as enforced in \texttt{DomainHeuristic::propagate}:
 \begin{minted}{cpp}
@@ -39,7 +39,7 @@ All heuristic directives in the suite that test the search state through negativ
 \begin{itemize}
     \item In \textbf{BSP}, \mintinline{text}|b(X)| and \mintinline{text}|c(X)| are complementary choices, so the condition \mintinline{text}|not b(X)| is satisfied only once the target \mintinline{text}|c(X)| is already derived.
     \item In \textbf{PUP}, the condition on \mintinline{text}|assigned_sensor_unit(S,U)| in the heuristic is identical to the problem rule that derives that same atom.
-    \item In \textbf{HRP}, the placement directives for \mintinline{text}|cabinetTOthing(C,T)| require \mintinline{text}|not assignedThing(T)|; in ground clingo this holds only when the candidate assignments for $T$ are already proven false, meaning the target is never unassigned (\texttt{value\_free}) when the directive evaluates.
+    \item In \textbf{HRP}, the placement directives for \mintinline{text}|cabinetTOthing(C,T)| require the guard \mintinline{text}|not assignedThing(T)|; in ground clingo this holds only when the candidate assignments for $T$ are already proven false, meaning the target is never unassigned (\texttt{value\_free}) when the directive evaluates.
 \end{itemize}
 Consequently, in the \texttt{gc} variant, none of these ever fires during search.
 
@@ -71,7 +71,7 @@ Without explicit priorities all unrolled directives share the default priority $
 While the four main variants evaluate the core matrix of approach versus semantics, three targeted exploratory variants are introduced as experimental controls to isolate specific factors:
 
 \paragraph{Isolating Alpha-Negation from Dynamic Aggregates (\texttt{ga\_weak}).}
-Alpha-like semantics treat default negation as satisfied over unassigned literals, and evaluate aggregates dynamically over currently true atoms. While \texttt{ga} simulates both via extensive ground unrolling, \texttt{ga\_weak} acts as an ablation study that applies Alpha's negation semantics while avoiding unrolling aggregates. This investigates whether adapting default negation alone provides any improvement during search, or whether dynamic aggregate evaluation is strictly indispensable for an effective search guidance.
+Alpha-like semantics treat default negation as satisfied over unassigned literals, and evaluate aggregates dynamically over currently true atoms. While \texttt{ga} simulates both via extensive ground unrolling, \texttt{ga\_weak} acts as an ablation study that applies Alpha's negation semantics while avoiding unrolling aggregates. This investigates whether adapting default negation alone provides any improvement during search, or whether dynamic aggregate evaluation is strictly indispensable for effective search guidance.
 
 \paragraph{Fewer directives, or less grounding? (\texttt{la\_aux}).}
 The lazy variants differ from the ground ones in two ways at once: the grounder emits far fewer heuristic-related objects, and the evaluation of the heuristic conditions stays out of the ground program altogether. The \texttt{la\_aux} variant separates the two effects. It keeps the lazy propagator, but writes the conditions of the BSP heuristic as ordinary ASP rules, one atom \texttt{h\_b(X,S)} for each element $X$ and each candidate sum $S$, which the propagator then queries at decision time. The heuristic directives stay few, while the pre-evaluation goes back to the grounding phase; the variant therefore shows which of the two is responsible for the gain.
@@ -139,7 +139,6 @@ The propagator never adds a constraint, never derives a literal, and never refus
 
 \section{Translation of the Heuristic Directives}
 \label{sec:dsl}
-\label{sec:translation}
 
 Neither backend reads native \texttt{\#heuristic} directives. Instead, a custom declarative \enquote{lazy heuristic} language replaces them with a single ground fact that \emph{describes} the rule.
 This section presents what one may write, and what each construct means, by deriving that fact for the BSP heuristic of Section~\ref{sec:motivation} one component at a time.
@@ -181,9 +180,9 @@ pairs each \mintinline{text}|choose(X)| with the \mintinline{text}|score(X,W)| t
 
 \paragraph{Semantics.} The reading of that negation is fixed by the \texttt{\_\_semantics(S)} selector, which decides whether \texttt{\_\_n\_c} means \enquote{\texttt{c(X)} is assigned false} or \enquote{\texttt{c(X)} is not assigned true}. The same selector fixes the reading of aggregates, described below. It takes \texttt{alpha} or \texttt{clingo}, and defaults to \texttt{clingo}, so that a directive written without it behaves as the native \texttt{\#heuristic} it replaces.
 
-\paragraph{Aggregates.} Aggregates are evaluated lazily during search. \texttt{\_\_bind(s, \_\_sum(c))} binds variable \mintinline{text}|s| to the sum over the predicate \texttt{c} (by default aggregating its first argument). The operators \texttt{\_\_count}, \texttt{\_\_min}, and \texttt{\_\_max} follow the same structure.
+\paragraph{Aggregates.} Aggregates are evaluated lazily during search. For instance, \texttt{\_\_bind(s, \_\_sum(c))} binds variable \mintinline{text}|s| to the sum over the predicate \texttt{c} (by default aggregating its first argument). The operators \texttt{\_\_count}, \texttt{\_\_min}, and \texttt{\_\_max} follow the same structure.
 
-An aggregate can be restricted \emph{per target} using \mintinline{text}|__filter(src_idx, tgt_idx, offset)|, which keeps only source atoms whose argument at position \texttt{src\_idx} equals argument \texttt{tgt\_idx} of the target plus an optional \texttt{offset}. For instance, in PUP, retrieving the maximum number of sensors on the \emph{previous} unit ($U-1$) for a target \mintinline{text}|assigned_zone_unit(Z,U)| is expressed as:
+An aggregate can be restricted using \mintinline{text}|__filter(src_idx, tgt_idx, offset)|, which narrows it \emph{per target}, keeping only source atoms whose argument at position \texttt{src\_idx} equals argument \texttt{tgt\_idx} of the target plus an optional \texttt{offset}. For instance, in PUP, retrieving the maximum number of sensors on the \emph{previous} unit ($U-1$) for a target \mintinline{text}|assigned_zone_unit(Z,U)| is expressed as:
 \begin{minted}{prolog}
 __bind(m1, __max(num_sensors_on_unit, 0, __filter(1, 1, -1)))
 \end{minted}
@@ -275,9 +274,9 @@ weight & \texttt{W = ((n+1)*S)+X} & \texttt{\_\_weight(\_\_add(} \newline \textt
 \addlinespace[3pt]
 modifier & \texttt{[W, true]} & \texttt{\_\_modifier(true)}, \newline default \texttt{true} & fourth head argument\\
 \addlinespace[3pt]
-semantics &, (fixed by the system) & \texttt{\_\_semantics(alpha)} \newline \texttt{\_\_semantics(clingo)} & choice of \texttt{alpha\_not} / \texttt{clingo\_not}\\
+semantics & (fixed by the system) & \texttt{\_\_semantics(alpha)} \newline \texttt{\_\_semantics(clingo)} & choice of \texttt{alpha\_not} / \texttt{clingo\_not}\\
 \addlinespace[3pt]
-target still free &, (implicit in clasp) & implicit: an assigned target is skipped & \texttt{target\_available(} \newline \texttt{\ \ b(X))}\\
+target still free & (implicit in clasp) & implicit: an assigned target is skipped & \texttt{target\_available(} \newline \texttt{\ \ b(X))}\\
 \bottomrule
 \end{tabular}
 \caption{The same heuristic in the three notations.}
