@@ -89,7 +89,7 @@ Alpha is the reference state-of-the-art lazy-grounding solver for this work.
 
 Comploi-Taupe et al.\ extended Alpha with declaratively specified domain-specific heuristics evaluated against the \emph{partial} assignment maintained during solving \cite{comploi2023domain}. Its semantics differs from clingo's on two main points.
 
-Specifically, Alpha evaluates negated body literals against unassigned atoms and prioritizes $P$ over weight $W$ in the tuple $(W@P)$, always preferring higher priority values. Two atoms are compared by weight only when they share the same priority. A complete formalization of these semantic differences and their integration into our experimental design is provided in Chapter~\ref{sec:methodology}.
+Specifically, Alpha evaluates negated body literals against unassigned atoms and prioritizes $P$ over weight $W$ in the annotation $[W@P]$, always preferring higher priority values. Two atoms are compared by weight only when they share the same priority. A complete formalization of these semantic differences and their integration into our experimental design is provided in Chapter~\ref{sec:methodology}.
 
 \section{Extending clingo: Propagators and the Heuristic Interface}
 \label{sec:bg-propagator}

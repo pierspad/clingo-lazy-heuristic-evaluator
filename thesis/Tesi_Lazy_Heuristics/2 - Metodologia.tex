@@ -38,10 +38,10 @@ It follows that \emph{a directive whose body entails the truth value of its own 
 All heuristic directives in the suite that test the search state through negative literals show the same problem:
 \begin{itemize}
     \item In \textbf{BSP}, \mintinline{text}|b(X)| and \mintinline{text}|c(X)| are complementary choices, so the condition \mintinline{text}|not b(X)| is satisfied only once the target \mintinline{text}|c(X)| is already derived.
-    \item In \textbf{PUP}, the condition on \mintinline{text}|assigned_sensor_unit(S,U)| in the heuristic is identical to the problem rule that derives that same atom.
+    \item In \textbf{PUP}, the heuristic body repeats the negative literal of the rule that derives the target atom, namely \mintinline{text}|not not_assigned_sensor_unit(S,U)|.
     \item In \textbf{HRP}, the placement directives for \mintinline{text}|cabinetTOthing(C,T)| require the guard \mintinline{text}|not assignedThing(T)|; in ground clingo this holds only when the candidate assignments for $T$ are already proven false, meaning the target is never unassigned (\texttt{value\_free}) when the directive evaluates.
 \end{itemize}
-Consequently, in the \texttt{gc} variant, none of these ever fires during search.
+Consequently, none of these directives ever fires in the \texttt{gc} variant. In HRP the same encoding also carries directives with no condition at all, which are applied at initialization and do steer the search; the conditional ones listed above stay inert.
 
 The ground variant \texttt{ga} therefore drops these negative literals from the heuristic bodies. 
 For directives where the negated literal simply tests the target atom or its complement (as in BSP and PUP), this simplification is completely safe: nothing is lost that could have fired, and clasp's \mintinline{text}|value_free| check still prevents modifying an already assigned atom. 
@@ -83,7 +83,7 @@ The \texttt{la\_co} variant combines the lazy evaluation with a compact linear f
 \subsection{Weights, Priorities, and Flattening}
 \label{sec:flattening}
 
-Section~\ref{sec:bg-alpha} recorded that the two systems read the annotation $[W@P]$ of a heuristic differently. In Alpha, the pair is an \emph{absolute} rank over all heuristic instances, read lexicographically as $(P,W)$: the priority $P$ is a global level and decides first, so no instance of level $P$ is considered while an instance of a level $P' > P$ is still applicable, and the weight $W$ only orders the instances that share the same level. In clingo, the evaluation is different: $P$ is local, arbitrating only between heuristics relative to the \emph{same} target atom, while the order in which distinct atoms are decided comes from the weight alone. An encoding written for Alpha therefore cannot be handed to clingo verbatim.
+Section~\ref{sec:bg-alpha} recorded that the two systems read the annotation $[W@P]$ of a heuristic differently. In Alpha, the pair is an \emph{absolute} rank over all heuristic instances, read lexicographically, with $P$ compared first: the priority $P$ is a global level and decides first, so no instance of level $P$ is considered while an instance of a level $P' > P$ is still applicable, and the weight $W$ only orders the instances that share the same level. In clingo, the evaluation is different: $P$ is local, arbitrating only between heuristics relative to the \emph{same} target atom, while the order in which distinct atoms are decided comes from the weight alone. An encoding written for Alpha therefore cannot be handed to clingo verbatim.
 
 The intended order can nevertheless be recovered, by \emph{flattening} the level into the weight:
 \[
@@ -124,7 +124,7 @@ The second argument, \texttt{true}, instructs clasp to call the propagator seque
 \label{fig:architecture}
 \end{figure}
 
-In both builds, the class implements \texttt{clingo::Heuristic}, the propagator interface extended with the \texttt{decide} callback (Section~\ref{sec:bg-propagator}). Both backends follow the same four-step lifecycle:
+In both builds, the class implements \texttt{clingo::Heuristic}, the propagator interface extended with the \texttt{decide} callback (Section~\ref{sec:bg-propagator}). Both backends follow the same lifecycle, built on \texttt{init}, \texttt{propagate}, \texttt{undo} and \texttt{decide}:
 \begin{itemize}[leftmargin=1.5em, itemsep=1pt]
     \item During \texttt{init}, they scan symbolic atoms for trigger facts (\texttt{\_\_heuristic(...)} in the C++ build and \mintinline{text}|heuristic("...")| in the Prolog build), construct their runtime representation, and register watches on solver literals.
     \item During forward search, \texttt{propagate} updates the internal state of the aggregates appearing in the heuristic bodies, together with the candidate states, as watched literals become true.
@@ -233,7 +233,7 @@ heuristic(b(X), W, 0, true) :-
 \end{minted}
 
 The rule is structured into two main parts:
-the \textbf{head} encodes the four arguments of the \texttt{\#heuristic} directive, the target atom ($A$), the calculated weight ($W$), the priority level ($P$), and the modifier ($M$), while the \textbf{body} specifies the conditions and computations needed to derive them.
+the \textbf{head} encodes the four arguments of the \texttt{\#heuristic} directive, the target atom ($A$), the calculated weight ($W$), the priority level ($P$), which is always $0$ because global levels are folded into the weight (Section~\ref{sec:weight-problem}), and the modifier ($M$), while the \textbf{body} specifies the conditions and computations needed to derive them.
 
 To interact with the solver's search state, the backend provides a few dedicated interface predicates: \mintinline{text}|holds/1| succeeds on atoms currently true on the trail and on static ground facts; \mintinline{text}|alpha_not/1| and \mintinline{text}|clingo_not/1| implement the two readings of default negation described in Section~\ref{sec:bg-alpha}; and \mintinline{text}|target_available/1| discards candidates that are already assigned.
 
