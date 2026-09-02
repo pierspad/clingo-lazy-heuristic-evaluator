@@ -90,7 +90,7 @@ In the BSP benchmark, solver failures scale predictably with instance size: once
 The maximum instance size solved provides different insights depending on the problem of choice. 
 \begin{itemize}
     \item \textbf{On BSP}, the solvability frontier alone does not separate the approaches. Variants sharing the same base encoding (\texttt{gc\_noheur}, \texttt{la}, and \texttt{lc}) all stop between $n=150$ and $n=160$, constrained by the heavy grounding of the base program. What distinguishes them is search efficiency: \texttt{la} reduces solving time and conflicts to near zero (Sections~\ref{sec:bsp-runtime} and~\ref{sec:per-decision-cost}).
-    \item \textbf{On PUP}, the Alpha-like dynamic guidance lets both \texttt{ga} and \texttt{la} solve the entire range up to $N=200$, whereas the other variants stall around $N=80$ under search space explosion. With search no longer the bottleneck, PUP isolates the cost of the heuristic representation itself: \texttt{la} halves both grounding time and peak memory with respect to the static aggregate unrolling of \texttt{ga} (\textbf{12.7\,GB} vs \textbf{24.5\,GB} at $N=200$).
+    \item \textbf{On PUP} (Table~\ref{tab:overview-pup}), the Alpha-like dynamic guidance lets both \texttt{ga} and \texttt{la} solve the entire range up to $N=200$, whereas the other variants stall around $N=80$ under search space explosion. With search no longer the bottleneck, PUP isolates the cost of the heuristic representation itself: \texttt{la} halves both grounding time and peak memory with respect to the static aggregate unrolling of \texttt{ga} (\textbf{12.7\,GB} vs \textbf{24.5\,GB} at $N=200$).
     \item \textbf{On HRP}, the frontier is uninformative because nearly all variants solve the entire suite; the evaluation centers instead on decision quality and on the misguidance observed in \texttt{lc}.
 \end{itemize}
 
@@ -109,7 +109,7 @@ incorporate the dynamic aggregate value directly into the heuristic weight. Beca
 2 \cdot n \cdot \Big(\tfrac{n(n+1)}{2} + 1\Big) \;=\; \Theta(n^3).
 \]
 
-The lazy variants never perform this expansion. The aggregate is evaluated on the current partial assignment during search, so the materialized heuristic representation stays constant at two static template facts, regardless of $n$.
+The lazy variants never perform this expansion. The aggregate is evaluated on the current partial assignment during search, so the materialized heuristic representation stays constant at two static template facts, regardless of $n$. Figure~\ref{fig:combined-heuristics} plots the two growth curves against each other, and Table~\ref{tab:heur-growth} gives the corresponding counts at four sizes.
 
 \begin{figure}[H]
     \centering
@@ -142,7 +142,7 @@ This reduction reflects a smaller grounding footprint rather than eliminated com
 
 For all variants sharing the base encoding without all the grounded heuristic directives (\texttt{gc\_noheur}, \texttt{la}, and \texttt{lc}), the base program grounding alone dominates overall runtime. At $n=120$, it generates $52.8$ million rules, requiring $163.9$\,s of grounding for \texttt{gc\_noheur}, $159.9$\,s for \texttt{lc}, and $160.3$\,s for \texttt{la}.
 
-However, a clear difference emerges here from the two readings of negation: while \texttt{gc\_noheur} and \texttt{lc} require $44.9$\,s and $47.8$\,s respectively, \texttt{la} completes search in just $0.04$\,s. The total runtime curve for \texttt{la} therefore stays below every other variant sharing the same base encoding across the whole benchmark, reflecting the solving speedup of Figure~\ref{fig:bsp-solving}.
+However, a clear difference emerges here from the two readings of negation: while \texttt{gc\_noheur} and \texttt{lc} require $44.9$\,s and $47.8$\,s respectively, \texttt{la} completes search in just $0.04$\,s. The total runtime curve for \texttt{la} therefore stays below every other variant sharing the same base encoding across the whole benchmark (Figure~\ref{fig:bsp-total}), reflecting the solving speedup of Figure~\ref{fig:bsp-solving}.
 
 \begin{figure}[H]
     \centering
@@ -151,7 +151,7 @@ However, a clear difference emerges here from the two readings of negation: whil
     \label{fig:bsp-total}
 \end{figure}
 
-\begin{figure}[H]
+\begin{figure}[tbp]
     \centering
     \includegraphics[width=\textwidth]{hpc/\ThesisGraphQuality/bsp/native_solving.png}
     \caption{\texttt{la} solving time is close to zero across all sizes, whereas \texttt{ga} degrades sharply at $n=60$ and times out from $n=70$ due to clasp's 16-bit weight saturation ($>32{,}767$).}
@@ -281,16 +281,19 @@ The overall overhead varies dramatically across the benchmark configurations:
     \label{fig:bsp-instrumentation}
 \end{figure}
 
-Under Alpha semantics, the query successfully identifies and evaluates all eligible candidate atoms at each step, resulting in a higher query time ($0.59$\,ms per call) due to Prolog term unification and weight calculation. Conversely, under clingo semantics, the negative body condition fails immediately on partial assignments, producing zero candidates; while this allows individual queries to terminate more than ten times faster ($0.05$\,ms), it provides no guidance whatsoever to the solver, causing a massive explosion in decision calls.
+Figure~\ref{fig:bsp-instrumentation} separates the two factors on the Prolog backend. Under Alpha semantics, the query successfully identifies and evaluates all eligible candidate atoms at each step, resulting in a higher query time ($0.59$\,ms per call) due to Prolog term unification and weight calculation. Conversely, under clingo semantics, the negative body condition fails immediately on partial assignments, producing zero candidates; while this allows individual queries to terminate more than ten times faster ($0.05$\,ms), it provides no guidance whatsoever to the solver, causing a massive explosion in decision calls.
 
-\begin{figure}[H]
+% [tbp] e non [H]: con [H] questa figura non entrava nello spazio rimasto e
+% veniva espulsa a pagina nuova, lasciando meta' pagina bianca sotto il
+% paragrafo precedente. Lasciandola flottare, il testo che segue risale.
+\begin{figure}[tbp]
     \centering
     \includegraphics[width=\textwidth]{hpc/\ThesisGraphQuality/bsp/comparison_solving.png}
     \caption{BSP: solving time comparison between the two backends. The bottom subplot shows the relative runtime ratio ($\text{Time}_{\text{Prolog}} / \text{Time}_{\text{C++}}$), where values above 1.0 indicate the factor by which the interpreted Prolog backend is slower than compiled C++.}
     \label{fig:bsp-comparison}
 \end{figure}
 
-The total lazy overhead therefore factorizes as:
+Figure~\ref{fig:bsp-comparison} shows what the two effects add up to when the same variant runs on both backends. The total lazy overhead therefore factorizes as:
 \[
 \text{Total Overhead} = \text{Decide Calls} \times (\text{Query Cost} + \text{Amortized Synchronization Cost}).
 \]
@@ -470,6 +473,7 @@ HRP evaluates heuristic semantics on rules with nested default negations but wit
     \label{fig:hrp}
 \end{figure}
 
+Figure~\ref{fig:hrp} shows both readings side by side:
 \begin{itemize}
     \item under \textbf{Alpha-like semantics:} \texttt{la} tracks \texttt{ga} closely at every size ($86$ vs $88$ choices at $N=14$, with zero conflicts for both), confirming that lazy evaluation faithfully replicates reference Alpha guidance.
     \item under \textbf{clingo-like semantics:} the reading of negation delays the higher-level heuristic rules while letting incomplete lower-level rules fire, which misdirects the search. \texttt{lc} required $66{,}717$ choices at $N=14$ (an 800-fold increase over \texttt{la}) and $14.2$ million choices at $N=16$, timing out from $N=18$.
@@ -494,7 +498,7 @@ On BSP, the guided Alpha configuration (\texttt{alpha\_qh}) solves all twenty in
     \label{fig:alpha-bsp}
 \end{figure}
 
-Lazy grounding alone is not sufficient without dynamic heuristic guidance: \texttt{alpha\_noheur} solves nothing beyond $n=40$, eleven sizes short of clingo's ground baseline \texttt{gc\_noheur} ($n=150$). The two systems sit on opposite sides of one trade-off:
+Lazy grounding alone is not sufficient without dynamic heuristic guidance: as Figure~\ref{fig:alpha-bsp} shows, \texttt{alpha\_noheur} solves nothing beyond $n=40$, eleven sizes short of clingo's ground baseline \texttt{gc\_noheur} ($n=150$). The two systems sit on opposite sides of one trade-off:
 \begin{itemize}
     \item \textbf{clingo:} Because the program is fully grounded before search begins, exploring unpromising search branches is computationally very cheap: clasp only has to perform fast boolean propagation and VSIDS variable scoring over pre-existing clauses in compiled C++.
     \item \textbf{Alpha:} Because rules are grounded on demand during search, exploring unpromising branches is extremely expensive: every wrong decision and subsequent backtrack forces the engine to instantiate new rules and nogoods on the fly.
@@ -511,7 +515,7 @@ As shown in Figure~\ref{fig:alpha-internals}, \texttt{alpha\_noheur} suffers a s
 \end{figure}
 
 \paragraph{Partner Units Problem (PUP).}
-On PUP, clingo with lazy heuristics (\texttt{la}) closely approaches Alpha's performance, solving $N=200$ in $234.7$\,s and $12.7$\,GB compared to $51.1$\,s and $11.6$\,GB for \texttt{alpha\_qh} (a factor of $4.6\times$ in time and $1.1\times$ in memory). In contrast, the static ground simulation \texttt{ga} required $458.7$\,s and $24.5$\,GB (nine times the runtime and over twice the memory of \texttt{alpha\_qh}). Furthermore, \texttt{alpha\_noheur} solves no instances on PUP, reaffirming that dynamic heuristics are essential for solving this problem family.
+On PUP, clingo with lazy heuristics (\texttt{la}) closely approaches Alpha's performance, solving $N=200$ in $234.7$\,s and $12.7$\,GB compared to $51.1$\,s and $11.6$\,GB for \texttt{alpha\_qh} (a factor of $4.6\times$ in time and $1.1\times$ in memory). In contrast, the static ground simulation \texttt{ga} required $458.7$\,s and $24.5$\,GB (nine times the runtime and over twice the memory of \texttt{alpha\_qh}). Furthermore, \texttt{alpha\_noheur} solves no instances on PUP, reaffirming that dynamic heuristics are essential for solving this problem family. Figure~\ref{fig:alpha-pup} places the three systems on the same time and memory axes.
 
 \begin{figure}[H]
     \centering
