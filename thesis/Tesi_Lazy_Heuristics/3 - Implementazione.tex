@@ -20,7 +20,7 @@ Aggregate states implement three methods: \texttt{add}, \texttt{remove}, and \te
 
 Sums and counts (\texttt{SumState}, \texttt{CountState}) store a single \texttt{int}, because adding and removing values can be done with simple addition and subtraction. In contrast, min and max (\texttt{MinState}, \texttt{MaxState}) cannot be undone with arithmetic; when the current minimum or maximum is removed during backtracking, the state must know what the next best value was. They therefore use an \texttt{std::map<int, int>} that maps each active value to how many times it occurs.
 
-Each source atom updates the \texttt{AggregateState} matched by its \texttt{RuntimeAggregateKey}: values are added in \texttt{propagate} and removed in \texttt{undo}.
+Each source atom updates the \texttt{AggregateState} matched by its \texttt{Runtime\allowbreak Aggregate\allowbreak Key}: values are added in \texttt{propagate} and removed in \texttt{undo}.
 
 Under \textit{clingo} semantics, an aggregate is evaluated only after all its source literals are assigned, gating dependent candidates until then. Under \textit{Alpha} semantics, candidates directly read whatever partial aggregate value is currently available on the trail.
 
@@ -57,7 +57,7 @@ Unassigned targets with an active \texttt{level} are stored in an ordered set:
 std::set<DecisionRankKey, DecisionRankGreater> active_decision_ranks_;
 \end{minted}
 
-Entries are sorted by decreasing weight. Because weights are stored as standard 32-bit integers, this avoids the 16-bit saturation limit of clasp's internal domain table (Section~\ref{sec:flattening}).
+Entries are sorted by decreasing weight. Because weights are stored as standard 32-bit integers, this avoids the 16-bit saturation limit of clasp's internal domain table (Section~\ref{sec:weight-problem}).
 
 When clasp calls \texttt{decide}, the propagator inspects \texttt{active\_decision\_ranks\_} from the beginning, discarding any targets that are already assigned on the trail or whose weights have changed. It then branches on the first valid target using its stored \texttt{sign}. If the set is empty, the propagator checks whether clasp's fallback atom has a stored \texttt{sign}; otherwise, it returns $0$ to delegate the decision to clasp. During backtracking, \texttt{undo} restores aggregates and candidate states using \texttt{noexcept} functions to prevent state corruption during solver unwinding.
 
@@ -78,7 +78,7 @@ heuristic("heuristic(b(X), W, 0, true) :-
     W is Base*S+X.").
 \end{minted}
 
-During initialization, the propagator collects all \texttt{heuristic/1} facts and normalizes the rule strings. The body uses either \texttt{clingo\_not/1} or \texttt{alpha\_not/1}, and that choice is what fixes the semantics of the rule. The propagator extracts the predicate signatures referenced in the rules (\texttt{holds}, \texttt{alpha\_not}, \texttt{clingo\_not}, \texttt{target\_available}, and rule targets) and asserts into Prolog only solver atoms matching those signatures, avoiding unnecessary memory and synchronization overhead from irrelevant predicates.
+During initialization, the propagator collects all \texttt{heuristic/1} facts and normalizes the rule strings. The body uses either \texttt{clingo\_not/1} or \texttt{alpha\_not/1}, and that choice is what fixes the semantics of the rule. The propagator extracts the predicate signatures referenced in the rules (\texttt{holds}, \texttt{alpha\_not}, \texttt{clingo\_not}, \texttt{target\_available}, and rule targets) and tracks only the solver atoms matching those signatures, so that irrelevant predicates cost neither memory nor bookkeeping.
 
 \subsection{The Runtime Program}
 
@@ -94,13 +94,15 @@ dyn_max(Goal, Template, Max) :-
     (aggregate_all(max(Template), Goal, R) -> Max = R ; Max = 0).
 \end{minted}
 
-As clasp makes decisions, the propagator mirrors the trail in the dynamic Prolog database. Each update is issued through SWI-Prolog's C API as a single goal built as a string and executed with \texttt{PL\_chars\_to\_term} and \texttt{PL\_call}: the goal always begins with \texttt{retractall(true\_atom(A))} and \texttt{retractall(false\_atom(A))}, followed by an \texttt{assertz/1} of the appropriate fact when the atom is assigned. Retracting an atom without asserting it, hence its absence from the Prolog database, is what represents an unassigned atom. Because of this, \texttt{alpha\_not(A)} succeeds whenever an atom does not hold true, while \texttt{clingo\_not(A)} requires an explicit \texttt{false\_atom(A)} on the trail. In the same way, \texttt{aggregate\_all} dynamically computes sums and counts over the atoms currently true on the trail. \texttt{target\_available(A)} verifies that a target is neither true nor false before branching on it, and \texttt{dyn\_max/3} defaults to $0$ when evaluating an empty set (Section~\ref{sec:flattening}).
+Most predicates in these base rules are standard static Prolog definitions, asserted once during initialization and remaining invariant throughout search. The key exceptions are \texttt{true\_atom/1} and \texttt{false\_atom/1}, which dynamically track the solver's partial assignment. Rather than residing in the Prolog database as dynamic facts, both are implemented as C++ \emph{foreign predicates} via SWI-Prolog's C API. They directly query an in-memory literal store maintained by the propagator: two hash sets (one for true and one for false literals), partitioned by predicate signature. Consequently, recording trail changes during \texttt{propagate} or \texttt{undo} simply updates these native C++ structures, without requiring any calls into the Prolog engine.
+
 
 Unlike the native propagator, which defers an aggregate until every one of its source literals is assigned (Section~\ref{sec:decision}), the Prolog engine has no mechanism to suspend \texttt{aggregate\_all}: the wait has to be expressed in the encoding itself, using \texttt{target\_available/1}. Since it succeeds on atoms that are still undecided, \texttt{\textbackslash+ target\_available(Pattern)} succeeds only when no atom matching \texttt{Pattern} is left undecided. The \texttt{lc} encodings carry one such guard per dynamic source of each aggregate; in BSP, where the sum ranges over the \texttt{c} atoms, the guard is \texttt{\textbackslash+ target\_available(c(\_))}.
 
 \subsection{Synchronization and Decision}
+\label{sec:decision-prolog}
 
-Trail synchronization is incremental: during search, \texttt{propagate} and \texttt{undo} update the state of atoms in the Prolog database as their solver literals change on the trail.
+Trail synchronization is incremental: during search, \texttt{propagate} and \texttt{undo} record atoms as true, false or unassigned in the store described above, as their solver literals change on the trail.
 
 At each decision point (\texttt{decide}), the backend runs the query \texttt{heuristic(T, W, P, M)} and collects every solution. A solution is only a proposal: before it can become a decision, its target term must be matched to a solver literal that is still unassigned. This matching cannot be delegated to the rule, because an unrestricted Prolog rule may build a target term that does not occur in the ground program at all, and such a term has no literal for clasp to branch on. Among the solutions that survive, the backend branches on the one with the highest priority and weight. Unlike the native C++ backend, which incrementally maintains a sorted set of active targets, the Prolog backend re-evaluates the heuristic query from scratch at every decision step. This design prioritizes relational expressiveness over per-decision efficiency (evaluated in Section~\ref{sec:per-decision-cost}).
 
@@ -173,7 +175,7 @@ We benchmark our propagator against the lazy-grounding solver Alpha \cite{weinzi
 
 The choice of build matters: the official Alpha 0.7.0 release does not support \texttt{\#heuristic} directives, and the main upstream branch evaluates aggregates statically. We therefore use the authors' research Qh build, which implements dynamic aggregates over partial assignments.\footnote{\url{https://github.com/tilmanni/Alpha/tree/domspec_heuristics_extended_prolog}, the build referenced by \cite{comploi2023dynamicAggregates}.} All Alpha encodings and benchmark instances are taken unmodified from that same repository: BSP and PUP from its \path{Evaluation} directory, the HRP encoding from the test resources of \cite{comploi2023domain} it also carries.
 
-We evaluate Alpha under two configurations on all benchmark families: \texttt{alpha\_qh} (with domain heuristics enabled via \texttt{-uqh}) and \texttt{alpha\_noheur} (the baseline solver without heuristics, \texttt{-ids}). On HRP, we also run \texttt{alpha\_dom}, which evaluates domain heuristics natively without the Prolog bridge. In Section~\ref{sec:alpha}, we compare these runs against our native clingo variants---\texttt{la} (lazy propagator), \texttt{ga} (ground unrolled simulation), and \texttt{gc\_noheur} (heuristic-free baseline)---to isolate the cost of lazy grounding from the benefit of dynamic heuristic guidance.
+We evaluate Alpha under two configurations on all benchmark families: \texttt{alpha\_qh} (with domain heuristics enabled via \texttt{-uqh}) and \texttt{alpha\_noheur} (the baseline solver without heuristics, \texttt{-ids}). On HRP, we also run \texttt{alpha\_dom}, which evaluates domain heuristics natively without the Prolog bridge. In Section~\ref{sec:alpha}, we compare these runs against our native clingo variants, \texttt{la} (lazy propagator), \texttt{ga} (ground unrolled simulation), and \texttt{gc\_noheur} (heuristic-free baseline), to isolate the cost of lazy grounding from the benefit of dynamic heuristic guidance.
 
 Search counters cannot be compared across systems: Alpha's \emph{guesses} and \emph{backtracks} measure lazy CDNL search interleaved with dynamic rule instantiation, whereas clasp records decision \emph{choices} and \emph{conflicts} over a pre-ground program. Cross-system comparisons are therefore limited to external process metrics recorded by \texttt{runlim}: wall-clock time and peak resident set size (RSS). Furthermore, because Alpha runs on the Java Virtual Machine (JVM), its peak RSS includes the heap pre-allocated via \texttt{-Xmx}, providing an upper bound on operational memory rather than the state held by the algorithm itself.
 
@@ -182,7 +184,7 @@ Search counters cannot be compared across systems: Alpha's \emph{guesses} and \e
 
 The experimental campaigns are orchestrated using \texttt{benchmark-tool} \cite{benchmarkTool}, the Potassco benchmarking suite designed to automate ASP experiment execution and distribute jobs across SLURM clusters. Each run executes a specific (system, setting, instance) configuration under the supervision of \texttt{runlim} \cite{runlim}, which samples resource consumption while enforcing hard wall-clock time and memory limits.
 
-All clingo runs are executed with domain heuristics enabled (\texttt{--heuristic=Domain}) and search configured to find a single answer set (\texttt{-n 1}). For each run, we record total execution time, solving and grounding components, peak resident memory (RSS), and search statistics including choices and conflicts. We also track the size of the ground heuristic component, comparing materialized directives against lazy facts, along with propagator-specific overheads such as decision calls, query evaluation times, and trail synchronization costs.
+All clingo runs are executed with domain heuristics enabled (\texttt{--heuristic=\allowbreak Domain}) and search configured to find a single answer set (\texttt{-n 1}). For each run, we record total execution time, solving and grounding components, peak resident memory (RSS), and search statistics including choices and conflicts. We also track the size of the ground heuristic component, comparing materialized directives against lazy facts, along with propagator-specific overheads such as decision calls, query evaluation times, and trail synchronization costs.
 
 Memory is measured as the peak resident set size (RSS) of the entire solver process, which for the Prolog backend includes the embedded SWI-Prolog runtime. Because the engine incurs a constant initialization overhead, lazy Prolog runs can consume more memory than ground variants on small instances; the advantage over the ground-and-solve variants appears as the instances grow.
 
