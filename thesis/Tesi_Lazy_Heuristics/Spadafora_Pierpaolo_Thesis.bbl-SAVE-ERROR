@@ -832,6 +832,65 @@
       \verb https://github.com/arminbiere/runlim
       \endverb
     \endentry
+    \entry{semmelrock2026evolvingcode}{misc}{}{}
+      \name{author}{6}{}{%
+        {{hash=f08cd9df60af0c9f6909a4a15d39394a}{%
+           family={Semmelrock},
+           familyi={S\bibinitperiod},
+           given={Veronika},
+           giveni={V\bibinitperiod}}}%
+        {{hash=689b9342b277d5287b80ebc536197ea7}{%
+           family={Strizzolo},
+           familyi={S\bibinitperiod},
+           given={Benedetta},
+           giveni={B\bibinitperiod}}}%
+        {{hash=d25f31e630dd1ad5f4953957fb824134}{%
+           family={Zuccato},
+           familyi={Z\bibinitperiod},
+           given={Francesco},
+           giveni={F\bibinitperiod}}}%
+        {{hash=8c14fa59a9c511fd1b3a0c36b8d30d17}{%
+           family={Friedrich},
+           familyi={F\bibinitperiod},
+           given={Gerhard},
+           giveni={G\bibinitperiod}}}%
+        {{hash=3b38032ce33bbedaaf4f2cdcc96dba99}{%
+           family={Rodler},
+           familyi={R\bibinitperiod},
+           given={Patrick},
+           giveni={P\bibinitperiod}}}%
+        {{hash=9fd700f2e92195d4d0631848dee8934f}{%
+           family={Schekotihin},
+           familyi={S\bibinitperiod},
+           given={Konstantin},
+           giveni={K\bibinitperiod}}}%
+      }
+      \strng{namehash}{55e1153aea882edbde1eeda942323b0c}
+      \strng{fullhash}{54671919cdbb8cdd97d8ae7b54d62ad8}
+      \strng{fullhashraw}{54671919cdbb8cdd97d8ae7b54d62ad8}
+      \strng{bibnamehash}{55e1153aea882edbde1eeda942323b0c}
+      \strng{authorbibnamehash}{55e1153aea882edbde1eeda942323b0c}
+      \strng{authornamehash}{55e1153aea882edbde1eeda942323b0c}
+      \strng{authorfullhash}{54671919cdbb8cdd97d8ae7b54d62ad8}
+      \strng{authorfullhashraw}{54671919cdbb8cdd97d8ae7b54d62ad8}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{eprintclass}{cs.LG}
+      \field{eprinttype}{arXiv}
+      \field{title}{Learning to Solve and Optimize by Evolving Code}
+      \field{year}{2026}
+      \verb{eprint}
+      \verb 2605.31049
+      \endverb
+      \verb{urlraw}
+      \verb https://arxiv.org/abs/2605.31049
+      \endverb
+      \verb{url}
+      \verb https://arxiv.org/abs/2605.31049
+      \endverb
+    \endentry
   \enddatalist
 \endrefsection
 \endinput

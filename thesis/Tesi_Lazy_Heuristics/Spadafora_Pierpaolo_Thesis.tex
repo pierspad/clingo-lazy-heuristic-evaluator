@@ -17,7 +17,12 @@
 \usepackage{xcolor}
 \usepackage{minted}
 \usepackage{csquotes}
+% url viene caricato da hyperref: l'opzione va passata prima, altrimenti i
+% \path{...} lunghi (percorsi di file, URL in nota) non hanno alcun punto di
+% rottura e sforano il margine destro.
+\PassOptionsToPackage{hyphens}{url}
 \usepackage[hidelinks]{hyperref}
+\Urlmuskip=0mu plus 1mu\relax
 
 %
 %\setkeys{Gin}{draft=true} 
@@ -34,6 +39,13 @@
 \setlist[itemize]{leftmargin=*, itemsep=2pt, topsep=4pt}
 \setlist[enumerate]{leftmargin=*, itemsep=2pt, topsep=4pt}
 \setlength{\emergencystretch}{3em}
+
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.7}
+\renewcommand{\textfraction}{0.1}
+\renewcommand{\floatpagefraction}{0.8}
+\setcounter{topnumber}{3}
+\setcounter{totalnumber}{4}
 
 \usepackage[backend=biber,style=numeric,sorting=none]{biblatex}
 \addbibresource{bibliografia.bib}
@@ -87,7 +99,7 @@
 \include{2 - Metodologia}
 \include{3 - Implementazione}
 \include{4 - Risultati}
-%\include{5 - DiscussioneConclusione}
+\include{5 - DiscussioneConclusione}
 
 \printbibliography[heading=bibintoc]
 %\include{6 - Ringraziamenti}

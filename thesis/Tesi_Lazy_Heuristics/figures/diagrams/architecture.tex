@@ -62,14 +62,14 @@
 \node[draw=diagNeutralEdge, dashed, rounded corners=3pt, fill=white,
       text width=48mm, align=center, font=\small, text=diagInk,
       inner sep=4pt, anchor=north] at ($(prop_prolog.north)+(0,-12.5mm)$)
-      {dynamic trail facts\\[2pt]
+      {assignment store (two hash maps)\\[2pt]
        SWI-Prolog term cache\\[2pt]
-       query state synchronisation};
+       foreign trail predicates};
 
 \node[lazy, text width=54mm, minimum height=30mm, align=center] (prolog) at (11.5, -3.8)
       {{\large\bfseries Prolog backend}\\[4pt]
        {\normalsize\ttfamily\bfseries heuristic("\dots") strings}\\[4pt]
-       {\small in-process SWI-Prolog engine\\ mirroring the search trail}};
+       {\small in-process SWI-Prolog engine\\ reading the trail in place}};
 
 \draw[biflow, line width=1.0pt] (prop_prolog) -- (prolog);
 
