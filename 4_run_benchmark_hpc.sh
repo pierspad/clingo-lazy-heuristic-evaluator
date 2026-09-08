@@ -24,7 +24,14 @@ if [ -z "${SLURM_JOB_ID:-}" ]; then
   . "$TEST_DIR/scripts/hpc_target.sh"
   hpc_pin_args
   echo "==> Non sono su un compute node: mi rilancio via 'srun ${HPC_PIN_ARGS[*]}' ..."
-  exec srun "${HPC_PIN_ARGS[@]}" --ntasks=1 --cpus-per-task=4 --time=00:30:00 bash "$0" "$@"
+  # walltime 8h e non 30m (2026-09-03): questo srun ospita il DISPATCHER, e
+  # "btool run-dist" e' un ciclo bloccante che throttla a -j 100 perche' su kr
+  # vale MaxSubmit=100 per utente. Con ~117 *.dist totali gli ultimi non
+  # possono partire finche' non finiscono i primi (walltime 2h ciascuno):
+  # a 30 minuti SLURM uccideva il dispatcher a meta' dispatch e l'ultimo
+  # project (HRP) restava sottomesso solo in parte, senza che niente lo
+  # segnalasse. Visto in pratica il 2026-09-02: 11 job HRP su ~19.
+  exec srun "${HPC_PIN_ARGS[@]}" --ntasks=1 --cpus-per-task=4 --time=08:00:00 bash "$0" "$@"
 fi
 
 # ============================================================

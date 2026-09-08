@@ -213,16 +213,51 @@ echo "==> [5/6] Compilazione Clingo Prolog..."
 cd ~/clingo-lazy-heuristics/clingo-prolog
 _prep_build_dir build
 cd build
+
+# ------------------------------------------------------------
+# SWI-Prolog 10 e non quello di sistema.
+#
+# -DCMAKE_PREFIX_PATH da solo NON basta e falliva in silenzio: il
+# CMakeLists di clingo cerca SWI con pkg_check_modules(SWIPL QUIET swipl),
+# e pkg-config non guarda CMAKE_PREFIX_PATH. Trovava quindi lo swipl.pc di
+# sistema (Debian, 8.x) e vinceva quello, con due conseguenze invisibili:
+# la tesi dichiarava 10.0.2 mentre il backend girava sulla 8, e il
+# confronto di §4.12 con la modalita' Qh di Alpha (che usa la 10 via JPL)
+# metteva a confronto due motori diversi. Verificato il 2026-09-03:
+# ldd su libclingo.so.4.0 rispondeva "libswipl.so.8 => /lib/libswipl.so.8".
+#
+# CMAKE_BUILD_RPATH incide il percorso nella libreria invece di affidarlo a
+# LD_LIBRARY_PATH nel wrapper: una variabile d'ambiente che manca e' di
+# nuovo un guasto silenzioso, ed e' gia' successo due volte in questo
+# progetto (LAZY_HEURISTIC_BACKEND, runlim).
+# ------------------------------------------------------------
+SWIPL10_PREFIX="$HOME/swipl-10"
+SWIPL10_ARCHLIB="$(ls -d "$SWIPL10_PREFIX"/lib/swipl/lib/*/ 2>/dev/null | head -1)"
+SWIPL10_ARCHLIB="${SWIPL10_ARCHLIB%/}"
+[ -n "$SWIPL10_ARCHLIB" ] || { echo "ERRORE: libreria di SWI 10 non trovata sotto $SWIPL10_PREFIX/lib/swipl/lib/"; exit 1; }
+export PKG_CONFIG_PATH="$SWIPL10_PREFIX/share/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+echo "    SWI-Prolog 10: $SWIPL10_ARCHLIB"
+
 cmake .. -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
   -DCLINGO_USE_SWIPL=ON \
-  -DCMAKE_PREFIX_PATH=$HOME/swipl-10 \
+  -DCMAKE_PREFIX_PATH="$SWIPL10_PREFIX" \
+  -DCMAKE_BUILD_RPATH="$SWIPL10_ARCHLIB" \
   -DCMAKE_C_COMPILER=gcc \
   -DCMAKE_CXX_COMPILER=g++ \
   -DCMAKE_AR=/usr/bin/ar \
   -DCMAKE_RANLIB=/usr/bin/ranlib
 
 ninja -j ${SLURM_CPUS_PER_TASK:-2}
+
+# Guard: se avesse ripreso quello di sistema, il run partirebbe lo stesso e
+# la cosa si scoprirebbe solo rileggendo i numeri. Meglio fallire qui.
+if ldd bin/libclingo.so.4.0 2>/dev/null | grep -i swipl | grep -qv "$SWIPL10_PREFIX"; then
+  echo "ERRORE: libclingo e' linkato a uno SWI-Prolog diverso da $SWIPL10_PREFIX:"
+  ldd bin/libclingo.so.4.0 | grep -i swipl
+  exit 1
+fi
+echo "    ok libswipl: $(ldd bin/libclingo.so.4.0 | grep -i swipl | tr -s ' ')"
 
 # ------------------------------------------------------------
 # Alpha "Qh": il solver lazy-grounding di riferimento, nella variante con

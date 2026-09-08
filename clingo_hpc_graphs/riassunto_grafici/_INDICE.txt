@@ -63,6 +63,10 @@ macroarea.
     3_HRP_dashboard.png
 
 6_esplorativi/  — studi mirati sulle varianti fuori dal confronto principale
+    co_family/1_BSP_native.png
+    co_family/1_BSP_prolog.png
+    co_vs_base/1_BSP_native.png
+    co_vs_base/1_BSP_prolog.png
     ga_vs_ga_weak/1_BSP_native.png
     ga_vs_ga_weak/1_BSP_prolog.png
     la_aux_vs_gs/1_BSP_native.png

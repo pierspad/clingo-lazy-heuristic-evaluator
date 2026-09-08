@@ -33,6 +33,7 @@ SD_WIDTH=900
 FIGURES=(
   # BSP
   "graphs-native/1_BSP|clingo_total.png|bsp|native_clingo_total.png"
+  "graphs-native/1_BSP|grounding.png|bsp|native_grounding.png"
   "graphs-native/1_BSP|solving.png|bsp|native_solving.png"
   "graphs-native/1_BSP|mem.png|bsp|native_mem.png"
   "graphs-native/1_BSP|choices.png|bsp|native_choices.png"
@@ -59,9 +60,33 @@ FIGURES=(
   "graphs-native/exploratory/ga_vs_ga_weak/1_BSP|solving.png|bsp|expl_gaweak_solving.png"
   "graphs-native/exploratory/ga_vs_ga_weak/1_BSP|choices.png|bsp|expl_gaweak_choices.png"
   "graphs-native/exploratory/ga_vs_ga_weak/1_BSP|conflicts.png|bsp|expl_gaweak_conflicts.png"
-  # confronto col riferimento esterno Alpha (solo BSP e PUP)
+  # BSP — famiglia _co completa (2026-09-02). Col vincolo compatto il programma
+  # base sparisce dal grounding, quindi queste curve isolano il costo della sola
+  # rappresentazione dell'euristica; co_vs_base affianca ogni variante alla sua
+  # gemella con l'encoding standard.
+  "graphs-native/exploratory/co_family/1_BSP|grounding.png|bsp|expl_co_grounding.png"
+  "graphs-native/exploratory/co_family/1_BSP|clingo_total.png|bsp|expl_co_clingo_total.png"
+  "graphs-native/exploratory/co_family/1_BSP|solving.png|bsp|expl_co_solving.png"
+  "graphs-native/exploratory/co_family/1_BSP|mem.png|bsp|expl_co_mem.png"
+  "graphs-native/exploratory/co_family/1_BSP|choices.png|bsp|expl_co_choices.png"
+  "graphs-native/exploratory/co_family/1_BSP|rules.png|bsp|expl_co_rules.png"
+  "graphs-native/exploratory/co_vs_base/1_BSP|clingo_total.png|bsp|expl_covsbase_clingo_total.png"
+  "graphs-native/exploratory/co_vs_base/1_BSP|grounding.png|bsp|expl_covsbase_grounding.png"
+  "graphs-native/exploratory/co_vs_base/1_BSP|choices.png|bsp|expl_covsbase_choices.png"
+  # confronto col riferimento esterno Alpha.
+  # I dashboard "_dashboard.png" affiancano tempo e memoria in un'unica immagine
+  # larga: in tesi risultavano illeggibili, quindi le tre figure 4.14/4.15/4.16
+  # usano i due pannelli separati (time.png, mem.png) impilati in verticale.
+  # I "_dashboard.png" restano sincronizzati come riferimento, non sono inclusi.
+  "graphs-comparison-clingo-alpha/1_BSP|time.png|alpha|bsp_time.png"
+  "graphs-comparison-clingo-alpha/1_BSP|mem.png|alpha|bsp_mem.png"
+  "graphs-comparison-clingo-alpha/2_PUP|time.png|alpha|pup_time.png"
+  "graphs-comparison-clingo-alpha/2_PUP|mem.png|alpha|pup_mem.png"
+  "graphs-comparison-clingo-alpha/3_HRP|time.png|alpha|hrp_time.png"
+  "graphs-comparison-clingo-alpha/3_HRP|mem.png|alpha|hrp_mem.png"
   "graphs-comparison-clingo-alpha/1_BSP|_dashboard.png|alpha|bsp_dashboard.png"
   "graphs-comparison-clingo-alpha/2_PUP|_dashboard.png|alpha|pup_dashboard.png"
+  "graphs-comparison-clingo-alpha/3_HRP|_dashboard.png|alpha|hrp_dashboard.png"
   "graphs-comparison-clingo-alpha/1_BSP|_alpha_internals.png|alpha|bsp_internals.png"
   # HRP
   "graphs-native/3_HRP|solving.png|hrp|native_solving.png"

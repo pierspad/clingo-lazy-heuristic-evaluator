@@ -1,0 +1,1 @@
+/usr/bin/c++ -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/clingo.dir/link.d CMakeFiles/clingo.dir/main.cc.o -o ../../bin/clingo  -Wl,-rpath,/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/clingo-prolog/build-fp/bin: ../../lib/libpyclingo.a ../../lib/libluaclingo.a /usr/lib/libpython3.14.so ../../bin/libclingo.so.4.0 /usr/lib/liblua5.5.so -lm

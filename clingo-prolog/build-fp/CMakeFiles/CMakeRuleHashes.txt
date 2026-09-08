@@ -1,0 +1,9 @@
+# Hashes of file build rules.
+4ec607bd5c048e8e130cbbcc68b38343 libgringo/CMakeFiles/gen1
+4ec607bd5c048e8e130cbbcc68b38343 libgringo/CMakeFiles/gen2
+4ec607bd5c048e8e130cbbcc68b38343 libgringo/CMakeFiles/gen3
+4ec607bd5c048e8e130cbbcc68b38343 libgringo/CMakeFiles/gen4
+c1fe4962fa610da8aa029f986d6b5505 libgringo/src/input/groundtermgrammar/grammar.cc
+5c8404cf186f2acfd9f2cacb12b03c8f libgringo/src/input/groundtermlexer.hh
+9e1da76e2f977221b4cc3fde6555c983 libgringo/src/input/nongroundgrammar/grammar.cc
+1345f5b489c2cc4e715ace3d83d50624 libgringo/src/input/nongroundlexer.hh

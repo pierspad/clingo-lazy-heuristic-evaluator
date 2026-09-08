@@ -150,29 +150,44 @@ class VariantStyle:
         self.dash = dash
 
 
+# Le etichette sono i TOKEN usati nella tesi (gc, ga, la, lc, ...), non nomi
+# discorsivi. Prima erano "G&S Clingo", "Lazy Alpha" ecc., che nei plot di
+# confronto diventavano stringhe tipo "G&S Clingo - Prolog": un revisore ha
+# chiesto esplicitamente cosa fossero, perche' nel testo quelle varianti si
+# chiamano in un altro modo. Il token viene per primo cosi' e' cercabile
+# nel capitolo Risultati; la glossa tra parentesi resta per chi guarda solo
+# la figura.
 VARIANT_STYLES: dict[str, VariantStyle] = {
     # riferimento: nessuna euristica
-    "gc_noheur": VariantStyle("G&S Clingo (no heur)", "#34495E", "X", (0, (1, 1.8))),
+    "gc_noheur": VariantStyle("gc_noheur (no heuristic)", "#34495E", "X", (0, (1, 1.8))),
     # ground-and-solve
-    "gc":        VariantStyle("G&S Clingo",           "#E74C3C", "o", (0, (6, 2))),
-    "ga":        VariantStyle("G&S Alpha",            "#F39C12", "^", (0, (3, 1.4))),
-    "ga_weak":   VariantStyle("G&S Alpha (weak)",     "#B9770E", "v", (0, (3, 1.4, 1, 1.4))),
+    "gc":        VariantStyle("gc (ground, clingo sem.)", "#E74C3C", "o", (0, (6, 2))),
+    "ga":        VariantStyle("ga (ground, Alpha sem.)",  "#F39C12", "^", (0, (3, 1.4))),
+    "ga_weak":   VariantStyle("ga_weak",                  "#B9770E", "v", (0, (3, 1.4, 1, 1.4))),
     # lazy
-    "la":        VariantStyle("Lazy Alpha",           "#27AE60", "s", "solid"),
-    "lc":        VariantStyle("Lazy Clingo",          "#8E44AD", "D", (0, (7, 1.6, 1, 1.6))),
-    "la_aux":    VariantStyle("Lazy Alpha + Aux",     "#16A085", "P", (0, (5, 1.2, 1, 1.2, 1, 1.2))),
-    "la_co":     VariantStyle("Lazy Alpha + ConstrOpt", "#2E86C1", "d", (0, (4, 1.2, 4, 1.2, 1, 1.2))),
+    "la":        VariantStyle("la (lazy, Alpha sem.)",    "#27AE60", "s", "solid"),
+    "lc":        VariantStyle("lc (lazy, clingo sem.)",   "#8E44AD", "D", (0, (7, 1.6, 1, 1.6))),
+    "la_aux":    VariantStyle("la_aux",                   "#16A085", "P", (0, (5, 1.2, 1, 1.2, 1, 1.2))),
+    "la_co":     VariantStyle("la_co",                    "#2E86C1", "d", (0, (4, 1.2, 4, 1.2, 1, 1.2))),
+    # --- famiglia _co: stesse euristiche, vincolo di bilanciamento compatto.
+    # Colore imparentato con la variante base (tinta piu' chiara), marker
+    # diverso: nei plot della famiglia si deve vedere la coppia X / X_co.
+    "gc_noheur_co": VariantStyle("gc_noheur_co", "#5D6D7E", "h", (0, (1, 1.8))),
+    "gc_co":        VariantStyle("gc_co",        "#F1948A", "H", (0, (6, 2))),
+    "ga_co":        VariantStyle("ga_co",        "#F8C471", "<", (0, (3, 1.4))),
+    "ga_weak_co":   VariantStyle("ga_weak_co",   "#D4AC0D", ">", (0, (3, 1.4, 1, 1.4))),
+    "lc_co":        VariantStyle("lc_co",        "#BB8FCE", "+", (0, (7, 1.6, 1, 1.6))),
     # --- sistema esterno: Alpha (lazy grounding nativo) -------------------
     # Colori volutamente FUORI dalle famiglie cromatiche di sopra: nei grafici
     # di confronto si deve vedere a colpo d'occhio quali curve sono clingo e
     # quale e' l'altro solver.
-    "alpha":        VariantStyle("Alpha Qh (dyn. aggr.)", "#D81B60", "*", "solid"),
-    "alpha_noheur": VariantStyle("Alpha (no heur)",       "#795548", "x", (0, (1, 1.8))),
+    "alpha":        VariantStyle("alpha_qh (dyn. aggr.)", "#D81B60", "*", "solid"),
+    "alpha_noheur": VariantStyle("alpha_noheur",          "#795548", "x", (0, (1, 1.8))),
     # HRP-only: euristiche domain-specific senza -uqh (v. il setting
     # alpha_dom nel runscript). Colore imparentato con "alpha" perche' e' lo
     # stesso sistema con lo stesso encoding, marker diverso perche' e' un
     # altro modo di valutare l'euristica.
-    "alpha_dom":    VariantStyle("Alpha (domspec nativo)", "#F06292", "p", (0, (5, 1.5))),
+    "alpha_dom":    VariantStyle("alpha_dom (native domspec)", "#F06292", "p", (0, (5, 1.5))),
 }
 
 # Fallback per una variante non ancora censita (non deve succedere: meglio
@@ -207,8 +222,9 @@ def variant_kwargs(variant: str, *, dash=None, **overrides) -> dict:
     return kwargs
 
 
-VARIANT_ORDER = ["gc_noheur", "gc", "ga", "ga_weak", "la", "lc", "la_aux", "la_co"]
-LAZY_VARIANTS = ["la", "lc", "la_aux", "la_co"]
+VARIANT_ORDER = ["gc_noheur", "gc", "ga", "ga_weak", "la", "lc", "la_aux", "la_co",
+                 "gc_noheur_co", "gc_co", "ga_co", "ga_weak_co", "lc_co"]
+LAZY_VARIANTS = ["la", "lc", "la_aux", "la_co", "lc_co"]
 
 # Varianti del confronto principale della tesi: 1 riferimento + 4 varianti.
 # Tutto il resto (la_co, la_aux, ga_weak) e' esplorativo e compare solo
@@ -237,6 +253,30 @@ EXPLORATORY_STUDIES = [
         "metrics": ["grounding", "solving", "clingo_total", "mem",
                     "choices", "conflicts", "decide_calls"],
         "ground": False,
+    },
+    {
+        # La famiglia _co al completo. Con il vincolo compatto il programma
+        # base non domina piu' il grounding, quindi queste curve misurano la
+        # sola rappresentazione dell'euristica: due fatti (la_co/lc_co),
+        # Theta(n^3) direttive (gc_co/ga_co/ga_weak_co), niente (gc_noheur_co).
+        # E' l'esperimento chiesto in revisione: "provare una versione _co di
+        # gc_noheur e delle altre varianti, per vedere se, una volta che il
+        # programma base grounda in fretta, le euristiche fanno differenza".
+        "slug": "co_family",
+        "title": "_co family: heuristic representation once the base program is cheap",
+        "variants": ["gc_noheur_co", "gc_co", "ga_co", "ga_weak_co", "la_co", "lc_co"],
+        "metrics": ["grounding", "solving", "clingo_total", "mem",
+                    "choices", "conflicts", "rules", "constraints"],
+        "ground": True,
+    },
+    {
+        # Le stesse sei varianti contro le loro gemelle non-_co: quanto della
+        # frontiera BSP apparteneva al programma base e quanto all'euristica.
+        "slug": "co_vs_base",
+        "title": "_co vs standard encoding: which bottleneck belongs to which",
+        "variants": ["gc_noheur", "gc_noheur_co", "ga", "ga_co", "la", "la_co", "lc", "lc_co"],
+        "metrics": ["grounding", "solving", "clingo_total", "mem", "choices", "rules"],
+        "ground": True,
     },
     {
         "slug": "ga_vs_ga_weak",
@@ -547,7 +587,16 @@ def _fmt_compact(v, _p=None):
             s = v / sc
             return (f"{s:.0f}{suf}" if abs(s) >= 100 or float(s).is_integer()
                     else f"{s:.1f}{suf}".rstrip("0").rstrip("."))
-    return "0" if v == 0 else (f"{v:.0f}" if av >= 1 else f"{v:g}")
+    # NB: niente f"{v:.0f}" incondizionato sopra 1. MaxNLocator sceglie anche
+    # tick a mezza unita' (1.5, 2.5, 4.5): arrotondandoli all'intero l'asse
+    # finisce con due o tre etichette identiche ("2", "2", "2" sul pannello
+    # dei rapporti di PUP) e non e' piu' leggibile. I tick interi restano
+    # senza decimali come prima.
+    if v == 0:
+        return "0"
+    if av >= 1 and float(v).is_integer():
+        return f"{v:.0f}"
+    return f"{v:g}"
 
 
 def _fmt_gb_from_mb(v, _p=None):
@@ -1478,9 +1527,8 @@ ALPHA_INTERNAL_METRICS = [
     Metric("alpha_ms_per_query", "Alpha: Cost per Heuristic Query", "ms / query"),
 ]
 
-_ALPHA_MEM_NOTE = ("Alpha runs on the JVM: its peak RSS includes the heap RESERVED "
-                   "via -Xmx, not only the heap in use. It measures the cost of RUNNING "
-                   "the system, not the state the algorithm holds.")
+_ALPHA_MEM_NOTE = ("Peak RSS measures resident process memory, including JVM overhead for Alpha. "
+                   "It does not isolate live solver data or equal the maximum heap size set by -Xmx.")
 
 
 def _alpha_slice(agg: pd.DataFrame, family: str) -> pd.DataFrame:

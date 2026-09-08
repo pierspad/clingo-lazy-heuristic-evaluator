@@ -1,0 +1,24 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/clingo-prolog/build-fp/cmake_install.cmake",
+		"/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/clingo-prolog/build-fp/third_party/cmake_install.cmake",
+		"/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/clingo-prolog/build-fp/clasp/cmake_install.cmake",
+		"/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/clingo-prolog/build-fp/clasp/libpotassco/cmake_install.cmake",
+		"/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/clingo-prolog/build-fp/clasp/libpotassco/src/cmake_install.cmake",
+		"/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/clingo-prolog/build-fp/clasp/libpotassco/app/cmake_install.cmake",
+		"/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/clingo-prolog/build-fp/clasp/src/cmake_install.cmake",
+		"/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/clingo-prolog/build-fp/clasp/app/cmake_install.cmake",
+		"/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/clingo-prolog/build-fp/libreify/cmake_install.cmake",
+		"/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/clingo-prolog/build-fp/libgringo/cmake_install.cmake",
+		"/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/clingo-prolog/build-fp/libclingo/cmake_install.cmake",
+		"/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/clingo-prolog/build-fp/libpyclingo/cmake_install.cmake",
+		"/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/clingo-prolog/build-fp/libluaclingo/cmake_install.cmake",
+		"/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/clingo-prolog/build-fp/app/reify/cmake_install.cmake",
+		"/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/clingo-prolog/build-fp/app/gringo/cmake_install.cmake",
+		"/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/clingo-prolog/build-fp/app/clingo/cmake_install.cmake",
+		"/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/clingo-prolog/build-fp/app/pyclingo/cmake_install.cmake",
+		"/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/clingo-prolog/build-fp/app/luaclingo/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

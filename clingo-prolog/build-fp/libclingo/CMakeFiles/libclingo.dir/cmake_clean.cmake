@@ -1,0 +1,41 @@
+file(REMOVE_RECURSE
+  "../bin/libclingo.pdb"
+  "../bin/libclingo.so"
+  "../bin/libclingo.so.4"
+  "../bin/libclingo.so.4.0"
+  "../lib/.4"
+  "CMakeFiles/libclingo.dir/link.d"
+  "CMakeFiles/libclingo.dir/src/astv2.cc.o"
+  "CMakeFiles/libclingo.dir/src/astv2.cc.o.d"
+  "CMakeFiles/libclingo.dir/src/astv2_build.cc.o"
+  "CMakeFiles/libclingo.dir/src/astv2_build.cc.o.d"
+  "CMakeFiles/libclingo.dir/src/astv2_parse.cc.o"
+  "CMakeFiles/libclingo.dir/src/astv2_parse.cc.o.d"
+  "CMakeFiles/libclingo.dir/src/astv2_str.cc.o"
+  "CMakeFiles/libclingo.dir/src/astv2_str.cc.o.d"
+  "CMakeFiles/libclingo.dir/src/astv2_unpool.cc.o"
+  "CMakeFiles/libclingo.dir/src/astv2_unpool.cc.o.d"
+  "CMakeFiles/libclingo.dir/src/clingo_app.cc.o"
+  "CMakeFiles/libclingo.dir/src/clingo_app.cc.o.d"
+  "CMakeFiles/libclingo.dir/src/clingocontrol.cc.o"
+  "CMakeFiles/libclingo.dir/src/clingocontrol.cc.o.d"
+  "CMakeFiles/libclingo.dir/src/control.cc.o"
+  "CMakeFiles/libclingo.dir/src/control.cc.o.d"
+  "CMakeFiles/libclingo.dir/src/gringo_app.cc.o"
+  "CMakeFiles/libclingo.dir/src/gringo_app.cc.o.d"
+  "CMakeFiles/libclingo.dir/src/gringo_options.cc.o"
+  "CMakeFiles/libclingo.dir/src/gringo_options.cc.o.d"
+  "CMakeFiles/libclingo.dir/src/heuristic_propagator.cc.o"
+  "CMakeFiles/libclingo.dir/src/heuristic_propagator.cc.o.d"
+  "CMakeFiles/libclingo.dir/src/incmode.cc.o"
+  "CMakeFiles/libclingo.dir/src/incmode.cc.o.d"
+  "CMakeFiles/libclingo.dir/src/scripts.cc.o"
+  "CMakeFiles/libclingo.dir/src/scripts.cc.o.d"
+  "CMakeFiles/libclingo.dir/src/swi_prolog_heuristic_backend.cc.o"
+  "CMakeFiles/libclingo.dir/src/swi_prolog_heuristic_backend.cc.o.d"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang CXX)
+  include(CMakeFiles/libclingo.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()

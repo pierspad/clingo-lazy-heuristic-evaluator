@@ -20,7 +20,8 @@
     encoding_tag: cosi' la variante "gc" usa l'encoding BSP_gc.lp sui BSP,
     PUP_gc.lp sui PUP, ecc. L'attributo `tag` del setting indica invece a
     quali famiglie la variante si applica (le varianti BSP-only ga_weak/
-    la_aux/la_co hanno tag="bsp" e non vengono eseguite su PUP/HRP).
+    la_aux/la_co e l'intera famiglia *_co hanno tag="bsp" e non vengono
+    eseguite su PUP/HRP).
     I runtag selezionano i setting per famiglia via `tag`.
 
   ESECUZIONE
@@ -80,6 +81,27 @@
     <setting name="la_co" tag="bsp">
       <encoding file="../encodings-native/1_BSP/BSP_la_co.lp" encoding_tag="bsp"/>
     </setting>
+    <!-- famiglia _co completa (2026-09-02). Con il vincolo di bilanciamento in
+         forma compatta il programma base sparisce (366 regole a n=120 contro
+         52.8M), quindi cio' che il grounding misura e' la sola componente
+         euristica: due fatti per la/lc, Theta(n^3) direttive per gc/ga/ga_weak,
+         zero per gc_noheur. Equivalenza dei modelli verificata contro le
+         varianti non-_co a n=10 e n=14 (80 e 794 answer set, insiemi identici). -->
+    <setting name="gc_noheur_co" tag="bsp">
+      <encoding file="../encodings-native/1_BSP/BSP_gc_noheur_co.lp" encoding_tag="bsp"/>
+    </setting>
+    <setting name="gc_co" tag="bsp">
+      <encoding file="../encodings-native/1_BSP/BSP_gc_co.lp" encoding_tag="bsp"/>
+    </setting>
+    <setting name="ga_co" tag="bsp">
+      <encoding file="../encodings-native/1_BSP/BSP_ga_co.lp" encoding_tag="bsp"/>
+    </setting>
+    <setting name="ga_weak_co" tag="bsp">
+      <encoding file="../encodings-native/1_BSP/BSP_ga_weak_co.lp" encoding_tag="bsp"/>
+    </setting>
+    <setting name="lc_co" tag="bsp">
+      <encoding file="../encodings-native/1_BSP/BSP_lc_co.lp" encoding_tag="bsp"/>
+    </setting>
   </system>
 
   <!-- ===================== SYSTEM: BACKEND PROLOG ===================== -->
@@ -120,6 +142,24 @@
     </setting>
     <setting name="la_co" tag="bsp">
       <encoding file="../encodings-prolog/1_BSP/BSP_la_co.lp" encoding_tag="bsp"/>
+    </setting>
+    <!-- famiglia _co completa: v. il commento nel system clingo-native.
+         Le quattro varianti ground sono byte-identiche a quelle native
+         (non usano il DSL), lc_co differisce solo per clingo_not + gating. -->
+    <setting name="gc_noheur_co" tag="bsp">
+      <encoding file="../encodings-prolog/1_BSP/BSP_gc_noheur_co.lp" encoding_tag="bsp"/>
+    </setting>
+    <setting name="gc_co" tag="bsp">
+      <encoding file="../encodings-prolog/1_BSP/BSP_gc_co.lp" encoding_tag="bsp"/>
+    </setting>
+    <setting name="ga_co" tag="bsp">
+      <encoding file="../encodings-prolog/1_BSP/BSP_ga_co.lp" encoding_tag="bsp"/>
+    </setting>
+    <setting name="ga_weak_co" tag="bsp">
+      <encoding file="../encodings-prolog/1_BSP/BSP_ga_weak_co.lp" encoding_tag="bsp"/>
+    </setting>
+    <setting name="lc_co" tag="bsp">
+      <encoding file="../encodings-prolog/1_BSP/BSP_lc_co.lp" encoding_tag="bsp"/>
     </setting>
   </system>
 
@@ -271,9 +311,10 @@
        SLURM (visto nello smoke test: "Found 1 jobs to dispatch").
        Dentro ciascun project, con walltime="2h" (vedi <distjob> sopra)
        "btool gen" produce PIU' *.dist per project, non piu' uno solo:
-       BSP (360 run: 20 istanze [10..200 step 10, esteso 2026-07-22] x
-       [8 setting x 2 backend clingo + 2 setting alpha]) -> ~30 *.dist
-       stimati, PUP (120 run: 10 istanze x [5 setting x 2 backend + 2
+       BSP (560 run: 20 istanze [10..200 step 10, esteso 2026-07-22] x
+       [13 setting x 2 backend clingo + 2 setting alpha]; era 360 con 8
+       setting, la famiglia _co completa ne ha aggiunti 5 il 2026-09-02)
+       -> ~45 *.dist stimati, PUP (120 run: 10 istanze x [5 setting x 2 backend + 2
        alpha]) e HRP (130 run: 10 istanze x [5 setting x 2 backend + 3
        alpha, il terzo e' alpha_dom]) -> ~10 *.dist ciascuno,
        per un totale di ~50 job SLURM invece di 3-4 (stima approssimata:

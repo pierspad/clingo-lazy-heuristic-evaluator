@@ -1,0 +1,1 @@
+/usr/bin/cc -fPIC -O3 -DNDEBUG -shared -Wl,--dependency-file=CMakeFiles/pyclingo.dir/link.d  -o ../../bin/python/_clingo.cpython-314-x86_64-linux-gnu.so CMakeFiles/pyclingo.dir/_clingo.c.o  -Wl,-rpath,/home/ribben/Desktop/Thesis/clingo-lazy-heuristics/clingo-prolog/build-fp/bin: ../../bin/libclingo.so.4.0

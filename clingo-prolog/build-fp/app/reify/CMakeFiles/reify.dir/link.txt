@@ -1,0 +1,1 @@
+/usr/bin/c++ -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/reify.dir/link.d CMakeFiles/reify.dir/main.cc.o -o ../../bin/reify  -Wl,-rpath,:::::::::::::: ../../lib/libreify.a ../../lib/libpotassco.a

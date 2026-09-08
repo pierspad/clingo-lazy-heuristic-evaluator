@@ -21,12 +21,28 @@ set -euo pipefail
 # con lo stesso fallimento silenzioso gia' visto per runlim. Override via
 # env SWIPL_MODERN_PREFIX se il prefix di installazione e' diverso.
 : "${SWIPL_MODERN_PREFIX:=$HOME/swipl-10}"
-for _swipl_libdir in "$SWIPL_MODERN_PREFIX/lib" "$SWIPL_MODERN_PREFIX/lib64"; do
+# La libreria NON sta in $PREFIX/lib: SWI la installa sotto
+# $PREFIX/lib/swipl/lib/<arch>/ (es. x86_64-linux). Il ciclo sui soli
+# lib/ e lib64/ non la trovava mai, ed e' uno dei motivi per cui fino al
+# 2026-09-03 il backend risolveva la libswipl.so.8 di sistema. Da quella
+# data il percorso e' anche inciso come RPATH da compile_all.sh, quindi
+# questo export e' una seconda rete, non l'unica.
+for _swipl_libdir in \
+    "$SWIPL_MODERN_PREFIX"/lib/swipl/lib/*/ \
+    "$SWIPL_MODERN_PREFIX/lib" \
+    "$SWIPL_MODERN_PREFIX/lib64"; do
     if [ -d "$_swipl_libdir" ]; then
-        export LD_LIBRARY_PATH="${_swipl_libdir}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+        export LD_LIBRARY_PATH="${_swipl_libdir%/}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
     fi
 done
 unset _swipl_libdir
+
+# Senza questa, il motore embedded cerca l'home compilata dentro la libreria
+# (che per una build in $HOME non e' dove ci si aspetta) e muore con
+# "could not find SWI-Prolog home". Alpha lo esporta gia' allo stesso modo.
+if [ -d "$SWIPL_MODERN_PREFIX/lib/swipl" ]; then
+    export SWI_HOME_DIR="$SWIPL_MODERN_PREFIX/lib/swipl"
+fi
 
 export LAZY_HEURISTIC_BACKEND=prolog
 # Abilita l'emissione della riga "[lazy-prolog] summary ..." su stderr, da cui

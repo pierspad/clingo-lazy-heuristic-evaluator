@@ -1,0 +1,26 @@
+# Nodi su cui sono realmente girati i run di output
+# (uno per run, scritto dal job SLURM stesso; v. templates/single.dist)
+# generato il 2026-09-03T09:58:52+02:00
+#
+# run totali con nodo registrato: 810
+# nodi distinti:                  9
+#
+# # Insieme di nodi congelato per la campagna di misura.
+# # Generato da scripts/hpc_target.sh il 2026-08-17T15:54:27+02:00 su hpc-login.
+# # Cancella questo file (o esporta HPC_TARGET_REFRESH=1) per ricalcolarlo;
+# # ricalcolarlo a meta' campagna rende i run prima/dopo non confrontabili.
+# HPC_PARTITION=kr
+# HPC_TARGET_NODES=kr-node[1-10]
+# HPC_TARGET_EXCLUDE=
+# HPC_TARGET_SIG="8|31900|1|4|2|(null)"
+
+# run   nodo
+    123 kr-node4
+    106 kr-node10
+    105 kr-node7
+     98 kr-node1
+     84 kr-node8
+     84 kr-node6
+     77 kr-node9
+     70 kr-node2
+     63 kr-node5
