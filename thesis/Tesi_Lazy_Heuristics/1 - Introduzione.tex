@@ -10,7 +10,7 @@ ASP solvers are essentially highly optimized backtracking, or more appropriately
 
 In ground-and-solve systems, such as clingo, first-order rules are instantiated over the problem domain before search starts, including the domain-specific heuristics that direct the solver's search. 
 This approach can be severely memory-intensive, with grounding bottlenecks manifesting in two main scenarios: as problem instances scale, and whenever domain-specific heuristics depend on dynamic search state, for instance through an aggregate over the atoms that are true \emph{at that point of the search}. 
-Because grounding precedes search, the grounder must enumerate every possible value the aggregate could take, and a single heuristic ends up producing a number of ground objects that is combinatorial in the size of the instance. In contrast, lazy-grounding systems interleave grounding and solving. While this yields substantially higher memory efficiency, allowing a further reach on memory-intensive problems, it comes at the cost of a significantly slower search.
+Because grounding precedes search, the grounder must enumerate every possible value the aggregate could take, and a single heuristic ends up producing a number of ground objects that is combinatorial in the size of the instance. In contrast, lazy-grounding systems interleave grounding and solving. This can reduce memory use and extend reach on memory-intensive problems, but interleaving grounding and solving can also make search slower.
 
 Depending on its underlying architecture, an ASP solver can be seen as an engine that compiles or interprets a very convenient and elegant declarative language \cite{calimeri2020aspcore2} to search for a solution. The convenience of that language is paid for in control: the modeller states \emph{what} an admissible solution is, but not \emph{how} the engine should look for one. A pure backtracking approach behaves as an uninformed search, and on problems whose structure is known by construction, guiding the solver with that knowledge is extremely helpful.
 
@@ -57,7 +57,7 @@ The candidate $\{a,b\}$ deletes both rules, leaving the least model $\emptyset$:
 A stable model is then a set of atoms both closed under the rules and justified by them, in which every atom has a non-circular derivation that survives the model's own assumptions about what is false.
 
 In the \emph{guess-and-check} idiom a choice construct opens the solution space, integrity constraints prune the candidates that violate the specification, and the answer sets of the program correspond one-to-one to the solutions of the problem. ASP syntax extends normal rules with first-order variables, arithmetic, conditional literals, and three constructs this thesis uses throughout. 
-A \emph{choice rule} such as \texttt{\{ b(X) \} :- x(X).} leaves the truth values of its head atoms unconstrained, making these \emph{choice atoms} the explicit decision points of the solver.
+A \emph{choice rule} such as \texttt{\{ b(X) \} :- x(X).} permits any subset of its head atoms, introducing alternatives that the solver may resolve through propagation or decisions.
 An \emph{integrity constraint} \texttt{:- Body.} is a rule with empty head and forbids every model that satisfies $Body$. 
 An \emph{aggregate atom} such as \texttt{\#sum}, \texttt{\#count}, \texttt{\#min} or \texttt{\#max} condenses a set of weighted contributions into a single comparable value \cite{clingoGuide}. Aggregates are central to this work: the heuristics under study rank decisions by expressions such as \enquote{the current sum of the elements already placed in a set}, and how and \emph{when} such an aggregate is evaluated is exactly what differentiates the systems compared here.
 
@@ -85,7 +85,7 @@ Here, $A$ is the target domain atom whose decision choice is steered according t
 \section{Lazy Grounding, Alpha, and Heuristics over Partial Assignments}
 \label{sec:bg-alpha}
 
-Lazy-grounding solvers invert the order of the two phases. Rather than instantiating the program and then searching it, they instantiate a rule only when the partial assignment reached so far makes it relevant, avoiding the need to materialize the full ground program before search. Exploring unsuccessful branches can, however, require additional rule instantiation and nogood generation. Alpha \cite{weinzierl2017blending} is the state-of-the-art system of this family and the external reference of this work.
+Lazy-grounding solvers invert the order of the two phases. Rather than instantiating the program and then searching it, they instantiate a rule only when the partial assignment reached so far makes it relevant, avoiding the need to materialize the full ground program before search. Exploring unsuccessful branches can, however, require additional rule instantiation and nogood generation. Alpha \cite{weinzierl2017blending} is the external lazy-grounding reference used in this work.
 
 Comploi-Taupe et al.\ extended Alpha with declaratively specified domain-specific heuristics evaluated against the \emph{partial} assignment maintained during solving \cite{comploi2023domain}, and subsequently with aggregates evaluated over that same partial assignment \cite{comploi2023dynamicAggregates}. Because a heuristic is read while the assignment is still incomplete, its semantics differs from clingo's on the two points that organize the rest of this thesis:
 
@@ -109,7 +109,7 @@ This is the mechanism the rest of the thesis builds on. It keeps the declarative
 \section{Objective and Contributions}
 \label{sec:contributions}
 
-This work asks whether the same effect of lazily evaluating heuristics can be obtained inside clingo without giving up its ground-and-solve pipeline and speed advantage, that is, whether a ground-and-solve engine can be equipped with lazily evaluated heuristics (Figure~\ref{fig:pipelines}) and whether the overhead of dynamic evaluation still allows the engine to outperform a state-of-the-art lazy-grounding solver.
+This work asks whether lazily evaluated heuristics can be added to clingo without giving up its ground-and-solve pipeline (Figure~\ref{fig:pipelines}), and whether the overhead of dynamic evaluation still allows the resulting system to outperform Alpha on the selected benchmarks.
 
 The thesis makes the following contributions.
 
@@ -122,8 +122,6 @@ The thesis makes the following contributions.
 \end{enumerate}
 
 The evaluation covers three problem families, the Balanced Sum Problem (BSP), the Partner Units Problem (PUP), and the House Reconfiguration Problem (HRP), on both backends. The implementation is publicly available.\footnote{\url{https://github.com/pierspad/clingo-lazy-heuristic-evaluator}}
-
-
 
 
 

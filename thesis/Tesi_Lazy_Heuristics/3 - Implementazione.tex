@@ -64,7 +64,7 @@ When clasp calls \texttt{decide}, the propagator inspects \texttt{active\_decisi
 
 \section{The Prolog Backend}
 
-While the native backend prioritizes evaluation speed through compiled C++ structures, the Prolog backend evaluates heuristics as arbitrary logic programs via an embedded engine, trading runtime overhead for unrestricted expressiveness. This section describes its runtime architecture and trail synchronization mechanisms (with a comprehensive performance comparison presented in Section~\ref{sec:backend-summary}).
+While the native backend prioritizes evaluation speed through compiled C++ structures, the Prolog backend evaluates heuristics as logic programs via an embedded engine, trading runtime overhead for broader relational expressiveness. This section describes its runtime architecture and trail synchronization mechanisms (with a comprehensive performance comparison presented in Section~\ref{sec:backend-summary}).
 
 \subsection{Rule Strings and Normalization}
 \label{sec:prolog-syntax}
@@ -104,7 +104,7 @@ Unlike the native propagator, which defers an aggregate until every one of its s
 
 Trail synchronization is incremental: during search, \texttt{propagate} and \texttt{undo} record atoms as true, false or unassigned in the store described above, as their solver literals change on the trail.
 
-At each decision point (\texttt{decide}), the backend runs the query \texttt{heuristic(T, W, P, M)} and collects every solution. A solution is only a proposal: before it can become a decision, its target term must be matched to a solver literal that is still unassigned. This matching cannot be delegated to the rule, because an unrestricted Prolog rule may build a target term that does not occur in the ground program at all, and such a term has no literal for clasp to branch on. Among the solutions that survive, the backend branches on the one with the highest priority and weight. Unlike the native C++ backend, which incrementally maintains a sorted set of active targets, the Prolog backend re-evaluates the heuristic query from scratch at every decision step. This design prioritizes relational expressiveness over per-decision efficiency (evaluated in Section~\ref{sec:per-decision-cost}).
+At each decision point (\texttt{decide}), the backend runs the query \texttt{heuristic(T, W, P, M)} and collects every solution. A solution is only a proposal: before it can become a decision, its target term must be matched to a solver literal that is still unassigned. This matching cannot be delegated to the rule, because a Prolog rule may build a target term that does not occur in the ground program at all, and such a term has no literal for clasp to branch on. Among the solutions that survive, the backend branches on the one with the highest priority and weight. Unlike the native C++ backend, which incrementally maintains a sorted set of active targets, the Prolog backend re-evaluates the heuristic query from scratch at every decision step. This design prioritizes relational expressiveness over per-decision efficiency (evaluated in Section~\ref{sec:per-decision-cost}).
 
 \section{Benchmark Problems and Encodings}
 \label{sec:benchmarks}
@@ -171,7 +171,7 @@ Unlike BSP and PUP, the HRP heuristic uses no dynamic aggregates: its conditions
 \subsection{Alpha as an External Reference}
 \label{sec:alpha-setup}
 
-We benchmark our propagator against the lazy-grounding solver Alpha \cite{weinzierl2017blending,comploi2023domain} as an external state-of-the-art reference. Specifically, we test the \emph{Qh} (Query Heuristics) variant developed by Comploi-Taupe et al.~\cite{comploi2023dynamicAggregates}, invoked with \texttt{-uqh}, which evaluates domain heuristics and dynamic aggregates over partial assignments via Prolog queries. This mechanism directly mirrors our Prolog backend and implements the semantics our native propagator reproduces.
+We benchmark our propagator against the lazy-grounding solver Alpha \cite{weinzierl2017blending,comploi2023domain} as an external reference. Specifically, we test the \emph{Qh} (Query Heuristics) variant developed by Comploi-Taupe et al.~\cite{comploi2023dynamicAggregates}, invoked with \texttt{-uqh}, which evaluates domain heuristics and dynamic aggregates over partial assignments via Prolog queries. This mechanism directly mirrors our Prolog backend and implements the semantics our native propagator reproduces.
 
 The choice of build matters: the official Alpha 0.7.0 release does not support \texttt{\#heuristic} directives, and the main upstream branch evaluates aggregates statically. We therefore use the authors' research Qh build, which implements dynamic aggregates over partial assignments.\footnote{\url{https://github.com/tilmanni/Alpha/tree/domspec_heuristics_extended_prolog}, the build referenced by \cite{comploi2023dynamicAggregates}.} All Alpha encodings and benchmark instances are taken unmodified from that same repository: BSP and PUP from its \path{Evaluation} directory, the HRP encoding from the test resources of \cite{comploi2023domain} that the same repository also carries.
 

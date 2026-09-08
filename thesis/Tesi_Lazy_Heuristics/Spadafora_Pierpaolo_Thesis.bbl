@@ -778,7 +778,7 @@
       \field{pages}{17\bibrangedash 24}
       \range{pages}{8}
     \endentry
-    \entry{benchmarkTool}{misc}{}{}
+    \entry{benchmarkTool}{software}{}{}
       \name{author}{1}{}{%
         {{hash=6d1280f98eefa99bcc5d4a7d74f44c6a}{%
            family={{Potassco Group}},
@@ -797,6 +797,10 @@
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{title}{benchmark-tool: A tool for benchmarking solvers and orchestrating cluster runs}
+      \field{urlday}{8}
+      \field{urlmonth}{9}
+      \field{urlyear}{2026}
+      \field{urldateera}{ce}
       \verb{urlraw}
       \verb https://potassco.org/benchmark-tool/
       \endverb
@@ -804,7 +808,7 @@
       \verb https://potassco.org/benchmark-tool/
       \endverb
     \endentry
-    \entry{runlim}{misc}{}{}
+    \entry{runlim}{software}{}{}
       \name{author}{1}{}{%
         {{hash=22081d00e30965a89f413e528510617e}{%
            family={Biere},
@@ -825,6 +829,10 @@
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{title}{runlim: a tool for sampling time and memory usage of a process}
+      \field{urlday}{8}
+      \field{urlmonth}{9}
+      \field{urlyear}{2026}
+      \field{urldateera}{ce}
       \verb{urlraw}
       \verb https://github.com/arminbiere/runlim
       \endverb

@@ -111,7 +111,7 @@ HRP stays far below this bound; PUP exceeds it on the zone directives, with the 
 In the compact \texttt{\_co} encoding (Section~\ref{sec:co-family}), weights saturate in exactly the same way, yet runtime is unaffected because propagation resolves choices directly without needing heuristic guidance.
 The lazy backends avoid this limitation altogether. Rather than assigning static weights to clasp, the propagator ranks candidate targets dynamically at runtime and directly returns the chosen decision literal.
 
-The suite adopts clingo's convention in \emph{all four variants and in both backends}: absolute levels always live in the weight, simplifying the propagator as it does not need to account for a separate priority field. Once global levels are folded into weights, weight becomes the sole ordering criterion under both semantics. Accordingly, the native lazy language (Section~\ref{sec:dsl}) omits the priority field entirely.
+The suite folds each benchmark's global levels into the weights in all four variants and both backends, so cross-atom ordering does not depend on backend-specific priority semantics. Accordingly, the native lazy language (Section~\ref{sec:dsl}) omits a separate priority field. The Prolog representation retains one for interface compatibility: BSP and PUP use \texttt{P=0}, whereas HRP assigns \texttt{P=1} to its nine ranking rules and \texttt{P=0} to the final false layer, as detailed in Section~\ref{sec:dsl-limits}.
 
 \section{System Architecture}
 \label{sec:architecture}
@@ -145,7 +145,7 @@ The two backends are not symmetric in what they can express. The native backend 
 
 To activate this mechanism, runs are launched with the flag \texttt{--heuristic=Domain}. A detailed discussion of the architectural differences between the two backends is provided in Chapter~\ref{sec:implementation}.
 
-The propagator never adds a constraint, never derives a literal, and never refuses one. It only reorders the decisions clasp would have taken anyway, so the answer sets are untouched, and a heuristic can make a run slower or faster but cannot change the meaning of the encoding (detailed in Section~\ref{sec:decision}).
+The propagator never adds a constraint, never derives a literal, and never refuses one. It changes only the order and preferred polarity of decision literals, so the answer sets are untouched; a heuristic can make a run slower or faster but cannot change the meaning of the encoding (detailed in Section~\ref{sec:decision}).
 
 \section{Translation of the Heuristic Directives}
 \label{sec:dsl}
@@ -238,7 +238,7 @@ __heuristic(__target(b),
 \subsection{Lazy heuristic syntax for the Prolog backend}
 \label{sec:prolog-notation}
 
-Unlike the native backend, which only supports a fixed set of predefined constructs, the Prolog backend imposes no syntactic restrictions. A heuristic is declared as a string inside a \texttt{heuristic("...")} fact and parsed directly as a standard Prolog clause; consequently, its body accepts any goal that the engine can prove.
+Unlike the native backend, which supports a fixed heuristic DSL, the Prolog backend accepts standard goals available to the embedded engine. A heuristic is declared as a string inside a \texttt{heuristic("...")} fact and parsed directly as a Prolog clause.
 
 \begin{minted}{prolog}
 heuristic(b(X), W, 0, true) :-
@@ -316,4 +316,3 @@ Finally, weight arithmetic is restricted to basic operations ($+$, $-$, $\cdot$)
 
 \paragraph{The Prolog language subset.}
 In contrast, the Prolog backend prioritizes expressive flexibility. Because rule bodies are standard Prolog goals, arbitrary joins, comparisons, nested aggregations (via \texttt{aggregate\_all/3}), and non-numeric terms are supported natively. Its head also carries an explicit priority argument, so it \emph{can} express Alpha's two-dimensional rank without weight flattening; the suite uses flattened weights throughout, and the priority field only in HRP, where it keeps the nine ranking rules one level above the final \texttt{false} layer. The primary limitation is that Prolog goals may generate terms that do not exist in the ground program, requiring the backend to filter out invalid candidates against clasp's atom tables (Section~\ref{sec:decision-prolog}). Unrestricted goals are re-evaluated from scratch at every decision point, introducing runtime overhead that is evaluated in Section~\ref{sec:per-decision-cost}.
-
