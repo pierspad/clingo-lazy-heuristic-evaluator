@@ -13,26 +13,27 @@
 \contentsline {subsection}{\numberline {2.1.1}Simulating Alpha semantics}{8}{subsection.2.1.1}%
 \contentsline {subsubsection}{Default negation over unassigned literals}{8}{section*.3}%
 \contentsline {subsubsection}{Dynamic aggregates by bound-guarded unrolling}{9}{section*.4}%
+\contentsline {subsubsection}{Empty aggregates}{10}{section*.5}%
 \contentsline {subsection}{\numberline {2.1.2}Methodological Rationale for the Exploratory Variants}{10}{subsection.2.1.2}%
-\contentsline {paragraph}{Isolating Alpha-Negation from Dynamic Aggregates (\texttt {ga\_weak}).}{10}{section*.5}%
-\contentsline {paragraph}{Fewer directives, or less grounding? (\texttt {la\_aux}).}{10}{section*.6}%
-\contentsline {paragraph}{Disentangling Heuristic and Problem Constraint Bottlenecks (the \texttt {\_co} family).}{10}{section*.7}%
+\contentsline {paragraph}{Isolating Alpha-Negation from Dynamic Aggregates (\texttt {ga\_weak}).}{10}{section*.6}%
+\contentsline {paragraph}{Fewer directives, or less grounding? (\texttt {la\_aux}).}{10}{section*.7}%
+\contentsline {paragraph}{Disentangling Heuristic and Problem Constraint Bottlenecks (the \texttt {\_co} family).}{11}{section*.8}%
 \contentsline {subsection}{\numberline {2.1.3}Weights, Priorities, and Flattening}{11}{subsection.2.1.3}%
-\contentsline {subsection}{\numberline {2.1.4}Problems on Bigger Weights}{11}{subsection.2.1.4}%
+\contentsline {subsection}{\numberline {2.1.4}The Bounded Weight Field}{12}{subsection.2.1.4}%
 \contentsline {section}{\numberline {2.2}System Architecture}{12}{section.2.2}%
 \contentsline {section}{\numberline {2.3}Translation of the Heuristic Directives}{14}{section.2.3}%
 \contentsline {subsection}{\numberline {2.3.1}Lazy heuristic syntax for the C++ backend}{14}{subsection.2.3.1}%
-\contentsline {paragraph}{Target.}{14}{section*.8}%
-\contentsline {paragraph}{Positive body.}{15}{section*.9}%
-\contentsline {paragraph}{Negative body.}{15}{section*.10}%
-\contentsline {paragraph}{Semantics.}{15}{section*.11}%
-\contentsline {paragraph}{Aggregates.}{16}{section*.12}%
-\contentsline {paragraph}{Weight.}{16}{section*.13}%
-\contentsline {paragraph}{Modifier.}{16}{section*.14}%
+\contentsline {paragraph}{Target.}{15}{section*.9}%
+\contentsline {paragraph}{Positive body.}{15}{section*.10}%
+\contentsline {paragraph}{Negative body.}{15}{section*.11}%
+\contentsline {paragraph}{Semantics.}{15}{section*.12}%
+\contentsline {paragraph}{Aggregates.}{16}{section*.13}%
+\contentsline {paragraph}{Weight.}{16}{section*.14}%
+\contentsline {paragraph}{Modifier.}{16}{section*.15}%
 \contentsline {subsection}{\numberline {2.3.2}Lazy heuristic syntax for the Prolog backend}{17}{subsection.2.3.2}%
 \contentsline {subsection}{\numberline {2.3.3}What the Two Languages Cannot Express}{18}{subsection.2.3.3}%
-\contentsline {paragraph}{The C++ fragment.}{18}{section*.15}%
-\contentsline {paragraph}{The Prolog fragment.}{19}{section*.16}%
+\contentsline {paragraph}{The C++ language subset.}{18}{section*.16}%
+\contentsline {paragraph}{The Prolog language subset.}{19}{section*.17}%
 \contentsline {chapter}{\numberline {3}Implementation and Benchmark Setup}{20}{chapter.3}%
 \contentsline {section}{\numberline {3.1}Inside the Native Backend}{20}{section.3.1}%
 \contentsline {subsection}{\numberline {3.1.1}Parser and Runtime Representation}{20}{subsection.3.1.1}%
@@ -42,52 +43,50 @@
 \contentsline {subsection}{\numberline {3.2.1}Rule Strings and Normalization}{22}{subsection.3.2.1}%
 \contentsline {subsection}{\numberline {3.2.2}The Runtime Program}{22}{subsection.3.2.2}%
 \contentsline {subsection}{\numberline {3.2.3}Synchronization and Decision}{23}{subsection.3.2.3}%
-\contentsline {section}{\numberline {3.3}Benchmark Problems and Encodings}{23}{section.3.3}%
-\contentsline {subsection}{\numberline {3.3.1}Balanced Sum Problem (BSP)}{23}{subsection.3.3.1}%
+\contentsline {section}{\numberline {3.3}Benchmark Problems and Encodings}{24}{section.3.3}%
+\contentsline {subsection}{\numberline {3.3.1}Balanced Sum Problem (BSP)}{24}{subsection.3.3.1}%
 \contentsline {subsection}{\numberline {3.3.2}Partner Units Problem (PUP)}{25}{subsection.3.3.2}%
 \contentsline {subsection}{\numberline {3.3.3}House Reconfiguration Problem (HRP)}{25}{subsection.3.3.3}%
-\contentsline {subsection}{\numberline {3.3.4}Alpha as an External Reference}{25}{subsection.3.3.4}%
+\contentsline {subsection}{\numberline {3.3.4}Alpha as an External Reference}{26}{subsection.3.3.4}%
 \contentsline {section}{\numberline {3.4}Benchmark Infrastructure and Metrics}{26}{section.3.4}%
-\contentsline {chapter}{\numberline {4}Results}{27}{chapter.4}%
-\contentsline {section}{\numberline {4.1}Experimental Setup and Dataset}{27}{section.4.1}%
-\contentsline {subsection}{\numberline {4.1.1}Campaign Overview and Failure Modes}{27}{subsection.4.1.1}%
-\contentsline {section}{\numberline {4.2}Reduction of the Ground Heuristic Component}{29}{section.4.2}%
-\contentsline {section}{\numberline {4.3}BSP: Runtime Behaviour}{31}{section.4.3}%
-\contentsline {section}{\numberline {4.4}BSP: Rules, Variables, and Memory}{34}{section.4.4}%
-\contentsline {section}{\numberline {4.5}PUP: the Grounding Bottleneck at Scale}{35}{section.4.5}%
-\contentsline {paragraph}{The unguided baseline.}{36}{section*.17}%
-\contentsline {paragraph}{Grounding and memory savings (\texttt {la} vs \texttt {ga}).}{36}{section*.18}%
-\contentsline {paragraph}{Why the two do not separate on reach, and what that leaves.}{37}{section*.19}%
-\contentsline {section}{\numberline {4.6}HRP: Guidance Without Dynamic Aggregates}{39}{section.4.6}%
-\contentsline {section}{\numberline {4.7}An External Reference: Alpha}{41}{section.4.7}%
-\contentsline {paragraph}{Partner Units Problem (PUP).}{42}{section*.20}%
-\contentsline {paragraph}{House Reconfiguration Problem (HRP).}{43}{section*.21}%
-\contentsline {paragraph}{Overall Frontier and Query Engines.}{45}{section*.22}%
-\contentsline {section}{\numberline {4.8}The clingo Reading of Partial Information: \texttt {gc} and \texttt {lc}}{46}{section.4.8}%
-\contentsline {subsection}{\numberline {4.8.1}BSP: inertness}{46}{subsection.4.8.1}%
-\contentsline {subsection}{\numberline {4.8.2}PUP: the same inertness, with the same surcharge}{46}{subsection.4.8.2}%
-\contentsline {subsection}{\numberline {4.8.3}HRP: misguidance}{47}{subsection.4.8.3}%
-\contentsline {subsection}{\numberline {4.8.4}What the three cases share}{47}{subsection.4.8.4}%
-\contentsline {section}{\numberline {4.9}The Price of Laziness: Per-Decision Cost}{48}{section.4.9}%
-\contentsline {paragraph}{Where the Prolog cost actually sits.}{49}{section*.23}%
-\contentsline {section}{\numberline {4.10}Two Ground Simulations of Alpha: \texttt {ga} versus \texttt {ga\_weak}}{52}{section.4.10}%
-\contentsline {section}{\numberline {4.11}Evaluating Pre-Materialized Auxiliary Predicates}{54}{section.4.11}%
-\contentsline {section}{\numberline {4.12}Effect of the Constraint Formulation}{55}{section.4.12}%
-\contentsline {subsection}{\numberline {4.12.1}The full \texttt {\_co} family: do the heuristics still matter?}{56}{subsection.4.12.1}%
-\contentsline {paragraph}{On search, the answer is no.}{57}{section*.24}%
-\contentsline {paragraph}{On representation, the answer is yes, and it is now measured cleanly.}{58}{section*.25}%
-\contentsline {paragraph}{Two secondary findings.}{58}{section*.26}%
-\contentsline {paragraph}{What the family establishes.}{58}{section*.27}%
-\contentsline {section}{\numberline {4.13}C++ versus Prolog: Backend Comparison}{58}{section.4.13}%
-\contentsline {section}{\numberline {4.14}Summary of Results}{59}{section.4.14}%
-\contentsline {chapter}{\numberline {5}Discussion and Conclusions}{63}{chapter.5}%
-\contentsline {section}{\numberline {5.1}Discussion of the Results}{63}{section.5.1}%
-\contentsline {section}{\numberline {5.2}Limitations}{68}{section.5.2}%
-\contentsline {section}{\numberline {5.3}Implications}{69}{section.5.3}%
-\contentsline {section}{\numberline {5.4}Future Work}{69}{section.5.4}%
-\contentsline {paragraph}{Widening the native fragment.}{69}{section*.28}%
-\contentsline {paragraph}{Indexing the foreign store for enumeration-heavy bodies.}{70}{section*.29}%
-\contentsline {paragraph}{Instances and benchmarks.}{70}{section*.30}%
-\contentsline {paragraph}{Tooling and integration.}{71}{section*.31}%
-\contentsline {section}{\numberline {5.5}Conclusions}{71}{section.5.5}%
-\contentsline {chapter}{Bibliography}{73}{chapter*.32}%
+\contentsline {chapter}{\numberline {4}Results}{28}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Experimental Setup and Dataset}{28}{section.4.1}%
+\contentsline {subsection}{\numberline {4.1.1}Campaign Overview and Failure Modes}{28}{subsection.4.1.1}%
+\contentsline {section}{\numberline {4.2}Reduction of the Ground Heuristic Component}{30}{section.4.2}%
+\contentsline {section}{\numberline {4.3}BSP: Runtime Behaviour}{32}{section.4.3}%
+\contentsline {section}{\numberline {4.4}BSP: Rules, Variables, and Memory}{36}{section.4.4}%
+\contentsline {section}{\numberline {4.5}PUP: the Grounding Bottleneck at Scale}{38}{section.4.5}%
+\contentsline {paragraph}{The unguided baseline.}{39}{section*.18}%
+\contentsline {paragraph}{Grounding and memory savings (\texttt {la} vs \texttt {ga}).}{39}{section*.19}%
+\contentsline {section}{\numberline {4.6}HRP: Guidance Without Dynamic Aggregates}{41}{section.4.6}%
+\contentsline {section}{\numberline {4.7}C++ versus Prolog: Backend Comparison}{42}{section.4.7}%
+\contentsline {paragraph}{When evaluation cost changes the solved set.}{43}{section*.20}%
+\contentsline {section}{\numberline {4.8}The Price of Laziness: Per-Decision Cost}{46}{section.4.8}%
+\contentsline {paragraph}{Where the Prolog cost actually sits.}{48}{section*.21}%
+\contentsline {section}{\numberline {4.9}An External Reference: Alpha}{50}{section.4.9}%
+\contentsline {paragraph}{Partner Units Problem (PUP).}{50}{section*.22}%
+\contentsline {paragraph}{House Reconfiguration Problem (HRP).}{51}{section*.23}%
+\contentsline {paragraph}{Overall Frontier and Query Engines.}{54}{section*.24}%
+\contentsline {section}{\numberline {4.10}The clingo Reading of Partial Information: \texttt {gc} and \texttt {lc}}{56}{section.4.10}%
+\contentsline {subsection}{\numberline {4.10.1}BSP: inertness}{56}{subsection.4.10.1}%
+\contentsline {subsection}{\numberline {4.10.2}PUP: the same inertness, with the same surcharge}{57}{subsection.4.10.2}%
+\contentsline {subsection}{\numberline {4.10.3}HRP: misguidance}{57}{subsection.4.10.3}%
+\contentsline {subsection}{\numberline {4.10.4}What the three cases share}{57}{subsection.4.10.4}%
+\contentsline {section}{\numberline {4.11}Two Ground Simulations of Alpha: \texttt {ga} versus \texttt {ga\_weak}}{58}{section.4.11}%
+\contentsline {section}{\numberline {4.12}Evaluating Pre-Materialized Auxiliary Predicates}{60}{section.4.12}%
+\contentsline {section}{\numberline {4.13}Effect of the Constraint Formulation}{62}{section.4.13}%
+\contentsline {subsection}{\numberline {4.13.1}The full \texttt {\_co} family: do the heuristics still matter?}{64}{subsection.4.13.1}%
+\contentsline {paragraph}{On search, the answer is no.}{65}{section*.25}%
+\contentsline {paragraph}{On representation, the answer is yes, and it is now measured cleanly.}{66}{section*.26}%
+\contentsline {paragraph}{Two secondary findings.}{66}{section*.27}%
+\contentsline {chapter}{\numberline {5}Discussion and Conclusions}{67}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Discussion of the Results}{67}{section.5.1}%
+\contentsline {subsection}{\numberline {5.1.1}What lazy evaluation saves}{67}{subsection.5.1.1}%
+\contentsline {subsection}{\numberline {5.1.2}Why the semantics matters}{68}{subsection.5.1.2}%
+\contentsline {subsection}{\numberline {5.1.3}The runtime cost and the choice of backend}{68}{subsection.5.1.3}%
+\contentsline {subsection}{\numberline {5.1.4}What the comparison with Alpha establishes}{69}{subsection.5.1.4}%
+\contentsline {section}{\numberline {5.2}Limitations}{69}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Implications}{70}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Future Work}{71}{section.5.4}%
+\contentsline {section}{\numberline {5.5}Conclusions}{72}{section.5.5}%
+\contentsline {chapter}{Bibliography}{73}{chapter*.28}%

@@ -766,8 +766,8 @@
       \strng{authornamehash}{d5967d16c12be7a672109ebae3e5f5e9}
       \strng{authorfullhash}{35a7bf39c20ae5c4456036a87ff898fa}
       \strng{authorfullhashraw}{35a7bf39c20ae5c4456036a87ff898fa}
-      \field{sortinit}{1}
-      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{booktitle}{Proceedings of the {IJCAI} 2011 Workshop on Configuration}
@@ -873,8 +873,8 @@
       \strng{authornamehash}{55e1153aea882edbde1eeda942323b0c}
       \strng{authorfullhash}{54671919cdbb8cdd97d8ae7b54d62ad8}
       \strng{authorfullhashraw}{54671919cdbb8cdd97d8ae7b54d62ad8}
-      \field{sortinit}{2}
-      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{sortinit}{3}
+      \field{sortinithash}{ad6fe7482ffbd7b9f99c9e8b5dccd3d7}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{eprintclass}{cs.LG}

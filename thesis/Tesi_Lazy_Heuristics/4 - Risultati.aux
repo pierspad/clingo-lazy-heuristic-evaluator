@@ -1,166 +1,159 @@
 \relax 
 \providecommand\hyper@newdestlabel[2]{}
 \def\@LN@column{1}
-\@writefile{toc}{\contentsline {chapter}{\numberline {4}Results}{27}{chapter.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {4}Results}{28}{chapter.4}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\newlabel{sec:results}{{4}{27}{Results}{chapter.4}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {4.1}Experimental Setup and Dataset}{27}{section.4.1}\protected@file@percent }
-\newlabel{sec:dataset}{{4.1}{27}{Experimental Setup and Dataset}{section.4.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.1}Campaign Overview and Failure Modes}{27}{subsection.4.1.1}\protected@file@percent }
-\newlabel{sec:campaign-overview}{{4.1.1}{27}{Campaign Overview and Failure Modes}{subsection.4.1.1}{}}
+\newlabel{sec:results}{{4}{28}{Results}{chapter.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.1}Experimental Setup and Dataset}{28}{section.4.1}\protected@file@percent }
+\newlabel{sec:dataset}{{4.1}{28}{Experimental Setup and Dataset}{section.4.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.1}Campaign Overview and Failure Modes}{28}{subsection.4.1.1}\protected@file@percent }
+\newlabel{sec:campaign-overview}{{4.1.1}{28}{Campaign Overview and Failure Modes}{subsection.4.1.1}{}}
 \def\@LN@column{1}
-\@writefile{lot}{\contentsline {table}{\numberline {4.1}{\ignorespaces BSP campaign overview ($n=10..200$, 600\,s / 30\,GB per run). The top block holds the four main variants, the heuristic-free baseline and the \texttt  {ga\_weak} ablation of Section~\ref {sec:ga-weak}; the middle block holds the \texttt  {la\_aux} ablation of Section~\ref {sec:aux-form}; the bottom block is the \texttt  {\_co} family of (Section~\ref {sec:constr-form}).}}{28}{table.4.1}\protected@file@percent }
-\newlabel{tab:overview-bsp}{{4.1}{28}{BSP campaign overview ($n=10..200$, 600\,s / 30\,GB per run). The top block holds the four main variants, the heuristic-free baseline and the \texttt {ga\_weak} ablation of Section~\ref {sec:ga-weak}; the middle block holds the \texttt {la\_aux} ablation of Section~\ref {sec:aux-form}; the bottom block is the \texttt {\_co} family of (Section~\ref {sec:constr-form})}{table.4.1}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {4.2}{\ignorespaces PUP campaign overview (\texttt  {double-$N$}, $N=20..200$, 600\,s / 30\,GB per run). \texttt  {double-200} is the largest instance published with the reference encoding; dashes indicate \enquote {solved every available instance}}}{28}{table.4.2}\protected@file@percent }
-\newlabel{tab:overview-pup}{{4.2}{28}{PUP campaign overview (\texttt {double-$N$}, $N=20..200$, 600\,s / 30\,GB per run). \texttt {double-200} is the largest instance published with the reference encoding; dashes indicate \enquote {solved every available instance}}{table.4.2}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {4.3}{\ignorespaces HRP campaign overview (\texttt  {house-$N$}, $N=2..20$ persons, 600\,s / 30\,GB per run).}}{28}{table.4.3}\protected@file@percent }
-\newlabel{tab:overview-hrp}{{4.3}{28}{HRP campaign overview (\texttt {house-$N$}, $N=2..20$ persons, 600\,s / 30\,GB per run)}{table.4.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4.1}{\ignorespaces BSP campaign overview ($n=10..200$, 600\,s / 30\,GB per run). The top block holds the four main variants, the heuristic-free baseline and the \texttt  {ga\_weak} ablation of Section~\ref {sec:ga-weak}; the middle block holds the \texttt  {la\_aux} ablation of Section~\ref {sec:aux-form}; the bottom block is the \texttt  {\_co} family (Section~\ref {sec:constr-form}).}}{29}{table.4.1}\protected@file@percent }
+\newlabel{tab:overview-bsp}{{4.1}{29}{BSP campaign overview ($n=10..200$, 600\,s / 30\,GB per run). The top block holds the four main variants, the heuristic-free baseline and the \texttt {ga\_weak} ablation of Section~\ref {sec:ga-weak}; the middle block holds the \texttt {la\_aux} ablation of Section~\ref {sec:aux-form}; the bottom block is the \texttt {\_co} family (Section~\ref {sec:constr-form})}{table.4.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4.2}{\ignorespaces PUP campaign overview (\texttt  {double-$N$}, $N=20..200$, 600\,s / 30\,GB per run). \texttt  {double-200} is the largest instance published with the reference encoding; dashes indicate \enquote {solved every available instance}.}}{29}{table.4.2}\protected@file@percent }
+\newlabel{tab:overview-pup}{{4.2}{29}{PUP campaign overview (\texttt {double-$N$}, $N=20..200$, 600\,s / 30\,GB per run). \texttt {double-200} is the largest instance published with the reference encoding; dashes indicate \enquote {solved every available instance}}{table.4.2}{}}
 \def\@LN@column{1}
-\@writefile{toc}{\contentsline {section}{\numberline {4.2}Reduction of the Ground Heuristic Component}{29}{section.4.2}\protected@file@percent }
-\newlabel{sec:footprint}{{4.2}{29}{Reduction of the Ground Heuristic Component}{section.4.2}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.1}{\ignorespaces Ground heuristic directives against lazy template facts on BSP. The three ground variants coincide by construction, since they unroll the same directive over the same value domain and differ only in the guard that fires it; the difference among the four lazy ones and the heuristic-free baseline are indistinguishable at this scale, at two facts and none respectively. Each curve ends at the largest size its variant solves (Table~\ref {tab:overview-bsp}), so \texttt  {ga} stops at $n=60$ although the count itself keeps growing.}}{30}{figure.4.1}\protected@file@percent }
-\newlabel{fig:combined-heuristics}{{4.1}{30}{Ground heuristic directives against lazy template facts on BSP. The three ground variants coincide by construction, since they unroll the same directive over the same value domain and differ only in the guard that fires it; the difference among the four lazy ones and the heuristic-free baseline are indistinguishable at this scale, at two facts and none respectively. Each curve ends at the largest size its variant solves (Table~\ref {tab:overview-bsp}), so \texttt {ga} stops at $n=60$ although the count itself keeps growing}{figure.4.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4.3}{\ignorespaces HRP campaign overview (\texttt  {house-$N$}, $N=2..20$ persons, 600\,s / 30\,GB per run).}}{30}{table.4.3}\protected@file@percent }
+\newlabel{tab:overview-hrp}{{4.3}{30}{HRP campaign overview (\texttt {house-$N$}, $N=2..20$ persons, 600\,s / 30\,GB per run)}{table.4.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.2}Reduction of the Ground Heuristic Component}{30}{section.4.2}\protected@file@percent }
+\newlabel{sec:footprint}{{4.2}{30}{Reduction of the Ground Heuristic Component}{section.4.2}{}}
 \def\@LN@column{1}
-\@writefile{lot}{\contentsline {table}{\numberline {4.4}{\ignorespaces Growth of the ground heuristic component (\texttt  {gc}, \texttt  {ga}, \texttt  {ga\_weak}) against the lazily evaluated one (\texttt  {la}, \texttt  {lc}). The two columns count different objects, ground \texttt  {\#heuristic} directives against DSL template facts, so the ratio measures how much representation the lazy form never has to build; it is not a speedup.}}{30}{table.4.4}\protected@file@percent }
-\newlabel{tab:heur-growth}{{4.4}{30}{Growth of the ground heuristic component (\texttt {gc}, \texttt {ga}, \texttt {ga\_weak}) against the lazily evaluated one (\texttt {la}, \texttt {lc}). The two columns count different objects, ground \texttt {\#heuristic} directives against DSL template facts, so the ratio measures how much representation the lazy form never has to build; it is not a speedup}{table.4.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.1}{\ignorespaces Ground heuristic directives against lazy template facts on BSP. The three ground variants coincide by construction, since they unroll the same directive over the same value domain and differ only in the guard that fires it; the four lazy ones and the heuristic-free baseline are indistinguishable from one another at this scale, at two facts and none respectively. Each curve ends at the largest size its variant solves (Table~\ref {tab:overview-bsp}), so \texttt  {ga} stops at $n=60$ although the count itself keeps growing.}}{31}{figure.4.1}\protected@file@percent }
+\newlabel{fig:combined-heuristics}{{4.1}{31}{Ground heuristic directives against lazy template facts on BSP. The three ground variants coincide by construction, since they unroll the same directive over the same value domain and differ only in the guard that fires it; the four lazy ones and the heuristic-free baseline are indistinguishable from one another at this scale, at two facts and none respectively. Each curve ends at the largest size its variant solves (Table~\ref {tab:overview-bsp}), so \texttt {ga} stops at $n=60$ although the count itself keeps growing}{figure.4.1}{}}
 \def\@LN@column{1}
-\@writefile{toc}{\contentsline {section}{\numberline {4.3}BSP: Runtime Behaviour}{31}{section.4.3}\protected@file@percent }
-\newlabel{sec:bsp-runtime}{{4.3}{31}{BSP: Runtime Behaviour}{section.4.3}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.2}{\ignorespaces Grounding time on BSP for the C++ backend. One run per point; a curve ends where its variant stops solving within the limits.}}{31}{figure.4.2}\protected@file@percent }
-\newlabel{fig:bsp-grounding}{{4.2}{31}{Grounding time on BSP for the C++ backend. One run per point; a curve ends where its variant stops solving within the limits}{figure.4.2}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.3}{\ignorespaces Solving time on BSP for the C++ backend, on the same runs as Figure~\ref {fig:bsp-grounding}.}}{32}{figure.4.3}\protected@file@percent }
-\newlabel{fig:bsp-solving}{{4.3}{32}{Solving time on BSP for the C++ backend, on the same runs as Figure~\ref {fig:bsp-grounding}}{figure.4.3}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.4}{\ignorespaces BSP total time, grounding plus solving, on the C++ backend.}}{32}{figure.4.4}\protected@file@percent }
-\newlabel{fig:bsp-total}{{4.4}{32}{BSP total time, grounding plus solving, on the C++ backend}{figure.4.4}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4.4}{\ignorespaces Growth of the ground heuristic component (\texttt  {gc}, \texttt  {ga}, \texttt  {ga\_weak}) against the lazily evaluated one (\texttt  {la}, \texttt  {lc}). The two columns count different objects, ground \texttt  {\#heuristic} directives against DSL template facts, so the ratio measures how much representation the lazy form never has to build; it is not a speedup.}}{32}{table.4.4}\protected@file@percent }
+\newlabel{tab:heur-growth}{{4.4}{32}{Growth of the ground heuristic component (\texttt {gc}, \texttt {ga}, \texttt {ga\_weak}) against the lazily evaluated one (\texttt {la}, \texttt {lc}). The two columns count different objects, ground \texttt {\#heuristic} directives against DSL template facts, so the ratio measures how much representation the lazy form never has to build; it is not a speedup}{table.4.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.3}BSP: Runtime Behaviour}{32}{section.4.3}\protected@file@percent }
+\newlabel{sec:bsp-runtime}{{4.3}{32}{BSP: Runtime Behaviour}{section.4.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.2}{\ignorespaces Grounding time on BSP for the C++ backend. One run per point; a curve ends where its variant stops solving within the limits.}}{33}{figure.4.2}\protected@file@percent }
+\newlabel{fig:bsp-grounding}{{4.2}{33}{Grounding time on BSP for the C++ backend. One run per point; a curve ends where its variant stops solving within the limits}{figure.4.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.3}{\ignorespaces Solving time on BSP for the C++ backend, on the same runs as Figure~\ref {fig:bsp-grounding}.}}{33}{figure.4.3}\protected@file@percent }
+\newlabel{fig:bsp-solving}{{4.3}{33}{Solving time on BSP for the C++ backend, on the same runs as Figure~\ref {fig:bsp-grounding}}{figure.4.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.4}{\ignorespaces BSP total time, grounding plus solving, on the C++ backend.}}{34}{figure.4.4}\protected@file@percent }
+\newlabel{fig:bsp-total}{{4.4}{34}{BSP total time, grounding plus solving, on the C++ backend}{figure.4.4}{}}
 \def\@LN@column{1}
-\@writefile{lot}{\contentsline {table}{\numberline {4.5}{\ignorespaces Execution time and solver statistics on BSP at $n=120$. The two clingo-semantics variants are analyzed in Section~\ref {sec:clingo-semantics}; the \texttt  {\_co} block, which shares the heuristics of the block above and differs only in the formulation of the balance constraint, is analyzed in Section~\ref {sec:constr-form}.}}{33}{table.4.5}\protected@file@percent }
-\newlabel{tab:bsp-n120}{{4.5}{33}{Execution time and solver statistics on BSP at $n=120$. The two clingo-semantics variants are analyzed in Section~\ref {sec:clingo-semantics}; the \texttt {\_co} block, which shares the heuristics of the block above and differs only in the formulation of the balance constraint, is analyzed in Section~\ref {sec:constr-form}}{table.4.5}{}}
-\def\@LN@column{1}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.5}{\ignorespaces BSP search statistics on the C++ backend: solver choices (left) and conflicts (right) across sizes.}}{34}{figure.4.5}\protected@file@percent }
-\newlabel{fig:bsp-search}{{4.5}{34}{BSP search statistics on the C++ backend: solver choices (left) and conflicts (right) across sizes}{figure.4.5}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {4.4}BSP: Rules, Variables, and Memory}{34}{section.4.4}\protected@file@percent }
-\newlabel{sec:bsp-memory}{{4.4}{34}{BSP: Rules, Variables, and Memory}{section.4.4}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {4.6}{\ignorespaces Heuristic grounding footprint and propositional solver variables at $n=100$, C++ backend. The first column counts the heuristic entries gringo materializes: ground \texttt  {\#heuristic} directives for \texttt  {gc}, \texttt  {ga} and \texttt  {ga\_weak}, the two DSL template facts for the lazy variants, none for \texttt  {gc\_noheur}.}}{34}{table.4.6}\protected@file@percent }
-\newlabel{tab:n100-vars}{{4.6}{34}{Heuristic grounding footprint and propositional solver variables at $n=100$, C++ backend. The first column counts the heuristic entries gringo materializes: ground \texttt {\#heuristic} directives for \texttt {gc}, \texttt {ga} and \texttt {ga\_weak}, the two DSL template facts for the lazy variants, none for \texttt {gc\_noheur}}{table.4.6}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.6}{\ignorespaces BSP: peak resident set size on the C++ backend across instance sizes.}}{35}{figure.4.6}\protected@file@percent }
-\newlabel{fig:bsp-memory}{{4.6}{35}{BSP: peak resident set size on the C++ backend across instance sizes}{figure.4.6}{}}
-\def\@LN@column{1}
-\@writefile{toc}{\contentsline {section}{\numberline {4.5}PUP: the Grounding Bottleneck at Scale}{35}{section.4.5}\protected@file@percent }
-\newlabel{sec:pup}{{4.5}{35}{PUP: the Grounding Bottleneck at Scale}{section.4.5}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.7}{\ignorespaces Total clingo runtime on PUP across instance sizes for the C++ backend.}}{36}{figure.4.7}\protected@file@percent }
-\newlabel{fig:pup-total}{{4.7}{36}{Total clingo runtime on PUP across instance sizes for the C++ backend}{figure.4.7}{}}
-\def\@LN@column{1}
-\@writefile{lot}{\contentsline {table}{\numberline {4.7}{\ignorespaces PUP frontier on the C++ backend ($600$\,s / $30$\,GB budget): largest solved \texttt  {double-$N$} instance and corresponding resource metrics. \texttt  {double-200} is the largest instance of the reference set, so for \texttt  {ga} and \texttt  {la} the reported figures are the cost of the last available instance, not the cost of failing.}}{36}{table.4.7}\protected@file@percent }
-\newlabel{tab:pup-frontier}{{4.7}{36}{PUP frontier on the C++ backend ($600$\,s / $30$\,GB budget): largest solved \texttt {double-$N$} instance and corresponding resource metrics. \texttt {double-200} is the largest instance of the reference set, so for \texttt {ga} and \texttt {la} the reported figures are the cost of the last available instance, not the cost of failing}{table.4.7}{}}
-\@writefile{toc}{\contentsline {paragraph}{The unguided baseline.}{36}{section*.17}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Grounding and memory savings (\texttt  {la} vs \texttt  {ga}).}{36}{section*.18}\protected@file@percent }
-\def\@LN@column{1}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.8}{\ignorespaces Solving time on PUP for the C++ backend. Under the Alpha-like reading \texttt  {ga} and \texttt  {la} stay flat along the bottom across the whole horizon, reaching only a few seconds at $N=200$, which is what leaves their separation entirely to grounding and memory. The three variants without usable guidance climb steeply and then stop.}}{37}{figure.4.8}\protected@file@percent }
-\newlabel{fig:pup-solving}{{4.8}{37}{Solving time on PUP for the C++ backend. Under the Alpha-like reading \texttt {ga} and \texttt {la} stay flat along the bottom across the whole horizon, reaching only a few seconds at $N=200$, which is what leaves their separation entirely to grounding and memory. The three variants without usable guidance climb steeply and then stop}{figure.4.8}{}}
-\@writefile{toc}{\contentsline {paragraph}{Why the two do not separate on reach, and what that leaves.}{37}{section*.19}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {4.9}{\ignorespaces Grounding time on PUP for the C++ backend across instance sizes. Note that the vertical scale reaches $430$\,s against the $210$\,s of Figure~\ref {fig:pup-solving}, on the same runs.}}{38}{figure.4.9}\protected@file@percent }
-\newlabel{fig:pup-grounding}{{4.9}{38}{Grounding time on PUP for the C++ backend across instance sizes. Note that the vertical scale reaches $430$\,s against the $210$\,s of Figure~\ref {fig:pup-solving}, on the same runs}{figure.4.9}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.10}{\ignorespaces Peak memory usage on PUP for the C++ backend, illustrating the $2\times $ memory reduction of \texttt  {la} over \texttt  {ga}.}}{38}{figure.4.10}\protected@file@percent }
-\newlabel{fig:pup-mem}{{4.10}{38}{Peak memory usage on PUP for the C++ backend, illustrating the $2\times $ memory reduction of \texttt {la} over \texttt {ga}}{figure.4.10}{}}
-\def\@LN@column{1}
-\@writefile{toc}{\contentsline {section}{\numberline {4.6}HRP: Guidance Without Dynamic Aggregates}{39}{section.4.6}\protected@file@percent }
-\newlabel{sec:hrp}{{4.6}{39}{HRP: Guidance Without Dynamic Aggregates}{section.4.6}{}}
-\def\@LN@column{1}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.11}{\ignorespaces HRP: solver choices on the C++ backend. The only diverging curve is \texttt  {lc}, analyzed in Section~\ref {sec:clingo-semantics}.}}{40}{figure.4.11}\protected@file@percent }
-\newlabel{fig:hrp-choices}{{4.11}{40}{HRP: solver choices on the C++ backend. The only diverging curve is \texttt {lc}, analyzed in Section~\ref {sec:clingo-semantics}}{figure.4.11}{}}
-\def\@LN@column{1}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.12}{\ignorespaces HRP: solving time, C++ against Prolog. \texttt  {lc} is again the only variant whose absolute solving time departs from the others, but the ratio panel below shows that \texttt  {la} too runs several hundred times slower on the interpreted backend; that gap is a per-decision cost on an otherwise identical trajectory, and Section~\ref {sec:per-decision-cost} accounts for it.}}{41}{figure.4.12}\protected@file@percent }
-\newlabel{fig:hrp-solving}{{4.12}{41}{HRP: solving time, C++ against Prolog. \texttt {lc} is again the only variant whose absolute solving time departs from the others, but the ratio panel below shows that \texttt {la} too runs several hundred times slower on the interpreted backend; that gap is a per-decision cost on an otherwise identical trajectory, and Section~\ref {sec:per-decision-cost} accounts for it}{figure.4.12}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {4.7}An External Reference: Alpha}{41}{section.4.7}\protected@file@percent }
-\newlabel{sec:alpha}{{4.7}{41}{An External Reference: Alpha}{section.4.7}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.13}{\ignorespaces BSP benchmark dashboard: the four clingo variants and the heuristic-free baseline \texttt  {gc\_noheur} compared against Alpha with (\texttt  {alpha\_qh}) and without (\texttt  {alpha\_noheur}) declarative heuristics. Left: total wall-clock time; right: peak RSS. While \texttt  {alpha\_qh} stays flat along the horizontal axis, unguided \texttt  {alpha\_noheur} degrades rapidly, failing earlier than any clingo variant.}}{42}{figure.4.13}\protected@file@percent }
-\newlabel{fig:alpha-bsp}{{4.13}{42}{BSP benchmark dashboard: the four clingo variants and the heuristic-free baseline \texttt {gc\_noheur} compared against Alpha with (\texttt {alpha\_qh}) and without (\texttt {alpha\_noheur}) declarative heuristics. Left: total wall-clock time; right: peak RSS. While \texttt {alpha\_qh} stays flat along the horizontal axis, unguided \texttt {alpha\_noheur} degrades rapidly, failing earlier than any clingo variant}{figure.4.13}{}}
-\def\@LN@column{1}
-\@writefile{toc}{\contentsline {paragraph}{Partner Units Problem (PUP).}{42}{section*.20}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {4.14}{\ignorespaces BSP internal search counters for Alpha across instance sizes. Top row: with heuristics (\texttt  {alpha\_qh}), guesses remain equal to $n$ with zero backtracks; without heuristics (\texttt  {alpha\_noheur}), search explodes past $n=20$ and the curve stops at $n=40$, the last size it solves. Bottom row: cumulative Prolog query evaluation time for \texttt  {alpha\_qh}, which reaches $2.3$\,s at $n=200$ and never costs more than $5.7$\,ms per consultation.}}{43}{figure.4.14}\protected@file@percent }
-\newlabel{fig:alpha-internals}{{4.14}{43}{BSP internal search counters for Alpha across instance sizes. Top row: with heuristics (\texttt {alpha\_qh}), guesses remain equal to $n$ with zero backtracks; without heuristics (\texttt {alpha\_noheur}), search explodes past $n=20$ and the curve stops at $n=40$, the last size it solves. Bottom row: cumulative Prolog query evaluation time for \texttt {alpha\_qh}, which reaches $2.3$\,s at $n=200$ and never costs more than $5.7$\,ms per consultation}{figure.4.14}{}}
-\def\@LN@column{1}
-\@writefile{toc}{\contentsline {paragraph}{House Reconfiguration Problem (HRP).}{43}{section*.21}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {4.15}{\ignorespaces PUP benchmark dashboard: external comparison between clingo variants and Alpha. The baseline \texttt  {alpha\_noheur} does not appear as it solves zero instances. The lazy clingo variant \texttt  {la} remains within a small factor of \texttt  {alpha\_qh} in both time and memory, whereas the ground simulation \texttt  {ga} incurs substantial overhead on both axes.}}{44}{figure.4.15}\protected@file@percent }
-\newlabel{fig:alpha-pup}{{4.15}{44}{PUP benchmark dashboard: external comparison between clingo variants and Alpha. The baseline \texttt {alpha\_noheur} does not appear as it solves zero instances. The lazy clingo variant \texttt {la} remains within a small factor of \texttt {alpha\_qh} in both time and memory, whereas the ground simulation \texttt {ga} incurs substantial overhead on both axes}{figure.4.15}{}}
-\def\@LN@column{1}
-\@writefile{lot}{\contentsline {table}{\numberline {4.8}{\ignorespaces HRP at \texttt  {house-20}, the largest instance. Alpha counters are \emph  {guesses} and \emph  {backtracks} over a lazily instantiated program and are not commensurable with clasp's choices and conflicts (Section~\ref {sec:alpha-setup}); they are reported to compare Alpha's three configurations with one another. \texttt  {alpha\_noheur} solves only \texttt  {house-2}, \texttt  {house-6} and \texttt  {house-8}, the last in $106.0$\,s with $26{,}086$ guesses.}}{44}{table.4.8}\protected@file@percent }
-\newlabel{tab:alpha-hrp}{{4.8}{44}{HRP at \texttt {house-20}, the largest instance. Alpha counters are \emph {guesses} and \emph {backtracks} over a lazily instantiated program and are not commensurable with clasp's choices and conflicts (Section~\ref {sec:alpha-setup}); they are reported to compare Alpha's three configurations with one another. \texttt {alpha\_noheur} solves only \texttt {house-2}, \texttt {house-6} and \texttt {house-8}, the last in $106.0$\,s with $26{,}086$ guesses}{table.4.8}{}}
-\def\@LN@column{1}
-\@writefile{toc}{\contentsline {paragraph}{Overall Frontier and Query Engines.}{45}{section*.22}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {4.9}{\ignorespaces Largest instance solved within the 600\,s / 30\,GB budget, and its cost, ordered by reach within each family. On PUP, $200$ is the last published instance rather than a frontier for the three systems that reach it. Wall time and peak RSS are \texttt  {runlim} external process measures; Alpha's RSS includes the reserved JVM heap. clingo rows represent the native C++ backend. A dash marks a configuration that solved no instances.}}{45}{table.4.9}\protected@file@percent }
-\newlabel{tab:alpha-frontier}{{4.9}{45}{Largest instance solved within the 600\,s / 30\,GB budget, and its cost, ordered by reach within each family. On PUP, $200$ is the last published instance rather than a frontier for the three systems that reach it. Wall time and peak RSS are \texttt {runlim} external process measures; Alpha's RSS includes the reserved JVM heap. clingo rows represent the native C++ backend. A dash marks a configuration that solved no instances}{table.4.9}{}}
-\def\@LN@column{1}
-\@writefile{toc}{\contentsline {section}{\numberline {4.8}The clingo Reading of Partial Information: \texttt  {gc} and \texttt  {lc}}{46}{section.4.8}\protected@file@percent }
-\newlabel{sec:clingo-semantics}{{4.8}{46}{The clingo Reading of Partial Information: \texttt {gc} and \texttt {lc}}{section.4.8}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.8.1}BSP: inertness}{46}{subsection.4.8.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.8.2}PUP: the same inertness, with the same surcharge}{46}{subsection.4.8.2}\protected@file@percent }
-\def\@LN@column{1}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.8.3}HRP: misguidance}{47}{subsection.4.8.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.8.4}What the three cases share}{47}{subsection.4.8.4}\protected@file@percent }
-\def\@LN@column{1}
-\@writefile{toc}{\contentsline {section}{\numberline {4.9}The Price of Laziness: Per-Decision Cost}{48}{section.4.9}\protected@file@percent }
-\newlabel{sec:per-decision-cost}{{4.9}{48}{The Price of Laziness: Per-Decision Cost}{section.4.9}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {4.10}{\ignorespaces Per-decision overhead on representative solved instances of all three families. The last three columns have no C++ counterpart: the Prolog backend re-evaluates the heuristic query from scratch at every decision, whereas the C++ backend keeps its ranked targets incrementally and inspects one entry per call by construction. The \texttt  {lc} row on HRP has no Prolog figures because that configuration exhausts the time limit and the counters are only emitted on a completed run.}}{48}{table.4.10}\protected@file@percent }
-\newlabel{tab:per-decision}{{4.10}{48}{Per-decision overhead on representative solved instances of all three families. The last three columns have no C++ counterpart: the Prolog backend re-evaluates the heuristic query from scratch at every decision, whereas the C++ backend keeps its ranked targets incrementally and inspects one entry per call by construction. The \texttt {lc} row on HRP has no Prolog figures because that configuration exhausts the time limit and the counters are only emitted on a completed run}{table.4.10}{}}
-\def\@LN@column{1}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.16}{\ignorespaces BSP, Prolog backend: decide calls and per-decision query cost. The \texttt  {lc} curve pairs tens of thousands of calls with a low unit cost; \texttt  {la} the opposite.}}{49}{figure.4.16}\protected@file@percent }
-\newlabel{fig:bsp-instrumentation}{{4.16}{49}{BSP, Prolog backend: decide calls and per-decision query cost. The \texttt {lc} curve pairs tens of thousands of calls with a low unit cost; \texttt {la} the opposite}{figure.4.16}{}}
-\@writefile{toc}{\contentsline {paragraph}{Where the Prolog cost actually sits.}{49}{section*.23}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4.5}{\ignorespaces Execution time and solver statistics on BSP at $n=120$. For \texttt  {ga}, solving time and search counters are recorded at timeout. The two clingo-semantics variants are analyzed in Section~\ref {sec:clingo-semantics}; the \texttt  {\_co} block, which shares the heuristics of the block above and differs only in the formulation of the balance constraint, is analyzed in Section~\ref {sec:constr-form}.}}{34}{table.4.5}\protected@file@percent }
+\newlabel{tab:bsp-n120}{{4.5}{34}{Execution time and solver statistics on BSP at $n=120$. For \texttt {ga}, solving time and search counters are recorded at timeout. The two clingo-semantics variants are analyzed in Section~\ref {sec:clingo-semantics}; the \texttt {\_co} block, which shares the heuristics of the block above and differs only in the formulation of the balance constraint, is analyzed in Section~\ref {sec:constr-form}}{table.4.5}{}}
 \def\@LN@column{1}
 \def\@LN@column{1}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.17}{\ignorespaces Cumulative state synchronization time for the Prolog backend on PUP, with \texttt  {true\_atom/1} and \texttt  {false\_atom/1} as foreign predicates. For \texttt  {la} it grows smoothly to $0.63$\,s at $N=200$, below the $3.25$\,s the same run spends inside the Prolog query; the \texttt  {lc} curve, which pays one update per literal on an unguided search, reaches $6$\,s already at $N=40$ and stops there.}}{51}{figure.4.17}\protected@file@percent }
-\newlabel{fig:pup-state-sync}{{4.17}{51}{Cumulative state synchronization time for the Prolog backend on PUP, with \texttt {true\_atom/1} and \texttt {false\_atom/1} as foreign predicates. For \texttt {la} it grows smoothly to $0.63$\,s at $N=200$, below the $3.25$\,s the same run spends inside the Prolog query; the \texttt {lc} curve, which pays one update per literal on an unguided search, reaches $6$\,s already at $N=40$ and stops there}{figure.4.17}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.5}{\ignorespaces BSP search statistics on the C++ backend: solver choices (top) and conflicts (bottom) across sizes.}}{36}{figure.4.5}\protected@file@percent }
+\newlabel{fig:bsp-search}{{4.5}{36}{BSP search statistics on the C++ backend: solver choices (top) and conflicts (bottom) across sizes}{figure.4.5}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.4}BSP: Rules, Variables, and Memory}{36}{section.4.4}\protected@file@percent }
+\newlabel{sec:bsp-memory}{{4.4}{36}{BSP: Rules, Variables, and Memory}{section.4.4}{}}
 \def\@LN@column{1}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.18}{\ignorespaces Solving time (top) and Prolog-to-C++ runtime ratio (bottom) on PUP across execution backends.}}{52}{figure.4.18}\protected@file@percent }
-\newlabel{fig:pup-comparison-solving}{{4.18}{52}{Solving time (top) and Prolog-to-C++ runtime ratio (bottom) on PUP across execution backends}{figure.4.18}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {4.10}Two Ground Simulations of Alpha: \texttt  {ga} versus \texttt  {ga\_weak}}{52}{section.4.10}\protected@file@percent }
-\newlabel{sec:ga-weak}{{4.10}{52}{Two Ground Simulations of Alpha: \texttt {ga} versus \texttt {ga\_weak}}{section.4.10}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.19}{\ignorespaces BSP: solving time comparison between the two backends. The bottom subplot shows the relative runtime ratio ($\text  {Time}_{\text  {Prolog}} / \text  {Time}_{\text  {C++}}$), where values above 1.0 indicate the factor by which the interpreted Prolog backend is slower than compiled C++.}}{53}{figure.4.19}\protected@file@percent }
-\newlabel{fig:bsp-comparison}{{4.19}{53}{BSP: solving time comparison between the two backends. The bottom subplot shows the relative runtime ratio ($\text {Time}_{\text {Prolog}} / \text {Time}_{\text {C++}}$), where values above 1.0 indicate the factor by which the interpreted Prolog backend is slower than compiled C++}{figure.4.19}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4.6}{\ignorespaces Heuristic grounding footprint and propositional solver variables at $n=100$, C++ backend. The first column counts the heuristic entries gringo materializes: ground \texttt  {\#heuristic} directives for \texttt  {gc}, \texttt  {ga} and \texttt  {ga\_weak}, the two DSL template facts for the lazy variants, none for \texttt  {gc\_noheur}.}}{37}{table.4.6}\protected@file@percent }
+\newlabel{tab:n100-vars}{{4.6}{37}{Heuristic grounding footprint and propositional solver variables at $n=100$, C++ backend. The first column counts the heuristic entries gringo materializes: ground \texttt {\#heuristic} directives for \texttt {gc}, \texttt {ga} and \texttt {ga\_weak}, the two DSL template facts for the lazy variants, none for \texttt {gc\_noheur}}{table.4.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.6}{\ignorespaces BSP: peak resident set size on the C++ backend across instance sizes.}}{37}{figure.4.6}\protected@file@percent }
+\newlabel{fig:bsp-memory}{{4.6}{37}{BSP: peak resident set size on the C++ backend across instance sizes}{figure.4.6}{}}
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {section}{\numberline {4.5}PUP: the Grounding Bottleneck at Scale}{38}{section.4.5}\protected@file@percent }
+\newlabel{sec:pup}{{4.5}{38}{PUP: the Grounding Bottleneck at Scale}{section.4.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.7}{\ignorespaces Total clingo runtime on PUP across instance sizes for the C++ backend.}}{38}{figure.4.7}\protected@file@percent }
+\newlabel{fig:pup-total}{{4.7}{38}{Total clingo runtime on PUP across instance sizes for the C++ backend}{figure.4.7}{}}
+\def\@LN@column{1}
+\@writefile{lot}{\contentsline {table}{\numberline {4.7}{\ignorespaces PUP frontier on the C++ backend ($600$\,s / $30$\,GB budget): largest solved \texttt  {double-$N$} instance and corresponding resource metrics. \texttt  {double-200} is the largest instance of the reference set}}{39}{table.4.7}\protected@file@percent }
+\newlabel{tab:pup-frontier}{{4.7}{39}{PUP frontier on the C++ backend ($600$\,s / $30$\,GB budget): largest solved \texttt {double-$N$} instance and corresponding resource metrics. \texttt {double-200} is the largest instance of the reference set}{table.4.7}{}}
+\@writefile{toc}{\contentsline {paragraph}{The unguided baseline.}{39}{section*.18}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Grounding and memory savings (\texttt  {la} vs \texttt  {ga}).}{39}{section*.19}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4.8}{\ignorespaces Solving time on PUP for the C++ backend.}}{40}{figure.4.8}\protected@file@percent }
+\newlabel{fig:pup-solving}{{4.8}{40}{Solving time on PUP for the C++ backend}{figure.4.8}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.9}{\ignorespaces Grounding time on PUP for the C++ backend across instance sizes. Note that the vertical scale reaches $430$\,s against the $210$\,s of Figure~\ref {fig:pup-solving}, on the same runs.}}{40}{figure.4.9}\protected@file@percent }
+\newlabel{fig:pup-grounding}{{4.9}{40}{Grounding time on PUP for the C++ backend across instance sizes. Note that the vertical scale reaches $430$\,s against the $210$\,s of Figure~\ref {fig:pup-solving}, on the same runs}{figure.4.9}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.10}{\ignorespaces Peak memory usage on PUP for the C++ backend, illustrating the $2\times $ memory reduction of \texttt  {la} over \texttt  {ga}.}}{41}{figure.4.10}\protected@file@percent }
+\newlabel{fig:pup-mem}{{4.10}{41}{Peak memory usage on PUP for the C++ backend, illustrating the $2\times $ memory reduction of \texttt {la} over \texttt {ga}}{figure.4.10}{}}
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {section}{\numberline {4.6}HRP: Guidance Without Dynamic Aggregates}{41}{section.4.6}\protected@file@percent }
+\newlabel{sec:hrp}{{4.6}{41}{HRP: Guidance Without Dynamic Aggregates}{section.4.6}{}}
+\def\@LN@column{1}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.11}{\ignorespaces HRP: solver choices on the C++ backend. The only diverging curve is \texttt  {lc}, analyzed in Section~\ref {sec:clingo-semantics}.}}{42}{figure.4.11}\protected@file@percent }
+\newlabel{fig:hrp-choices}{{4.11}{42}{HRP: solver choices on the C++ backend. The only diverging curve is \texttt {lc}, analyzed in Section~\ref {sec:clingo-semantics}}{figure.4.11}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.7}C++ versus Prolog: Backend Comparison}{42}{section.4.7}\protected@file@percent }
+\newlabel{sec:backend-summary}{{4.7}{42}{C++ versus Prolog: Backend Comparison}{section.4.7}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4.8}{\ignorespaces Direct backend comparison for \texttt  {la}. Times are clingo's internal measurements; RSS is the external process measure. Each row is one run.}}{43}{table.4.8}\protected@file@percent }
+\newlabel{tab:backend-comparison}{{4.8}{43}{Direct backend comparison for \texttt {la}. Times are clingo's internal measurements; RSS is the external process measure. Each row is one run}{table.4.8}{}}
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {paragraph}{When evaluation cost changes the solved set.}{43}{section*.20}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4.12}{\ignorespaces The \texttt  {la} variant on C++ and Prolog across all three families: total clingo time (left) and solving time (right). Each panel has its own vertical scale; the solving panels use a logarithmic scale to keep both backends visible. Only successful runs are plotted, and curves end at the largest solved instance.}}{44}{figure.4.12}\protected@file@percent }
+\newlabel{fig:backend-la}{{4.12}{44}{The \texttt {la} variant on C++ and Prolog across all three families: total clingo time (left) and solving time (right). Each panel has its own vertical scale; the solving panels use a logarithmic scale to keep both backends visible. Only successful runs are plotted, and curves end at the largest solved instance}{figure.4.12}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.13}{\ignorespaces Solving time on both backends for \texttt  {la}, \texttt  {lc} and the ground control \texttt  {gc}. Colour identifies the variant; solid circles denote C++ and dashed squares Prolog. Only successful runs are plotted. The dotted line marks 600\,s for orientation, although the actual budget includes grounding as well. Values reported below $0.01$\,s are shown at a plotting floor.}}{45}{figure.4.13}\protected@file@percent }
+\newlabel{fig:backend-semantics}{{4.13}{45}{Solving time on both backends for \texttt {la}, \texttt {lc} and the ground control \texttt {gc}. Colour identifies the variant; solid circles denote C++ and dashed squares Prolog. Only successful runs are plotted. The dotted line marks 600\,s for orientation, although the actual budget includes grounding as well. Values reported below $0.01$\,s are shown at a plotting floor}{figure.4.13}{}}
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {section}{\numberline {4.8}The Price of Laziness: Per-Decision Cost}{46}{section.4.8}\protected@file@percent }
+\newlabel{sec:per-decision-cost}{{4.8}{46}{The Price of Laziness: Per-Decision Cost}{section.4.8}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4.9}{\ignorespaces Per-decision overhead on representative solved instances of all three families. The last three columns report Prolog measurements; propagator share is the sum of decision and synchronization time divided by total clingo time. The \texttt  {lc} row on HRP has no Prolog data because that configuration exhausts the time limit}}{46}{table.4.9}\protected@file@percent }
+\newlabel{tab:per-decision}{{4.9}{46}{Per-decision overhead on representative solved instances of all three families. The last three columns report Prolog measurements; propagator share is the sum of decision and synchronization time divided by total clingo time. The \texttt {lc} row on HRP has no Prolog data because that configuration exhausts the time limit}{table.4.9}{}}
+\def\@LN@column{1}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.14}{\ignorespaces BSP, Prolog backend: decide calls (top) and per-decision query cost (bottom). The \texttt  {lc} curve pairs tens of thousands of calls with a low unit cost; \texttt  {la} the opposite.}}{47}{figure.4.14}\protected@file@percent }
+\newlabel{fig:bsp-instrumentation}{{4.14}{47}{BSP, Prolog backend: decide calls (top) and per-decision query cost (bottom). The \texttt {lc} curve pairs tens of thousands of calls with a low unit cost; \texttt {la} the opposite}{figure.4.14}{}}
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {paragraph}{Where the Prolog cost actually sits.}{48}{section*.21}\protected@file@percent }
+\def\@LN@column{1}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.15}{\ignorespaces Cumulative state synchronization time for the Prolog backend on PUP, with \texttt  {true\_atom/1} and \texttt  {false\_atom/1} as foreign predicates. For \texttt  {la} it grows smoothly to $0.63$\,s at $N=200$, below the $3.25$\,s the same run spends inside the Prolog query; the \texttt  {lc} curve, which pays one update per literal on an unguided search, reaches $6$\,s already at $N=40$ and stops there.}}{49}{figure.4.15}\protected@file@percent }
+\newlabel{fig:pup-state-sync}{{4.15}{49}{Cumulative state synchronization time for the Prolog backend on PUP, with \texttt {true\_atom/1} and \texttt {false\_atom/1} as foreign predicates. For \texttt {la} it grows smoothly to $0.63$\,s at $N=200$, below the $3.25$\,s the same run spends inside the Prolog query; the \texttt {lc} curve, which pays one update per literal on an unguided search, reaches $6$\,s already at $N=40$ and stops there}{figure.4.15}{}}
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {section}{\numberline {4.9}An External Reference: Alpha}{50}{section.4.9}\protected@file@percent }
+\newlabel{sec:alpha}{{4.9}{50}{An External Reference: Alpha}{section.4.9}{}}
+\@writefile{toc}{\contentsline {paragraph}{Partner Units Problem (PUP).}{50}{section*.22}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4.16}{\ignorespaces BSP benchmark dashboard: the four clingo variants and the heuristic-free baseline \texttt  {gc\_noheur} compared against Alpha with (\texttt  {alpha\_qh}) and without (\texttt  {alpha\_noheur}) declarative heuristics. Top: total wall-clock time; bottom: peak RSS. Both are \texttt  {runlim} external process measures.}}{51}{figure.4.16}\protected@file@percent }
+\newlabel{fig:alpha-bsp}{{4.16}{51}{BSP benchmark dashboard: the four clingo variants and the heuristic-free baseline \texttt {gc\_noheur} compared against Alpha with (\texttt {alpha\_qh}) and without (\texttt {alpha\_noheur}) declarative heuristics. Top: total wall-clock time; bottom: peak RSS. Both are \texttt {runlim} external process measures}{figure.4.16}{}}
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {paragraph}{House Reconfiguration Problem (HRP).}{51}{section*.23}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4.17}{\ignorespaces BSP internal search counters for Alpha across instance sizes. Top row: with heuristics (\texttt  {alpha\_qh}), guesses remain equal to $n$ with zero backtracks; without heuristics (\texttt  {alpha\_noheur}), search explodes past $n=20$ and the curve stops at $n=40$, the last size it solves. Bottom row: cumulative Prolog query evaluation time for \texttt  {alpha\_qh}, which reaches $2.3$\,s at $n=200$ and never costs more than $5.7$\,ms per consultation.}}{52}{figure.4.17}\protected@file@percent }
+\newlabel{fig:alpha-internals}{{4.17}{52}{BSP internal search counters for Alpha across instance sizes. Top row: with heuristics (\texttt {alpha\_qh}), guesses remain equal to $n$ with zero backtracks; without heuristics (\texttt {alpha\_noheur}), search explodes past $n=20$ and the curve stops at $n=40$, the last size it solves. Bottom row: cumulative Prolog query evaluation time for \texttt {alpha\_qh}, which reaches $2.3$\,s at $n=200$ and never costs more than $5.7$\,ms per consultation}{figure.4.17}{}}
+\def\@LN@column{1}
+\@writefile{lot}{\contentsline {table}{\numberline {4.10}{\ignorespaces HRP at \texttt  {house-20}, the largest instance. Alpha counters are \emph  {guesses} and \emph  {backtracks} over a lazily instantiated program and are not commensurable with clasp's choices and conflicts (Section~\ref {sec:alpha-setup}); they are reported to compare Alpha's three configurations with one another. \texttt  {alpha\_noheur} solves only \texttt  {house-2}, \texttt  {house-6} and \texttt  {house-8}, the last in $106.0$\,s with $26{,}086$ guesses; the failure at \texttt  {house-4} shows that success is not monotone in instance size; this single-run campaign does not establish its cause.}}{52}{table.4.10}\protected@file@percent }
+\newlabel{tab:alpha-hrp}{{4.10}{52}{HRP at \texttt {house-20}, the largest instance. Alpha counters are \emph {guesses} and \emph {backtracks} over a lazily instantiated program and are not commensurable with clasp's choices and conflicts (Section~\ref {sec:alpha-setup}); they are reported to compare Alpha's three configurations with one another. \texttt {alpha\_noheur} solves only \texttt {house-2}, \texttt {house-6} and \texttt {house-8}, the last in $106.0$\,s with $26{,}086$ guesses; the failure at \texttt {house-4} shows that success is not monotone in instance size; this single-run campaign does not establish its cause}{table.4.10}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.18}{\ignorespaces PUP benchmark dashboard: external comparison between clingo variants and Alpha. Top: total wall-clock time; bottom: peak RSS. The baseline \texttt  {alpha\_noheur} does not appear as it solves zero instances; the \texttt  {lc} line connects successful runs across the timeout at $N=80$.}}{53}{figure.4.18}\protected@file@percent }
+\newlabel{fig:alpha-pup}{{4.18}{53}{PUP benchmark dashboard: external comparison between clingo variants and Alpha. Top: total wall-clock time; bottom: peak RSS. The baseline \texttt {alpha\_noheur} does not appear as it solves zero instances; the \texttt {lc} line connects successful runs across the timeout at $N=80$}{figure.4.18}{}}
 \def\@LN@column{1}
 \def\@LN@column{1}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.20}{\ignorespaces Solving time (left) and solver choices (right) for BSP comparing the Alpha-like semantics simulations (\texttt  {ga} and \texttt  {ga\_weak}) against the baseline variants.}}{54}{figure.4.20}\protected@file@percent }
-\newlabel{fig:gaweak}{{4.20}{54}{Solving time (left) and solver choices (right) for BSP comparing the Alpha-like semantics simulations (\texttt {ga} and \texttt {ga\_weak}) against the baseline variants}{figure.4.20}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {4.11}Evaluating Pre-Materialized Auxiliary Predicates}{54}{section.4.11}\protected@file@percent }
-\newlabel{sec:aux-form}{{4.11}{54}{Evaluating Pre-Materialized Auxiliary Predicates}{section.4.11}{}}
+\@writefile{toc}{\contentsline {paragraph}{Overall Frontier and Query Engines.}{54}{section*.24}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4.11}{\ignorespaces Largest instance solved within the 600\,s / 30\,GB budget, and its cost, ordered by reach within each family. On PUP, $200$ is the last published instance rather than a frontier for the three systems that reach it. Wall time and peak RSS are \texttt  {runlim} external process measures; Alpha's RSS includes resident JVM memory, not just solver data. clingo rows represent the native C++ backend. A dash marks a configuration that solved no instances.}}{54}{table.4.11}\protected@file@percent }
+\newlabel{tab:alpha-frontier}{{4.11}{54}{Largest instance solved within the 600\,s / 30\,GB budget, and its cost, ordered by reach within each family. On PUP, $200$ is the last published instance rather than a frontier for the three systems that reach it. Wall time and peak RSS are \texttt {runlim} external process measures; Alpha's RSS includes resident JVM memory, not just solver data. clingo rows represent the native C++ backend. A dash marks a configuration that solved no instances}{table.4.11}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.19}{\ignorespaces HRP benchmark dashboard: the clingo variants against Alpha in all three configurations, including \texttt  {alpha\_dom}. Top: total wall-clock time, on a logarithmic scale to keep the sub-second clingo runs visible next to \texttt  {alpha\_noheur}; bottom: peak RSS. Both are \texttt  {runlim} external process measures, and Alpha's RSS includes the resident JVM. Only successful runs are plotted, so \texttt  {lc} ends at $N=16$ and \texttt  {alpha\_noheur} at $N=8$.}}{55}{figure.4.19}\protected@file@percent }
+\newlabel{fig:alpha-hrp}{{4.19}{55}{HRP benchmark dashboard: the clingo variants against Alpha in all three configurations, including \texttt {alpha\_dom}. Top: total wall-clock time, on a logarithmic scale to keep the sub-second clingo runs visible next to \texttt {alpha\_noheur}; bottom: peak RSS. Both are \texttt {runlim} external process measures, and Alpha's RSS includes the resident JVM. Only successful runs are plotted, so \texttt {lc} ends at $N=16$ and \texttt {alpha\_noheur} at $N=8$}{figure.4.19}{}}
 \def\@LN@column{1}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.21}{\ignorespaces Solving time on the C++ backend (left) and number of propagator decide calls on the Prolog backend (right) comparing \texttt  {la\_aux} against direct \texttt  {la} in BSP.}}{55}{figure.4.21}\protected@file@percent }
-\newlabel{fig:laaux}{{4.21}{55}{Solving time on the C++ backend (left) and number of propagator decide calls on the Prolog backend (right) comparing \texttt {la\_aux} against direct \texttt {la} in BSP}{figure.4.21}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {4.12}Effect of the Constraint Formulation}{55}{section.4.12}\protected@file@percent }
-\newlabel{sec:constr-form}{{4.12}{55}{Effect of the Constraint Formulation}{section.4.12}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.10}The clingo Reading of Partial Information: \texttt  {gc} and \texttt  {lc}}{56}{section.4.10}\protected@file@percent }
+\newlabel{sec:clingo-semantics}{{4.10}{56}{The clingo Reading of Partial Information: \texttt {gc} and \texttt {lc}}{section.4.10}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.10.1}BSP: inertness}{56}{subsection.4.10.1}\protected@file@percent }
 \def\@LN@column{1}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.22}{\ignorespaces Grounding time (left) and propositional rule count (right) for BSP on the C++ backend, comparing the compact constraint formulation (\texttt  {la\_co}) against the baseline encodings (\texttt  {gc}, \texttt  {la}, and \texttt  {lc}).}}{56}{figure.4.22}\protected@file@percent }
-\newlabel{fig:laco}{{4.22}{56}{Grounding time (left) and propositional rule count (right) for BSP on the C++ backend, comparing the compact constraint formulation (\texttt {la\_co}) against the baseline encodings (\texttt {gc}, \texttt {la}, and \texttt {lc})}{figure.4.22}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.12.1}The full \texttt  {\_co} family: do the heuristics still matter?}{56}{subsection.4.12.1}\protected@file@percent }
-\newlabel{sec:co-family}{{4.12.1}{56}{The full \texttt {\_co} family: do the heuristics still matter?}{subsection.4.12.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.10.2}PUP: the same inertness, with the same surcharge}{57}{subsection.4.10.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.10.3}HRP: misguidance}{57}{subsection.4.10.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.10.4}What the three cases share}{57}{subsection.4.10.4}\protected@file@percent }
 \def\@LN@column{1}
-\@writefile{lot}{\contentsline {table}{\numberline {4.11}{\ignorespaces The \texttt  {\_co} family on BSP at $n=200$, C++ backend. All six variants solve every size from $10$ to $200$, and none spends more than about a second in search at any of them. The heuristic is the only thing that differs between a row and its twin in Table~\ref {tab:bsp-n120}.}}{57}{table.4.11}\protected@file@percent }
-\newlabel{tab:co-family}{{4.11}{57}{The \texttt {\_co} family on BSP at $n=200$, C++ backend. All six variants solve every size from $10$ to $200$, and none spends more than about a second in search at any of them. The heuristic is the only thing that differs between a row and its twin in Table~\ref {tab:bsp-n120}}{table.4.11}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.23}{\ignorespaces The \texttt  {\_co} family on BSP: grounding time (left) and solver choices (right). The ground and the lazy variants separate on grounding by three orders of magnitude; on choices all six lie within a small factor of each other, and the two lowest curves are the ones carrying no effective heuristic.}}{57}{figure.4.23}\protected@file@percent }
-\newlabel{fig:co-family}{{4.23}{57}{The \texttt {\_co} family on BSP: grounding time (left) and solver choices (right). The ground and the lazy variants separate on grounding by three orders of magnitude; on choices all six lie within a small factor of each other, and the two lowest curves are the ones carrying no effective heuristic}{figure.4.23}{}}
-\@writefile{toc}{\contentsline {paragraph}{On search, the answer is no.}{57}{section*.24}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4.11}Two Ground Simulations of Alpha: \texttt  {ga} versus \texttt  {ga\_weak}}{58}{section.4.11}\protected@file@percent }
+\newlabel{sec:ga-weak}{{4.11}{58}{Two Ground Simulations of Alpha: \texttt {ga} versus \texttt {ga\_weak}}{section.4.11}{}}
 \def\@LN@column{1}
-\@writefile{toc}{\contentsline {paragraph}{On representation, the answer is yes, and it is now measured cleanly.}{58}{section*.25}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Two secondary findings.}{58}{section*.26}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{What the family establishes.}{58}{section*.27}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {4.13}C++ versus Prolog: Backend Comparison}{58}{section.4.13}\protected@file@percent }
-\newlabel{sec:backend-summary}{{4.13}{58}{C++ versus Prolog: Backend Comparison}{section.4.13}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.20}{\ignorespaces Solving time (top) and solver choices (bottom) for BSP comparing the Alpha-like semantics simulations (\texttt  {ga} and \texttt  {ga\_weak}) against the baseline variants.}}{59}{figure.4.20}\protected@file@percent }
+\newlabel{fig:gaweak}{{4.20}{59}{Solving time (top) and solver choices (bottom) for BSP comparing the Alpha-like semantics simulations (\texttt {ga} and \texttt {ga\_weak}) against the baseline variants}{figure.4.20}{}}
 \def\@LN@column{1}
-\@writefile{toc}{\contentsline {section}{\numberline {4.14}Summary of Results}{59}{section.4.14}\protected@file@percent }
-\newlabel{sec:results-summary}{{4.14}{59}{Summary of Results}{section.4.14}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.12}Evaluating Pre-Materialized Auxiliary Predicates}{60}{section.4.12}\protected@file@percent }
+\newlabel{sec:aux-form}{{4.12}{60}{Evaluating Pre-Materialized Auxiliary Predicates}{section.4.12}{}}
 \def\@LN@column{1}
-\@writefile{lot}{\contentsline {table}{\numberline {4.12}{\ignorespaces Part~I: what lazy evaluation buys.}}{60}{table.4.12}\protected@file@percent }
-\newlabel{tab:claims-i}{{4.12}{60}{Part~I: what lazy evaluation buys}{table.4.12}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {4.13}{\ignorespaces Part~II: what the clingo reading costs.}}{60}{table.4.13}\protected@file@percent }
-\newlabel{tab:claims-ii}{{4.13}{60}{Part~II: what the clingo reading costs}{table.4.13}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.21}{\ignorespaces Solving time on the C++ backend (top) and number of propagator decide calls on the Prolog backend (bottom) comparing \texttt  {la\_aux} against direct \texttt  {la} in BSP.}}{61}{figure.4.21}\protected@file@percent }
+\newlabel{fig:laaux}{{4.21}{61}{Solving time on the C++ backend (top) and number of propagator decide calls on the Prolog backend (bottom) comparing \texttt {la\_aux} against direct \texttt {la} in BSP}{figure.4.21}{}}
 \def\@LN@column{1}
-\@writefile{lot}{\contentsline {table}{\numberline {4.14}{\ignorespaces Part~III: what it costs, and what it needs.}}{61}{table.4.14}\protected@file@percent }
-\newlabel{tab:claims-iii}{{4.14}{61}{Part~III: what it costs, and what it needs}{table.4.14}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.13}Effect of the Constraint Formulation}{62}{section.4.13}\protected@file@percent }
+\newlabel{sec:constr-form}{{4.13}{62}{Effect of the Constraint Formulation}{section.4.13}{}}
 \def\@LN@column{1}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.22}{\ignorespaces Grounding time (top) and propositional rule count (bottom) for BSP on the C++ backend, comparing the compact constraint formulation (\texttt  {la\_co}) against the baseline encodings (\texttt  {gc}, \texttt  {la}, and \texttt  {lc}).}}{63}{figure.4.22}\protected@file@percent }
+\newlabel{fig:laco}{{4.22}{63}{Grounding time (top) and propositional rule count (bottom) for BSP on the C++ backend, comparing the compact constraint formulation (\texttt {la\_co}) against the baseline encodings (\texttt {gc}, \texttt {la}, and \texttt {lc})}{figure.4.22}{}}
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.13.1}The full \texttt  {\_co} family: do the heuristics still matter?}{64}{subsection.4.13.1}\protected@file@percent }
+\newlabel{sec:co-family}{{4.13.1}{64}{The full \texttt {\_co} family: do the heuristics still matter?}{subsection.4.13.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4.12}{\ignorespaces The \texttt  {\_co} family on BSP at $n=200$, C++ backend. RSS is marked \emph  {n/a} when the resource sampler reports zero on a very short run. All six variants solve every size from $10$ to $200$, and none spends more than about a second in search at any of them. The standard and compact encodings share their heuristic definitions; Table~\ref {tab:bsp-n120} reports both formulations at $n=120$, whereas this table uses $n=200$.}}{64}{table.4.12}\protected@file@percent }
+\newlabel{tab:co-family}{{4.12}{64}{The \texttt {\_co} family on BSP at $n=200$, C++ backend. RSS is marked \emph {n/a} when the resource sampler reports zero on a very short run. All six variants solve every size from $10$ to $200$, and none spends more than about a second in search at any of them. The standard and compact encodings share their heuristic definitions; Table~\ref {tab:bsp-n120} reports both formulations at $n=120$, whereas this table uses $n=200$}{table.4.12}{}}
+\def\@LN@column{1}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.23}{\ignorespaces The \texttt  {\_co} family on BSP: grounding time (top) and solver choices (bottom). The ground and the lazy variants separate on grounding by three orders of magnitude.}}{65}{figure.4.23}\protected@file@percent }
+\newlabel{fig:co-family}{{4.23}{65}{The \texttt {\_co} family on BSP: grounding time (top) and solver choices (bottom). The ground and the lazy variants separate on grounding by three orders of magnitude}{figure.4.23}{}}
+\@writefile{toc}{\contentsline {paragraph}{On search, the answer is no.}{65}{section*.25}\protected@file@percent }
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {paragraph}{On representation, the answer is yes, and it is now measured cleanly.}{66}{section*.26}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Two secondary findings.}{66}{section*.27}\protected@file@percent }
 \@setckpt{4 - Risultati}{
-\setcounter{page}{63}
+\setcounter{page}{67}
 \setcounter{equation}{0}
 \setcounter{enumi}{3}
 \setcounter{enumii}{0}
@@ -170,18 +163,18 @@
 \setcounter{mpfootnote}{0}
 \setcounter{part}{0}
 \setcounter{chapter}{4}
-\setcounter{section}{14}
-\setcounter{subsection}{0}
+\setcounter{section}{13}
+\setcounter{subsection}{1}
 \setcounter{subsubsection}{0}
 \setcounter{paragraph}{0}
 \setcounter{subparagraph}{0}
 \setcounter{figure}{23}
-\setcounter{table}{14}
+\setcounter{table}{12}
 \setcounter{parentequation}{0}
 \setcounter{float@type}{8}
 \setcounter{FancyVerbLine}{3}
 \setcounter{linenumber}{1}
-\setcounter{LN@truepage}{66}
+\setcounter{LN@truepage}{70}
 \setcounter{FancyVerbWriteLine}{0}
 \setcounter{FancyVerbBufferLine}{6}
 \setcounter{FV@TrueTabGroupLevel}{0}
@@ -192,10 +185,10 @@
 \setcounter{FV@BreakBufferDepth}{0}
 \setcounter{minted@FancyVerbLineTemp}{0}
 \setcounter{listing}{0}
-\setcounter{section@level}{1}
+\setcounter{section@level}{4}
 \setcounter{Item}{8}
 \setcounter{Hfootnote}{2}
-\setcounter{bookmark@seq@number}{56}
+\setcounter{bookmark@seq@number}{55}
 \setcounter{tabx@nest}{0}
 \setcounter{listtotal}{0}
 \setcounter{listcount}{0}

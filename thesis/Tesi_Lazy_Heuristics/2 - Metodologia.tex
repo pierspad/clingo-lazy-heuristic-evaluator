@@ -141,7 +141,7 @@ In both builds, the class implements \texttt{clingo::Heuristic}, the propagator 
     \item During backtracking, \texttt{undo} restores those aggregate and candidate states as literals are retracted from the trail.
     \item At each decision point, \texttt{decide} either returns a signed literal for the highest-ranked target or returns $0$, delegating the decision to clasp's fallback heuristic.
 \end{itemize}
-The two backends are not symmetric in what they can express. The native backend maintains an incremental state for \texttt{\#sum}, \texttt{\#count}, \texttt{\#min} and \texttt{\#max} over one predicate and one argument position, and can only filter the aggregated set by matching its arguments with those of the target atom; the Prolog backend evaluates an arbitrary \texttt{aggregate\_all/3} goal and is unrestricted in this respect. Section~\ref{sec:dsl} states the fragment each backend accepts, and Section~\ref{sec:dsl-limits} what falls outside it.
+The two backends are not symmetric in what they can express. The native backend maintains an incremental state for \texttt{\#sum}, \texttt{\#count}, \texttt{\#min} and \texttt{\#max} over one predicate and one argument position, and can only filter the aggregated set by matching its arguments with those of the target atom; the Prolog backend evaluates an arbitrary \texttt{aggregate\_all/3} goal and is unrestricted in this respect. Section~\ref{sec:dsl} states the language subset each backend accepts, and Section~\ref{sec:dsl-limits} what falls outside it.
 
 To activate this mechanism, runs are launched with the flag \texttt{--heuristic=Domain}. A detailed discussion of the architectural differences between the two backends is provided in Chapter~\ref{sec:implementation}.
 
@@ -305,7 +305,7 @@ target still free & (implicit in clasp) & implicit: an assigned target is skippe
 
 While Table~\ref{tab:translation} summarizes the syntax supported by each backend, the two engines do not cover the same subset of clingo's heuristic language, nor does either support standard ASP heuristics in full. Instead, they reflect a clear design trade-off between evaluation speed and relational expressiveness.
 
-\paragraph{The C++ fragment.}
+\paragraph{The C++ language subset.}
 The C++ backend is designed for high performance through incremental state tracking, but this restricts its language to a minimal template. Directives must target entire predicates rather than individual ground atoms, and arguments are strictly limited to numeric tuples. 
 
 In rule bodies, literals can only link directly to the target tuple: arbitrary joins between body atoms (such as \texttt{p(X,V), q(V,W)}) and relational comparisons (\texttt{N < M}) are unsupported, requiring precomputation via auxiliary ASP rules. 
@@ -314,6 +314,6 @@ Similarly, aggregates operate strictly over a single predicate and argument, wit
 Finally, weight arithmetic is restricted to basic operations ($+$, $-$, $\cdot$) yielding strictly positive values, and modifiers altering internal VSIDS scores (\texttt{init}, \texttt{factor}) are rejected. Because the backend also omits an explicit priority field, multi-level priority hierarchies must be flattened into weights (Section~\ref{sec:flattening}).
 
 
-\paragraph{The Prolog fragment.}
-In contrast, the Prolog backend prioritizes expressive flexibility. Because rule bodies are standard Prolog goals, arbitrary joins, comparisons, nested aggregations (via \texttt{aggregate\_all/3}), and non-numeric terms are supported natively. Its head also carries an explicit priority argument, so it \emph{can} express Alpha's two-dimensional rank without weight flattening; the suite uses flattened weights, with the additional HRP priority distinction described in Section~\ref{sec:weight-problem}. The primary limitation is that Prolog goals may generate terms that do not exist in the ground program, requiring the backend to filter out invalid candidates against clasp's atom tables (Section~\ref{sec:decision-prolog}). Unrestricted goals are re-evaluated from scratch at every decision point, introducing runtime overhead that is evaluated in Section~\ref{sec:per-decision-cost}.
+\paragraph{The Prolog language subset.}
+In contrast, the Prolog backend prioritizes expressive flexibility. Because rule bodies are standard Prolog goals, arbitrary joins, comparisons, nested aggregations (via \texttt{aggregate\_all/3}), and non-numeric terms are supported natively. Its head also carries an explicit priority argument, so it \emph{can} express Alpha's two-dimensional rank without weight flattening; the suite uses flattened weights throughout, and the priority field only in HRP, where it keeps the nine ranking rules one level above the final \texttt{false} layer. The primary limitation is that Prolog goals may generate terms that do not exist in the ground program, requiring the backend to filter out invalid candidates against clasp's atom tables (Section~\ref{sec:decision-prolog}). Unrestricted goals are re-evaluated from scratch at every decision point, introducing runtime overhead that is evaluated in Section~\ref{sec:per-decision-cost}.
 

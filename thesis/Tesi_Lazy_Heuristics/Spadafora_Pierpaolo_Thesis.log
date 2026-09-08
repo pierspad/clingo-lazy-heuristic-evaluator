@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Arch Linux) (preloaded format=pdflatex 2026.6.1)  7 SEP 2026 23:54
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Arch Linux) (preloaded format=pdflatex 2026.6.1)  8 SEP 2026 13:48
 entering extended mode
  \write18 enabled.
  file:line:error style messages enabled.
@@ -203,6 +203,8 @@ Package: float 2001/11/08 v1.3d Float enhancements (AL)
 \float@box=\box58
 \@float@everytoks=\toks29
 \@floatcapt=\box59
+) (/usr/share/texmf-dist/tex/latex/placeins/placeins.sty
+Package: placeins 2005/04/18  v 2.2
 ) (/usr/share/texmf-dist/tex/latex/graphics/graphicx.sty
 Package: graphicx 2024/12/31 v1.2e Enhanced LaTeX Graphics (DPC,SPQR)
  (/usr/share/texmf-dist/tex/latex/graphics/graphics.sty
@@ -667,24 +669,24 @@ Package csquotes Info: Redefining alias 'default' -> 'english'.
  (./Spadafora_Pierpaolo_Thesis.aux (./0.2 - abstract.aux) (./1 - Introduzione.aux) (./2 - Metodologia.aux) (./3 - Implementazione.aux) (./4 - Risultati.aux) (./5 - DiscussioneConclusione.aux))
 \openout1 = `Spadafora_Pierpaolo_Thesis.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 86.
-LaTeX Font Info:    ... okay on input line 86.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 86.
-LaTeX Font Info:    ... okay on input line 86.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 86.
-LaTeX Font Info:    ... okay on input line 86.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 86.
-LaTeX Font Info:    ... okay on input line 86.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 86.
-LaTeX Font Info:    ... okay on input line 86.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 86.
-LaTeX Font Info:    ... okay on input line 86.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 86.
-LaTeX Font Info:    ... okay on input line 86.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 86.
-LaTeX Font Info:    ... okay on input line 86.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 86.
-LaTeX Font Info:    ... okay on input line 86.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 87.
+LaTeX Font Info:    ... okay on input line 87.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 87.
+LaTeX Font Info:    ... okay on input line 87.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 87.
+LaTeX Font Info:    ... okay on input line 87.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 87.
+LaTeX Font Info:    ... okay on input line 87.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 87.
+LaTeX Font Info:    ... okay on input line 87.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 87.
+LaTeX Font Info:    ... okay on input line 87.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 87.
+LaTeX Font Info:    ... okay on input line 87.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 87.
+LaTeX Font Info:    ... okay on input line 87.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 87.
+LaTeX Font Info:    ... okay on input line 87.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
@@ -739,7 +741,7 @@ Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 48
  (/usr/share/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Live
 ))
-Package hyperref Info: Link coloring OFF on input line 86.
+Package hyperref Info: Link coloring OFF on input line 87.
  (./Spadafora_Pierpaolo_Thesis.out) (./Spadafora_Pierpaolo_Thesis.out)
 \@outlinefile=\write5
 \openout5 = `Spadafora_Pierpaolo_Thesis.out'.
@@ -757,10 +759,10 @@ Package biblatex Info: Automatic encoding selection.
 Package biblatex Info: Trying to load bibliographic data...
 Package biblatex Info: ... file 'Spadafora_Pierpaolo_Thesis.bbl' found.
  (./Spadafora_Pierpaolo_Thesis.bbl)
-Package biblatex Info: Reference section=0 on input line 86.
-Package biblatex Info: Reference segment=0 on input line 86.
+Package biblatex Info: Reference section=0 on input line 87.
+Package biblatex Info: Reference segment=0 on input line 87.
  (./0.1 - frontespizio.tex
-<figures/logo.png, id=257, 69.25874pt x 44.165pt>
+<figures/logo.png, id=269, 69.25874pt x 44.165pt>
 File: figures/logo.png Graphic file (type png)
 <use figures/logo.png>
 Package pdftex.def Info: figures/logo.png  used on input line 8.
@@ -801,51 +803,50 @@ Chapter 1.
 \pydata@fh@0=\write7
 \openout7 = `_2AE2944559263F6456DC6AA53993E271.data.minted'.
 
-runsystem(latexminted config  --timestamp 20260907235430 2AE2944559263F6456DC6AA53993E271)...executed.
+runsystem(latexminted config  --timestamp 20260908134844 2AE2944559263F6456DC6AA53993E271)...executed.
 
  (./_2AE2944559263F6456DC6AA53993E271.config.minted)
-runsystem(latexminted cleanconfig  --timestamp 20260907235430 2AE2944559263F6456DC6AA53993E271)...executed.
+runsystem(latexminted cleanconfig  --timestamp 20260908134844 2AE2944559263F6456DC6AA53993E271)...executed.
 
  (./_minted/friendly.style.minted) (./_minted/E1D5B53048E1E5BC0486921A57CBCDE1.highlight.minted)
-<figures/diagrams/png/pipelines.png, id=365, 466.3824pt x 260.53336pt>
+<figures/diagrams/png/pipelines.png, id=380, 466.3824pt x 260.53336pt>
 File: figures/diagrams/png/pipelines.png Graphic file (type png)
 <use figures/diagrams/png/pipelines.png>
 Package pdftex.def Info: figures/diagrams/png/pipelines.png  used on input line 30.
 (pdftex.def)             Requested size: 426.79135pt x 238.41748pt.
- [2 <./figures/diagrams/png/pipelines.png (PNG copy)>] (./_minted/FF4D6D44EFADE7A43A5CB7A86D3DB664.highlight.minted) (./_minted/D5C627CB8FDF61CF170C78E76411713F.highlight.minted) [3] (./_minted/5DC66B8353F73A33D34A73C2623CED6D.highlight.minted) [4] [5]) [6]
+ [2 <./figures/diagrams/png/pipelines.png (PNG copy)>] [3] (./_minted/5DC66B8353F73A33D34A73C2623CED6D.highlight.minted) [4] [5{/usr/share/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}]) [6]
 \openout2 = `"2 - Metodologia.aux"'.
 
  (./2 - Metodologia.tex
 Chapter 2.
-(./_minted/B9AAB00C6787A8AF8A433BA4FF1D93B3.highlight.minted) (./_minted/DCA53EA453A86F0F3B5CF3166A3012B4.highlight.minted) (./_minted/DCA53EA453A86F0F3B5CF3166A3012B4.highlight.minted)
-<figures/diagrams/png/axes.png, id=436, 433.01775pt x 242.5863pt>
+<figures/diagrams/png/axes.png, id=452, 433.01775pt x 242.5863pt>
 File: figures/diagrams/png/axes.png Graphic file (type png)
 <use figures/diagrams/png/axes.png>
 Package pdftex.def Info: figures/diagrams/png/axes.png  used on input line 15.
 (pdftex.def)             Requested size: 401.1849pt x 224.75897pt.
- [7
+[7
 
 
 
 
-] (./_minted/796DE5BF0DC65FACFFF5B4150D9A0456.highlight.minted) (./_minted/2D447FB4BFAF6203462BA61E35D7F384.highlight.minted) (./_minted/5897657D5068492A64BFF2A08FD1E05C.highlight.minted) (./_minted/D5B57BA816462BBD1FE0B12186F93A56.highlight.minted) (./_minted/BD784CA54403552B35F07A40E4122658.highlight.minted
+] (./_minted/BD784CA54403552B35F07A40E4122658.highlight.minted
 LaTeX Font Info:    Font shape `T1/cmtt/bx/n' in size <10> not available
 (Font)              Font shape `T1/cmtt/m/n' tried instead on input line 2.
-) [8 <./figures/diagrams/png/axes.png (PNG copy)>] (./_minted/CE1D022A1D87FED7D01095382DBE39E5.highlight.minted) (./_minted/10A1C371F2BC162BEAF08FA72A9A6AA9.highlight.minted) (./_minted/8CDB439CAA8F5F2538C82CFA7A5181BD.highlight.minted) (./_minted/10A1C371F2BC162BEAF08FA72A9A6AA9.highlight.minted) (./_minted/2D447FB4BFAF6203462BA61E35D7F384.highlight.minted) (./_minted/31450973AA3A2F8E9C3623005B3E959A.highlight.minted) (./_minted/D5B57BA816462BBD1FE0B12186F93A56.highlight.minted) (./_minted/FF0781A1DD37FB2CCD07C492CD148168.highlight.minted) (./_minted/5897657D5068492A64BFF2A08FD1E05C.highlight.minted) (./_minted/DCA53EA453A86F0F3B5CF3166A3012B4.highlight.minted) (./_minted/52CEC1A831089BB009114D25A931146F.highlight.minted) [9{/usr/share/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}]
+ [8 <./figures/diagrams/png/axes.png (PNG copy)>]) (./_minted/52CEC1A831089BB009114D25A931146F.highlight.minted) [9]
 LaTeX Font Info:    Font shape `T1/cmtt/bx/n' in size <12> not available
-(Font)              Font shape `T1/cmtt/m/n' tried instead on input line 78.
- [10] (./_minted/244C3493D7D3E2BD1596C352EC8B6183.highlight.minted) [11] (./_minted/5D5C8B2261515407F1913D87CBB56743.highlight.minted) (./_minted/A2D513347769D5B93E99CAB1E88AB60B.highlight.minted)
-<figures/diagrams/png/architecture.png, id=479, 587.3142pt x 505.89pt>
+(Font)              Font shape `T1/cmtt/m/n' tried instead on input line 82.
+ [10] [11] (./_minted/A2D513347769D5B93E99CAB1E88AB60B.highlight.minted) [12]
+<figures/diagrams/png/architecture.png, id=500, 587.3142pt x 505.89pt>
 File: figures/diagrams/png/architecture.png Graphic file (type png)
 <use figures/diagrams/png/architecture.png>
-Package pdftex.def Info: figures/diagrams/png/architecture.png  used on input line 130.
+Package pdftex.def Info: figures/diagrams/png/architecture.png  used on input line 132.
 (pdftex.def)             Requested size: 426.79135pt x 367.62154pt.
- [12] (./_minted/B9AAB00C6787A8AF8A433BA4FF1D93B3.highlight.minted) [13 <./figures/diagrams/png/architecture.png (PNG copy)>] (./_minted/E1D5B53048E1E5BC0486921A57CBCDE1.highlight.minted) [14] (./_minted/4E331156494B2F970489241DBFE0C4D4.highlight.minted) (./_minted/08F9AF0B320D10091C79577D393C8F0A.highlight.minted) (./_minted/995546C303A89CE9D543995C3FC6D7EE.highlight.minted) (./_minted/528D227FBDBB0A75828BE554ADC8D41A.highlight.minted) (./_minted/8E5FA543E39E232E2B524CBD20CF7987.highlight.minted) (./_minted/E4CBEF28A8B7EA164D576E312D257D20.highlight.minted) (./_minted/758D89E0165B79128102BEA2D53D9599.highlight.minted) (./_minted/BF6FEFE011D151391D17544D61A8645E.highlight.minted) (./_minted/796DE5BF0DC65FACFFF5B4150D9A0456.highlight.minted) (./_minted/948C7CDD2A34D8067E883B681D2E01BC.highlight.minted)
-Underfull \hbox (badness 1067) in paragraph at lines 199--200
+ [13 <./figures/diagrams/png/architecture.png (PNG copy)>] (./_minted/E1D5B53048E1E5BC0486921A57CBCDE1.highlight.minted [14]) (./_minted/4E331156494B2F970489241DBFE0C4D4.highlight.minted) (./_minted/08F9AF0B320D10091C79577D393C8F0A.highlight.minted) (./_minted/394D4A66687ACD88ABD102657DD1052D.highlight.minted) (./_minted/528D227FBDBB0A75828BE554ADC8D41A.highlight.minted)
+Underfull \hbox (badness 1067) in paragraph at lines 201--202
  []\T1/cmr/bx/n/12 Aggregates.[] \T1/cmr/m/n/12 Ag-gre-gates are eval-u-ated lazily dur-ing search. For in-stance,
  []
 
-(./_minted/C577BFC0576C6EE19A17E21B39F31FD1.highlight.minted) (./_minted/33A2CF0B629A6A0B93F04F91BAFEF50B.highlight.minted) (./_minted/FD4285D72B9CE6AC644C60C3BC50ACC8.highlight.minted [15]) (./_minted/A2CC52821467F6F68C723596C177AE17.highlight.minted) (./_minted/EFA345FF8344ADDA10C160753F252CA1.highlight.minted) (./_minted/06EE43AE3397C0B5EB27EFB9D13C857B.highlight.minted) (./_minted/731CA8DD2CE351E972020A8B1D6D2C8D.highlight.minted [16]) (./_minted/B9AAB00C6787A8AF8A433BA4FF1D93B3.highlight.minted) (./_minted/C79B51FC8E786F79D721712BF18FFDA3.highlight.minted) (./_minted/20259B13BE587567BFA60300E8248659.highlight.minted) (./_minted/102CC375E9996868E634C9949EEDED00.highlight.minted) (./_minted/927CA150FD5E853C75719B97677BEB4D.highlight.minted) (./_minted/E85F06C2F487C0395637BA6F3477DCFD.highlight.minted) (./_minted/9510204A4B4742902396FFD75E4E8BB6.highlight.minted) (./_minted/C6F0CAEA20DE6EAAE5F5AAB48194B4DE.highlight.minted) (./_minted/52B6820145938996A0B88991D4B20C0E.highlight.minted) (./_minted/AEA49C4588EEC8F330A7ADE26455FD45.highlight.minted) (./_minted/1DB0D2A80FEDE22893E44DF0F3B4FC34.highlight.minted) (./_minted/3752CF51F674CAC3FC329CEC290D62DD.highlight.minted) (./_minted/5921520A6CAC3ACED1342B343DA55C71.highlight.minted) (./_minted/3752CF51F674CAC3FC329CEC290D62DD.highlight.minted) (./_minted/5921520A6CAC3ACED1342B343DA55C71.highlight.minted) [17] (./_minted/2D2244C83BDF192451C62E43E26050D6.highlight.minted) (./_minted/F261C70D5C7A940F57B7BEFBDE843328.highlight.minted) [18]) [19]
+[15] (./_minted/FD4285D72B9CE6AC644C60C3BC50ACC8.highlight.minted) (./_minted/06EE43AE3397C0B5EB27EFB9D13C857B.highlight.minted) (./_minted/731CA8DD2CE351E972020A8B1D6D2C8D.highlight.minted [16]) (./_minted/C79B51FC8E786F79D721712BF18FFDA3.highlight.minted) [17] [18]) [19]
 \openout2 = `"3 - Implementazione.aux"'.
 
  (./3 - Implementazione.tex
@@ -855,200 +856,216 @@ Chapter 3.
 
 
 
-] (./_minted/3DD3C2D1945653E7A0828F7F5D4E67F9.highlight.minted) (./_minted/28D766099570CA483739284393578E06.highlight.minted) [21] (./_minted/FE762A2D2A03C235899964B790C087BE.highlight.minted) (./_minted/7A18A8BCFFB9F822260A1AA1B9ECCA00.highlight.minted [22]) [23] (./_minted/7552D83CB72B6C51D2641EDFD558A8EA.highlight.minted) (./_minted/E84BB6C4AA039764ADD2DD7AEF0B250E.highlight.minted) (./_minted/2D2857F1F3BEBAEE85B35984F53A174D.highlight.minted) (./_minted/3449FC7A2C63E87201302CD26AD1708A.highlight.minted) (./_minted/D30CFCEAF4C7220B46F026369DBA8DD1.highlight.minted) [24] [25]
+] (./_minted/3DD3C2D1945653E7A0828F7F5D4E67F9.highlight.minted) (./_minted/28D766099570CA483739284393578E06.highlight.minted [21]) (./_minted/49C7AA9DBFC381A141EA60A1FA989DA2.highlight.minted) (./_minted/7A18A8BCFFB9F822260A1AA1B9ECCA00.highlight.minted [22]) [23] (./_minted/7552D83CB72B6C51D2641EDFD558A8EA.highlight.minted) (./_minted/E84BB6C4AA039764ADD2DD7AEF0B250E.highlight.minted) (./_minted/2D2857F1F3BEBAEE85B35984F53A174D.highlight.minted) (./_minted/3449FC7A2C63E87201302CD26AD1708A.highlight.minted [24]) (./_minted/D30CFCEAF4C7220B46F026369DBA8DD1.highlight.minted) [25]
 Underfull \hbox (badness 1314) in paragraph at lines 178--179
 []\T1/cmr/m/n/12 We eval-u-ate Al-pha un-der two con-fig-u-ra-tions on all bench-mark fam-i-lies:
  []
 
-) [26]
+[26]) [27]
 \openout2 = `"4 - Risultati.aux"'.
 
  (./4 - Risultati.tex
 Chapter 4.
-[27
+[28
 
 
 
 
-] [28]
-<figures/bsp/HD/standard/combined_heuristics.png, id=637, 577.12758pt x 374.77158pt>
+] [29] [30]
+<figures/bsp/HD/standard/combined_heuristics.png, id=668, 577.12758pt x 374.77158pt>
 File: figures/bsp/HD/standard/combined_heuristics.png Graphic file (type png)
 <use figures/bsp/HD/standard/combined_heuristics.png>
-Package pdftex.def Info: figures/bsp/HD/standard/combined_heuristics.png  used on input line 122.
+Package pdftex.def Info: figures/bsp/HD/standard/combined_heuristics.png  used on input line 117.
 (pdftex.def)             Requested size: 426.79135pt x 277.14362pt.
- [29] [30 <./figures/bsp/HD/standard/combined_heuristics.png>]
-<figures/hpc/HD/bsp/native_grounding.png, id=658, 501.24406pt x 348.44464pt>
+ [31 <./figures/bsp/HD/standard/combined_heuristics.png>]
+<figures/hpc/HD/bsp/native_grounding.png, id=680, 501.24406pt x 348.44464pt>
 File: figures/hpc/HD/bsp/native_grounding.png Graphic file (type png)
 <use figures/hpc/HD/bsp/native_grounding.png>
-Package pdftex.def Info: figures/hpc/HD/bsp/native_grounding.png  used on input line 157.
+Package pdftex.def Info: figures/hpc/HD/bsp/native_grounding.png  used on input line 152.
 (pdftex.def)             Requested size: 384.1096pt x 267.02716pt.
-<figures/hpc/HD/bsp/native_solving.png, id=659, 501.24406pt x 348.44464pt>
+<figures/hpc/HD/bsp/native_solving.png, id=681, 501.24406pt x 348.44464pt>
 File: figures/hpc/HD/bsp/native_solving.png Graphic file (type png)
 <use figures/hpc/HD/bsp/native_solving.png>
-Package pdftex.def Info: figures/hpc/HD/bsp/native_solving.png  used on input line 164.
+Package pdftex.def Info: figures/hpc/HD/bsp/native_solving.png  used on input line 159.
 (pdftex.def)             Requested size: 384.1096pt x 267.02716pt.
-<figures/hpc/HD/bsp/native_clingo_total.png, id=662, 501.24406pt x 348.44464pt>
+<figures/hpc/HD/bsp/native_clingo_total.png, id=684, 501.24406pt x 348.44464pt>
 File: figures/hpc/HD/bsp/native_clingo_total.png Graphic file (type png)
 <use figures/hpc/HD/bsp/native_clingo_total.png>
-Package pdftex.def Info: figures/hpc/HD/bsp/native_clingo_total.png  used on input line 171.
+Package pdftex.def Info: figures/hpc/HD/bsp/native_clingo_total.png  used on input line 166.
 (pdftex.def)             Requested size: 384.1096pt x 267.02716pt.
- [31 <./figures/hpc/HD/bsp/native_grounding.png>] [32 <./figures/hpc/HD/bsp/native_solving.png> <./figures/hpc/HD/bsp/native_clingo_total.png>]
-<figures/hpc/HD/bsp/native_choices.png, id=688, 507.43864pt x 348.44464pt>
+ [32] [33 <./figures/hpc/HD/bsp/native_grounding.png> <./figures/hpc/HD/bsp/native_solving.png>] [34 <./figures/hpc/HD/bsp/native_clingo_total.png>]
+<figures/hpc/HD/bsp/native_choices.png, id=723, 507.43864pt x 348.44464pt>
 File: figures/hpc/HD/bsp/native_choices.png Graphic file (type png)
 <use figures/hpc/HD/bsp/native_choices.png>
-Package pdftex.def Info: figures/hpc/HD/bsp/native_choices.png  used on input line 211.
-(pdftex.def)             Requested size: 209.1301pt x 143.60757pt.
-<figures/hpc/HD/bsp/native_conflicts.png, id=689, 507.43864pt x 348.44464pt>
+Package pdftex.def Info: figures/hpc/HD/bsp/native_choices.png  used on input line 206.
+(pdftex.def)             Requested size: 320.0935pt x 219.8084pt.
+<figures/hpc/HD/bsp/native_conflicts.png, id=724, 507.43864pt x 348.44464pt>
 File: figures/hpc/HD/bsp/native_conflicts.png Graphic file (type png)
 <use figures/hpc/HD/bsp/native_conflicts.png>
-Package pdftex.def Info: figures/hpc/HD/bsp/native_conflicts.png  used on input line 213.
-(pdftex.def)             Requested size: 209.1301pt x 143.60757pt.
- [33]
-<figures/hpc/HD/bsp/native_mem.png, id=703, 495.0495pt x 348.44464pt>
+Package pdftex.def Info: figures/hpc/HD/bsp/native_conflicts.png  used on input line 207.
+(pdftex.def)             Requested size: 320.0935pt x 219.8084pt.
+ [35] [36 <./figures/hpc/HD/bsp/native_choices.png> <./figures/hpc/HD/bsp/native_conflicts.png>]
+<figures/hpc/HD/bsp/native_mem.png, id=740, 495.0495pt x 348.44464pt>
 File: figures/hpc/HD/bsp/native_mem.png Graphic file (type png)
 <use figures/hpc/HD/bsp/native_mem.png>
-Package pdftex.def Info: figures/hpc/HD/bsp/native_mem.png  used on input line 245.
+Package pdftex.def Info: figures/hpc/HD/bsp/native_mem.png  used on input line 239.
 (pdftex.def)             Requested size: 426.79135pt x 300.40622pt.
- [34 <./figures/hpc/HD/bsp/native_choices.png> <./figures/hpc/HD/bsp/native_conflicts.png>]
-<figures/hpc/HD/pup/native_clingo_total.png, id=717, 501.24406pt x 348.44464pt>
+ [37 <./figures/hpc/HD/bsp/native_mem.png>]
+<figures/hpc/HD/pup/native_clingo_total.png, id=752, 501.24406pt x 348.44464pt>
 File: figures/hpc/HD/pup/native_clingo_total.png Graphic file (type png)
 <use figures/hpc/HD/pup/native_clingo_total.png>
-Package pdftex.def Info: figures/hpc/HD/pup/native_clingo_total.png  used on input line 263.
+Package pdftex.def Info: figures/hpc/HD/pup/native_clingo_total.png  used on input line 257.
 (pdftex.def)             Requested size: 426.79135pt x 296.7004pt.
- [35 <./figures/hpc/HD/bsp/native_mem.png>] [36 <./figures/hpc/HD/pup/native_clingo_total.png>]
-<figures/hpc/HD/pup/native_solving.png, id=737, 501.24406pt x 348.44464pt>
+ [38 <./figures/hpc/HD/pup/native_clingo_total.png>]
+<figures/hpc/HD/pup/native_solving.png, id=764, 501.24406pt x 348.44464pt>
 File: figures/hpc/HD/pup/native_solving.png Graphic file (type png)
 <use figures/hpc/HD/pup/native_solving.png>
-Package pdftex.def Info: figures/hpc/HD/pup/native_solving.png  used on input line 295.
+Package pdftex.def Info: figures/hpc/HD/pup/native_solving.png  used on input line 289.
 (pdftex.def)             Requested size: 362.77525pt x 252.19852pt.
-<figures/hpc/HD/pup/native_grounding.png, id=740, 501.24406pt x 348.44464pt>
+<figures/hpc/HD/pup/native_grounding.png, id=767, 501.24406pt x 348.44464pt>
 File: figures/hpc/HD/pup/native_grounding.png Graphic file (type png)
 <use figures/hpc/HD/pup/native_grounding.png>
-Package pdftex.def Info: figures/hpc/HD/pup/native_grounding.png  used on input line 304.
+Package pdftex.def Info: figures/hpc/HD/pup/native_grounding.png  used on input line 298.
 (pdftex.def)             Requested size: 362.77525pt x 252.19852pt.
-<figures/hpc/HD/pup/native_mem.png, id=743, 495.0495pt x 348.44464pt>
+<figures/hpc/HD/pup/native_mem.png, id=770, 495.0495pt x 348.44464pt>
 File: figures/hpc/HD/pup/native_mem.png Graphic file (type png)
 <use figures/hpc/HD/pup/native_mem.png>
-Package pdftex.def Info: figures/hpc/HD/pup/native_mem.png  used on input line 311.
+Package pdftex.def Info: figures/hpc/HD/pup/native_mem.png  used on input line 305.
 (pdftex.def)             Requested size: 362.77525pt x 255.34608pt.
- [37 <./figures/hpc/HD/pup/native_solving.png>] [38 <./figures/hpc/HD/pup/native_grounding.png> <./figures/hpc/HD/pup/native_mem.png>]
-<figures/hpc/HD/hrp/native_choices.png, id=767, 503.30893pt x 348.44464pt>
+ [39] [40 <./figures/hpc/HD/pup/native_solving.png> <./figures/hpc/HD/pup/native_grounding.png>]
+<figures/hpc/HD/hrp/native_choices.png, id=790, 503.30893pt x 348.44464pt>
 File: figures/hpc/HD/hrp/native_choices.png Graphic file (type png)
 <use figures/hpc/HD/hrp/native_choices.png>
-Package pdftex.def Info: figures/hpc/HD/hrp/native_choices.png  used on input line 328.
+Package pdftex.def Info: figures/hpc/HD/hrp/native_choices.png  used on input line 319.
 (pdftex.def)             Requested size: 362.77525pt x 251.16174pt.
- [39] (./_minted/5897657D5068492A64BFF2A08FD1E05C.highlight.minted) (./_minted/D5B57BA816462BBD1FE0B12186F93A56.highlight.minted)
-<figures/hpc/HD/hrp/comparison_solving.png, id=782, 546.67093pt x 448.074pt>
-File: figures/hpc/HD/hrp/comparison_solving.png Graphic file (type png)
-<use figures/hpc/HD/hrp/comparison_solving.png>
-Package pdftex.def Info: figures/hpc/HD/hrp/comparison_solving.png  used on input line 339.
-(pdftex.def)             Requested size: 362.77525pt x 297.35013pt.
- [40 <./figures/hpc/HD/hrp/native_choices.png>]
-<figures/hpc/HD/alpha/bsp_dashboard.png, id=790, 992.68007pt x 336.57172pt>
-File: figures/hpc/HD/alpha/bsp_dashboard.png Graphic file (type png)
-<use figures/hpc/HD/alpha/bsp_dashboard.png>
-Package pdftex.def Info: figures/hpc/HD/alpha/bsp_dashboard.png  used on input line 353.
-(pdftex.def)             Requested size: 405.45047pt x 137.47145pt.
- [41 <./figures/hpc/HD/hrp/comparison_solving.png>]
-<figures/hpc/HD/alpha/bsp_internals.png, id=799, 858.46436pt x 560.60872pt>
-File: figures/hpc/HD/alpha/bsp_internals.png Graphic file (type png)
-<use figures/hpc/HD/alpha/bsp_internals.png>
-Package pdftex.def Info: figures/hpc/HD/alpha/bsp_internals.png  used on input line 369.
-(pdftex.def)             Requested size: 405.45047pt x 264.77782pt.
-<figures/hpc/HD/alpha/pup_dashboard.png, id=802, 915.76414pt x 336.57172pt>
-File: figures/hpc/HD/alpha/pup_dashboard.png Graphic file (type png)
-<use figures/hpc/HD/alpha/pup_dashboard.png>
-Package pdftex.def Info: figures/hpc/HD/alpha/pup_dashboard.png  used on input line 380.
-(pdftex.def)             Requested size: 405.45047pt x 149.01642pt.
- [42 <./figures/hpc/HD/alpha/bsp_dashboard.png>] [43 <./figures/hpc/HD/alpha/bsp_internals.png>] [44 <./figures/hpc/HD/alpha/pup_dashboard.png>]
-LaTeX Font Info:    Font shape `T1/cmtt/bx/n' in size <17.28> not available
-(Font)              Font shape `T1/cmtt/m/n' tried instead on input line 451.
- [45] (./_minted/DCA53EA453A86F0F3B5CF3166A3012B4.highlight.minted) [46] [47] [48]
-<figures/hpc/HD/bsp/prolog_decide_calls.png, id=864, 507.43864pt x 348.44464pt>
+ [41 <./figures/hpc/HD/pup/native_mem.png>] [42 <./figures/hpc/HD/hrp/native_choices.png>]
+<figures/hpc/backend_la_comparison.pdf, id=814, 520.34402pt x 635.97598pt>
+File: figures/hpc/backend_la_comparison.pdf Graphic file (type pdf)
+<use figures/hpc/backend_la_comparison.pdf>
+Package pdftex.def Info: figures/hpc/backend_la_comparison.pdf  used on input line 360.
+(pdftex.def)             Requested size: 426.79135pt x 521.65895pt.
+<figures/hpc/backend_semantics_comparison.pdf, id=820, 520.34402pt x 635.97598pt>
+File: figures/hpc/backend_semantics_comparison.pdf Graphic file (type pdf)
+<use figures/hpc/backend_semantics_comparison.pdf>
+Package pdftex.def Info: figures/hpc/backend_semantics_comparison.pdf  used on input line 376.
+(pdftex.def)             Requested size: 426.79135pt x 521.65895pt.
+ [43] [44 <./figures/hpc/backend_la_comparison.pdf>] [45 <./figures/hpc/backend_semantics_comparison.pdf>]
+<figures/hpc/HD/bsp/prolog_decide_calls.png, id=898, 507.43864pt x 348.44464pt>
 File: figures/hpc/HD/bsp/prolog_decide_calls.png Graphic file (type png)
 <use figures/hpc/HD/bsp/prolog_decide_calls.png>
-Package pdftex.def Info: figures/hpc/HD/bsp/prolog_decide_calls.png  used on input line 539.
-(pdftex.def)             Requested size: 209.1301pt x 143.60757pt.
-<figures/hpc/HD/bsp/prolog_ms_per_decide.png, id=865, 498.14679pt x 348.44464pt>
+Package pdftex.def Info: figures/hpc/HD/bsp/prolog_decide_calls.png  used on input line 419.
+(pdftex.def)             Requested size: 320.0935pt x 219.8084pt.
+<figures/hpc/HD/bsp/prolog_ms_per_decide.png, id=899, 498.14679pt x 348.44464pt>
 File: figures/hpc/HD/bsp/prolog_ms_per_decide.png Graphic file (type png)
 <use figures/hpc/HD/bsp/prolog_ms_per_decide.png>
-Package pdftex.def Info: figures/hpc/HD/bsp/prolog_ms_per_decide.png  used on input line 541.
-(pdftex.def)             Requested size: 209.1301pt x 146.28194pt.
- [49 <./figures/hpc/HD/bsp/prolog_decide_calls.png> <./figures/hpc/HD/bsp/prolog_ms_per_decide.png>] (./_minted/102CC375E9996868E634C9949EEDED00.highlight.minted) (./_minted/E85F06C2F487C0395637BA6F3477DCFD.highlight.minted)
-<figures/hpc/HD/pup/prolog_state_sync.png, id=881, 504.34135pt x 348.44464pt>
+Package pdftex.def Info: figures/hpc/HD/bsp/prolog_ms_per_decide.png  used on input line 420.
+(pdftex.def)             Requested size: 320.0935pt x 223.90767pt.
+ [46] [47 <./figures/hpc/HD/bsp/prolog_decide_calls.png> <./figures/hpc/HD/bsp/prolog_ms_per_decide.png>] [48]
+<figures/hpc/HD/pup/prolog_state_sync.png, id=927, 504.34135pt x 348.44464pt>
 File: figures/hpc/HD/pup/prolog_state_sync.png Graphic file (type png)
 <use figures/hpc/HD/pup/prolog_state_sync.png>
-Package pdftex.def Info: figures/hpc/HD/pup/prolog_state_sync.png  used on input line 557.
+Package pdftex.def Info: figures/hpc/HD/pup/prolog_state_sync.png  used on input line 452.
 (pdftex.def)             Requested size: 392.64725pt x 271.28593pt.
+ [49 <./figures/hpc/HD/pup/prolog_state_sync.png>]
+<figures/hpc/HD/alpha/bsp_time.png, id=935, 546.15471pt x 359.80136pt>
+File: figures/hpc/HD/alpha/bsp_time.png Graphic file (type png)
+<use figures/hpc/HD/alpha/bsp_time.png>
+Package pdftex.def Info: figures/hpc/HD/alpha/bsp_time.png  used on input line 480.
+(pdftex.def)             Requested size: 332.89673pt x 219.31929pt.
+<figures/hpc/HD/alpha/bsp_mem.png, id=936, 539.96014pt x 359.80136pt>
+File: figures/hpc/HD/alpha/bsp_mem.png Graphic file (type png)
+<use figures/hpc/HD/alpha/bsp_mem.png>
+Package pdftex.def Info: figures/hpc/HD/alpha/bsp_mem.png  used on input line 481.
+(pdftex.def)             Requested size: 332.89673pt x 221.83377pt.
+<figures/hpc/HD/alpha/bsp_internals.png, id=939, 858.46436pt x 560.60872pt>
+File: figures/hpc/HD/alpha/bsp_internals.png Graphic file (type png)
+<use figures/hpc/HD/alpha/bsp_internals.png>
+Package pdftex.def Info: figures/hpc/HD/alpha/bsp_internals.png  used on input line 496.
+(pdftex.def)             Requested size: 405.45047pt x 264.77782pt.
  [50]
-<figures/hpc/HD/pup/comparison_solving.png, id=888, 546.67093pt x 448.074pt>
-File: figures/hpc/HD/pup/comparison_solving.png Graphic file (type png)
-<use figures/hpc/HD/pup/comparison_solving.png>
-Package pdftex.def Info: figures/hpc/HD/pup/comparison_solving.png  used on input line 566.
-(pdftex.def)             Requested size: 392.64725pt x 321.8336pt.
- [51 <./figures/hpc/HD/pup/prolog_state_sync.png>]
-<figures/hpc/HD/bsp/comparison_solving.png, id=897, 546.67093pt x 448.074pt>
-File: figures/hpc/HD/bsp/comparison_solving.png Graphic file (type png)
-<use figures/hpc/HD/bsp/comparison_solving.png>
-Package pdftex.def Info: figures/hpc/HD/bsp/comparison_solving.png  used on input line 582.
-(pdftex.def)             Requested size: 426.79135pt x 349.81764pt.
- [52 <./figures/hpc/HD/pup/comparison_solving.png>]
-<figures/hpc/HD/bsp/expl_gaweak_solving.png, id=908, 501.24406pt x 362.89864pt>
+<figures/hpc/HD/alpha/pup_time.png, id=949, 546.15471pt x 359.80136pt>
+File: figures/hpc/HD/alpha/pup_time.png Graphic file (type png)
+<use figures/hpc/HD/alpha/pup_time.png>
+Package pdftex.def Info: figures/hpc/HD/alpha/pup_time.png  used on input line 507.
+(pdftex.def)             Requested size: 332.89673pt x 219.31929pt.
+<figures/hpc/HD/alpha/pup_mem.png, id=950, 539.96014pt x 359.80136pt>
+File: figures/hpc/HD/alpha/pup_mem.png Graphic file (type png)
+<use figures/hpc/HD/alpha/pup_mem.png>
+Package pdftex.def Info: figures/hpc/HD/alpha/pup_mem.png  used on input line 508.
+(pdftex.def)             Requested size: 332.89673pt x 221.83377pt.
+ [51 <./figures/hpc/HD/alpha/bsp_time.png> <./figures/hpc/HD/alpha/bsp_mem.png>] [52 <./figures/hpc/HD/alpha/bsp_internals.png>] [53 <./figures/hpc/HD/alpha/pup_time.png> <./figures/hpc/HD/alpha/pup_mem.png>]
+<figures/hpc/HD/alpha/hrp_time.png, id=981, 546.15471pt x 359.80136pt>
+File: figures/hpc/HD/alpha/hrp_time.png Graphic file (type png)
+<use figures/hpc/HD/alpha/hrp_time.png>
+Package pdftex.def Info: figures/hpc/HD/alpha/hrp_time.png  used on input line 540.
+(pdftex.def)             Requested size: 332.89673pt x 219.31929pt.
+<figures/hpc/HD/alpha/hrp_mem.png, id=982, 543.05743pt x 359.80136pt>
+File: figures/hpc/HD/alpha/hrp_mem.png Graphic file (type png)
+<use figures/hpc/HD/alpha/hrp_mem.png>
+Package pdftex.def Info: figures/hpc/HD/alpha/hrp_mem.png  used on input line 541.
+(pdftex.def)             Requested size: 332.89673pt x 220.56555pt.
+ [54] [55 <./figures/hpc/HD/alpha/hrp_time.png> <./figures/hpc/HD/alpha/hrp_mem.png>]
+LaTeX Font Info:    Font shape `T1/cmtt/bx/n' in size <17.28> not available
+(Font)              Font shape `T1/cmtt/m/n' tried instead on input line 580.
+ [56] [57]
+<figures/hpc/HD/bsp/expl_gaweak_solving.png, id=1017, 501.24406pt x 362.89864pt>
 File: figures/hpc/HD/bsp/expl_gaweak_solving.png Graphic file (type png)
 <use figures/hpc/HD/bsp/expl_gaweak_solving.png>
-Package pdftex.def Info: figures/hpc/HD/bsp/expl_gaweak_solving.png  used on input line 599.
-(pdftex.def)             Requested size: 209.1301pt x 151.40857pt.
-<figures/hpc/HD/bsp/expl_gaweak_choices.png, id=909, 507.43864pt x 362.89864pt>
+Package pdftex.def Info: figures/hpc/HD/bsp/expl_gaweak_solving.png  used on input line 636.
+(pdftex.def)             Requested size: 320.0935pt x 231.75595pt.
+<figures/hpc/HD/bsp/expl_gaweak_choices.png, id=1018, 507.43864pt x 362.89864pt>
 File: figures/hpc/HD/bsp/expl_gaweak_choices.png Graphic file (type png)
 <use figures/hpc/HD/bsp/expl_gaweak_choices.png>
-Package pdftex.def Info: figures/hpc/HD/bsp/expl_gaweak_choices.png  used on input line 601.
-(pdftex.def)             Requested size: 209.1301pt x 149.56462pt.
- [53 <./figures/hpc/HD/bsp/comparison_solving.png>]
-<figures/hpc/HD/bsp/expl_laaux_solving.png, id=917, 501.24406pt x 362.89864pt>
+Package pdftex.def Info: figures/hpc/HD/bsp/expl_gaweak_choices.png  used on input line 637.
+(pdftex.def)             Requested size: 320.0935pt x 228.92636pt.
+ [58] [59 <./figures/hpc/HD/bsp/expl_gaweak_solving.png> <./figures/hpc/HD/bsp/expl_gaweak_choices.png>]
+<figures/hpc/HD/bsp/expl_laaux_solving.png, id=1034, 501.24406pt x 362.89864pt>
 File: figures/hpc/HD/bsp/expl_laaux_solving.png Graphic file (type png)
 <use figures/hpc/HD/bsp/expl_laaux_solving.png>
-Package pdftex.def Info: figures/hpc/HD/bsp/expl_laaux_solving.png  used on input line 621.
-(pdftex.def)             Requested size: 209.1301pt x 151.40857pt.
-<figures/hpc/HD/bsp/expl_laaux_decide_calls.png, id=918, 501.24406pt x 362.89864pt>
+Package pdftex.def Info: figures/hpc/HD/bsp/expl_laaux_solving.png  used on input line 657.
+(pdftex.def)             Requested size: 320.0935pt x 231.75595pt.
+<figures/hpc/HD/bsp/expl_laaux_decide_calls.png, id=1035, 501.24406pt x 362.89864pt>
 File: figures/hpc/HD/bsp/expl_laaux_decide_calls.png Graphic file (type png)
 <use figures/hpc/HD/bsp/expl_laaux_decide_calls.png>
-Package pdftex.def Info: figures/hpc/HD/bsp/expl_laaux_decide_calls.png  used on input line 623.
-(pdftex.def)             Requested size: 209.1301pt x 151.40857pt.
- [54 <./figures/hpc/HD/bsp/expl_gaweak_solving.png> <./figures/hpc/HD/bsp/expl_gaweak_choices.png>] [55 <./figures/hpc/HD/bsp/expl_laaux_solving.png> <./figures/hpc/HD/bsp/expl_laaux_decide_calls.png>]
-<figures/hpc/HD/bsp/expl_laco_grounding.png, id=935, 501.24406pt x 362.89864pt>
+Package pdftex.def Info: figures/hpc/HD/bsp/expl_laaux_decide_calls.png  used on input line 658.
+(pdftex.def)             Requested size: 320.0935pt x 231.75595pt.
+ [60] [61 <./figures/hpc/HD/bsp/expl_laaux_solving.png> <./figures/hpc/HD/bsp/expl_laaux_decide_calls.png>]
+<figures/hpc/HD/bsp/expl_laco_grounding.png, id=1049, 501.24406pt x 362.89864pt>
 File: figures/hpc/HD/bsp/expl_laco_grounding.png Graphic file (type png)
 <use figures/hpc/HD/bsp/expl_laco_grounding.png>
-Package pdftex.def Info: figures/hpc/HD/bsp/expl_laco_grounding.png  used on input line 645.
-(pdftex.def)             Requested size: 209.1301pt x 151.40857pt.
-<figures/hpc/HD/bsp/expl_laco_rules.png, id=936, 509.5035pt x 362.89864pt>
+Package pdftex.def Info: figures/hpc/HD/bsp/expl_laco_grounding.png  used on input line 680.
+(pdftex.def)             Requested size: 320.0935pt x 231.75595pt.
+<figures/hpc/HD/bsp/expl_laco_rules.png, id=1050, 509.5035pt x 362.89864pt>
 File: figures/hpc/HD/bsp/expl_laco_rules.png Graphic file (type png)
 <use figures/hpc/HD/bsp/expl_laco_rules.png>
-Package pdftex.def Info: figures/hpc/HD/bsp/expl_laco_rules.png  used on input line 647.
-(pdftex.def)             Requested size: 209.1301pt x 148.95552pt.
+Package pdftex.def Info: figures/hpc/HD/bsp/expl_laco_rules.png  used on input line 681.
+(pdftex.def)             Requested size: 320.0935pt x 227.99054pt.
+ [62] [63 <./figures/hpc/HD/bsp/expl_laco_grounding.png> <./figures/hpc/HD/bsp/expl_laco_rules.png>]
 LaTeX Font Info:    Font shape `T1/cmtt/bx/n' in size <14.4> not available
-(Font)              Font shape `T1/cmtt/m/n' tried instead on input line 661.
- [56 <./figures/hpc/HD/bsp/expl_laco_grounding.png> <./figures/hpc/HD/bsp/expl_laco_rules.png>]
-<figures/hpc/HD/bsp/expl_co_grounding.png, id=951, 495.0495pt x 362.89864pt>
+(Font)              Font shape `T1/cmtt/m/n' tried instead on input line 695.
+<figures/hpc/HD/bsp/expl_co_grounding.png, id=1068, 495.0495pt x 362.89864pt>
 File: figures/hpc/HD/bsp/expl_co_grounding.png Graphic file (type png)
 <use figures/hpc/HD/bsp/expl_co_grounding.png>
-Package pdftex.def Info: figures/hpc/HD/bsp/expl_co_grounding.png  used on input line 688.
-(pdftex.def)             Requested size: 209.1301pt x 153.30235pt.
-<figures/hpc/HD/bsp/expl_co_choices.png, id=952, 501.24406pt x 362.89864pt>
+Package pdftex.def Info: figures/hpc/HD/bsp/expl_co_grounding.png  used on input line 722.
+(pdftex.def)             Requested size: 320.0935pt x 234.65201pt.
+<figures/hpc/HD/bsp/expl_co_choices.png, id=1069, 501.24406pt x 362.89864pt>
 File: figures/hpc/HD/bsp/expl_co_choices.png Graphic file (type png)
 <use figures/hpc/HD/bsp/expl_co_choices.png>
-Package pdftex.def Info: figures/hpc/HD/bsp/expl_co_choices.png  used on input line 690.
-(pdftex.def)             Requested size: 209.1301pt x 151.40857pt.
- [57 <./figures/hpc/HD/bsp/expl_co_grounding.png> <./figures/hpc/HD/bsp/expl_co_choices.png>] [58] [59] [60] [61]) [62]
+Package pdftex.def Info: figures/hpc/HD/bsp/expl_co_choices.png  used on input line 723.
+(pdftex.def)             Requested size: 320.0935pt x 231.75595pt.
+ [64] [65 <./figures/hpc/HD/bsp/expl_co_grounding.png> <./figures/hpc/HD/bsp/expl_co_choices.png>]) [66]
 \openout2 = `"5 - DiscussioneConclusione.aux"'.
 
  (./5 - DiscussioneConclusione.tex
 Chapter 5.
-[63
+[67
 
 
 
 
-] [64] [65] [66] (./_minted/8CAA4AFCDA5BE94D1144DB5D41F3F3A9.highlight.minted) [67] [68] [69] [70] [71]) [72] [73
+] [68] [69] [70] [71]) [72
+
+] [73
 \def\@LN@column{1}
 
 
@@ -1059,24 +1076,24 @@ LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
  ***********
 Package rerunfilecheck Info: File `Spadafora_Pierpaolo_Thesis.out' has not changed.
-(rerunfilecheck)             Checksum: 440BA9AD841528A5FC94B0B038D5D80C;13918.
+(rerunfilecheck)             Checksum: 40F46649288EF30B74B1C0A546D22C42;14741.
 Package logreq Info: Writing requests to 'Spadafora_Pierpaolo_Thesis.run.xml'.
 \openout1 = `Spadafora_Pierpaolo_Thesis.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 26654 strings out of 469515
- 533293 string characters out of 5470808
- 1495786 words of memory out of 5000000
- 54487 multiletter control sequences out of 15000+600000
- 656648 words of font info for 113 fonts, out of 8000000 for 9000
+ 26391 strings out of 469515
+ 518543 string characters out of 5470808
+ 1493765 words of memory out of 5000000
+ 54370 multiletter control sequences out of 15000+600000
+ 656351 words of font info for 112 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 86i,12n,93p,1786b,2303s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 86i,10n,93p,1624b,2303s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmti8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1000.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx2074.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfbx2488.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfcc1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm0600.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm0700.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfti1000.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfti1095.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sftt1000.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sftt1095.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sftt1200.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sftt1440.pfb></usr/share/texmf-dist/fonts/type1/public/cm-super/sftt1728.pfb>
-Output written on Spadafora_Pierpaolo_Thesis.pdf (78 pages, 3679239 bytes).
+Output written on Spadafora_Pierpaolo_Thesis.pdf (78 pages, 3677500 bytes).
 PDF statistics:
- 1334 PDF objects out of 1440 (max. 8388607)
- 1090 compressed objects within 11 object streams
- 241 named destinations out of 1000 (max. 500000)
- 670 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 1367 PDF objects out of 1440 (max. 8388607)
+ 1079 compressed objects within 11 object streams
+ 238 named destinations out of 1000 (max. 500000)
+ 709 words of extra memory for PDF output out of 10000 (max. 10000000)
 

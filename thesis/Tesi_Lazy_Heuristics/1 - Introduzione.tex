@@ -4,17 +4,17 @@
 \section{The Cost of a Dynamic Heuristic}
 \label{sec:motivation}
 
-Answer Set Programming (ASP) is a declarative approach to combinatorial search. Instead of describing an algorithm step by step, the modeler describes the properties that an admissible solution must satisfy, and a solver enumerates the assignments that satisfy them \cite{gelfond1988stable, schaub2024aspPractice, clingoGuide}.
+Answer Set Programming (ASP) is a declarative approach to combinatorial search. Instead of describing an algorithm step by step, the modeller describes the properties that an admissible solution must satisfy, and a solver enumerates the assignments that satisfy them \cite{gelfond1988stable, schaub2024aspPractice, clingoGuide}.
 
 ASP solvers are essentially highly optimized backtracking, or more appropriately \emph{backjumping}, engines. Modern ASP solving is dominated by two main paradigms: ground-and-solve and lazy grounding.
 
 In ground-and-solve systems, such as clingo, first-order rules are instantiated over the problem domain before search starts, including the domain-specific heuristics that direct the solver's search. 
 This approach can be severely memory-intensive, with grounding bottlenecks manifesting in two main scenarios: as problem instances scale, and whenever domain-specific heuristics depend on dynamic search state, for instance through an aggregate over the atoms that are true \emph{at that point of the search}. 
-Because grounding precedes search, the grounder must enumerate every possible value the aggregate could take, and a single heuristic ends up producing a number of ground objects that is combinatorial in the size of the instance. In contrast, lazy-grounding systems interleave grounding and solving. While this yields significantly higher memory efficiency, allowing a further reach on memory-intensive problems, it comes at the cost of a significantly slower search.
+Because grounding precedes search, the grounder must enumerate every possible value the aggregate could take, and a single heuristic ends up producing a number of ground objects that is combinatorial in the size of the instance. In contrast, lazy-grounding systems interleave grounding and solving. While this yields substantially higher memory efficiency, allowing a further reach on memory-intensive problems, it comes at the cost of a significantly slower search.
 
-Depending on its underlying architecture, an ASP solver can be seen as an engine that compiles or interprets a very convenient and elegant declarative language \cite{calimeri2020aspcore2} to search for a solution. The convenience of that language is paid for in control: the modeler states \emph{what} an admissible solution is, but not \emph{how} the engine should look for one. A pure backtracking approach behaves as an uninformed search, and on problems whose structure is known by construction, guiding the solver with that knowledge is extremely helpful.
+Depending on its underlying architecture, an ASP solver can be seen as an engine that compiles or interprets a very convenient and elegant declarative language \cite{calimeri2020aspcore2} to search for a solution. The convenience of that language is paid for in control: the modeller states \emph{what} an admissible solution is, but not \emph{how} the engine should look for one. A pure backtracking approach behaves as an uninformed search, and on problems whose structure is known by construction, guiding the solver with that knowledge is extremely helpful.
 
-\emph{Domain-specific heuristics} are the means by which the modeler feeds that knowledge into the search. Syntactically they are declarative annotations that the grounder instantiates like ordinary rules, and their purpose is to tell the solver which atom to decide next, and with which polarity; their impact on solving is well documented \cite{gebser2013heuristics,dodaro2016combining}. They are, however, part of the program, and clingo instantiates the program before search starts. A heuristic is therefore expanded, in full, before the first decision is taken.
+\emph{Domain-specific heuristics} are the means by which the modeller feeds that knowledge into the search. Syntactically they are declarative annotations that the grounder instantiates like ordinary rules, and their purpose is to tell the solver which atom to decide next, and with which polarity; their impact on solving is well documented \cite{gebser2013heuristics,dodaro2016combining}. They are, however, part of the program, and clingo instantiates the program before search starts. A heuristic is therefore expanded, in full, before the first decision is taken.
 That expansion can be relatively harmless as long as the heuristic depends only on the input. It stops being harmless as soon as the heuristic depends on \emph{how the search is going}, which is precisely when a heuristic is most useful. Consider the directive used throughout this thesis to guide the Balanced Sum Problem (BSP), the problem of splitting $\{1,\ldots,n\}$ into two sets \texttt{b/1} and \texttt{c/1} of nearly equal sum:
 
 \begin{minted}{prolog}
@@ -22,7 +22,7 @@ That expansion can be relatively harmless as long as the heuristic depends only 
 \end{minted}
 
 The rule reads: prefer to place the element $X$ into $b$, the more strongly the larger the sum $S$ of what is already in $c$.
-The aggregate value $S$ appears \emph{inside the weight}, and the atoms \texttt{c(Y)} it sums over are guessed during search rather than given as input facts. Since the grounder cannot know what $S$ will be at decision time, it must enumerate every potential value of the sum ($S \in \{0, \ldots, \frac{n(n+1)}{2}\}$) and instantiate a separate ground directive for every pair $(X,S)$. This yields $\Theta(n^{3})$ ground objects (over one million, $1{,}010{,}200$, directives at $n = 100$) for the symmetric rules of $b/1$ and $c/1$. All of them instantiate the same single rule the modeler wrote, and all but the one matching the current partial sum are inert at any given decision.
+The aggregate value $S$ appears \emph{inside the weight}, and the atoms \texttt{c(Y)} it sums over are guessed during search rather than given as input facts. Since the grounder cannot know what $S$ will be at decision time, it must enumerate every potential value of the sum ($S \in \{0, \ldots, \frac{n(n+1)}{2}\}$) and instantiate a separate ground directive for every pair $(X,S)$. This yields $\Theta(n^{3})$ ground objects (over one million, namely $1{,}010{,}200$, directives at $n = 100$) for the symmetric rules of $b/1$ and $c/1$. All of them instantiate the same single rule the modeller wrote, and all but the one matching the current partial sum are inert at any given decision.
 A domain-specific heuristic introduced to help the engine solve a problem quicker ends up putting the answer out of reach.
 
 \begin{figure}[H]
@@ -57,8 +57,8 @@ The candidate $\{a,b\}$ deletes both rules, leaving the least model $\emptyset$:
 A stable model is then a set of atoms both closed under the rules and justified by them, in which every atom has a non-circular derivation that survives the model's own assumptions about what is false.
 
 In the \emph{guess-and-check} idiom a choice construct opens the solution space, integrity constraints prune the candidates that violate the specification, and the answer sets of the program correspond one-to-one to the solutions of the problem. ASP syntax extends normal rules with first-order variables, arithmetic, conditional literals, and three constructs this thesis uses throughout. 
-A \emph{choice rule} such as \mintinline{text}|{ b(X) } :- x(X).| leaves the truth values of its head atoms unconstrained, making these \emph{choice atoms} the explicit decision points of the solver.
-An \emph{integrity constraint} \mintinline{text}|:- Body.| is a rule with empty head and forbids every model that satisfies $Body$. 
+A \emph{choice rule} such as \texttt{\{ b(X) \} :- x(X).} leaves the truth values of its head atoms unconstrained, making these \emph{choice atoms} the explicit decision points of the solver.
+An \emph{integrity constraint} \texttt{:- Body.} is a rule with empty head and forbids every model that satisfies $Body$. 
 An \emph{aggregate atom} such as \texttt{\#sum}, \texttt{\#count}, \texttt{\#min} or \texttt{\#max} condenses a set of weighted contributions into a single comparable value \cite{clingoGuide}. Aggregates are central to this work: the heuristics under study rank decisions by expressions such as \enquote{the current sum of the elements already placed in a set}, and how and \emph{when} such an aggregate is evaluated is exactly what differentiates the systems compared here.
 
 \section{Ground-and-Solve: gringo, clasp, and Conflict-Driven Search}
@@ -74,29 +74,34 @@ This approach entails that every atom and every rule clasp will ever see must ex
 \section{Domain-Specific Heuristics in clingo}
 \label{sec:bg-heuristics}
 
-clasp allows the modeler to steer its decision heuristic using domain-specific knowledge through the \texttt{\#heuristic} directive \cite{gebser2013heuristics}:
+clasp allows the modeller to steer its decision heuristic using domain-specific knowledge through the \texttt{\#heuristic} directive \cite{gebser2013heuristics}:
 
 \begin{minted}{prolog}
 #heuristic A : Body. [W@P, M]
 \end{minted}
 
-Here, $A$ is the target domain atom whose decision choice is steered according to the modifier $M$ (e.g., setting its sign or priority level). The heuristic applies only if the rule $Body$ is satisfied. If multiple heuristic directives target the same atom $A$, clingo selects the one with the highest priority $P$ to determine the atom's modifier and weight. Across distinct target atoms, clasp then prioritizes candidates with higher weight $W$. In contrast, Alpha treats $(P, W)$ as a global lexicographic rank over all atoms (Section~\ref{sec:bg-alpha}).
+Here, $A$ is the target domain atom whose decision choice is steered according to the modifier $M$ (e.g., setting its sign or priority level). The heuristic applies only if the rule $Body$ is satisfied. If multiple heuristic directives target the same atom $A$, clingo selects the one with the highest priority $P$ to determine the atom's modifier and weight. Across distinct target atoms, clasp then prioritizes candidates with higher weight $W$. Alpha reads the same two fields the other way round, as the next section describes.
 
 \section{Lazy Grounding, Alpha, and Heuristics over Partial Assignments}
 \label{sec:bg-alpha}
 
-Alpha is the reference state-of-the-art lazy-grounding solver for this work.
+Lazy-grounding solvers invert the order of the two phases. Rather than instantiating the program and then searching it, they instantiate a rule only when the partial assignment reached so far makes it relevant, avoiding the need to materialize the full ground program before search. Exploring unsuccessful branches can, however, require additional rule instantiation and nogood generation. Alpha \cite{weinzierl2017blending} is the state-of-the-art system of this family and the external reference of this work.
 
-Comploi-Taupe et al.\ extended Alpha with declaratively specified domain-specific heuristics evaluated against the \emph{partial} assignment maintained during solving \cite{comploi2023domain}. Its semantics differs from clingo's on two main points.
+Comploi-Taupe et al.\ extended Alpha with declaratively specified domain-specific heuristics evaluated against the \emph{partial} assignment maintained during solving \cite{comploi2023domain}, and subsequently with aggregates evaluated over that same partial assignment \cite{comploi2023dynamicAggregates}. Because a heuristic is read while the assignment is still incomplete, its semantics differs from clingo's on the two points that organize the rest of this thesis:
 
-Specifically, Alpha evaluates negated body literals against unassigned atoms and prioritizes $P$ over weight $W$ in the annotation $[W@P]$, always preferring higher priority values. Two atoms are compared by weight only when they share the same priority. A complete formalization of these semantic differences and their integration into our experimental design is provided in Chapter~\ref{sec:methodology}.
+\begin{itemize}
+    \item \textbf{Default negation.} \texttt{not a} holds as soon as $a$ is not assigned true, rather than only once $a$ has been assigned false. A guard over an atom the search has not yet reached is therefore open in Alpha and closed in clingo.
+    \item \textbf{Rank.} The annotation $[W@P]$ is an absolute rank over all heuristic instances: the level $P$ decides first, always preferring higher values, and the weight $W$ orders only the instances that share a level. In clingo, as Section~\ref{sec:bg-heuristics} recorded, $P$ arbitrates between directives on the \emph{same} target atom and $W$ alone orders distinct atoms.
+\end{itemize}
+
+An encoding written for one system therefore cannot be handed to the other verbatim. Chapter~\ref{sec:methodology} formalizes both differences and turns them into the two axes of the experimental design.
 
 \section{Extending clingo: Propagators and the Heuristic Interface}
 \label{sec:bg-propagator}
 
-Standard clingo does not evaluate heuristic conditions dynamically at search time. However, it provides an extension mechanism: \emph{theory propagators}, user-defined components registered with the solver that participate directly in the search loop \cite{gebser2016theorySolving}. This thesis leverages that interface to provide search guidance computed dynamically on the trail rather than fully materialized before search.
+Standard clingo evaluates grounded heuristic conditions during search, but does not evaluate the symbolic aggregate templates over the currently true atoms in the way required here. It also provides an extension mechanism: \emph{theory propagators}, user-defined components registered with the solver that participate directly in the search loop \cite{gebser2016theorySolving}. This thesis leverages that interface to provide search guidance computed dynamically on the trail rather than fully materialized before search.
 
-A propagator has four callbacks. During \texttt{init}, it inspects the symbolic atoms of the ground program, maps the atoms it cares about to solver literals, and registers \emph{watches} on them. During search, \texttt{propagate} is invoked when a watched literal becomes true, \texttt{undo} when backtracking retracts it, and \texttt{check} on total assignments. The propagator is invoked by clasp only when a watched literal changes state.
+A propagator has four callbacks. During \texttt{init}, it inspects the symbolic atoms of the ground program, maps the atoms it cares about to solver literals, and registers \emph{watches} on them. During search, \texttt{propagate} is invoked when a watched literal becomes true, \texttt{undo} when backtracking retracts it, and \texttt{check} on total assignments. Watches trigger propagation callbacks; checks and heuristic decisions have their own invocation points.
 
 The \texttt{clingo::Heuristic} interface inherits from Propagator and extends it with a \texttt{decide} callback, invoked at each decision step \emph{before} the solver's built-in heuristic. The Heuristic object receives the current assignment of the solver and either returns a signed literal, which becomes the next decision, or returns $0$, in which case clasp falls back to its default activity-based heuristic (VSIDS \cite{moskewicz2001chaff}).
 This is the mechanism the rest of the thesis builds on. It keeps the declarative heuristic descriptions in memory, evaluates them incrementally against the trail, and answers each \texttt{decide} call with the best applicable target.
@@ -110,10 +115,10 @@ The thesis makes the following contributions.
 
 \begin{enumerate}
     \item \textbf{A lazy heuristic evaluator for clingo:} A propagator, registered through the public \texttt{clingo::Heuristic} interface, that keeps a declarative heuristic in memory as a compact description and evaluates it at every decision against the current partial assignment. 
-    \item \textbf{Two propagator backends:} A compiled C++ backend, which materializes one candidate per ground target and maintains incremental aggregate states, and an in-process SWI-Prolog backend, which evaluates the heuristic as an ordinary logic program against the solver trail, read directly through foreign predicates.
-    \item \textbf{Semantics and ablation study:} Ground-and-Solve, Lazy, clingo semantics and Alpha semantics combined give four variants of every encoding plus a heuristic-free baseline, so that no measured difference has to be attributed to two causes at once.
-    \item \textbf{Weight translation from Alpha's syntax:} Alpha's priority levels are global, while clingo's are local to a single atom. Section~\ref{sec:flattening} presents the transformation that folds a level into the weight, the conditions under which it preserves the intended order and the weight field limit imposed by clingo.
-    \item \textbf{Trade-off analysis of the lazy approach:} By collecting per-decision metrics in both backends, we evaluate the exact computational overhead of lazy grounding against its savings in program size.
+    \item \textbf{Two propagator backends:} A compiled C++ backend, which materializes target candidates and maintains incremental aggregate states, and an in-process SWI-Prolog backend, which evaluates the heuristic as an ordinary logic program against the solver trail, read directly through foreign predicates.
+    \item \textbf{Semantics and ablation study:} Ground-and-Solve, Lazy, clingo semantics and Alpha semantics combined give four variants of every encoding plus a heuristic-free baseline, to distinguish the effects of heuristic representation and interpretation.
+    \item \textbf{Weight translation from Alpha's syntax:} Alpha's priority levels are global, while clingo's are local to a single atom. Section~\ref{sec:flattening} presents the transformation that folds a level into the weight and the conditions under which it preserves the intended order; Section~\ref{sec:weight-problem} the weight field limit imposed by clingo.
+    \item \textbf{Trade-off analysis of the lazy approach:} By collecting per-decision metrics in both backends, we measure the runtime overhead of lazy heuristic evaluation against its savings in program size.
 \end{enumerate}
 
 The evaluation covers three problem families, the Balanced Sum Problem (BSP), the Partner Units Problem (PUP), and the House Reconfiguration Problem (HRP), on both backends. The implementation is publicly available.\footnote{\url{https://github.com/pierspad/clingo-lazy-heuristic-evaluator}}
