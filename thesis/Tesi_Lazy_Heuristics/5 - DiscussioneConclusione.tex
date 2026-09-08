@@ -36,7 +36,7 @@ Lazy evaluation moves work into search. Its cost depends both on how often the s
 
 The two backends illustrate this trade-off. The native C++ backend maintains candidates and aggregates incrementally and has a much lower decision cost on the measured instances. The Prolog backend supports a broader language, but may enumerate many intermediate candidates when evaluating relational bodies. On HRP at $N=20$, its propagator accounts for approximately $94\%$ of total runtime even though only about one hundred decisions are needed. On PUP and BSP with effective guidance, its share is much smaller (Section~\ref{sec:per-decision-cost}).
 
-The engineering work also highlighted failures that answer-set checks alone cannot detect. Misinterpreted priority annotations and an incorrectly selected Prolog backend can leave the solver producing valid answers while losing the intended guidance. The suite therefore uses flattened weights consistently and checks backend selection and heuristic activity. Decision counters and candidate statistics complement correctness checks by showing whether the mechanism actually participates in search.
+Answer-set checks alone do not reveal whether the heuristic provides the intended guidance. Misinterpreted priority annotations and an incorrectly selected Prolog backend can leave the solver producing valid answers while losing the intended guidance. The suite therefore uses flattened weights consistently and checks backend selection and heuristic activity. Decision counters and candidate statistics complement correctness checks by showing whether the mechanism actually participates in search.
 
 \subsection{What the comparison with Alpha establishes}
 
@@ -58,7 +58,7 @@ On PUP and HRP, the C++ backend uses auxiliary predicates for conditions that Pr
 
 Memory measurements are peak RSS for the whole process. They include the embedded Prolog runtime where applicable and the JVM in Alpha, and do not separate grounding memory from search memory. Very short runs can also finish before the sampler records a useful peak. In particular, the close PUP memory figures for Alpha and lazy clingo should be described as similar observations from individual runs.
 
-Finally, parts of the Prolog initialization remain specific to the benchmarks, including a whitelist of static predicates and inference of the constant $n$ from the instance. An auxiliary evaluator that re-grounds programs per decision is retained as a functional reference. General deployment would require a clearer declarative configuration interface and broader validation. The finite sanity checks reported in this thesis support the implementation on the tested cases; they are not an exhaustive validation of all accepted programs.
+Finally, parts of the Prolog initialization remain specific to the benchmarks, including a whitelist of static predicates and inference of the constant $n$ from the instance. An auxiliary evaluator that re-grounds programs per decision is retained as a functional reference. General deployment would require a clearer declarative configuration interface and broader validation. The experimental results are limited to the tested encodings and instances; they do not provide an exhaustive validation of all accepted programs.
 
 \section{Implications}
 
@@ -85,11 +85,12 @@ Integration could be improved through automatic conversion, weight checks, expli
 
 This thesis shows that declarative dynamic heuristics can be evaluated lazily within clingo. A propagator reads a compact heuristic description, evaluates it against the current partial assignment, and supplies the next branching decision. The implementation retains clingo's ground-and-solve pipeline while avoiding the expansion of heuristic aggregate values into large sets of ground directives.
 
-The experiments show why this matters in practice. On PUP, lazy evaluation preserves effective guidance while approximately halving total clingo time and peak memory relative to the ground simulation at the largest published instance. On BSP, the compact encoding demonstrates that representation savings remain valuable even when propagation makes the heuristic unnecessary. Together, these results separate the cost of expressing guidance from the benefit of using it.
+On PUP, lazy evaluation preserves effective guidance while approximately halving total clingo time and peak memory relative to the ground simulation at the largest published instance. On BSP, the compact encoding demonstrates that representation savings remain valuable even when propagation makes the heuristic unnecessary. Together, these results separate the cost of expressing guidance from the benefit of using it.
 
-They also show that the benefit has conditions. The semantics must match the intended reading of partial information, and evaluating the heuristic must remain affordable during search. The C++ backend achieves low consultation costs through incremental maintenance, while Prolog offers greater expressiveness at a higher and more variable evaluation cost. Neither backend removes the grounding cost of the base problem, which explains the remaining gap with Alpha on BSP and PUP.
+These savings depend on how the heuristic reads partial information and on the cost of evaluating it during search. The C++ backend achieves low consultation costs through incremental maintenance, while Prolog offers greater expressiveness at a higher and more variable evaluation cost. Neither backend removes the grounding cost of the base problem, which explains the remaining gap with Alpha on BSP and PUP.
 
-The contribution is therefore a practical mechanism for reducing heuristic grounding, supported by experiments that identify both its advantages and its limits. It makes dynamic declarative guidance available inside an established solver architecture and provides a basis for broader language support and evaluation on more varied problems.
+The resulting propagator provides dynamic declarative guidance through clingo's heuristic interface. The next steps are to extend the accepted heuristic language and repeat the evaluation on a broader set of instances.
 
 \end{samepage}
 \endgroup
+cou
