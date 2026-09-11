@@ -312,6 +312,8 @@ As shown in Figures~\ref{fig:pup-grounding} and~\ref{fig:pup-mem}, \texttt{ga} m
 \section{HRP: Guidance Without Dynamic Aggregates}
 \label{sec:hrp}
 
+The HRP comparison includes a semantic limitation: \texttt{ga} drops capacity guards that remain relevant to lazy heuristic applicability (Section~\ref{sec:ga-simulation}). Differences between \texttt{ga} and \texttt{la} therefore cannot be attributed solely to ground versus lazy evaluation of an equivalent heuristic.
+
 HRP evaluates heuristic semantics on rules with nested default negations but without dynamic aggregates. It therefore does not test the representation mechanism of Section~\ref{sec:footprint} at all: there is no aggregate domain to unroll, so the ground and the lazy forms of the heuristic are comparable in size. Because HRP instances are relatively small, nearly all variants solve every instance in under a second on the C++ backend, so the family measures guidance quality (Figure~\ref{fig:hrp-choices}) and per-decision overhead (Figure~\ref{fig:backend-semantics}) rather than reach.
 
 \begin{figure}[H]
