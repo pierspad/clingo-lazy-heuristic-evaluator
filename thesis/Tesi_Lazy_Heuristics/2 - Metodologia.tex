@@ -49,7 +49,7 @@ The ground variant \texttt{ga} therefore drops these negative literals from the 
 For directives where the negated literal simply tests the target atom or its complement (as in BSP and PUP), this preserves the intended applicability on unassigned targets, and clasp's \texttt{value\_free} check still prevents modifying an already assigned atom. 
 In HRP, however, the dropped literals also include capacity guards such as \texttt{not fullCabinet(C)}, which describe a shared resource rather than the target atom itself. There, dropping the guard is a static approximation used by this translation: it enables the directive to fire on unassigned atoms from the start of search, at the price of never deactivating once a cabinet becomes full.
 
-In short, deleting \texttt{not a} from a heuristic body preserves the Alpha reading under the sufficient condition that $a$ is the target atom or its complement. For other atoms, such as the HRP capacity guards, this argument does not establish equivalence; removing the guard can change which decisions the heuristic proposes.
+In short, deleting \texttt{not a} from a heuristic body preserves the Alpha reading under the sufficient condition that $a$ is the target atom or its complement. For other atoms, such as the HRP capacity guards, this argument does not establish equivalence; removing the guard can change which decisions the heuristic proposes. The HRP translation is therefore not established as equivalent to the Alpha-like heuristic. A treatment that preserves the guards' intended effect using clingo priorities remains future work.
 
 
 \subsubsection{Dynamic aggregates by bound-guarded unrolling}
