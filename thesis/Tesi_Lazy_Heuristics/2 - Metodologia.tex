@@ -19,7 +19,7 @@ The \emph{semantics} axis fixes how a heuristic condition reads partial informat
 
 Crossing the two axes yields the four variants that the rest of the thesis refers to as: \texttt{gc} and \texttt{ga} for the ground approach under the clingo and the Alpha semantics, \texttt{lc} and \texttt{la} for the lazily evaluated one, the prefix naming the approach and the suffix the semantics. To them is added the heuristic-free baseline \texttt{gc\_noheur}, which carries the same domain logic with no heuristic at all and measures what the solver does when it is left alone (Figure~\ref{fig:axes}).
 
-To isolate specific architectural and modeling mechanisms beyond this primary matrix, the experimental design also incorporates two exploratory variants, \texttt{ga\_weak} and \texttt{la\_aux}, and a second copy of the entire BSP matrix, the \texttt{\_co} family, in which the domain constraint is formulated in a different way. Their empirical motivation and methodological role in disentangling the contributions of default negation, body materialization, and constraint formulation are discussed in Section~\ref{sec:exploratory-methodology}.
+To isolate specific architectural and modeling mechanisms beyond this primary matrix, the experimental design also incorporates two exploratory variants, \texttt{ga\_weak} and \texttt{la\_aux}, and a second set of BSP encodings, the \texttt{\_co} family, covering the four main variants, the heuristic-free baseline, and \texttt{ga\_weak}. Here, the \emph{BSP matrix} denotes this collection of experimental configurations for the Balanced Sum Problem. The \texttt{\_co} family reformulates the problem's balance constraint, which requires the sums of the two partitions to differ by at most one. This is a constraint defining admissible solutions, rather than a condition controlling heuristic applicability. The empirical motivation and methodological role of these exploratory variants in disentangling the contributions of default negation, body materialization, and constraint formulation are discussed in Section~\ref{sec:exploratory-methodology}.
 
 \subsection{Simulating Alpha semantics}
 \label{sec:ga-simulation}
@@ -34,6 +34,7 @@ clasp applies heuristic modifications only to variables that are currently unass
 \begin{minted}{cpp}
 if (s.value(a.var) == value_free && a.prio >= prio) { applyAction(s, a, prio); }
 \end{minted}
+Here, \texttt{s} is the solver and \texttt{a} is the heuristic action associated with a satisfied condition. The field \texttt{a.var} identifies its target variable; \texttt{s.value(a.var) == value\_free} checks that this variable is still unassigned. The comparison \texttt{a.prio >= prio} checks the action's priority against the priority currently stored for the same target variable and modifier. Only when both checks succeed does \texttt{applyAction} apply the heuristic modification.
 It follows that \emph{a directive whose body entails the truth value of its own target atom can never fire}: once the body conditions hold, the target is already decided, and clasp skips it.
 
 All heuristic directives in the suite that test the search state through negative literals show the same problem:
@@ -82,7 +83,13 @@ While the four main variants evaluate the core matrix of approach versus semanti
 Alpha-like semantics treat default negation as satisfied over unassigned literals, and evaluate aggregates dynamically over currently true atoms. While \texttt{ga} simulates both via extensive ground unrolling, \texttt{ga\_weak} acts as an ablation study that adapts the negative guards while retaining aggregate equality bindings instead of the monotone bounds used by \texttt{ga}. This tests whether adapting default negation alone improves search on these encodings, and what further benefit comes from dynamic aggregate evaluation.
 
 \paragraph{Fewer directives, or less grounding? (\texttt{la\_aux}).}
-The lazy variants differ from the ground ones in two ways at once: the grounder emits far fewer heuristic-related objects, and the evaluation of the heuristic conditions stays out of the ground program altogether. The \texttt{la\_aux} variant separates the two effects. It keeps the lazy propagator, but writes the conditions of the BSP heuristic as ordinary ASP rules, one atom \texttt{h\_b(X,S)} for each element $X$ and each candidate sum $S$, which the propagator then queries at decision time. The heuristic directives stay few, while the pre-evaluation goes back to the grounding phase; the variant therefore shows which of the two is responsible for the gain.
+The \texttt{la\_aux} variant retains the lazy propagator but expresses the BSP heuristic conditions as ordinary ASP rules. For the target \texttt{b(X)}, the condition is rewritten as:
+\begin{minted}{prolog}
+h_b(X,S) :- x(X), not c(X), S = #sum{Y : c(Y)}.
+\end{minted}
+A rule defines \texttt{h\_c(X,S)}. At decision time, the lazy evaluator queries the auxiliary atoms that hold, matches their first argument to the target element $X$, and uses their second argument $S$ to compute the weight $(n+1)S+X$. Thus the conditions are instantiated during grounding and evaluated by the solver during search; grounding does not precompute their truth values for future assignments.
+
+The encoding still contains two lazy template facts, one for each target predicate, but the auxiliary rules are grounded over candidate pairs $(X,S)$. The small template count therefore does not imply a small ground representation of the heuristic conditions. These templates must be distinguished from native \texttt{\#heuristic} directives and their ground instances. The variant explores the effect of materializing conditions while retaining lazy selection; it does not by itself establish an internal representation different from clasp's treatment of native heuristic bodies, or isolate representation cost from changes in condition applicability.
 
 \paragraph{Disentangling Heuristic and Problem Constraint Bottlenecks (the \texttt{\_co} family).}
 In the baseline BSP encoding, the balance requirement is enforced by computing the sums of both partitions independently and verifying that their difference does not exceed one via an integrity constraint (\texttt{:- sumB(SB), sumC(SC), (SB - SC)**2 > 1}). Because the possible partition sums scale quadratically with $n$, joining all pairs of candidate sums during grounding triggers a severe combinatorial explosion (materializing over $52.8$\,million propositional rules at $n=120$). Grounding the base constraints then dominates total runtime across the variants, making the cost of the heuristic layer harder to distinguish.
@@ -125,7 +132,7 @@ ctl.register_propagator(my_propagator, true);
 
 The propagator is registered on \emph{every} run of the modified binary. On a program that contains no lazy heuristic facts, the propagator itself is inactive: \texttt{init} finds nothing to watch and \texttt{decide} always returns $0$, so every decision is left to clasp's own branching heuristic. The same binary therefore also runs the ground variants (with clingo's standard \texttt{\#heuristic}s) and the heuristic-free baseline without requiring a separate build. 
 
-The second argument, \texttt{true}, instructs clasp to call the propagator sequentially, avoiding race conditions on the incremental state described in Section~\ref{sec:runtime}. No other parts of clingo are modified. Figure~\ref{fig:architecture} shows the architecture of the two binary build variants.
+In the registration call \texttt{ctl.register\_propagator(my\_propagator, true)} shown above, the second argument, \texttt{true}, instructs clasp to call the propagator sequentially, avoiding race conditions on the incremental state described in Section~\ref{sec:runtime}. No other parts of clingo are modified. Figure~\ref{fig:architecture} shows the architecture of the two binary build variants.
 
 \begin{figure}[H]
 \centering
