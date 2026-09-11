@@ -87,14 +87,15 @@ Here, $A$ is the target domain atom whose decision choice is steered according t
 
 Lazy-grounding solvers invert the order of the two phases. Rather than instantiating the program and then searching it, they instantiate a rule only when the partial assignment reached so far makes it relevant, avoiding the need to materialize the full ground program before search. Exploring unsuccessful branches can, however, require additional rule instantiation and nogood generation. Alpha \cite{weinzierl2017blending} is the external lazy-grounding reference used in this work.
 
-Comploi-Taupe et al.\ extended Alpha with declaratively specified domain-specific heuristics evaluated against the \emph{partial} assignment maintained during solving \cite{comploi2023domain}, and subsequently with aggregates evaluated over that same partial assignment \cite{comploi2023dynamicAggregates}. Because a heuristic is read while the assignment is still incomplete, its semantics differs from clingo's on the two points that organize the rest of this thesis:
+Comploi-Taupe et al.\ extended Alpha with declaratively specified domain-specific heuristics evaluated against the \emph{partial} assignment maintained during solving \cite{comploi2023domain}, and subsequently with aggregates evaluated over that same partial assignment \cite{comploi2023dynamicAggregates}. Because a heuristic is read while the assignment is still incomplete, its semantics differs from clingo's on the following points:
 
 \begin{itemize}
     \item \textbf{Default negation.} \texttt{not a} holds as soon as $a$ is not assigned true, rather than only once $a$ has been assigned false. A guard over an atom the search has not yet reached is therefore open in Alpha and closed in clingo.
+    \item \textbf{Dynamic aggregates.} An aggregate is evaluated over its currently true source atoms. For example, if only \texttt{c(2)} and \texttt{c(5)} are true, \texttt{S = \#sum\{Y : c(Y)\}} yields $S=7$, even while other \texttt{c/1} atoms remain unassigned. The heuristic can use this partial sum immediately and update its weight as the assignment changes. In clingo, the same equality binding is grounded over candidate values, and its satisfaction during search follows the ordinary aggregate semantics; it does not simply bind $S$ to the sum of the currently true atoms.
     \item \textbf{Rank.} The annotation $[W@P]$ is an absolute rank over all heuristic instances: the level $P$ decides first, always preferring higher values, and the weight $W$ orders only the instances that share a level. In clingo, as Section~\ref{sec:bg-heuristics} recorded, $P$ arbitrates between directives on the \emph{same} target atom and $W$ alone orders distinct atoms.
 \end{itemize}
 
-An encoding written for one system therefore cannot be handed to the other verbatim. Chapter~\ref{sec:methodology} formalizes both differences and turns them into the two axes of the experimental design.
+An encoding written for one system therefore cannot be handed to the other verbatim. Chapter~\ref{sec:methodology} describes how these differences are handled within the two axes of the experimental design: heuristic representation and semantics.
 
 \section{Extending clingo: Propagators and the Heuristic Interface}
 \label{sec:bg-propagator}
