@@ -18,6 +18,7 @@
 \usepackage{xcolor}
 \usepackage{minted}
 \usepackage{csquotes}
+\usepackage{pdfpages}
 % url viene caricato da hyperref: l'opzione va passata prima, altrimenti i
 % \path{...} lunghi (percorsi di file, URL in nota) non hanno alcun punto di
 % rottura e sforano il margine destro.
@@ -87,7 +88,11 @@
 \begin{document}
 
 \pagenumbering{gobble}
-\input{0.1 - frontespizio}
+\IfFileExists{frontespizio_firmato.pdf}{%
+    \includepdf[pages=1]{frontespizio_firmato.pdf}%
+}{%
+    \input{0.1 - frontespizio}%
+}
 
 \clearpage
 \pagenumbering{roman}
