@@ -88,11 +88,9 @@
 \begin{document}
 
 \pagenumbering{gobble}
-\IfFileExists{frontespizio_firmato.pdf}{%
-    \includepdf[pages=1]{frontespizio_firmato.pdf}%
-}{%
-    \input{0.1 - frontespizio}%
-}
+% Frontespizio firmato estratto dal PDF/A originale: conservarlo nel progetto.
+\includepdf[pages=1,pagecommand={}]{frontespizio_firmato.pdf}
+% \input{0.1 - frontespizio} % disattivato: il frontespizio è già incluso
 
 \clearpage
 \pagenumbering{roman}
