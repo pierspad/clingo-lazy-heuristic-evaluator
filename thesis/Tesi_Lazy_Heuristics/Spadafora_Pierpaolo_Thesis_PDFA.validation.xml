@@ -7,19 +7,19 @@
   </buildInformation>
   <jobs>
     <job>
-      <item size="3313089">
-        <name>/tmp/tmp.ZNU2qL912q/tesi-pdfa.pdf</name>
+      <item size="3316049">
+        <name>/tmp/tmp.8E3m7Nstvi/tesi-pdfa.pdf</name>
       </item>
       <validationReport jobEndStatus="normal" profileName="PDF/A-2b validation profile" statement="PDF file is compliant with Validation Profile requirements." isCompliant="true">
-        <details passedRules="144" failedRules="0" passedChecks="425250" failedChecks="0"></details>
+        <details passedRules="144" failedRules="0" passedChecks="426993" failedChecks="0"></details>
       </validationReport>
-      <duration start="1794443308409" finish="1794443309425">00:00:01.016</duration>
+      <duration start="1794846847408" finish="1794846848439">00:00:01.031</duration>
     </job>
   </jobs>
   <batchSummary totalJobs="1" failedToParse="0" encrypted="0" outOfMemory="0" veraExceptions="0">
     <validationReports compliant="1" nonCompliant="0" failedJobs="0">1</validationReports>
     <featureReports failedJobs="0">0</featureReports>
     <repairReports failedJobs="0">0</repairReports>
-    <duration start="1794443308357" finish="1794443309443">00:00:01.086</duration>
+    <duration start="1794846847350" finish="1794846848454">00:00:01.104</duration>
   </batchSummary>
 </report>

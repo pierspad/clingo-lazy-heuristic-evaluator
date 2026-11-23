@@ -13,12 +13,22 @@ sumC(Sum) :- Sum = #sum{Y : c(Y)}.
 :- sumB(SB), sumC(SC), (SB - SC)**2 > 1.
 
 % heuristics
-__heuristic(__target(b), x, __n_c, __bind(s, __sum(c)),
+__heuristic(__target(b), 
+            x, 
+            __n_c, 
+            __bind(s, __sum(c)),
             __weight(__add(__mul(s, B), self)),
-            __semantics(clingo), __modifier(true)) :- B = n + 1.
-__heuristic(__target(c), x, __n_b, __bind(s, __sum(b)),
+            __semantics(clingo), 
+            __modifier(true)
+            ) :- B = n + 1.
+
+__heuristic(__target(c), 
+            x, 
+            __n_b, 
+            __bind(s, __sum(b)),
             __weight(__add(__mul(s, B), self)),
-            __semantics(clingo), __modifier(true)) :- B = n + 1.
+            __semantics(clingo), 
+            __modifier(true)) :- B = n + 1.
 
 #show b/1.
 #show c/1.
