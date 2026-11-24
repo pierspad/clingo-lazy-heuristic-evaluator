@@ -48,47 +48,50 @@
 \end{columns}
 \end{frame}
 
-\begin{frame}{Grounding prepares every rule before search}
-\centering
-\begin{tikzpicture}
-\node[box] (a) at (0,0) {\texttt{\#heuristic b(X) : item(X). [X,true]}};
-\node[box,fill=mist] (b) at (7,0) {For $X=1,2,3,4$\\one preference per item};
-\draw[flow] (a)--(b);
-\end{tikzpicture}
-\par\bigskip
-\accented{Before search} the grounder prepares the heuristic directives the solver can use.
-\par\medskip
-\accented{During search} a lazy evaluator reads the current assignment and proposes the next choice.
+\begin{frame}{One heuristic rule, two ways to use it}
+\centering\texttt{\#heuristic b(X) : item(X). [X,true]}\par\bigskip
+\begin{columns}[T,onlytextwidth]
+\begin{column}{.49\textwidth}
+\accented{Ground before search}\par\medskip
+{\small\ttfamily
+\#heuristic b(1). [1,true]\\
+\#heuristic b(2). [2,true]\\
+\#heuristic b(3). [3,true]\\
+\#heuristic b(4). [4,true]}
+\end{column}
+\begin{column}{.47\textwidth}
+\accented{Evaluate during search}\par\medskip
+Keep one template. Track which candidates are free. When clingo asks, propose the highest-ranked free candidate.
+\end{column}
+\end{columns}\bigskip
+Four ground directives on the left. Zero ground \texttt{\#heuristic} directives on the right.
 \end{frame}
 
-\begin{frame}[fragile]{A small heuristic can have a large grounding}
-\centering
-$N=\{1,2,3,4\}\qquad B=\{4\}\ (\text{sum }4)\qquad C=\{2,3\}\ (\text{sum }5)$
+\begin{frame}{Where should 1 go? Into the lighter set, B}
+$B=\{4\}$ and $C=\{2,3\}$. Adding 1 to $B$ gives two sums of 5.
 \par\medskip
-\accented{Where should 1 go?}\quad Prefer $B$. Both groups then sum to 5.
+\small Ground simulation for \texttt{b(1)}. Write $A$ for the ground sum over $C$.
+\par\smallskip
+\begin{columns}[T,onlytextwidth]
+\begin{column}{.5\textwidth}\scriptsize\ttfamily
+\foreach \v in {0,...,5}{\#heuristic b(1) : \v{} <= $A$. [\the\numexpr5*\v+1\relax,true]\par}
+\end{column}
+\begin{column}{.5\textwidth}\scriptsize\ttfamily
+\foreach \v in {6,...,10}{\#heuristic b(1) : \v{} <= $A$. [\the\numexpr5*\v+1\relax,true]\par}
+\end{column}
+\end{columns}
+\medskip At $A=5$, bounds 0 through 5 hold. The strongest gives weight \accented{26}.
 \par\medskip
-\raggedright\small
-\begin{verbatim}
-#heuristic b(X) : item(X), not c(X),
-    S = #sum{Y : c(Y)}. [(n+1)*S+X, true]
-#heuristic c(X) : item(X), not b(X),
-    S = #sum{Y : b(Y)}. [(n+1)*S+X, true]
-\end{verbatim}
-\centering
-The opposite group's sum determines the preference.
-\par\bigskip
-\begin{tabular}{rr}
-$n=4$ & \accented{88 ground directives}\\
-$n=100$ & \accented{1,010,200 ground directives}
-\end{tabular}
+\textbf{11 bounds per target}\quad 88 directives at $n=4$;\quad 1,010,200 at $n=100$.
 \end{frame}
 
-\begin{frame}{Native C++ updates the heuristic through \texttt{::Heuristic}}
+\begin{frame}{The C++ propagator uses the \texttt{::Heuristic} interface}
 \small \texttt{init} registers candidate literals and watches before search starts.
 \par\bigskip
 \centering
 \begin{tikzpicture}[font=\small]
 \node[box,fill=mist,minimum height=4.3cm] (solver) at (0,-1.5) {clingo};
+\node[box] (init) at (-2.8,-1.5) {\texttt{init}};\draw[flow] (init)--(solver);
 \foreach \y/\name/\event/\action in {
 0/propagate/a watched literal becomes true/update heuristic state,
 -1.5/decide/search needs a branching choice/return a preferred literal,
@@ -104,12 +107,13 @@ $n=100$ & \accented{1,010,200 ground directives}
 \begin{frame}{SWI-Prolog queries the trail at each decision}
 \centering
 \begin{tikzpicture}
-\node[box] (a) at (0,0) {clingo requests\\a choice};
-\node[box,fill=mist] (b) at (4,0) {SWI-Prolog queries\\\texttt{heuristic(T,W,P,M)}};
-\node[box] (c) at (8.5,0) {C++ maps proposals\\to free solver literals};
-\draw[flow] (a)--(b);\draw[flow] (b)--(c);
-\end{tikzpicture}\par\bigskip
-Return the best eligible literal, or use clingo's fallback.
+\node[box] (i) at (0,0) {\texttt{init}};
+\node[box] (s) at (3,0) {clingo};
+\node[box] (d) at (7,0) {\texttt{decide}};
+\node[box,fill=mist] (p) at (7,-2) {Prolog enumerates\\heuristic proposals};
+\node[box] (c) at (3,-2) {C++ filters and\\ranks free literals};
+\draw[flow] (i)--(s);\draw[flow] (s)--(d);\draw[flow] (d)--(p);\draw[flow] (p)--(c);\draw[flow] (c)--node[left,font=\small]{chosen literal}(s);
+\end{tikzpicture}
 \end{frame}
 
 \begin{frame}{Differences between semantics}
@@ -117,8 +121,8 @@ Return the best eligible literal, or use clingo's fallback.
 \renewcommand{\arraystretch}{1.55}
 \begin{tabular}{@{}>{\raggedright\arraybackslash}p{4cm}>{\raggedright\arraybackslash}p{4cm}>{\raggedright\arraybackslash}p{4cm}@{}}
  & \textbf{clingo-like} & \accented{Alpha-like}\\\midrule
-\shortstack[l]{When does \texttt{not atom(X)}\\hold?} & \texttt{atom(X)} is established false & \texttt{atom(X)} is false or unassigned\\
-$S=\#sum\{Y:c(Y)\}$ & Wait until the sum is fixed & Sum the currently true \texttt{c(Y)} atoms\\
+When does \texttt{not a} hold? & \texttt{a} is established false & \texttt{a} is false or unassigned\\[2mm]\midrule
+$S=\#sum\{Y:c(Y)\}$ & Wait until the sum is fixed & Sum the currently true \texttt{c(Y)} atoms\\[2mm]\midrule
 $\#max$ with no true elements & $-\infty$ (\texttt{\#inf}) & $0$\\\bottomrule
 \end{tabular}
 \par\bigskip
@@ -143,19 +147,41 @@ We compare them with an unguided baseline and use Alpha as an external reference
 At $n=120$, lazy Alpha-like guidance makes 120 choices with zero conflicts.
 \end{frame}
 
+\begin{frame}{BSP choices with the ground simulation hidden}
+\centering\includegraphics[height=.59\paperheight,width=.95\textwidth,keepaspectratio]{../clingo_hpc_graphs/graphs-native/1_BSP-no_ga/choices.png}\par
+At $n=120$, the baseline makes 78,565 choices. Lazy Alpha-like guidance makes 120.
+\end{frame}
+
 \begin{frame}{PUP uses nearly half the time and memory}
-\centering\includegraphics[height=.58\paperheight,width=.95\textwidth,keepaspectratio]{../thesis/Tesi_Lazy_Heuristics/figures/hpc/HD/pup/native_mem.png}\par\medskip
+\centering
+\includegraphics[width=.49\textwidth]{../thesis/Tesi_Lazy_Heuristics/figures/hpc/HD/pup/native_mem.png}
+\includegraphics[width=.49\textwidth]{../thesis/Tesi_Lazy_Heuristics/figures/hpc/HD/pup/native_grounding.png}
+\par\medskip
 At $N=200$, peak memory falls from 24.4 to 12.7 GB and time from 438.6 to 224.0 s.
 \end{frame}
 
 \begin{frame}{Where does heuristic laziness pay off?}
-\renewcommand{\arraystretch}{1.6}
-\begin{tabular}{@{}lp{11.5cm}@{}}
-\accented{BSP} & Even with 120 choices and zero conflicts, grounding the base program dominates runtime.\\
-\accented{PUP} & Avoiding ground heuristic directives saves nearly half the peak memory on the largest instance.\\
-\accented{HRP} & On house-20, Prolog spends about 94\% of its runtime in the propagator. The cost per decision matters.\\
-\end{tabular}
-\vfill
-{\large\bfseries clingo can keep its ground-and-solve architecture and use the current assignment to guide each choice.}
+\accented{BSP}\quad Guidance makes search cheap. At $n=120$, lazy Alpha-like search takes 0.04 s, but grounding still takes 154.2 s.
+\par\bigskip
+\accented{PUP}\quad The unguided baseline reaches 80. Both Alpha-like variants reach 200. Lazy evaluation cuts peak memory from 24.4 to 12.7 GB there.
+\par\bigskip
+\accented{HRP}\quad Lazy rules guide placements without dynamic aggregates. At house-14, the Alpha-like reading takes 86 choices; the clingo-like reading takes 66,717.
+\end{frame}
+\begin{frame}[plain]
+\centering{\Huge\color{green}Thank you for your attention}\par\bigskip
+Pierpaolo Spadafora\\University of Calabria
+\end{frame}
+
+\begin{frame}{Why does the ground BSP ranking deteriorate?}
+Ground simulation encodes preferences in weights. On BSP, clasp's 16-bit weight field saturates, so distinct preferences tie.
+\par\bigskip
+The lazy C++ evaluator ranks candidates internally. With compact balance constraints, even the saturated ground variant solves the suite.
+\end{frame}
+\begin{frame}{How does the separate Alpha solver compare?}
+\accented{PUP, double-200}\quad Alpha uses 12.8 GB and takes 50.9 s. Lazy C++ uses 12.7 GB and takes 227.1 s of external wall time.
+\par\bigskip
+\accented{HRP, house-20}\quad Lazy C++ takes 0.51 s. Alpha takes 1.79 s in native mode and 15.33 s in query mode.
+\par\bigskip
+One run per configuration and instance, with limits of 600 s and 30 GB.
 \end{frame}
 \end{document}
